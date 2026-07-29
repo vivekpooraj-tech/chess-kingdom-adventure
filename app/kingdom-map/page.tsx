@@ -38,6 +38,13 @@ export default async function KingdomMapPage() {
         currentDay={child.current_day}
         completedDays={completedDays}
       />
+
+      <Link
+        href="/parent-gate?next=/parent-dashboard"
+        className="font-body text-sm text-kingdom-night/40 underline underline-offset-2 mt-4"
+      >
+        For Parents
+      </Link>
     </main>
   );
 }

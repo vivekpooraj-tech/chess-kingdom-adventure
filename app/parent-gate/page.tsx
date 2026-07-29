@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrCreateChild } from "@/lib/supabase/queries";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +10,8 @@ import { Card } from "@/components/ui/Card";
 /**
  * Per docs/04-user-flows.md: a lightweight "is an adult here" check before
  * any setup screen — not real security, just enough friction that a young
- * child can't stumble through account setup on their own.
+ * child can't stumble through account setup on their own. Also reused to
+ * gate entry to the parent dashboard via ?next=/parent-dashboard.
  */
 function randomChallenge() {
   const a = 3 + Math.floor(Math.random() * 6);
@@ -19,7 +20,18 @@ function randomChallenge() {
 }
 
 export default function ParentGatePage() {
+  // useSearchParams() requires a Suspense boundary in the App Router.
+  return (
+    <Suspense fallback={null}>
+      <ParentGateInner />
+    </Suspense>
+  );
+}
+
+function ParentGateInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
   const [challenge, setChallenge] = useState(randomChallenge);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +57,13 @@ export default function ParentGatePage() {
 
     if (!user) {
       router.push("/sign-in");
+      return;
+    }
+
+    // If we were sent here to reach a specific destination (e.g. the parent
+    // dashboard), go straight there once the check passes.
+    if (next) {
+      router.push(next);
       return;
     }
 
@@ -84,3 +103,5 @@ export default function ParentGatePage() {
     </main>
   );
 }
+
+
