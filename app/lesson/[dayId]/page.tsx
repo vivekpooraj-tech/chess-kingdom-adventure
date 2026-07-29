@@ -167,6 +167,7 @@ function PuzzleStep({ onNext }: { onNext: () => void }) {
       <ChessBoard
         fen="4k3/8/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"
         playableColor="w"
+        autoRespond
         size={360}
         onMove={() => setSolved(true)}
       />
@@ -193,6 +194,7 @@ function MiniMatchStep({ onNext }: { onNext: () => void }) {
       <ChessBoard
         fen="4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"
         playableColor="w"
+        autoRespond
         size={360}
         onMove={() => setMoveCount((c) => c + 1)}
       />

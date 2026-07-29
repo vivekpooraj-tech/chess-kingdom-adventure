@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Chess, Square, PieceSymbol, Color } from "chess.js";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,6 +22,16 @@ export interface ChessBoardProps {
   onMove?: (opts: { fen: string; san: string; isCheckmate: boolean }) => void;
   /** Called when the child attempts an illegal move — used for AI mistake-explanations. */
   onIllegalAttempt?: (from: Square, to: Square) => void;
+  /**
+   * Placeholder opponent: when true, the moment it becomes the non-playable
+   * side's turn, a random legal move is played for them automatically after
+   * a short delay. This exists because the board enforces real chess turn
+   * order — without *something* replying, a `playableColor` board only ever
+   * allows one move before silently refusing further input (that's the "next
+   * move not working" bug this prop fixes). Swap this for the real Stockfish
+   * Web Worker per docs/02-technical-architecture.md when that's ready.
+   */
+  autoRespond?: boolean;
   /** Visual size in px (square board). */
   size?: number;
 }
@@ -38,12 +48,34 @@ export function ChessBoard({
   playableColor,
   onMove,
   onIllegalAttempt,
+  autoRespond = false,
   size = 480,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
-  const [, forceRender] = useState(0);
+  const [renderTick, forceRender] = useState(0);
   const [selected, setSelected] = useState<Square | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null);
+
+  // Placeholder opponent — see the `autoRespond` doc comment above.
+  useEffect(() => {
+    if (!autoRespond || !playableColor) return;
+    if (game.isGameOver()) return;
+    if (game.turn() === playableColor) return; // still the child's turn — nothing to do
+
+    const timer = setTimeout(() => {
+      const moves = game.moves({ verbose: true });
+      if (moves.length === 0) return;
+      const pick = moves[Math.floor(Math.random() * moves.length)];
+      const result = game.move({ from: pick.from, to: pick.to, promotion: "q" });
+      if (result) {
+        setLastMove({ from: pick.from as Square, to: pick.to as Square });
+        forceRender((n) => n + 1);
+      }
+    }, 500); // brief pause so the opponent's reply doesn't feel instant/robotic
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderTick, autoRespond, playableColor, game]);
 
   const legalTargets = useMemo(() => {
     if (!selected) return new Set<Square>();
