@@ -118,6 +118,7 @@ export function ChessBoard({
     return new Set(moves.map((m) => m.to as Square));
   }, [selected, game]);
 
+
   const handleSquareClick = useCallback(
     (square: Square) => {
       const piece = game.get(square);
@@ -163,54 +164,64 @@ export function ChessBoard({
       <div
         className="rounded-card overflow-hidden shadow-toy select-none"
         style={{ width: size, height: size }}
-      >
-        <div className="grid grid-cols-8 grid-rows-8 w-full h-full">
-          {RANKS.map((rank, rIdx) =>
-            FILES.map((file, fIdx) => {
-              const square = `${file}${rank}` as Square;
-              const piece = game.get(square);
-              const isDark = (rIdx + fIdx) % 2 === 1;
-              const isSelected = selected === square;
-              const isLegalTarget = legalTargets.has(square);
-              const isLastMove = lastMove && (lastMove.from === square || lastMove.to === square);
+    >
+      <div className="grid grid-cols-8 grid-rows-8 w-full h-full">
+        {RANKS.map((rank, rIdx) =>
+          FILES.map((file, fIdx) => {
+            const square = `${file}${rank}` as Square;
+            const piece = game.get(square);
+            const isDark = (rIdx + fIdx) % 2 === 1;
+            const isSelected = selected === square;
+            const isLegalTarget = legalTargets.has(square);
+            const isLastMove = lastMove && (lastMove.from === square || lastMove.to === square);
 
-              return (
-                <button
-                  key={square}
-                  onClick={() => handleSquareClick(square)}
-                  className={clsx(
-                    "relative flex items-center justify-center transition-colors",
-                    isDark ? "bg-kingdom-forest/70" : "bg-kingdom-leaf/30",
-                    isSelected && "ring-4 ring-inset ring-kingdom-gold",
-                    isLastMove && !isSelected && "bg-kingdom-gold/30"
+            return (
+              <button
+                key={square}
+                onClick={() => handleSquareClick(square)}
+                className={clsx(
+                  "relative flex items-center justify-center transition-colors",
+                  isDark ? "bg-kingdom-forest/70" : "bg-kingdom-leaf/30",
+                  isSelected && "ring-4 ring-inset ring-kingdom-gold",
+                  isLastMove && !isSelected && "bg-kingdom-gold/30"
+                )}
+                style={{ width: squareSize, height: squareSize, fontSize: squareSize * 0.65 }}
+                aria-label={`${square}${piece ? ` — ${piece.color === "w" ? "white" : "black"} ${piece.type}` : ""}`}
+              >
+                {isLegalTarget && !piece && (
+                  <span className="absolute w-1/3 h-1/3 rounded-full bg-kingdom-gold/70" />
+                )}
+                {isLegalTarget && piece && (
+                  <span className="absolute inset-1 rounded-full ring-4 ring-kingdom-coral/70" />
+                )}
+                <AnimatePresence>
+                  {piece && (
+                    <motion.span
+                      key={`${square}-${piece.type}-${piece.color}`}
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.6, opacity: 0 }}
+                      className="drop-shadow-sm"
+                      style={{
+                        // Don't rely on the Unicode glyph's outline-vs-filled
+                        // shape alone to distinguish white from black — many
+                        // fonts (esp. on Windows/Chrome) render both nearly
+                        // identically at small sizes. Explicit fill + outline
+                        // makes the two sides unambiguous regardless of font.
+                        color: piece.color === "w" ? "#FFFFFF" : "#241E4E",
+                        WebkitTextStroke:
+                          piece.color === "w" ? "1.5px #241E4E" : "1.5px #FFFFFF",
+                      }}
+                    >
+                      {PIECE_GLYPH[piece.color][piece.type]}
+                    </motion.span>
                   )}
-                  style={{ width: squareSize, height: squareSize, fontSize: squareSize * 0.65 }}
-                  aria-label={`${square}${piece ? ` — ${piece.color === "w" ? "white" : "black"} ${piece.type}` : ""}`}
-                >
-                  {isLegalTarget && !piece && (
-                    <span className="absolute w-1/3 h-1/3 rounded-full bg-kingdom-gold/70" />
-                  )}
-                  {isLegalTarget && piece && (
-                    <span className="absolute inset-1 rounded-full ring-4 ring-kingdom-coral/70" />
-                  )}
-                  <AnimatePresence>
-                    {piece && (
-                      <motion.span
-                        key={`${square}-${piece.type}-${piece.color}`}
-                        initial={{ scale: 0.6, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.6, opacity: 0 }}
-                        className="drop-shadow-sm"
-                      >
-                        {PIECE_GLYPH[piece.color][piece.type]}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </button>
-              );
-            })
-          )}
-        </div>
+                </AnimatePresence>
+              </button>
+            );
+          })
+        )}
+      </div>
       </div>
       {engineThinking && (
         <p className="font-body text-sm text-kingdom-night/50 italic">Ollie is thinking...</p>
