@@ -66,7 +66,7 @@ export const LESSONS: Lesson[] = [
       prompt: "Light the Diagonal — move the Bishop along its slanted path!",
     },
     miniMatch: {
-      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/2B1K1B1 w - - 0 1",
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/2B1KB2 w - - 0 1",
       prompt: "Make 3 good Bishop or Pawn moves to relight the Hall.",
       movesRequired: 3,
     },

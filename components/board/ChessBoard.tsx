@@ -206,25 +206,35 @@ export function ChessBoard({
                 )}
                 <AnimatePresence>
                   {piece && (
-                    <motion.span
+                    <motion.div
                       key={`${square}-${piece.type}-${piece.color}`}
                       initial={{ scale: 0.6, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.6, opacity: 0 }}
-                      className="drop-shadow-sm"
-                      style={{
-                        // Don't rely on the Unicode glyph's outline-vs-filled
-                        // shape alone to distinguish white from black — many
-                        // fonts (esp. on Windows/Chrome) render both nearly
-                        // identically at small sizes. Explicit fill + outline
-                        // makes the two sides unambiguous regardless of font.
-                        color: piece.color === "w" ? "#FFFFFF" : "#241E4E",
-                        WebkitTextStroke:
-                          piece.color === "w" ? "1.5px #241E4E" : "1.5px #FFFFFF",
-                      }}
+                      className={clsx(
+                        // A solid colored disc behind the glyph — like a real
+                        // chess set's light/dark plastic piece bodies. This
+                        // replaces relying on CSS text-stroke, which doesn't
+                        // render consistently across browsers/fonts and left
+                        // pieces looking muddy or indistinguishable. A flat
+                        // background color can't render ambiguously.
+                        "rounded-full flex items-center justify-center shadow-sm",
+                        piece.color === "w"
+                          ? "bg-white border-2 border-kingdom-night/70"
+                          : "bg-kingdom-night border-2 border-white/70"
+                      )}
+                      style={{ width: "82%", height: "82%" }}
                     >
-                      {PIECE_GLYPH[piece.type]}
-                    </motion.span>
+                      <span
+                        style={{
+                          color: piece.color === "w" ? "#241E4E" : "#FFFFFF",
+                          fontSize: squareSize * 0.5,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {PIECE_GLYPH[piece.type]}
+                      </span>
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </button>
