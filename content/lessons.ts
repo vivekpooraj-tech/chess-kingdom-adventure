@@ -79,6 +79,84 @@ export const LESSONS: Lesson[] = [
       { id: "s6", type: "reward", title: "Bishop Crystal Recovered!" },
     ],
   },
+  {
+    dayNumber: 4,
+    crystal: "rook",
+    title: "The Rook's Iron Corridor",
+    storyBeat:
+      "The great Iron Corridor has rusted shut! The Rooks need to charge straight down the halls — up, down, left, or right — to break it open.",
+    skillTags: ["rook_movement"],
+    minigameId: "rook-charge",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",
+      prompt: "Charge the Corridor — move the Rook in a straight line!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w - - 0 1",
+      prompt: "Make 3 good Rook or Pawn moves to clear the corridor.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Corridor Rusts Shut" },
+      { id: "s2", type: "minigame", title: "Rook's Charge" },
+      { id: "s3", type: "puzzle", title: "Charge the Corridor" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Iron Corridor Duel" },
+      { id: "s6", type: "reward", title: "Rook Crystal Recovered!" },
+    ],
+  },
+  {
+    dayNumber: 5,
+    crystal: "queen",
+    title: "The Queen's Grand Court",
+    storyBeat:
+      "The Grand Court has lost its music! The Queen moves like no other piece — any direction, any distance — help her sweep through the court and bring back the melody.",
+    skillTags: ["queen_movement"],
+    minigameId: "queen-memory",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",
+      prompt: "Sweep the Court — move the Queen any direction you like!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3QK3 w - - 0 1",
+      prompt: "Make 3 good Queen or Pawn moves to restore the court.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Music Fades" },
+      { id: "s2", type: "minigame", title: "Queen's Memory Vault" },
+      { id: "s3", type: "puzzle", title: "Sweep the Court" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Grand Court Duel" },
+      { id: "s6", type: "reward", title: "Queen Crystal Recovered!" },
+    ],
+  },
+  {
+    dayNumber: 6,
+    crystal: "king",
+    title: "The King's Careful Throne Room",
+    storyBeat:
+      "The Shadow King's magic looms nearby! Your King must take small, careful steps — just one square at a time — and always stay safely guarded.",
+    skillTags: ["king_movement", "king_safety"],
+    minigameId: "king-castle-race",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/4K3 w - - 0 1",
+      prompt: "Take a careful step — move your King just one square!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/5RK1 w - - 0 1",
+      prompt: "Make 3 good King or Pawn moves to keep your King safe.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Shadow Draws Near" },
+      { id: "s2", type: "minigame", title: "King's Careful Walk" },
+      { id: "s3", type: "puzzle", title: "Take a Careful Step" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Throne Room Duel" },
+      { id: "s6", type: "reward", title: "King Crystal Recovered!" },
+    ],
+  },
 ];
 
 export function getLesson(dayNumber: number): Lesson | undefined {

@@ -80,6 +80,52 @@ export const DAY_MINIGAME_CONFIGS: DayMinigameConfig[] = [
       roundTimeMs: 3500,
     },
   },
+  {
+    dayNumber: 4,
+    catalogId: "rook-charge",
+    engine: "drag_to_target",
+    content: {
+      prompt: "Tap the square where the Rook should charge to next!",
+      pieceGlyph: "♖",
+      rows: 1,
+      cols: 5,
+      start: { row: 0, col: 0 },
+      grid: [
+        { row: 0, col: 0, correct: false },
+        { row: 0, col: 1, correct: false },
+        { row: 0, col: 2, correct: false },
+        { row: 0, col: 3, correct: false },
+        { row: 0, col: 4, correct: true },
+      ],
+    },
+  },
+  {
+    dayNumber: 5,
+    catalogId: "queen-memory",
+    engine: "memory_flip",
+    content: {
+      prompt: "Help the Queen remember her royal court!",
+      pairs: [
+        { id: "q1", glyph: "♛" },
+        { id: "k1", glyph: "♚" },
+        { id: "r1", glyph: "♜" },
+        { id: "b1", glyph: "♝" },
+      ],
+    },
+  },
+  {
+    dayNumber: 6,
+    catalogId: "king-castle-race",
+    engine: "timed_reaction",
+    content: {
+      prompt: "Tap the safe square before time runs out — keep the King safe!",
+      pieceGlyph: "♔",
+      rows: 3,
+      cols: 4,
+      rounds: 3,
+      roundTimeMs: 3500,
+    },
+  },
 ];
 
 export function getMinigameConfigForDay(dayNumber: number): DayMinigameConfig | undefined {
