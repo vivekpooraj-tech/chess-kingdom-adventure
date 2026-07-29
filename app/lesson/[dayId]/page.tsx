@@ -165,7 +165,7 @@ function PuzzleStep({ onNext }: { onNext: () => void }) {
         Guard the Path — move any Pawn Guard forward!
       </h2>
       <ChessBoard
-        fen="8/8/8/8/8/8/PPPPPPPP/8 w - - 0 1"
+        fen="4k3/8/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"
         playableColor="w"
         size={360}
         onMove={() => setSolved(true)}
@@ -191,7 +191,7 @@ function MiniMatchStep({ onNext }: { onNext: () => void }) {
         Make {matchLength} good pawn moves to win this mini match.
       </p>
       <ChessBoard
-        fen="8/pppppppp/8/8/8/8/PPPPPPPP/8 w - - 0 1"
+        fen="4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"
         playableColor="w"
         size={360}
         onMove={() => setMoveCount((c) => c + 1)}
