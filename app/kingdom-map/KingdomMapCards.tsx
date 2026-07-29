@@ -50,7 +50,7 @@ export function KingdomMapCards({
           🔒
         </div>
         <p className="font-display text-lg text-kingdom-night/60">
-          Days 2–30 unlock as the adventure grows!
+          Days {lessons.length + 1}–30 unlock as the adventure grows!
         </p>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getLesson } from "@/content/lessons";
+import { getMinigameConfigForDay } from "@/content/minigame-configs";
 import { BUDDIES } from "@/content/buddies";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -11,6 +12,8 @@ import { BuddyAvatar } from "@/components/buddy/BuddyAvatar";
 import { BuddyChat } from "@/components/buddy/BuddyChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { DragToTarget } from "@/components/minigames/engines/DragToTarget";
+import { MemoryFlip } from "@/components/minigames/engines/MemoryFlip";
+import { TimedReaction } from "@/components/minigames/engines/TimedReaction";
 import { ConfettiBurst } from "@/components/rewards/ConfettiBurst";
 import { createClient } from "@/lib/supabase/client";
 import { getOrCreateChild, markLessonComplete } from "@/lib/supabase/queries";
@@ -89,10 +92,12 @@ export default function LessonPage() {
           )}
 
           {step.type === "minigame" && (
-            <PawnRaceMiniGame onComplete={next} />
+            <MinigameStep dayNumber={lesson.dayNumber} onComplete={next} />
           )}
 
-          {step.type === "puzzle" && <PuzzleStep onNext={next} />}
+          {step.type === "puzzle" && (
+            <PuzzleStep fen={lesson.puzzle.fen} prompt={lesson.puzzle.prompt} onNext={next} />
+          )}
 
           {step.type === "ai_chat" && (
             <BuddyChat
@@ -103,7 +108,14 @@ export default function LessonPage() {
             />
           )}
 
-          {step.type === "mini_match" && <MiniMatchStep onNext={next} />}
+          {step.type === "mini_match" && (
+            <MiniMatchStep
+              fen={lesson.miniMatch.fen}
+              prompt={lesson.miniMatch.prompt}
+              movesRequired={lesson.miniMatch.movesRequired}
+              onNext={next}
+            />
+          )}
 
           {step.type === "reward" && (
             <RewardStep crystal={lesson.crystal} onFinish={finishLesson} />
@@ -135,44 +147,76 @@ function StoryStep({
   );
 }
 
-function PawnRaceMiniGame({ onComplete }: { onComplete: () => void }) {
-  // A DragToTarget config teaching "pawns move straight forward" — this is
-  // the "Pawn Race" mini-game variant, built on the shared engine.
+/**
+ * Looks up the day's minigame config (content/minigame-configs.ts) and
+ * renders whichever engine that day uses — DragToTarget, MemoryFlip, or
+ * TimedReaction — with that day's specific content.
+ */
+function MinigameStep({ dayNumber, onComplete }: { dayNumber: number; onComplete: () => void }) {
+  const config = getMinigameConfigForDay(dayNumber);
+
+  if (!config) {
+    return (
+      <Card className="flex flex-col items-center gap-4">
+        <p className="font-display text-lg">This mini-game isn't ready yet!</p>
+        <Button onClick={onComplete}>Skip for now →</Button>
+      </Card>
+    );
+  }
+
+  if (config.engine === "drag_to_target") {
+    return (
+      <DragToTarget
+        prompt={config.content.prompt}
+        pieceGlyph={config.content.pieceGlyph}
+        rows={config.content.rows}
+        cols={config.content.cols}
+        start={config.content.start}
+        grid={config.content.grid}
+        onComplete={(success) => success && onComplete()}
+      />
+    );
+  }
+
+  if (config.engine === "memory_flip") {
+    return (
+      <MemoryFlip
+        prompt={config.content.prompt}
+        pairs={config.content.pairs}
+        onComplete={() => onComplete()}
+      />
+    );
+  }
+
+  // timed_reaction
   return (
-    <DragToTarget
-      prompt="Tap the square where the Pawn Guard should march next!"
-      pieceGlyph="♙"
-      rows={1}
-      cols={4}
-      start={{ row: 0, col: 0 }}
-      grid={[
-        { row: 0, col: 0, correct: false },
-        { row: 0, col: 1, correct: true },
-        { row: 0, col: 2, correct: false },
-        { row: 0, col: 3, correct: false },
-      ]}
-      onComplete={(success) => success && onComplete()}
+    <TimedReaction
+      prompt={config.content.prompt}
+      pieceGlyph={config.content.pieceGlyph}
+      rows={config.content.rows}
+      cols={config.content.cols}
+      rounds={config.content.rounds}
+      roundTimeMs={config.content.roundTimeMs}
+      onComplete={() => onComplete()}
     />
   );
 }
 
-function PuzzleStep({ onNext }: { onNext: () => void }) {
+function PuzzleStep({ fen, prompt, onNext }: { fen: string; prompt: string; onNext: () => void }) {
   const [solved, setSolved] = useState(false);
 
   return (
     <Card className="flex flex-col items-center gap-5">
-      <h2 className="font-display text-xl text-kingdom-night text-center">
-        Guard the Path — move any Pawn Guard forward!
-      </h2>
+      <h2 className="font-display text-xl text-kingdom-night text-center">{prompt}</h2>
       <ChessBoard
-        fen="4k3/8/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"
+        fen={fen}
         playableColor="w"
         autoRespond
         size={360}
         onMove={() => setSolved(true)}
       />
       {solved && (
-        <p className="font-display text-lg text-kingdom-forest">Wonderful! The path is guarded!</p>
+        <p className="font-display text-lg text-kingdom-forest">Wonderful! Well done!</p>
       )}
       <Button disabled={!solved} onClick={onNext}>
         Continue →
@@ -181,27 +225,33 @@ function PuzzleStep({ onNext }: { onNext: () => void }) {
   );
 }
 
-function MiniMatchStep({ onNext }: { onNext: () => void }) {
+function MiniMatchStep({
+  fen,
+  prompt,
+  movesRequired,
+  onNext,
+}: {
+  fen: string;
+  prompt: string;
+  movesRequired: number;
+  onNext: () => void;
+}) {
   const [moveCount, setMoveCount] = useState(0);
-  const matchLength = 3; // short "duel" for Day 1 — full bot opponent wired in Phase 1
 
   return (
     <Card className="flex flex-col items-center gap-5">
-      <h2 className="font-display text-xl text-kingdom-night text-center">First Pawn Duel!</h2>
-      <p className="font-body text-kingdom-night/70 text-center">
-        Make {matchLength} good pawn moves to win this mini match.
-      </p>
+      <h2 className="font-display text-xl text-kingdom-night text-center">{prompt}</h2>
       <ChessBoard
-        fen="4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"
+        fen={fen}
         playableColor="w"
         autoRespond
         size={360}
         onMove={() => setMoveCount((c) => c + 1)}
       />
       <p className="font-body text-kingdom-night/60">
-        {Math.min(moveCount, matchLength)}/{matchLength} moves
+        {Math.min(moveCount, movesRequired)}/{movesRequired} moves
       </p>
-      <Button disabled={moveCount < matchLength} onClick={onNext}>
+      <Button disabled={moveCount < movesRequired} onClick={onNext}>
         Finish the Duel →
       </Button>
     </Card>
@@ -224,7 +274,7 @@ function RewardStep({ crystal, onFinish }: { crystal: string; onFinish: () => vo
         {crystal} Crystal Recovered!
       </h2>
       <p className="font-body text-kingdom-night/70">
-        You woke up the Pawn Village! +50 coins, +1 Castle Brick
+        Great work! +50 coins, +1 Castle Brick
       </p>
       <Button onClick={onFinish}>Back to the Kingdom Map →</Button>
     </Card>

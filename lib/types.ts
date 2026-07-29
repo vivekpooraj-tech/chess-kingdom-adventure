@@ -25,11 +25,26 @@ export interface LessonStep {
   title: string;
 }
 
+export interface PuzzleContent {
+  fen: string;
+  prompt: string;
+}
+
+export interface MiniMatchContent {
+  fen: string;
+  prompt: string;
+  movesRequired: number;
+}
+
 export interface Lesson {
   dayNumber: number;
   crystal: Piece;
   title: string;
   storyBeat: string;
   skillTags: string[];
+  /** References an id in content/minigame-catalog.ts and content/minigame-configs.ts */
+  minigameId: string;
+  puzzle: PuzzleContent;
+  miniMatch: MiniMatchContent;
   steps: LessonStep[];
 }
