@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import clsx from "clsx";
 
 export interface MemoryFlipPair {
   id: string;
@@ -104,15 +103,24 @@ export function MemoryFlip({ prompt, pairs, onComplete }: MemoryFlipConfig) {
               style={{ width: 64, height: 64, perspective: 400 }}
             >
               <motion.div
-                className={clsx(
-                  "absolute inset-0 rounded-md flex items-center justify-center text-3xl",
-                  isFaceUp ? "bg-white shadow-toy" : "bg-kingdom-royal/80"
-                )}
+                className="relative w-full h-full"
+                style={{ transformStyle: "preserve-3d" }}
                 animate={{ rotateY: isFaceUp ? 0 : 180 }}
                 transition={{ duration: 0.3 }}
-                style={{ backfaceVisibility: "hidden" }}
               >
-                {isFaceUp ? card.glyph : ""}
+                {/* Front face — the glyph, visible when isFaceUp */}
+                <div
+                  className="absolute inset-0 rounded-md flex items-center justify-center text-3xl bg-white shadow-toy"
+                  style={{ backfaceVisibility: "hidden" }}
+                >
+                  {card.glyph}
+                </div>
+                {/* Back face — the card-back, visible when face-down. Pre-rotated
+                    180deg so it faces the viewer exactly when the parent flips. */}
+                <div
+                  className="absolute inset-0 rounded-md bg-kingdom-royal/80"
+                  style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+                />
               </motion.div>
             </button>
           );
