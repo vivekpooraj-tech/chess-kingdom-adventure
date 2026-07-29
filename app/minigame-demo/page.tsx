@@ -74,7 +74,7 @@ export default function MinigameDemoPage() {
             rows={3}
             cols={4}
             rounds={3}
-            roundTimeMs={2200}
+            roundTimeMs={3500}
             onComplete={() => setReactionDone(true)}
           />
         )}

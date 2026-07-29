@@ -35,7 +35,7 @@ export function TimedReaction({
   rows,
   cols,
   rounds = 3,
-  roundTimeMs = 2200,
+  roundTimeMs = 3500,
   onComplete,
 }: TimedReactionConfig) {
   const [round, setRound] = useState(0);
@@ -105,61 +105,4 @@ export function TimedReaction({
     <div className="flex flex-col items-center gap-5">
       <p className="font-display text-2xl text-kingdom-night text-center">{prompt}</p>
 
-      <div className="w-48 h-2 rounded-full bg-kingdom-night/10 overflow-hidden">
-        <motion.div
-          className="h-full bg-kingdom-gold"
-          animate={{ width: `${progress * 100}%` }}
-          transition={{ duration: 0.05, ease: "linear" }}
-        />
-      </div>
-
       <div
-        className="grid gap-1 bg-kingdom-sky/20 p-2 rounded-card"
-        style={{ gridTemplateColumns: `repeat(${cols}, ${cellSize}px)` }}
-      >
-        {Array.from({ length: rows }).flatMap((_, row) =>
-          Array.from({ length: cols }).map((_, col) => {
-            const isTarget = target.row === row && target.col === col;
-            return (
-              <button
-                key={`${row}-${col}`}
-                onClick={() => handleTap(row, col)}
-                className={clsx(
-                  "rounded-md flex items-center justify-center text-3xl transition-colors relative",
-                  "bg-white/70 hover:bg-white"
-                )}
-                style={{ width: cellSize, height: cellSize }}
-              >
-                <AnimatePresence>
-                  {isTarget && feedback === "idle" && (
-                    <motion.span
-                      key="target"
-                      initial={{ scale: 0.6, opacity: 0 }}
-                      animate={{ scale: [1, 1.15, 1], opacity: 1 }}
-                      exit={{ scale: 0.6, opacity: 0 }}
-                      transition={{ duration: 0.6, repeat: Infinity }}
-                      className="absolute inset-0 flex items-center justify-center rounded-md ring-4 ring-kingdom-gold"
-                    >
-                      {pieceGlyph}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
-            );
-          })
-        )}
-      </div>
-
-      <p className="font-body text-kingdom-night/60">
-        Round {Math.min(round + 1, rounds)}/{rounds}
-      </p>
-
-      {feedback === "correct" && (
-        <p className="font-display text-lg text-kingdom-forest">Lightning fast! ⚡</p>
-      )}
-      {feedback === "miss" && (
-        <p className="font-display text-lg text-kingdom-coral">So close — try again!</p>
-      )}
-    </div>
-  );
-}
