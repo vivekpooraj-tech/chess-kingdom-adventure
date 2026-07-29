@@ -6,9 +6,19 @@ import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 import { stockfish } from "@/lib/chess-engine/stockfishEngine";
 
-const PIECE_GLYPH: Record<Color, Record<PieceSymbol, string>> = {
-  w: { p: "♙", n: "♘", b: "♗", r: "♖", q: "♕", k: "♔" },
-  b: { p: "♟", n: "♞", b: "♝", r: "♜", q: "♛", k: "♚" },
+// One glyph shape per piece type, used for BOTH colors — CSS color/stroke
+// (applied at render time) does 100% of the white/black distinction. Mixing
+// Unicode's own hollow-outline (white) and solid-filled (black) glyph
+// variants with our own CSS coloring produced inconsistent, muddy results
+// across fonts (the hollow glyphs' thin painted strokes barely show through
+// a heavier CSS outline stroke) — one shared shape avoids that entirely.
+const PIECE_GLYPH: Record<PieceSymbol, string> = {
+  p: "♟",
+  n: "♞",
+  b: "♝",
+  r: "♜",
+  q: "♛",
+  k: "♚",
 };
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -213,7 +223,7 @@ export function ChessBoard({
                           piece.color === "w" ? "1.5px #241E4E" : "1.5px #FFFFFF",
                       }}
                     >
-                      {PIECE_GLYPH[piece.color][piece.type]}
+                      {PIECE_GLYPH[piece.type]}
                     </motion.span>
                   )}
                 </AnimatePresence>
