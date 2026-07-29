@@ -211,7 +211,7 @@ function PuzzleStep({ fen, prompt, onNext }: { fen: string; prompt: string; onNe
       <ChessBoard
         fen={fen}
         playableColor="w"
-        autoRespond
+        opponent="stockfish"
         size={360}
         onMove={() => setSolved(true)}
       />
@@ -244,7 +244,7 @@ function MiniMatchStep({
       <ChessBoard
         fen={fen}
         playableColor="w"
-        autoRespond
+        opponent="stockfish"
         size={360}
         onMove={() => setMoveCount((c) => c + 1)}
       />
