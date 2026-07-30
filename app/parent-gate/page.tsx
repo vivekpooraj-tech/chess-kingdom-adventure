@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { getOrCreateChild } from "@/lib/supabase/queries";
+import { resolveActiveChild } from "@/lib/supabase/queries";
+import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
@@ -67,9 +68,20 @@ function ParentGateInner() {
       return;
     }
 
-    const child = await getOrCreateChild(supabase, user.id);
+    const resolution = await resolveActiveChild(
+      supabase,
+      user.id,
+      getActiveChildIdClient()
+    );
     setChecking(false);
 
+    if (resolution.needsSelection) {
+      router.push("/choose-child");
+      return;
+    }
+
+    const child = resolution.child!;
+    setActiveChildIdClient(child.id);
     // Skip onboarding if this child already picked an avatar/buddy before.
     if (child.avatar_id && child.buddy_id) {
       router.push("/kingdom-map");

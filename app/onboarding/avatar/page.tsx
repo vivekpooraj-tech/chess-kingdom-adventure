@@ -6,7 +6,8 @@ import { motion } from "framer-motion";
 import { AVATARS } from "@/content/avatars";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
-import { getOrCreateChild, updateChildAvatar } from "@/lib/supabase/queries";
+import { resolveActiveChild, updateChildAvatar } from "@/lib/supabase/queries";
+import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 
 export default function AvatarPickerPage() {
   const router = useRouter();
@@ -24,7 +25,13 @@ export default function AvatarPickerPage() {
         router.push("/sign-in");
         return;
       }
-      const child = await getOrCreateChild(supabase, user.id);
+      const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
+      if (resolution.needsSelection) {
+        router.push("/choose-child");
+        return;
+      }
+      const child = resolution.child!;
+      setActiveChildIdClient(child.id);
       setChildId(child.id);
       if (child.avatar_id) setSelected(child.avatar_id);
     }

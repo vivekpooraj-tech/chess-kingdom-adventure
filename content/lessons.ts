@@ -1,5 +1,12 @@
 import { Lesson } from "@/lib/types";
 
+/**
+ * Days 1 through this number are free; anything beyond requires
+ * parents.premium_status === 'premium'. Matches the "$29.99 one-time
+ * purchase, unlock everything forever" model from the PRD.
+ */
+export const FREE_DAY_LIMIT = 3;
+
 export const LESSONS: Lesson[] = [
   {
     dayNumber: 1,
@@ -155,6 +162,240 @@ export const LESSONS: Lesson[] = [
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
       { id: "s5", type: "mini_match", title: "Throne Room Duel" },
       { id: "s6", type: "reward", title: "King Crystal Recovered!" },
+    ],
+  },
+  {
+    dayNumber: 7,
+    crystal: "knight",
+    title: "The Knight's Fork Academy",
+    storyBeat:
+      "All six Crystals are found — but the Shadow King is stirring! The Knights want to teach you their sneakiest trick: forking two enemies at once.",
+    skillTags: ["knight_movement", "fork_pattern"],
+    minigameId: "knight-fork-execute",
+    puzzle: {
+      fen: "4k3/8/8/3N4/8/8/8/4K3 w - - 0 1",
+      prompt: "Find the fork — move the Knight to threaten two squares at once!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/2N5/8/PPPPPPPP/4K1N1 w - - 0 1",
+      prompt: "Make 3 good Knight or Pawn moves to practice your forks.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Knights' Secret Trick" },
+      { id: "s2", type: "minigame", title: "Fork the Targets" },
+      { id: "s3", type: "puzzle", title: "Find the Fork" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Fork Academy Duel" },
+      { id: "s6", type: "reward", title: "Fork Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 8,
+    crystal: "bishop",
+    title: "The Bishop's Pin Trial",
+    storyBeat:
+      "Deep in the archives, the Bishops guard a clever secret: pinning an enemy piece so it can't dare to move! Learn to spot the pin.",
+    skillTags: ["bishop_movement", "pin_pattern"],
+    minigameId: "bishop-pin-spot",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/5BK1 w - - 0 1",
+      prompt: "Move the Bishop along its diagonal to line up a pin!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/5BK1 w - - 0 1",
+      prompt: "Make 3 good Bishop or Pawn moves to practice pinning.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Archive's Secret" },
+      { id: "s2", type: "minigame", title: "Bishop's Pin Memory" },
+      { id: "s3", type: "puzzle", title: "Line Up the Pin" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Pin Trial Duel" },
+      { id: "s6", type: "reward", title: "Pin Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 9,
+    crystal: "rook",
+    title: "The Rook's Back-Rank Watch",
+    storyBeat:
+      "The Shadow King loves to sneak along the back rank! The Rooks are the Kingdom's best watchtowers — help them guard the last row.",
+    skillTags: ["rook_movement", "back_rank_mate"],
+    minigameId: "rook-back-rank",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/4KR2 w - - 0 1",
+      prompt: "Move the Rook to guard the back rank!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4KR2 w - - 0 1",
+      prompt: "Make 3 good Rook or Pawn moves to hold the watch.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "Shadows on the Back Rank" },
+      { id: "s2", type: "minigame", title: "Back-Rank Watch" },
+      { id: "s3", type: "puzzle", title: "Guard the Back Rank" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Watchtower Duel" },
+      { id: "s6", type: "reward", title: "Watch Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 10,
+    crystal: "queen",
+    title: "The Queen's Checkmate Finale",
+    storyBeat:
+      "This is it — the Shadow King is nearly defeated! Bring the Queen and King together for one final, glorious checkmate to end the shadow's reign.",
+    skillTags: ["queen_movement", "queen_king_mate"],
+    minigameId: "queen-mate-pattern",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",
+      prompt: "Move the Queen to close in for checkmate!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3QK3 w - - 0 1",
+      prompt: "Make 3 good Queen or Pawn moves for your final trial.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Final Stand" },
+      { id: "s2", type: "minigame", title: "Deliver Checkmate" },
+      { id: "s3", type: "puzzle", title: "Close In for Mate" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Final Duel" },
+      { id: "s6", type: "reward", title: "Champion of the Kingdom!" },
+    ],
+  },
+  {
+    dayNumber: 11,
+    crystal: "pawn",
+    title: "The Opening Gambit Garden",
+    storyBeat:
+      "Welcome to the Intermediate Kingdom! In this new garden, the wisest Pawns teach the first rule of every great game: control the center of the board early.",
+    skillTags: ["pawn_movement", "opening_principles"],
+    minigameId: "pawn-double-step",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1",
+      prompt: "Push your Pawn forward to claim the center!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good opening moves to control the center.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "Welcome to the Intermediate Kingdom" },
+      { id: "s2", type: "minigame", title: "Claim the Center" },
+      { id: "s3", type: "puzzle", title: "Push for the Center" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Opening Garden Duel" },
+      { id: "s6", type: "reward", title: "Opening Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 12,
+    crystal: "knight",
+    title: "The Knight's Secret Outpost",
+    storyBeat:
+      "Deep in the woods, the wisest old Knight guards a secret: a strong square deep in enemy territory where no Pawn can ever chase you away.",
+    skillTags: ["knight_movement", "knight_outpost"],
+    minigameId: "knight-outpost",
+    puzzle: {
+      fen: "4k3/8/8/3N4/8/8/8/4K3 w - - 0 1",
+      prompt: "Move the Knight to find its strongest outpost!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/5N2/PPPPPPPP/4K1N1 w - - 0 1",
+      prompt: "Make 3 good Knight or Pawn moves to reach the outpost.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Old Knight's Secret" },
+      { id: "s2", type: "minigame", title: "Find the Outpost" },
+      { id: "s3", type: "puzzle", title: "Settle the Outpost" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Outpost Duel" },
+      { id: "s6", type: "reward", title: "Outpost Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 13,
+    crystal: "bishop",
+    title: "The Twin Bishops' Gallery",
+    storyBeat:
+      "In the Gallery of Light, two Bishops stand together — one for the light squares, one for the dark. Together, they see the whole board at once!",
+    skillTags: ["bishop_movement", "bishop_pair"],
+    minigameId: "bishop-pair",
+    puzzle: {
+      fen: "4k3/8/8/1B4B1/8/8/8/4K3 w - - 0 1",
+      prompt: "Move either Bishop to show off the pair's power!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/1B4B1/8/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good Bishop or Pawn moves with your twin Bishops.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Gallery of Light" },
+      { id: "s2", type: "minigame", title: "Twin Bishops' Reflexes" },
+      { id: "s3", type: "puzzle", title: "Show the Pair's Power" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Gallery Duel" },
+      { id: "s6", type: "reward", title: "Bishop Pair Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 14,
+    crystal: "rook",
+    title: "The Open File Expressway",
+    storyBeat:
+      "A brand-new road has opened through the Kingdom — a file with no Pawns blocking the way! The Rooks love nothing more than a wide-open road.",
+    skillTags: ["rook_movement", "open_file"],
+    minigameId: "rook-open-file",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/4KR2 w - - 0 1",
+      prompt: "Slide the Rook down the open road!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3RK3 w - - 0 1",
+      prompt: "Make 3 good Rook or Pawn moves down the open file.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Road Opens" },
+      { id: "s2", type: "minigame", title: "Race the Open File" },
+      { id: "s3", type: "puzzle", title: "Take the Open Road" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Expressway Duel" },
+      { id: "s6", type: "reward", title: "Open File Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 15,
+    crystal: "king",
+    title: "The Promotion Road's End",
+    storyBeat:
+      "One brave little Pawn has marched the whole way across the Kingdom! With your King's help nearby, it's about to become something amazing.",
+    skillTags: ["promotion", "basic_endgames"],
+    minigameId: "mixed-endgame-maze",
+    puzzle: {
+      fen: "4k3/8/4P3/8/8/8/8/4K3 w - - 0 1",
+      prompt: "March the Pawn closer to promotion!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good King or Pawn moves to escort your Pawn home.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "One Pawn's Long Journey" },
+      { id: "s2", type: "minigame", title: "Remember the Promotion Path" },
+      { id: "s3", type: "puzzle", title: "March Toward Promotion" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Promotion Road Duel" },
+      { id: "s6", type: "reward", title: "Promotion Badge Earned!" },
     ],
   },
 ];

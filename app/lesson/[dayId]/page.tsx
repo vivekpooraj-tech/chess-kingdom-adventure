@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { getLesson } from "@/content/lessons";
+import { getLesson, FREE_DAY_LIMIT } from "@/content/lessons";
 import { getMinigameConfigForDay } from "@/content/minigame-configs";
 import { BUDDIES } from "@/content/buddies";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +16,9 @@ import { MemoryFlip } from "@/components/minigames/engines/MemoryFlip";
 import { TimedReaction } from "@/components/minigames/engines/TimedReaction";
 import { ConfettiBurst } from "@/components/rewards/ConfettiBurst";
 import { createClient } from "@/lib/supabase/client";
-import { getOrCreateChild, markLessonComplete } from "@/lib/supabase/queries";
+import { resolveActiveChild, markLessonComplete } from "@/lib/supabase/queries";
+import { getActiveChildIdClient } from "@/lib/childSession";
+import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 
 export default function LessonPage() {
   const params = useParams<{ dayId: string }>();
@@ -37,10 +39,31 @@ export default function LessonPage() {
         router.push("/sign-in");
         return;
       }
-      const child = await getOrCreateChild(supabase, user.id);
+      const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
+      if (resolution.needsSelection) {
+        router.push("/choose-child");
+        return;
+      }
+      const child = resolution.child!;
       setChildId(child.id);
       const matchedBuddy = BUDDIES.find((b) => b.id === child.buddy_id);
       if (matchedBuddy) setBuddy(matchedBuddy);
+
+      // Defense in depth: the Kingdom Map already hides/redirects premium
+      // days for free accounts, but someone could still type a lesson URL
+      // directly (e.g. /lesson/4) — check again here before showing content.
+      const dayNumber = Number(params.dayId);
+      if (dayNumber > FREE_DAY_LIMIT) {
+        const { data: parent } = await supabase
+          .from("parents")
+          .select("premium_status")
+          .eq("auth_user_id", user.id)
+          .single();
+        if (parent?.premium_status !== "premium") {
+          router.push("/kingdom-map");
+          return;
+        }
+      }
     }
     load();
   }, [router]);
@@ -51,6 +74,11 @@ export default function LessonPage() {
         <p className="font-display text-xl">This part of the Kingdom is still being built!</p>
       </main>
     );
+  }
+
+  if (!childId) {
+    // Still loading the child profile / premium check from the effect above.
+    return <main className="min-h-screen" />;
   }
 
   const step = lesson.steps[stepIndex];
@@ -65,64 +93,66 @@ export default function LessonPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6 py-10">
-      {/* Progress dots */}
-      <div className="flex gap-2">
-        {lesson.steps.map((s, i) => (
-          <div
-            key={s.id}
-            className={`w-3 h-3 rounded-full ${
-              i <= stepIndex ? "bg-kingdom-gold" : "bg-kingdom-night/15"
-            }`}
-          />
-        ))}
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={step.id}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -16 }}
-          transition={{ duration: 0.3 }}
-          className="w-full max-w-lg flex flex-col items-center gap-6"
-        >
-          {step.type === "story" && (
-            <StoryStep title={lesson.title} storyBeat={lesson.storyBeat} buddy={buddy} onNext={next} />
-          )}
-
-          {step.type === "minigame" && (
-            <MinigameStep dayNumber={lesson.dayNumber} onComplete={next} />
-          )}
-
-          {step.type === "puzzle" && (
-            <PuzzleStep fen={lesson.puzzle.fen} prompt={lesson.puzzle.prompt} onNext={next} />
-          )}
-
-          {step.type === "ai_chat" && (
-            <BuddyChat
-              buddyEmoji={buddy.emoji}
-              buddyName={buddy.name}
-              greeting={buddy.greeting || "Great job so far! Got any questions for me?"}
-              onDone={next}
+    <ScreenTimeGate childId={childId}>
+      <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6 py-10">
+        {/* Progress dots */}
+        <div className="flex gap-2">
+          {lesson.steps.map((s, i) => (
+            <div
+              key={s.id}
+              className={`w-3 h-3 rounded-full ${
+                i <= stepIndex ? "bg-kingdom-gold" : "bg-kingdom-night/15"
+              }`}
             />
-          )}
+          ))}
+        </div>
 
-          {step.type === "mini_match" && (
-            <MiniMatchStep
-              fen={lesson.miniMatch.fen}
-              prompt={lesson.miniMatch.prompt}
-              movesRequired={lesson.miniMatch.movesRequired}
-              onNext={next}
-            />
-          )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step.id}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.3 }}
+            className="w-full max-w-lg flex flex-col items-center gap-6"
+          >
+            {step.type === "story" && (
+              <StoryStep title={lesson.title} storyBeat={lesson.storyBeat} buddy={buddy} onNext={next} />
+            )}
 
-          {step.type === "reward" && (
-            <RewardStep crystal={lesson.crystal} onFinish={finishLesson} />
-          )}
-        </motion.div>
-      </AnimatePresence>
-    </main>
+            {step.type === "minigame" && (
+              <MinigameStep dayNumber={lesson.dayNumber} onComplete={next} />
+            )}
+
+            {step.type === "puzzle" && (
+              <PuzzleStep fen={lesson.puzzle.fen} prompt={lesson.puzzle.prompt} onNext={next} />
+            )}
+
+            {step.type === "ai_chat" && (
+              <BuddyChat
+                buddyEmoji={buddy.emoji}
+                buddyName={buddy.name}
+                greeting={buddy.greeting || "Great job so far! Got any questions for me?"}
+                onDone={next}
+              />
+            )}
+
+            {step.type === "mini_match" && (
+              <MiniMatchStep
+                fen={lesson.miniMatch.fen}
+                prompt={lesson.miniMatch.prompt}
+                movesRequired={lesson.miniMatch.movesRequired}
+                onNext={next}
+              />
+            )}
+
+            {step.type === "reward" && (
+              <RewardStep title={step.title} onFinish={finishLesson} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+    </ScreenTimeGate>
   );
 }
 
@@ -258,7 +288,7 @@ function MiniMatchStep({
   );
 }
 
-function RewardStep({ crystal, onFinish }: { crystal: string; onFinish: () => void }) {
+function RewardStep({ title, onFinish }: { title: string; onFinish: () => void }) {
   return (
     <Card className="flex flex-col items-center gap-5 text-center relative overflow-hidden">
       <ConfettiBurst />
@@ -270,9 +300,7 @@ function RewardStep({ crystal, onFinish }: { crystal: string; onFinish: () => vo
       >
         💎
       </motion.div>
-      <h2 className="font-display text-2xl text-kingdom-night capitalize">
-        {crystal} Crystal Recovered!
-      </h2>
+      <h2 className="font-display text-2xl text-kingdom-night capitalize">{title}</h2>
       <p className="font-body text-kingdom-night/70">
         Great work! +50 coins, +1 Castle Brick
       </p>
