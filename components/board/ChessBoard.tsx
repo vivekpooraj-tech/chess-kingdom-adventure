@@ -6,23 +6,19 @@ import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 import { stockfish } from "@/lib/chess-engine/stockfishEngine";
 
-// One glyph shape per piece type, used for BOTH colors — CSS color/stroke
-// (applied at render time) does 100% of the white/black distinction. Mixing
-// Unicode's own hollow-outline (white) and solid-filled (black) glyph
-// variants with our own CSS coloring produced inconsistent, muddy results
-// across fonts (the hollow glyphs' thin painted strokes barely show through
-// a heavier CSS outline stroke) — one shared shape avoids that entirely.
-const PIECE_GLYPH: Record<PieceSymbol, string> = {
-  p: "♟",
-  n: "♞",
-  b: "♝",
-  r: "♜",
-  q: "♛",
-  k: "♚",
-};
-
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
+
+// Maps chess.js's piece/color codes to the uploaded character asset pack's
+// file names — public/pieces/{light,dark}/{name}.svg.
+const PIECE_FILE_NAME: Record<PieceSymbol, string> = {
+  p: "pawn",
+  n: "knight",
+  b: "bishop",
+  r: "rook",
+  q: "queen",
+  k: "king",
+};
 
 export interface ChessBoardProps {
   /** Starting position; defaults to the standard game start. */
@@ -211,29 +207,18 @@ export function ChessBoard({
                       initial={{ scale: 0.6, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.6, opacity: 0 }}
-                      className={clsx(
-                        // A solid colored disc behind the glyph — like a real
-                        // chess set's light/dark plastic piece bodies. This
-                        // replaces relying on CSS text-stroke, which doesn't
-                        // render consistently across browsers/fonts and left
-                        // pieces looking muddy or indistinguishable. A flat
-                        // background color can't render ambiguously.
-                        "rounded-full flex items-center justify-center shadow-sm",
-                        piece.color === "w"
-                          ? "bg-white border-2 border-kingdom-night/70"
-                          : "bg-kingdom-night border-2 border-white/70"
-                      )}
-                      style={{ width: "82%", height: "82%" }}
+                      className="flex items-center justify-center drop-shadow-sm"
+                      style={{ width: "88%", height: "88%" }}
                     >
-                      <span
-                        style={{
-                          color: piece.color === "w" ? "#241E4E" : "#FFFFFF",
-                          fontSize: squareSize * 0.5,
-                          lineHeight: 1,
-                        }}
-                      >
-                        {PIECE_GLYPH[piece.type]}
-                      </span>
+                      <img
+                        src={`/pieces/${piece.color === "w" ? "light" : "dark"}/${
+                          PIECE_FILE_NAME[piece.type]
+                        }.svg`}
+                        alt={`${piece.color === "w" ? "light" : "dark"} ${piece.type}`}
+                        width={squareSize * 0.88}
+                        height={squareSize * 0.88}
+                        draggable={false}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>

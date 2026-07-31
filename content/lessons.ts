@@ -528,6 +528,266 @@ export const LESSONS: Lesson[] = [
       { id: "s6", type: "reward", title: "Tournament Badge Earned!" },
     ],
   },
+  {
+    dayNumber: 21,
+    crystal: "king",
+    title: "The King and Rook's Endgame Dance",
+    storyBeat:
+      "In the Advanced Kingdom, the King and Rook learn a famous dance together — the classic technique for cornering a lone enemy King.",
+    skillTags: ["king_movement", "back_rank_mate"],
+    minigameId: "king-safety-walk",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",
+      prompt: "Move your King or Rook to begin the endgame dance!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/R3K3 w - - 0 1",
+      prompt: "Make 3 good King, Rook, or Pawn moves in the dance.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "Welcome to the Advanced Kingdom" },
+      { id: "s2", type: "minigame", title: "Step Toward Safety" },
+      { id: "s3", type: "puzzle", title: "Begin the Dance" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Endgame Dance Duel" },
+      { id: "s6", type: "reward", title: "Endgame Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 22,
+    crystal: "pawn",
+    title: "The Linked Pawn Chain",
+    storyBeat:
+      "Pawns are strongest when they hold hands! A chain of Pawns, each guarding the next, is nearly impossible for the enemy to break through.",
+    skillTags: ["pawn_movement", "pawn_structure"],
+    minigameId: "pawn-wall",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/3PP3/4K3 w - - 0 1",
+      prompt: "Move a Pawn to strengthen the chain!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good Pawn or King moves to build your chain.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "Pawns Hold Hands" },
+      { id: "s2", type: "minigame", title: "Remember the Chain" },
+      { id: "s3", type: "puzzle", title: "Link the Chain" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Chain Duel" },
+      { id: "s6", type: "reward", title: "Pawn Chain Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 23,
+    crystal: "knight",
+    title: "Knight versus Bishop",
+    storyBeat:
+      "An old rivalry! The Knight jumps in tricky patterns, while the Bishop glides in straight lines. Which minor piece fits a position best?",
+    skillTags: ["knight_movement", "bishop_movement"],
+    minigameId: "knight-vs-time",
+    puzzle: {
+      fen: "4k3/8/8/6B1/3N4/8/8/4K3 w - - 0 1",
+      prompt: "Move either the Knight or the Bishop into action!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/6B1/3N4/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good Knight, Bishop, or Pawn moves in the rivalry.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Old Rivalry" },
+      { id: "s2", type: "minigame", title: "Knight vs Bishop Reflexes" },
+      { id: "s3", type: "puzzle", title: "Choose Your Champion" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Rivalry Duel" },
+      { id: "s6", type: "reward", title: "Minor Piece Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 24,
+    crystal: "bishop",
+    title: "The Long Diagonal Watchtower",
+    storyBeat:
+      "From its home square, the Bishop can see clear across the whole Kingdom along one long diagonal — the perfect watchtower for spotting danger.",
+    skillTags: ["bishop_movement"],
+    minigameId: "bishop-maze",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/4K1B1 w - - 0 1",
+      prompt: "Move the Bishop to see clear across the board!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K1B1 w - - 0 1",
+      prompt: "Make 3 good Bishop or Pawn moves from the watchtower.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Watchtower's View" },
+      { id: "s2", type: "minigame", title: "Spot the Long Diagonal" },
+      { id: "s3", type: "puzzle", title: "Take the Watchtower" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Watchtower Duel" },
+      { id: "s6", type: "reward", title: "Long Diagonal Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 25,
+    crystal: "rook",
+    title: "The Rook's Grand Patrol",
+    storyBeat:
+      "Halfway through the Advanced Kingdom! An active Rook, patrolling boldly in the open, is worth far more than one hiding at home.",
+    skillTags: ["rook_movement", "open_file"],
+    minigameId: "rook-open-file",
+    puzzle: {
+      fen: "4k3/8/8/8/3R4/8/8/4K3 w - - 0 1",
+      prompt: "Send the Rook out on a bold patrol!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/3R4/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good Rook or Pawn moves on patrol.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "Halfway Through the Advanced Kingdom" },
+      { id: "s2", type: "minigame", title: "Remember the Patrol Route" },
+      { id: "s3", type: "puzzle", title: "Send the Rook Out" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Patrol Duel" },
+      { id: "s6", type: "reward", title: "Grand Patrol Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 26,
+    crystal: "queen",
+    title: "The Queen's Daring Strike",
+    storyBeat:
+      "Sometimes the boldest Queens make the biggest impact by charging right into the action — as long as she's careful not to get trapped!",
+    skillTags: ["queen_movement", "queen_safety"],
+    minigameId: "queen-fork",
+    puzzle: {
+      fen: "4k3/8/8/8/3Q4/8/8/4K3 w - - 0 1",
+      prompt: "Move the Queen boldly into the action!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/3Q4/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good Queen or Pawn moves on your daring strike.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Bold Charge" },
+      { id: "s2", type: "minigame", title: "Queen's Quick Strike" },
+      { id: "s3", type: "puzzle", title: "Charge In Carefully" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Daring Strike Duel" },
+      { id: "s6", type: "reward", title: "Daring Strike Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 27,
+    crystal: "king",
+    title: "The Brave Endgame King",
+    storyBeat:
+      "A surprising secret: once most pieces have left the board, the King becomes brave! In the endgame, your King should march forward and help.",
+    skillTags: ["king_movement", "king_safety"],
+    minigameId: "king-safety-maze",
+    puzzle: {
+      fen: "4k3/8/8/8/4K3/8/8/8 w - - 0 1",
+      prompt: "March your brave King forward into the endgame!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/4K3/8/PPPPPPPP/8 w - - 0 1",
+      prompt: "Make 3 good King or Pawn moves with your brave King.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The King's Surprising Secret" },
+      { id: "s2", type: "minigame", title: "March the Brave King" },
+      { id: "s3", type: "puzzle", title: "Lead from the Front" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Brave King Duel" },
+      { id: "s6", type: "reward", title: "Brave King Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 28,
+    crystal: "pawn",
+    title: "The Pawn Majority's March",
+    storyBeat:
+      "When you have more Pawns on one side of the board than your rival, that's a 'majority' — and a whole army ready to march together!",
+    skillTags: ["pawn_movement", "pawn_structure"],
+    minigameId: "pawn-structure",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/4PPP1/4K3 w - - 0 1",
+      prompt: "March your Pawn majority forward together!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good Pawn or King moves in the march.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Majority Assembles" },
+      { id: "s2", type: "minigame", title: "Remember the Marching Order" },
+      { id: "s3", type: "puzzle", title: "Begin the March" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Majority Duel" },
+      { id: "s6", type: "reward", title: "Pawn Majority Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 29,
+    crystal: "knight",
+    title: "The Knight's Final Blockade",
+    storyBeat:
+      "One last lesson before the final battle: a well-placed Knight can single-handedly stop an enemy Pawn dead in its tracks. This is called a blockade.",
+    skillTags: ["knight_movement", "basic_endgames"],
+    minigameId: "knight-tour",
+    puzzle: {
+      fen: "4k3/8/8/3N4/8/8/8/4K3 w - - 0 1",
+      prompt: "Move the Knight into its blockading square!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/3N4/8/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good Knight or Pawn moves to hold the blockade.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "One Last Lesson" },
+      { id: "s2", type: "minigame", title: "Blockade Reflexes" },
+      { id: "s3", type: "puzzle", title: "Hold the Blockade" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Blockade Duel" },
+      { id: "s6", type: "reward", title: "Blockade Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 30,
+    crystal: "king",
+    title: "The Shadow King's Final Battle",
+    storyBeat:
+      "This is it — the moment the whole Kingdom has waited for! Every piece takes its true starting place for one real, complete game. Face the Shadow King and finish your journey as a true Chess Champion!",
+    skillTags: ["tactics_mixed", "basic_endgames"],
+    minigameId: "mixed-boss-prep",
+    puzzle: {
+      fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      prompt: "The full royal army stands ready — make your very first move!",
+    },
+    miniMatch: {
+      fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      prompt: "Play 3 real opening moves against the Shadow King himself!",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Whole Kingdom Watches" },
+      { id: "s2", type: "minigame", title: "The Shadow King's Final Trial" },
+      { id: "s3", type: "puzzle", title: "Make Your First Move" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "The Final Battle" },
+      { id: "s6", type: "reward", title: "Champion of Chess Kingdom Adventure!" },
+    ],
+  },
 ];
 
 export function getLesson(dayNumber: number): Lesson | undefined {

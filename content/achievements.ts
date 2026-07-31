@@ -138,6 +138,20 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     emoji: "🏅",
     criteria: { type: "complete_day", day: 20 },
   },
+  {
+    key: "advanced_graduate",
+    title: "Advanced Kingdom Graduate",
+    description: "Completed Day 25 — halfway through the Advanced Kingdom!",
+    emoji: "📯",
+    criteria: { type: "complete_day", day: 25 },
+  },
+  {
+    key: "kingdom_champion",
+    title: "Champion of Chess Kingdom Adventure",
+    description: "Completed all 30 days and defeated the Shadow King!",
+    emoji: "👑",
+    criteria: { type: "complete_day", day: 30 },
+  },
 ];
 
 export function getAchievement(key: string): AchievementDef | undefined {
