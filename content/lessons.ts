@@ -398,6 +398,136 @@ export const LESSONS: Lesson[] = [
       { id: "s6", type: "reward", title: "Promotion Badge Earned!" },
     ],
   },
+  {
+    dayNumber: 16,
+    crystal: "pawn",
+    title: "The Passed Pawn's Sprint",
+    storyBeat:
+      "This lone Pawn has no enemy Pawns left to stop it! When a Pawn breaks free like this, the Kingdom calls it a 'passed pawn' — and it's a race to the finish!",
+    skillTags: ["pawn_movement", "pawn_structure"],
+    minigameId: "pawn-race",
+    puzzle: {
+      fen: "4k3/8/P7/8/8/8/8/4K3 w - - 0 1",
+      prompt: "Sprint the passed Pawn down the open lane!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good Pawn or King moves in the sprint.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Pawn Breaks Free" },
+      { id: "s2", type: "minigame", title: "Sprint the Pawn" },
+      { id: "s3", type: "puzzle", title: "Race to the Finish" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Sprint Duel" },
+      { id: "s6", type: "reward", title: "Passed Pawn Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 17,
+    crystal: "knight",
+    title: "The Knight's Hidden Ambush",
+    storyBeat:
+      "Sneaky! When the Knight steps aside, it can reveal a surprise attack from the piece hiding right behind it. The Kingdom calls this a 'discovered attack.'",
+    skillTags: ["knight_movement", "tactics_mixed"],
+    minigameId: "knight-fork-spot",
+    puzzle: {
+      fen: "4k3/8/8/3N4/8/8/8/3RK3 w - - 0 1",
+      prompt: "Move the Knight aside to reveal the hidden ambush!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/3N4/8/PPPPPPPP/3RK3 w - - 0 1",
+      prompt: "Make 3 good Knight or Pawn moves to set up the ambush.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "Something's Hiding Behind the Knight" },
+      { id: "s2", type: "minigame", title: "Remember the Ambush" },
+      { id: "s3", type: "puzzle", title: "Spring the Ambush" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Ambush Duel" },
+      { id: "s6", type: "reward", title: "Ambush Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 18,
+    crystal: "bishop",
+    title: "The Bishop's Long Skewer",
+    storyBeat:
+      "The Bishop has learned a dazzling trick: lining up two enemies on the very same diagonal, so moving one exposes the other! This is called a 'skewer.'",
+    skillTags: ["bishop_movement", "pin_pattern"],
+    minigameId: "bishop-pin-execute",
+    puzzle: {
+      fen: "4k3/8/8/8/2B5/8/8/4K3 w - - 0 1",
+      prompt: "Line up the Bishop's diagonal for a skewer!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/2B5/8/PPPPPPPP/4K3 w - - 0 1",
+      prompt: "Make 3 good Bishop or Pawn moves to practice your skewer.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Dazzling Diagonal Trick" },
+      { id: "s2", type: "minigame", title: "Skewer Reflexes" },
+      { id: "s3", type: "puzzle", title: "Line Up the Skewer" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Skewer Duel" },
+      { id: "s6", type: "reward", title: "Skewer Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 19,
+    crystal: "rook",
+    title: "The Doubled Rooks' Tower",
+    storyBeat:
+      "Two Rooks stacked on the very same file are twice as strong! The Kingdom's engineers call this the 'doubled rooks' — an unstoppable tower of power.",
+    skillTags: ["rook_movement", "rook_doubling"],
+    minigameId: "rook-doubling",
+    puzzle: {
+      fen: "4k3/8/8/3R4/8/8/8/3RK3 w - - 0 1",
+      prompt: "Move a Rook to stack the tower on one file!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/3R4/8/8/PPPPPPPP/3RK3 w - - 0 1",
+      prompt: "Make 3 good Rook or Pawn moves to build your tower.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Engineers' Secret" },
+      { id: "s2", type: "minigame", title: "Stack the Tower" },
+      { id: "s3", type: "puzzle", title: "Double the Rooks" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Tower Duel" },
+      { id: "s6", type: "reward", title: "Doubled Rooks Badge Earned!" },
+    ],
+  },
+  {
+    dayNumber: 20,
+    crystal: "queen",
+    title: "The Tournament Trial",
+    storyBeat:
+      "You've learned so much! The Kingdom's grandest hall now hosts your very first Tournament Trial — bring everything you've learned together with your powerful Queen.",
+    skillTags: ["queen_movement", "tactics_mixed"],
+    minigameId: "queen-power-sweep",
+    puzzle: {
+      fen: "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",
+      prompt: "Sweep the Queen across the board for the Trial!",
+    },
+    miniMatch: {
+      fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3QK3 w - - 0 1",
+      prompt: "Make 3 good Queen or Pawn moves to win your Trial.",
+      movesRequired: 3,
+    },
+    steps: [
+      { id: "s1", type: "story", title: "The Grand Hall Awaits" },
+      { id: "s2", type: "minigame", title: "Tournament Reflexes" },
+      { id: "s3", type: "puzzle", title: "Open the Trial" },
+      { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
+      { id: "s5", type: "mini_match", title: "Trial Duel" },
+      { id: "s6", type: "reward", title: "Tournament Badge Earned!" },
+    ],
+  },
 ];
 
 export function getLesson(dayNumber: number): Lesson | undefined {

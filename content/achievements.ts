@@ -124,6 +124,20 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     emoji: "🎓",
     criteria: { type: "complete_day", day: 15 },
   },
+  {
+    key: "twenty_lessons",
+    title: "Twenty Lessons Strong",
+    description: "Completed 20 lessons total!",
+    emoji: "🥇",
+    criteria: { type: "complete_count", count: 20 },
+  },
+  {
+    key: "tournament_trial",
+    title: "Tournament Trial Winner",
+    description: "Completed Day 20 — your first Tournament Trial!",
+    emoji: "🏅",
+    criteria: { type: "complete_day", day: 20 },
+  },
 ];
 
 export function getAchievement(key: string): AchievementDef | undefined {

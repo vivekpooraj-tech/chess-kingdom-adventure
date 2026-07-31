@@ -272,6 +272,87 @@ export const DAY_MINIGAME_CONFIGS: DayMinigameConfig[] = [
       ],
     },
   },
+  {
+    dayNumber: 16,
+    catalogId: "pawn-race",
+    engine: "drag_to_target",
+    content: {
+      prompt: "Race the passed Pawn all the way down the board!",
+      pieceGlyph: "♙",
+      rows: 1,
+      cols: 5,
+      start: { row: 0, col: 0 },
+      grid: [
+        { row: 0, col: 0, correct: false },
+        { row: 0, col: 1, correct: false },
+        { row: 0, col: 2, correct: false },
+        { row: 0, col: 3, correct: false },
+        { row: 0, col: 4, correct: true },
+      ],
+    },
+  },
+  {
+    dayNumber: 17,
+    catalogId: "knight-fork-spot",
+    engine: "memory_flip",
+    content: {
+      prompt: "Remember what's hiding behind the Knight!",
+      pairs: [
+        { id: "n1", glyph: "♞" },
+        { id: "r1", glyph: "♜" },
+        { id: "k1", glyph: "♚" },
+        { id: "p1", glyph: "♟" },
+      ],
+    },
+  },
+  {
+    dayNumber: 18,
+    catalogId: "bishop-pin-execute",
+    engine: "timed_reaction",
+    content: {
+      prompt: "Tap the glowing square before the skewer's light fades!",
+      pieceGlyph: "♗",
+      rows: 3,
+      cols: 4,
+      rounds: 3,
+      roundTimeMs: 3500,
+    },
+  },
+  {
+    dayNumber: 19,
+    catalogId: "rook-doubling",
+    engine: "drag_to_target",
+    content: {
+      prompt: "Tap the square to double up your Rooks on the file!",
+      pieceGlyph: "♖",
+      rows: 2,
+      cols: 4,
+      start: { row: 1, col: 0 },
+      grid: [
+        { row: 0, col: 0, correct: false },
+        { row: 0, col: 1, correct: true },
+        { row: 0, col: 2, correct: false },
+        { row: 0, col: 3, correct: false },
+        { row: 1, col: 0, correct: false },
+        { row: 1, col: 1, correct: false },
+        { row: 1, col: 2, correct: false },
+        { row: 1, col: 3, correct: false },
+      ],
+    },
+  },
+  {
+    dayNumber: 20,
+    catalogId: "queen-power-sweep",
+    engine: "timed_reaction",
+    content: {
+      prompt: "Tournament Trial! Tap the glowing square before time runs out!",
+      pieceGlyph: "♕",
+      rows: 3,
+      cols: 4,
+      rounds: 4,
+      roundTimeMs: 3200,
+    },
+  },
 ];
 
 export function getMinigameConfigForDay(dayNumber: number): DayMinigameConfig | undefined {
