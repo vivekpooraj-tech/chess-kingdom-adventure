@@ -261,6 +261,7 @@ function PuzzleStep({
 }) {
   const [moved, setMoved] = useState(false);
   const [wasCorrect, setWasCorrect] = useState(false);
+  const [checkmated, setCheckmated] = useState(false);
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [boardKey, setBoardKey] = useState(0);
 
@@ -287,6 +288,7 @@ function PuzzleStep({
     setBoardKey((k) => k + 1);
     setAttemptNumber((n) => n + 1);
     setMoved(false);
+    setCheckmated(false);
   }
 
   return (
@@ -299,11 +301,19 @@ function PuzzleStep({
         opponent="stockfish"
         size={360}
         onMove={(opts) => handleMove(opts.piece)}
+        onGameOver={(result) => {
+          if (result.isCheckmate && result.winner === "w") {
+            setCheckmated(true);
+          }
+        }}
       />
-      {moved && wasCorrect && (
+      {checkmated && (
+        <p className="font-display text-lg text-kingdom-gold">Checkmate! Incredible! 👑</p>
+      )}
+      {!checkmated && moved && wasCorrect && (
         <p className="font-display text-lg text-kingdom-forest">Wonderful! Well done!</p>
       )}
-      {moved && !wasCorrect && (
+      {!checkmated && moved && !wasCorrect && (
         <div className="flex flex-col items-center gap-2">
           <p className="font-display text-lg text-kingdom-coral">
             Nice move! Next time, try moving the piece from today's lesson.
@@ -332,6 +342,7 @@ function MiniMatchStep({
   onNext: () => void;
 }) {
   const [moveCount, setMoveCount] = useState(0);
+  const [checkmated, setCheckmated] = useState(false);
 
   return (
     <Card className="flex flex-col items-center gap-5">
@@ -342,11 +353,20 @@ function MiniMatchStep({
         opponent="stockfish"
         size={360}
         onMove={() => setMoveCount((c) => c + 1)}
+        onGameOver={(result) => {
+          if (result.isCheckmate && result.winner === "w") {
+            setCheckmated(true);
+          }
+        }}
       />
-      <p className="font-body text-kingdom-night/60">
-        {Math.min(moveCount, movesRequired)}/{movesRequired} moves
-      </p>
-      <Button disabled={moveCount < movesRequired} onClick={onNext}>
+      {checkmated ? (
+        <p className="font-display text-lg text-kingdom-gold">Checkmate! Incredible! 👑</p>
+      ) : (
+        <p className="font-body text-kingdom-night/60">
+          {Math.min(moveCount, movesRequired)}/{movesRequired} moves
+        </p>
+      )}
+      <Button disabled={!checkmated && moveCount < movesRequired} onClick={onNext}>
         Finish the Duel →
       </Button>
     </Card>
