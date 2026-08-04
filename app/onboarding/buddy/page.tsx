@@ -44,7 +44,7 @@ export default function BuddyPickerPage() {
     const supabase = createClient();
     await updateChildBuddy(supabase, childId, selected);
     setSaving(false);
-    router.push("/kingdom-map");
+    router.push("/onboarding/board");
   }
 
   return (

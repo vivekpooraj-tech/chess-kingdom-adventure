@@ -24,6 +24,7 @@ export default function OnlineGamePage() {
   const params = useParams<{ gameId: string }>();
   const router = useRouter();
   const [childId, setChildId] = useState<string | null>(null);
+  const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [game, setGame] = useState<OnlineGame | null | "loading">("loading");
   const supabaseRef = useRef(createClient());
 
@@ -48,6 +49,7 @@ export default function OnlineGamePage() {
       }
       if (cancelled) return;
       setChildId(resolution.child!.id);
+      setBoardSkinId(resolution.child!.board_skin_id);
 
       const initial = await getOnlineGame(supabase, params.gameId);
       if (cancelled) return;
@@ -216,6 +218,7 @@ export default function OnlineGamePage() {
           fen={game.fen}
           playableColor={myColor}
           size={380}
+          boardSkinId={boardSkinId}
           onMove={(opts) => handleMove(opts.fen)}
           onGameOver={handleGameOver}
         />

@@ -91,6 +91,19 @@ export default async function KingdomMapPage() {
           <InviteFriendButton />
         </div>
 
+        <Link
+          href="/kingdom-map/board-skin"
+          className="flex items-center gap-4 rounded-card bg-white/85 shadow-toy p-5 w-full max-w-md"
+        >
+          <span className="text-4xl">🎨</span>
+          <div>
+            <p className="font-display text-lg text-kingdom-night">Change Board</p>
+            <p className="font-body text-sm text-kingdom-night/70">
+              Pick a new look for your chess board
+            </p>
+          </div>
+        </Link>
+
         <AchievementBadges earnedKeys={earnedKeys} />
 
         <Link

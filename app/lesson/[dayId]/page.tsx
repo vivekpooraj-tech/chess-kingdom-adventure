@@ -33,6 +33,7 @@ export default function LessonPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [childId, setChildId] = useState<string | null>(null);
   const [buddy, setBuddy] = useState(BUDDIES[0]);
+  const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     async function load() {
@@ -51,6 +52,7 @@ export default function LessonPage() {
       }
       const child = resolution.child!;
       setChildId(child.id);
+      setBoardSkinId(child.board_skin_id);
       const matchedBuddy = BUDDIES.find((b) => b.id === child.buddy_id);
       if (matchedBuddy) setBuddy(matchedBuddy);
 
@@ -136,6 +138,7 @@ export default function LessonPage() {
                 acceptedPieceTypes={lesson.puzzle.acceptedPieceTypes}
                 dayNumber={lesson.dayNumber}
                 childId={childId}
+                boardSkinId={boardSkinId}
                 onNext={next}
               />
             )}
@@ -154,6 +157,7 @@ export default function LessonPage() {
                 fen={lesson.miniMatch.fen}
                 prompt={lesson.miniMatch.prompt}
                 movesRequired={lesson.miniMatch.movesRequired}
+                boardSkinId={boardSkinId}
                 onNext={next}
               />
             )}
@@ -250,6 +254,7 @@ function PuzzleStep({
   acceptedPieceTypes,
   dayNumber,
   childId,
+  boardSkinId,
   onNext,
 }: {
   fen: string;
@@ -257,6 +262,7 @@ function PuzzleStep({
   acceptedPieceTypes: PieceSymbol[] | "any";
   dayNumber: number;
   childId: string;
+  boardSkinId?: string;
   onNext: () => void;
 }) {
   const [moved, setMoved] = useState(false);
@@ -300,6 +306,7 @@ function PuzzleStep({
         playableColor="w"
         opponent="stockfish"
         size={360}
+        boardSkinId={boardSkinId}
         onMove={(opts) => handleMove(opts.piece)}
         onGameOver={(result) => {
           if (result.isCheckmate && result.winner === "w") {
@@ -334,11 +341,13 @@ function MiniMatchStep({
   fen,
   prompt,
   movesRequired,
+  boardSkinId,
   onNext,
 }: {
   fen: string;
   prompt: string;
   movesRequired: number;
+  boardSkinId?: string;
   onNext: () => void;
 }) {
   const [moveCount, setMoveCount] = useState(0);
@@ -352,6 +361,7 @@ function MiniMatchStep({
         playableColor="w"
         opponent="stockfish"
         size={360}
+        boardSkinId={boardSkinId}
         onMove={() => setMoveCount((c) => c + 1)}
         onGameOver={(result) => {
           if (result.isCheckmate && result.winner === "w") {

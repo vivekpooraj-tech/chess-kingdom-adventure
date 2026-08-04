@@ -21,6 +21,17 @@ export interface BuddyOption {
   builtIn: boolean; // only the v1 buddy is fully implemented
 }
 
+export interface BoardSkinOption {
+  id: string;
+  name: string;
+  emoji: string;
+  /** CSS color value (rgba/hex) — not a Tailwind class, since ChessBoard
+   * applies these via inline style (Tailwind's JIT can't see dynamically
+   * assembled class names like `bg-${skin.lightSquare}`). */
+  lightSquare: string;
+  darkSquare: string;
+}
+
 export interface LessonStep {
   id: string;
   type: "story" | "minigame" | "puzzle" | "ai_chat" | "mini_match" | "reward";

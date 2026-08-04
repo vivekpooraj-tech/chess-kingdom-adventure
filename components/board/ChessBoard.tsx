@@ -5,6 +5,7 @@ import { Chess, Square, PieceSymbol, Color } from "chess.js";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 import { stockfish, Difficulty } from "@/lib/chess-engine/stockfishEngine";
+import { getBoardSkin } from "@/content/boardSkins";
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
@@ -57,6 +58,9 @@ export interface ChessBoardProps {
   difficulty?: Difficulty;
   /** Visual size in px (square board). */
   size?: number;
+  /** References an id in content/boardSkins.ts; defaults to Classic Forest
+   * (today's original hardcoded colors) when omitted or unrecognized. */
+  boardSkinId?: string;
 }
 
 /**
@@ -75,8 +79,10 @@ export function ChessBoard({
   opponent,
   difficulty = "easy",
   size = 480,
+  boardSkinId,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
+  const skin = useMemo(() => getBoardSkin(boardSkinId), [boardSkinId]);
   const [renderTick, forceRender] = useState(0);
   const [selected, setSelected] = useState<Square | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null);
@@ -226,6 +232,12 @@ export function ChessBoard({
             const isSelected = selected === square;
             const isLegalTarget = legalTargets.has(square);
             const isLastMove = lastMove && (lastMove.from === square || lastMove.to === square);
+            // Inline style always wins over a Tailwind class, so the
+            // last-move highlight has to be folded into this same value
+            // rather than layered on via a separate "bg-kingdom-gold/30"
+            // class (which the skin's inline backgroundColor would hide).
+            const squareBackground =
+              isLastMove && !isSelected ? "rgba(255, 197, 61, 0.3)" : isDark ? skin.darkSquare : skin.lightSquare;
 
             return (
               <button
@@ -233,11 +245,14 @@ export function ChessBoard({
                 onClick={() => handleSquareClick(square)}
                 className={clsx(
                   "relative flex items-center justify-center transition-colors",
-                  isDark ? "bg-kingdom-forest/70" : "bg-kingdom-leaf/30",
-                  isSelected && "ring-4 ring-inset ring-kingdom-gold",
-                  isLastMove && !isSelected && "bg-kingdom-gold/30"
+                  isSelected && "ring-4 ring-inset ring-kingdom-gold"
                 )}
-                style={{ width: squareSize, height: squareSize, fontSize: squareSize * 0.65 }}
+                style={{
+                  width: squareSize,
+                  height: squareSize,
+                  fontSize: squareSize * 0.65,
+                  backgroundColor: squareBackground,
+                }}
                 aria-label={`${square}${piece ? ` — ${piece.color === "w" ? "white" : "black"} ${piece.type}` : ""}`}
               >
                 {isLegalTarget && !piece && (
