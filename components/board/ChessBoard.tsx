@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Chess, Square, PieceSymbol, Color } from "chess.js";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
-import { stockfish } from "@/lib/chess-engine/stockfishEngine";
+import { stockfish, Difficulty } from "@/lib/chess-engine/stockfishEngine";
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
@@ -26,9 +26,16 @@ export interface ChessBoardProps {
   /** Restrict which side the child is allowed to move (useful for puzzles). */
   playableColor?: Color;
   /** Called after every legal move the child makes. */
-  onMove?: (opts: { fen: string; san: string; isCheckmate: boolean }) => void;
+  onMove?: (opts: { fen: string; san: string; isCheckmate: boolean; piece: PieceSymbol }) => void;
   /** Called when the child attempts an illegal move — used for AI mistake-explanations. */
   onIllegalAttempt?: (from: Square, to: Square) => void;
+  /**
+   * Called once, the moment the game ends — after EITHER side's move,
+   * unlike onMove which only fires for the child's own moves. Needed for a
+   * full game (Free Play Arena) where the opponent's move can also end the
+   * game (e.g. Stockfish delivers checkmate).
+   */
+  onGameOver?: (result: { isCheckmate: boolean; isDraw: boolean; winner: Color | null }) => void;
   /**
    * Auto-opponent for the non-playable side. The board enforces real chess
    * turn order, so without *something* replying, a `playableColor` board
@@ -41,6 +48,13 @@ export interface ChessBoardProps {
    *   still available directly for callers that don't need real strength.
    */
   opponent?: "stockfish" | "random";
+  /**
+   * Engine strength when opponent="stockfish" — defaults to "easy" (the
+   * same weak, sometimes-blundering play used throughout the lesson
+   * content), so existing lesson-page boards keep working unchanged. The
+   * Free Play Arena passes the player's chosen tier explicitly.
+   */
+  difficulty?: Difficulty;
   /** Visual size in px (square board). */
   size?: number;
 }
@@ -57,7 +71,9 @@ export function ChessBoard({
   playableColor,
   onMove,
   onIllegalAttempt,
+  onGameOver,
   opponent,
+  difficulty = "easy",
   size = 480,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
@@ -65,6 +81,25 @@ export function ChessBoard({
   const [selected, setSelected] = useState<Square | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null);
   const [engineThinking, setEngineThinking] = useState(false);
+  const gameOverReportedRef = useRef(false);
+
+  useEffect(() => {
+    gameOverReportedRef.current = false;
+  }, [fen]);
+
+  // Fires once, right after either side's move ends the game — covers the
+  // case onMove doesn't (the opponent delivering checkmate/stalemate).
+  useEffect(() => {
+    if (gameOverReportedRef.current) return;
+    if (!game.isGameOver()) return;
+    gameOverReportedRef.current = true;
+    const isCheckmate = game.isCheckmate();
+    const isDraw = game.isDraw();
+    // The side whose turn it WOULD be is the side that got checkmated.
+    const winner: Color | null = isCheckmate ? (game.turn() === "w" ? "b" : "w") : null;
+    onGameOver?.({ isCheckmate, isDraw, winner });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderTick, fen]);
 
   function playRandomMove() {
     const moves = game.moves({ verbose: true });
@@ -89,7 +124,7 @@ export function ChessBoard({
       if (opponent === "stockfish") {
         setEngineThinking(true);
         try {
-          const uciMove = await stockfish.getBestMove(game.fen(), 2);
+          const { move: uciMove } = await stockfish.getBestMove(game.fen(), difficulty);
           if (cancelled) return;
           const from = uciMove.slice(0, 2) as Square;
           const to = uciMove.slice(2, 4) as Square;
@@ -150,7 +185,12 @@ export function ChessBoard({
         setLastMove({ from: selected, to: square });
         forceRender((n) => n + 1);
         if (move) {
-          onMove?.({ fen: game.fen(), san: move.san, isCheckmate: game.isCheckmate() });
+          onMove?.({
+            fen: game.fen(),
+            san: move.san,
+            isCheckmate: game.isCheckmate(),
+            piece: move.piece,
+          });
         }
       } else if (piece && (!playableColor || piece.color === playableColor)) {
         // Re-select a different one of your own pieces
@@ -165,6 +205,12 @@ export function ChessBoard({
 
   const squareSize = size / 8;
 
+  // Flip the board for Black so that player's own pieces render at the
+  // bottom, matching how a real chess board looks from either side — this
+  // matters for online multiplayer, where one player is genuinely Black.
+  const displayRanks = playableColor === "b" ? [...RANKS].reverse() : RANKS;
+  const displayFiles = playableColor === "b" ? [...FILES].reverse() : FILES;
+
   return (
     <div className="flex flex-col items-center gap-2">
       <div
@@ -172,8 +218,8 @@ export function ChessBoard({
         style={{ width: size, height: size }}
     >
       <div className="grid grid-cols-8 grid-rows-8 w-full h-full">
-        {RANKS.map((rank, rIdx) =>
-          FILES.map((file, fIdx) => {
+        {displayRanks.map((rank, rIdx) =>
+          displayFiles.map((file, fIdx) => {
             const square = `${file}${rank}` as Square;
             const piece = game.get(square);
             const isDark = (rIdx + fIdx) % 2 === 1;

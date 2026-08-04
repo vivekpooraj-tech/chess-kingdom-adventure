@@ -14,6 +14,7 @@ import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { KingdomMapCards } from "./KingdomMapCards";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 import { AchievementBadges } from "@/components/achievements/AchievementBadges";
+import { InviteFriendButton } from "@/components/multiplayer/InviteFriendButton";
 
 export default async function KingdomMapPage() {
   const supabase = createClient();
@@ -67,6 +68,28 @@ export default async function KingdomMapPage() {
           completedDays={completedDays}
           isPremium={isPremium}
         />
+
+        {completedDays.length >= LESSONS.length && (
+          <Link
+            href="/free-play"
+            className="flex items-center gap-4 rounded-card bg-kingdom-gold/90 shadow-toy p-5 w-full max-w-md"
+          >
+            <span className="text-4xl">⚔️</span>
+            <div>
+              <p className="font-display text-lg text-kingdom-night">Free Play Arena</p>
+              <p className="font-body text-sm text-kingdom-night/70">
+                Play a full game anytime — pick your difficulty!
+              </p>
+            </div>
+          </Link>
+        )}
+
+        <div className="flex flex-col items-center gap-3 rounded-card bg-kingdom-sky/10 p-5 w-full max-w-md">
+          <p className="font-body text-kingdom-night/70 text-center">
+            Want to play a friend? Send them an invite link!
+          </p>
+          <InviteFriendButton />
+        </div>
 
         <AchievementBadges earnedKeys={earnedKeys} />
 

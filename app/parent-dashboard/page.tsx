@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { getChildrenForParent, getCompletedDays } from "@/lib/supabase/queries";
+import { getChildrenForParent, getCompletedDays, getPuzzleAccuracyStats } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { LESSONS, FREE_DAY_LIMIT } from "@/content/lessons";
 import { BUDDIES } from "@/content/buddies";
@@ -36,6 +36,7 @@ export default async function ParentDashboardPage() {
   const child = allChildren.find((c) => c.id === cookieChildId) ?? allChildren[0];
 
   const completedDays = child ? await getCompletedDays(supabase, child.id) : [];
+  const puzzleStats = child ? await getPuzzleAccuracyStats(supabase, child.id) : null;
 
   const { data: progressRows } = child
     ? await supabase
@@ -111,8 +112,35 @@ export default async function ParentDashboardPage() {
               </p>
             )}
             <p className="font-body text-xs text-kingdom-night/40 italic">
-              Detailed puzzle accuracy and mistake trends aren't tracked yet in this
-              version — this shows lesson completion only.
+              Detailed mistake trends by skill aren't tracked yet — see Puzzle
+              Accuracy below for how consistently {child.display_name} picks the
+              right piece on the first try.
+            </p>
+          </Card>
+
+          <Card className="w-full max-w-lg flex flex-col gap-2">
+            <h2 className="font-display text-lg text-kingdom-night">Puzzle Accuracy</h2>
+            {puzzleStats && puzzleStats.totalAttempts > 0 ? (
+              <>
+                <p className="font-body text-kingdom-night">
+                  Solved {puzzleStats.puzzlesSolved} puzzle
+                  {puzzleStats.puzzlesSolved === 1 ? "" : "s"}, {puzzleStats.firstTryCorrect} on
+                  the first try.
+                </p>
+                <p className="font-body text-sm text-kingdom-night/50">
+                  {puzzleStats.totalAttempts} total attempt
+                  {puzzleStats.totalAttempts === 1 ? "" : "s"} across all puzzles so far.
+                </p>
+              </>
+            ) : (
+              <p className="font-body text-kingdom-night/60">
+                No puzzle attempts recorded yet.
+              </p>
+            )}
+            <p className="font-body text-xs text-kingdom-night/40 italic">
+              "Correct" means moving the piece that day's lesson is teaching — most
+              puzzles are movement practice, not single-answer tactics, so this
+              measures engagement with the right piece, not objectively-best play.
             </p>
           </Card>
 

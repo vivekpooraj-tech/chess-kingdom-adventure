@@ -332,3 +332,146 @@ export async function evaluateAndAwardAchievements(
 
   return newlyEarned;
 }
+
+// --- Online multiplayer -----------------------------------------------
+
+export interface OnlineGame {
+  id: string;
+  host_child_id: string;
+  guest_child_id: string | null;
+  host_color: "w" | "b";
+  fen: string;
+  status: "waiting" | "active" | "finished";
+  winner: "w" | "b" | "draw" | null;
+  host_reaction: string | null;
+  guest_reaction: string | null;
+}
+
+export async function createOnlineGame(
+  supabase: SupabaseClient,
+  hostChildId: string
+): Promise<OnlineGame> {
+  const { data, error } = await supabase
+    .from("online_games")
+    .insert({ host_child_id: hostChildId })
+    .select()
+    .single();
+  if (error || !data) throw error ?? new Error("Failed to create game");
+  return data as OnlineGame;
+}
+
+export async function getOnlineGame(
+  supabase: SupabaseClient,
+  gameId: string
+): Promise<OnlineGame | null> {
+  const { data, error } = await supabase
+    .from("online_games")
+    .select("*")
+    .eq("id", gameId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as OnlineGame | null;
+}
+
+/**
+ * Compare-and-swap join: the `.is('guest_child_id', null)` filter means
+ * this UPDATE matches zero rows (and returns false) if someone already
+ * claimed the guest slot between this player loading the page and clicking
+ * join — RLS alone can't express that race-safety, so the app query does.
+ */
+export async function joinOnlineGame(
+  supabase: SupabaseClient,
+  gameId: string,
+  guestChildId: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("online_games")
+    .update({ guest_child_id: guestChildId, status: "active" })
+    .eq("id", gameId)
+    .is("guest_child_id", null)
+    .select();
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
+export async function updateGameFen(
+  supabase: SupabaseClient,
+  gameId: string,
+  fen: string
+): Promise<void> {
+  const { error } = await supabase.from("online_games").update({ fen }).eq("id", gameId);
+  if (error) throw error;
+}
+
+export async function finishOnlineGame(
+  supabase: SupabaseClient,
+  gameId: string,
+  winner: "w" | "b" | "draw"
+): Promise<void> {
+  const { error } = await supabase
+    .from("online_games")
+    .update({ status: "finished", winner })
+    .eq("id", gameId);
+  if (error) throw error;
+}
+
+export async function sendReaction(
+  supabase: SupabaseClient,
+  gameId: string,
+  isHost: boolean,
+  reaction: string
+): Promise<void> {
+  const field = isHost ? "host_reaction" : "guest_reaction";
+  const { error } = await supabase
+    .from("online_games")
+    .update({ [field]: reaction })
+    .eq("id", gameId);
+  if (error) throw error;
+}
+
+// --- Puzzle accuracy tracking -------------------------------------------
+
+export async function recordPuzzleAttempt(
+  supabase: SupabaseClient,
+  childId: string,
+  dayNumber: number,
+  isCorrect: boolean,
+  attemptNumber: number
+): Promise<void> {
+  const { error } = await supabase.from("puzzle_attempts").insert({
+    child_id: childId,
+    day_number: dayNumber,
+    is_correct: isCorrect,
+    attempt_number: attemptNumber,
+  });
+  if (error) throw error;
+}
+
+export interface PuzzleAccuracyStats {
+  totalAttempts: number;
+  puzzlesSolved: number; // distinct days with at least one correct attempt
+  firstTryCorrect: number; // distinct days solved on attempt_number === 1
+}
+
+export async function getPuzzleAccuracyStats(
+  supabase: SupabaseClient,
+  childId: string
+): Promise<PuzzleAccuracyStats> {
+  const { data, error } = await supabase
+    .from("puzzle_attempts")
+    .select("day_number, is_correct, attempt_number")
+    .eq("child_id", childId);
+  if (error) throw error;
+
+  const rows = data ?? [];
+  const solvedDays = new Set(rows.filter((r) => r.is_correct).map((r) => r.day_number));
+  const firstTryDays = new Set(
+    rows.filter((r) => r.is_correct && r.attempt_number === 1).map((r) => r.day_number)
+  );
+
+  return {
+    totalAttempts: rows.length,
+    puzzlesSolved: solvedDays.size,
+    firstTryCorrect: firstTryDays.size,
+  };
+}

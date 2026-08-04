@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import type { PieceSymbol } from "chess.js";
 import { getLesson, FREE_DAY_LIMIT } from "@/content/lessons";
 import { getMinigameConfigForDay } from "@/content/minigame-configs";
 import { BUDDIES } from "@/content/buddies";
@@ -16,7 +17,11 @@ import { MemoryFlip } from "@/components/minigames/engines/MemoryFlip";
 import { TimedReaction } from "@/components/minigames/engines/TimedReaction";
 import { ConfettiBurst } from "@/components/rewards/ConfettiBurst";
 import { createClient } from "@/lib/supabase/client";
-import { resolveActiveChild, markLessonComplete } from "@/lib/supabase/queries";
+import {
+  resolveActiveChild,
+  markLessonComplete,
+  recordPuzzleAttempt,
+} from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 
@@ -125,7 +130,14 @@ export default function LessonPage() {
             )}
 
             {step.type === "puzzle" && (
-              <PuzzleStep fen={lesson.puzzle.fen} prompt={lesson.puzzle.prompt} onNext={next} />
+              <PuzzleStep
+                fen={lesson.puzzle.fen}
+                prompt={lesson.puzzle.prompt}
+                acceptedPieceTypes={lesson.puzzle.acceptedPieceTypes}
+                dayNumber={lesson.dayNumber}
+                childId={childId}
+                onNext={next}
+              />
             )}
 
             {step.type === "ai_chat" && (
@@ -232,23 +244,76 @@ function MinigameStep({ dayNumber, onComplete }: { dayNumber: number; onComplete
   );
 }
 
-function PuzzleStep({ fen, prompt, onNext }: { fen: string; prompt: string; onNext: () => void }) {
-  const [solved, setSolved] = useState(false);
+function PuzzleStep({
+  fen,
+  prompt,
+  acceptedPieceTypes,
+  dayNumber,
+  childId,
+  onNext,
+}: {
+  fen: string;
+  prompt: string;
+  acceptedPieceTypes: PieceSymbol[] | "any";
+  dayNumber: number;
+  childId: string;
+  onNext: () => void;
+}) {
+  const [moved, setMoved] = useState(false);
+  const [wasCorrect, setWasCorrect] = useState(false);
+  const [attemptNumber, setAttemptNumber] = useState(1);
+  const [boardKey, setBoardKey] = useState(0);
+
+  async function handleMove(piece: PieceSymbol) {
+    const isCorrect = acceptedPieceTypes === "any" || acceptedPieceTypes.includes(piece);
+
+    const supabase = createClient();
+    await recordPuzzleAttempt(supabase, childId, dayNumber, isCorrect, attemptNumber).catch(
+      () => {
+        // Non-critical — don't block the child's puzzle flow if the stats
+        // write fails (e.g. offline). They still see feedback either way,
+        // and can still continue regardless.
+      }
+    );
+
+    setMoved(true);
+    setWasCorrect(isCorrect);
+  }
+
+  function tryAgain() {
+    // Optional, child-initiated retry — never forced. Remounting is the
+    // simplest way back to the original position since ChessBoard has no
+    // "undo" API once a move has been made.
+    setBoardKey((k) => k + 1);
+    setAttemptNumber((n) => n + 1);
+    setMoved(false);
+  }
 
   return (
     <Card className="flex flex-col items-center gap-5">
       <h2 className="font-display text-xl text-kingdom-night text-center">{prompt}</h2>
       <ChessBoard
+        key={boardKey}
         fen={fen}
         playableColor="w"
         opponent="stockfish"
         size={360}
-        onMove={() => setSolved(true)}
+        onMove={(opts) => handleMove(opts.piece)}
       />
-      {solved && (
+      {moved && wasCorrect && (
         <p className="font-display text-lg text-kingdom-forest">Wonderful! Well done!</p>
       )}
-      <Button disabled={!solved} onClick={onNext}>
+      {moved && !wasCorrect && (
+        <div className="flex flex-col items-center gap-2">
+          <p className="font-display text-lg text-kingdom-coral">
+            Nice move! Next time, try moving the piece from today's lesson.
+          </p>
+          <Button variant="ghost" size="md" onClick={tryAgain}>
+            Try Again
+          </Button>
+        </div>
+      )}
+      <Button disabled={!moved} onClick={onNext}>
         Continue →
       </Button>
     </Card>

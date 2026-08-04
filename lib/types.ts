@@ -1,3 +1,5 @@
+import type { PieceSymbol } from "chess.js";
+
 export type Piece = "pawn" | "knight" | "bishop" | "rook" | "queen" | "king";
 
 export interface AvatarOption {
@@ -28,6 +30,17 @@ export interface LessonStep {
 export interface PuzzleContent {
   fen: string;
   prompt: string;
+  /**
+   * Which piece type(s) count as a correct first move — validates that the
+   * child understood WHICH piece the lesson is teaching, not one exact
+   * tactical square. Most puzzle positions are simplified movement-practice
+   * (no opposing pieces to genuinely fork/pin), so "correct" here means
+   * "moved the intended piece," a real and honest metric that doesn't
+   * require fabricating single-answer tactics that don't actually exist in
+   * these positions. "any" means every legal move counts (e.g. Day 30's
+   * "make your first move" from the real starting position).
+   */
+  acceptedPieceTypes: PieceSymbol[] | "any";
 }
 
 export interface MiniMatchContent {

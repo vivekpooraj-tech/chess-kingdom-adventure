@@ -19,7 +19,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Guard the Path — move any Pawn Guard forward!",
-    },
+    acceptedPieceTypes: ["p"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good pawn moves to win this mini match.",
@@ -45,7 +46,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/3N4/8/8/4K3 w - - 0 1",
       prompt: "Find the Knight's Jump — move the Knight anywhere it can leap!",
-    },
+    acceptedPieceTypes: ["n"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/1N2K1N1 w - - 0 1",
       prompt: "Make 3 good Knight or Pawn moves to clear the forest path.",
@@ -71,7 +73,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/2B1K3 w - - 0 1",
       prompt: "Light the Diagonal — move the Bishop along its slanted path!",
-    },
+    acceptedPieceTypes: ["b"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/2B1KB2 w - - 0 1",
       prompt: "Make 3 good Bishop or Pawn moves to relight the Hall.",
@@ -97,7 +100,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",
       prompt: "Charge the Corridor — move the Rook in a straight line!",
-    },
+    acceptedPieceTypes: ["r"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w - - 0 1",
       prompt: "Make 3 good Rook or Pawn moves to clear the corridor.",
@@ -123,7 +127,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",
       prompt: "Sweep the Court — move the Queen any direction you like!",
-    },
+    acceptedPieceTypes: ["q"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3QK3 w - - 0 1",
       prompt: "Make 3 good Queen or Pawn moves to restore the court.",
@@ -149,7 +154,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/4K3 w - - 0 1",
       prompt: "Take a careful step — move your King just one square!",
-    },
+    acceptedPieceTypes: ["k"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/5RK1 w - - 0 1",
       prompt: "Make 3 good King or Pawn moves to keep your King safe.",
@@ -175,7 +181,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/3N4/8/8/8/4K3 w - - 0 1",
       prompt: "Find the fork — move the Knight to threaten two squares at once!",
-    },
+    acceptedPieceTypes: ["n"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/2N5/8/PPPPPPPP/4K1N1 w - - 0 1",
       prompt: "Make 3 good Knight or Pawn moves to practice your forks.",
@@ -201,7 +208,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/5BK1 w - - 0 1",
       prompt: "Move the Bishop along its diagonal to line up a pin!",
-    },
+    acceptedPieceTypes: ["b"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/5BK1 w - - 0 1",
       prompt: "Make 3 good Bishop or Pawn moves to practice pinning.",
@@ -227,7 +235,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/4KR2 w - - 0 1",
       prompt: "Move the Rook to guard the back rank!",
-    },
+    acceptedPieceTypes: ["r"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4KR2 w - - 0 1",
       prompt: "Make 3 good Rook or Pawn moves to hold the watch.",
@@ -253,7 +262,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",
       prompt: "Move the Queen to close in for checkmate!",
-    },
+    acceptedPieceTypes: ["q"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3QK3 w - - 0 1",
       prompt: "Make 3 good Queen or Pawn moves for your final trial.",
@@ -279,7 +289,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1",
       prompt: "Push your Pawn forward to claim the center!",
-    },
+    acceptedPieceTypes: ["p"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good opening moves to control the center.",
@@ -305,7 +316,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/3N4/8/8/8/4K3 w - - 0 1",
       prompt: "Move the Knight to find its strongest outpost!",
-    },
+    acceptedPieceTypes: ["n"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/5N2/PPPPPPPP/4K1N1 w - - 0 1",
       prompt: "Make 3 good Knight or Pawn moves to reach the outpost.",
@@ -331,7 +343,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/1B4B1/8/8/8/4K3 w - - 0 1",
       prompt: "Move either Bishop to show off the pair's power!",
-    },
+    acceptedPieceTypes: ["b"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/1B4B1/8/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good Bishop or Pawn moves with your twin Bishops.",
@@ -357,7 +370,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/4KR2 w - - 0 1",
       prompt: "Slide the Rook down the open road!",
-    },
+    acceptedPieceTypes: ["r"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3RK3 w - - 0 1",
       prompt: "Make 3 good Rook or Pawn moves down the open file.",
@@ -383,7 +397,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/4P3/8/8/8/8/4K3 w - - 0 1",
       prompt: "March the Pawn closer to promotion!",
-    },
+    acceptedPieceTypes: ["p"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good King or Pawn moves to escort your Pawn home.",
@@ -409,7 +424,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/P7/8/8/8/8/4K3 w - - 0 1",
       prompt: "Sprint the passed Pawn down the open lane!",
-    },
+    acceptedPieceTypes: ["p"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good Pawn or King moves in the sprint.",
@@ -435,7 +451,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/3N4/8/8/8/3RK3 w - - 0 1",
       prompt: "Move the Knight aside to reveal the hidden ambush!",
-    },
+    acceptedPieceTypes: ["n"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/3N4/8/PPPPPPPP/3RK3 w - - 0 1",
       prompt: "Make 3 good Knight or Pawn moves to set up the ambush.",
@@ -461,7 +478,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/2B5/8/8/4K3 w - - 0 1",
       prompt: "Line up the Bishop's diagonal for a skewer!",
-    },
+    acceptedPieceTypes: ["b"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/2B5/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good Bishop or Pawn moves to practice your skewer.",
@@ -487,7 +505,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/3R4/8/8/8/3RK3 w - - 0 1",
       prompt: "Move a Rook to stack the tower on one file!",
-    },
+    acceptedPieceTypes: ["r"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/3R4/8/8/PPPPPPPP/3RK3 w - - 0 1",
       prompt: "Make 3 good Rook or Pawn moves to build your tower.",
@@ -513,7 +532,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",
       prompt: "Sweep the Queen across the board for the Trial!",
-    },
+    acceptedPieceTypes: ["q"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3QK3 w - - 0 1",
       prompt: "Make 3 good Queen or Pawn moves to win your Trial.",
@@ -539,7 +559,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",
       prompt: "Move your King or Rook to begin the endgame dance!",
-    },
+    acceptedPieceTypes: ["k", "r"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/R3K3 w - - 0 1",
       prompt: "Make 3 good King, Rook, or Pawn moves in the dance.",
@@ -565,7 +586,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/3PP3/4K3 w - - 0 1",
       prompt: "Move a Pawn to strengthen the chain!",
-    },
+    acceptedPieceTypes: ["p"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good Pawn or King moves to build your chain.",
@@ -591,7 +613,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/6B1/3N4/8/8/4K3 w - - 0 1",
       prompt: "Move either the Knight or the Bishop into action!",
-    },
+    acceptedPieceTypes: ["n", "b"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/6B1/3N4/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good Knight, Bishop, or Pawn moves in the rivalry.",
@@ -617,7 +640,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/8/4K1B1 w - - 0 1",
       prompt: "Move the Bishop to see clear across the board!",
-    },
+    acceptedPieceTypes: ["b"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K1B1 w - - 0 1",
       prompt: "Make 3 good Bishop or Pawn moves from the watchtower.",
@@ -643,7 +667,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/3R4/8/8/4K3 w - - 0 1",
       prompt: "Send the Rook out on a bold patrol!",
-    },
+    acceptedPieceTypes: ["r"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/3R4/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good Rook or Pawn moves on patrol.",
@@ -669,7 +694,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/3Q4/8/8/4K3 w - - 0 1",
       prompt: "Move the Queen boldly into the action!",
-    },
+    acceptedPieceTypes: ["q"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/3Q4/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good Queen or Pawn moves on your daring strike.",
@@ -695,7 +721,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/4K3/8/8/8 w - - 0 1",
       prompt: "March your brave King forward into the endgame!",
-    },
+    acceptedPieceTypes: ["k"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/4K3/8/PPPPPPPP/8 w - - 0 1",
       prompt: "Make 3 good King or Pawn moves with your brave King.",
@@ -721,7 +748,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/8/8/8/4PPP1/4K3 w - - 0 1",
       prompt: "March your Pawn majority forward together!",
-    },
+    acceptedPieceTypes: ["p"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good Pawn or King moves in the march.",
@@ -747,7 +775,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "4k3/8/8/3N4/8/8/8/4K3 w - - 0 1",
       prompt: "Move the Knight into its blockading square!",
-    },
+    acceptedPieceTypes: ["n"],
+},
     miniMatch: {
       fen: "4k3/pppppppp/8/3N4/8/8/PPPPPPPP/4K3 w - - 0 1",
       prompt: "Make 3 good Knight or Pawn moves to hold the blockade.",
@@ -773,7 +802,8 @@ export const LESSONS: Lesson[] = [
     puzzle: {
       fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
       prompt: "The full royal army stands ready — make your very first move!",
-    },
+    acceptedPieceTypes: "any",
+},
     miniMatch: {
       fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
       prompt: "Play 3 real opening moves against the Shadow King himself!",
