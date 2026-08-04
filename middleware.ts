@@ -1,8 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Routes a child/parent can reach without an active session.
-const PUBLIC_PATHS = ["/", "/sign-in", "/auth/callback"];
+// Routes a child/parent can reach without an active session. The Stripe
+// webhook is here too — Stripe calls it server-to-server with no session
+// cookie at all, and it authenticates the request itself via signature
+// verification (see app/api/stripe/webhook/route.ts), not via user auth.
+const PUBLIC_PATHS = ["/", "/sign-in", "/auth/callback", "/api/stripe/webhook"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });

@@ -44,17 +44,26 @@ export async function POST(request: NextRequest) {
     const parentId = session.metadata?.parent_id;
 
     if (parentId && session.payment_status === "paid") {
-      const supabaseAdmin = getSupabaseAdmin();
-      const { error } = await supabaseAdmin
-        .from("parents")
-        .update({ premium_status: "premium" })
-        .eq("id", parentId);
+      // getSupabaseAdmin() throws (missing env config) rather than returning
+      // an error value, unlike the .update() call below — caught here so a
+      // misconfigured deploy logs and still returns 200 below, same as a
+      // failed .update(), instead of an uncaught 500 that makes Stripe retry
+      // forever against an error retries can't fix.
+      try {
+        const supabaseAdmin = getSupabaseAdmin();
+        const { error } = await supabaseAdmin
+          .from("parents")
+          .update({ premium_status: "premium" })
+          .eq("id", parentId);
 
-      if (error) {
-        console.error("Stripe webhook: failed to upgrade parent", parentId, error);
-        // Still return 200 below — a 4xx/5xx here makes Stripe retry, which
-        // won't help if the problem is our own DB config rather than a
-        // transient blip. The error is logged for manual follow-up either way.
+        if (error) {
+          console.error("Stripe webhook: failed to upgrade parent", parentId, error);
+          // Still return 200 below — a 4xx/5xx here makes Stripe retry, which
+          // won't help if the problem is our own DB config rather than a
+          // transient blip. The error is logged for manual follow-up either way.
+        }
+      } catch (err) {
+        console.error("Stripe webhook: could not reach Supabase to upgrade parent", parentId, err);
       }
     } else {
       console.warn(
