@@ -131,7 +131,7 @@ export default function LessonPage() {
             // parent.
             className={clsx(
               "w-full flex flex-col items-center gap-6",
-              step.type === "puzzle" || step.type === "mini_match" ? "max-w-2xl" : "max-w-lg"
+              step.type === "puzzle" || step.type === "mini_match" ? "max-w-4xl" : "max-w-lg"
             )}
           >
             {step.type === "story" && (
@@ -320,7 +320,7 @@ function PuzzleStep({
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={600}
+        size={760}
         boardSkinId={boardSkinId}
         pieceSetId={pieceSetId}
         onMove={(opts) => handleMove(opts.piece)}
@@ -378,7 +378,7 @@ function MiniMatchStep({
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={600}
+        size={760}
         boardSkinId={boardSkinId}
         pieceSetId={pieceSetId}
         onMove={() => setMoveCount((c) => c + 1)}

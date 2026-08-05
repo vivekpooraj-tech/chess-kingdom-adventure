@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Chess Kingdom Adventure</string>
+    <string name="title_activity_main">Chess Kingdom Adventure</string>
+    <string name="package_name">com.chesskingdom.adventure</string>
+    <string name="custom_url_scheme">com.chesskingdom.adventure</string>
+</resources>

@@ -146,7 +146,7 @@ export default function FreePlayPage() {
           playableColor="w"
           opponent="stockfish"
           difficulty={view.difficulty}
-          size={600}
+          size={760}
           boardSkinId={boardSkinId}
           pieceSetId={pieceSetId}
           onGameOver={(result) => handleGameOver(view.difficulty, result)}

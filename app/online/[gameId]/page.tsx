@@ -219,7 +219,7 @@ export default function OnlineGamePage() {
         <ChessBoard
           fen={game.fen}
           playableColor={myColor}
-          size={560}
+          size={680}
           boardSkinId={boardSkinId}
           pieceSetId={pieceSetId}
           onMove={(opts) => handleMove(opts.fen)}
