@@ -6,9 +6,16 @@ import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 import { stockfish, Difficulty } from "@/lib/chess-engine/stockfishEngine";
 import { getBoardSkin } from "@/content/boardSkins";
+import { getPieceSet } from "@/content/pieceSets";
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
+
+// Fraction of an image-backed board (skin.boardImageUrl) that's frame
+// margin on each side, e.g. wood-classic.svg's 36px frame out of a 792px
+// square canvas. Every image-backed skin must use this same proportion so
+// the transparent interactive grid lines up with the image's drawn squares.
+const BOARD_IMAGE_FRAME_FRACTION = 36 / 792;
 
 // Maps chess.js's piece/color codes to the uploaded character asset pack's
 // file names — public/pieces/{light,dark}/{name}.svg.
@@ -61,6 +68,10 @@ export interface ChessBoardProps {
   /** References an id in content/boardSkins.ts; defaults to Classic Forest
    * (today's original hardcoded colors) when omitted or unrecognized. */
   boardSkinId?: string;
+  /** References an id in content/pieceSets.ts; defaults to the original
+   * flat-silhouette set when omitted or unrecognized. Independent of
+   * boardSkinId — any piece set can pair with any board skin. */
+  pieceSetId?: string;
 }
 
 /**
@@ -80,9 +91,11 @@ export function ChessBoard({
   difficulty = "easy",
   size = 480,
   boardSkinId,
+  pieceSetId,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
   const skin = useMemo(() => getBoardSkin(boardSkinId), [boardSkinId]);
+  const pieceSet = useMemo(() => getPieceSet(pieceSetId), [pieceSetId]);
   const [renderTick, forceRender] = useState(0);
   const [selected, setSelected] = useState<Square | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null);
@@ -209,7 +222,15 @@ export function ChessBoard({
     [selected, legalTargets, game, playableColor, onMove, onIllegalAttempt]
   );
 
-  const squareSize = size / 8;
+  // Image-backed skins (skin.boardImageUrl) draw their own frame/coordinate
+  // labels baked into the image, so the interactive grid has to shrink and
+  // inset to land exactly on the image's drawn squares instead of filling
+  // the full board. Expressed as percentages (not size * fraction px) so it
+  // stays correct at whatever pixel size the responsive outer box actually
+  // renders at, not just the literal `size` prop.
+  const framePercent = skin.boardImageUrl ? BOARD_IMAGE_FRAME_FRACTION * 100 : 0;
+  const gridPercent = 100 - framePercent * 2;
+  const pieceFolder = pieceSet.folder ? `${pieceSet.folder}/` : "";
 
   // Flip the board for Black so that player's own pieces render at the
   // bottom, matching how a real chess board looks from either side — this
@@ -218,12 +239,59 @@ export function ChessBoard({
   const displayFiles = playableColor === "b" ? [...FILES].reverse() : FILES;
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 w-full">
+      {/*
+        Mobile breakout: below the sm breakpoint, the board expands past its
+        immediate parent's padding to use the full available width instead
+        of sitting inset — meant for a native app wrapper (APK/TWA) where the
+        board should read as edge-to-edge like most chess apps, not just a
+        bigger fixed size. Assumes a 1.5rem (px-6/p-6) parent padding, which
+        every current call site (page `<main>` and `<Card>`) uses — the
+        negative margin exactly cancels it out. A real @media query (via
+        styled-jsx) rather than a Tailwind breakpoint class, since inline
+        `style.width` below would otherwise always win over any class for
+        the same property regardless of viewport size.
+      */}
+      <style jsx>{`
+        .board-outer {
+          width: ${size}px;
+          max-width: 100%;
+        }
+        @media (max-width: 639px) {
+          .board-outer {
+            width: calc(100% + 3rem);
+            max-width: calc(100% + 3rem);
+            margin-left: -1.5rem;
+            margin-right: -1.5rem;
+          }
+        }
+      `}</style>
       <div
-        className="rounded-card overflow-hidden shadow-toy select-none"
-        style={{ width: size, height: size }}
+        className="board-outer relative rounded-card overflow-hidden shadow-toy select-none mx-auto"
+        style={{ aspectRatio: "1 / 1" }}
     >
-      <div className="grid grid-cols-8 grid-rows-8 w-full h-full">
+      {skin.boardImageUrl && (
+        <img
+          src={skin.boardImageUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full"
+          draggable={false}
+        />
+      )}
+      <div
+        className="grid grid-cols-8 grid-rows-8"
+        style={
+          skin.boardImageUrl
+            ? {
+                position: "absolute",
+                left: `${framePercent}%`,
+                top: `${framePercent}%`,
+                width: `${gridPercent}%`,
+                height: `${gridPercent}%`,
+              }
+            : { width: "100%", height: "100%" }
+        }
+      >
         {displayRanks.map((rank, rIdx) =>
           displayFiles.map((file, fIdx) => {
             const square = `${file}${rank}` as Square;
@@ -236,23 +304,36 @@ export function ChessBoard({
             // last-move highlight has to be folded into this same value
             // rather than layered on via a separate "bg-kingdom-gold/30"
             // class (which the skin's inline backgroundColor would hide).
+            // Image-backed skins stay transparent otherwise, letting the
+            // image show through.
             const squareBackground =
-              isLastMove && !isSelected ? "rgba(255, 197, 61, 0.3)" : isDark ? skin.darkSquare : skin.lightSquare;
+              isLastMove && !isSelected
+                ? "rgba(255, 197, 61, 0.3)"
+                : skin.boardImageUrl
+                ? "transparent"
+                : isDark
+                ? skin.darkSquare
+                : skin.lightSquare;
+
+            // Chess.com-style in-square coordinate labels — bottom-left
+            // corner of the bottom displayed row gets file letters, top-left
+            // corner of the left displayed column gets rank numbers. Uses
+            // the loop index (not the literal rank/file) so it stays correct
+            // when the board is flipped for Black. Image-backed skins
+            // already bake their own labels into the image.
+            const showFileLabel = !skin.boardImageUrl && rIdx === 7;
+            const showRankLabel = !skin.boardImageUrl && fIdx === 0;
+            const labelColorClass = isDark ? "text-white/80" : "text-kingdom-night/50";
 
             return (
               <button
                 key={square}
                 onClick={() => handleSquareClick(square)}
                 className={clsx(
-                  "relative flex items-center justify-center transition-colors",
+                  "relative flex items-center justify-center transition-colors w-full h-full",
                   isSelected && "ring-4 ring-inset ring-kingdom-gold"
                 )}
-                style={{
-                  width: squareSize,
-                  height: squareSize,
-                  fontSize: squareSize * 0.65,
-                  backgroundColor: squareBackground,
-                }}
+                style={{ backgroundColor: squareBackground }}
                 aria-label={`${square}${piece ? ` — ${piece.color === "w" ? "white" : "black"} ${piece.type}` : ""}`}
               >
                 {isLegalTarget && !piece && (
@@ -260,6 +341,26 @@ export function ChessBoard({
                 )}
                 {isLegalTarget && piece && (
                   <span className="absolute inset-1 rounded-full ring-4 ring-kingdom-coral/70" />
+                )}
+                {showFileLabel && (
+                  <span
+                    className={clsx(
+                      "absolute bottom-0.5 left-1 font-body text-[10px] sm:text-xs font-bold leading-none pointer-events-none",
+                      labelColorClass
+                    )}
+                  >
+                    {file}
+                  </span>
+                )}
+                {showRankLabel && (
+                  <span
+                    className={clsx(
+                      "absolute top-0.5 left-1 font-body text-[10px] sm:text-xs font-bold leading-none pointer-events-none",
+                      labelColorClass
+                    )}
+                  >
+                    {rank}
+                  </span>
                 )}
                 <AnimatePresence>
                   {piece && (
@@ -269,15 +370,35 @@ export function ChessBoard({
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.6, opacity: 0 }}
                       className="flex items-center justify-center drop-shadow-sm"
-                      style={{ width: "88%", height: "88%" }}
+                      // Pawns are the shortest/simplest piece in every set —
+                      // at the same bounding box as everything else, they
+                      // read as noticeably smaller. Boxing them larger (not
+                      // scaling the image itself, so it still lands via
+                      // object-fit: contain) makes them visually match the
+                      // other pieces' apparent size instead of looking
+                      // undersized in comparison.
+                      style={
+                        piece.type === "p"
+                          ? { width: "98%", height: "98%" }
+                          : { width: "88%", height: "88%" }
+                      }
                     >
                       <img
-                        src={`/pieces/${piece.color === "w" ? "light" : "dark"}/${
+                        src={`/pieces/${pieceFolder}${piece.color === "w" ? "light" : "dark"}/${
                           PIECE_FILE_NAME[piece.type]
                         }.svg`}
                         alt={`${piece.color === "w" ? "light" : "dark"} ${piece.type}`}
-                        width={squareSize * 0.88}
-                        height={squareSize * 0.88}
+                        // width/height are the SVG's real intrinsic
+                        // dimensions (HTML attributes, not CSS) — piece sets
+                        // aren't all square (e.g. wood-classic is 200x300).
+                        // object-fit: contain (not max-width/height + auto,
+                        // which rendered the square "classic" set wildly
+                        // oversized in testing) fills this fixed box and
+                        // scales the image to fit within it, preserving
+                        // aspect ratio, for every piece set uniformly.
+                        width={pieceSet.intrinsicSize.width}
+                        height={pieceSet.intrinsicSize.height}
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
                         draggable={false}
                       />
                     </motion.div>

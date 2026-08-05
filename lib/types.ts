@@ -27,9 +27,41 @@ export interface BoardSkinOption {
   emoji: string;
   /** CSS color value (rgba/hex) — not a Tailwind class, since ChessBoard
    * applies these via inline style (Tailwind's JIT can't see dynamically
-   * assembled class names like `bg-${skin.lightSquare}`). */
+   * assembled class names like `bg-${skin.lightSquare}`). Used for the flat
+   * square fill (skins without boardImageUrl) and always as the picker's
+   * checkerboard swatch preview, even for image-backed skins. */
   lightSquare: string;
   darkSquare: string;
+  /**
+   * When set, ChessBoard renders this full pre-rendered board image (frame,
+   * texture, coordinate labels all baked in) behind a transparent, inset
+   * interactive grid instead of filling squares with lightSquare/darkSquare.
+   * Must be a square image with an even border frame — see
+   * BOARD_IMAGE_FRAME_PERCENT in components/board/ChessBoard.tsx for how the
+   * grid is inset to line up with the image's drawn squares.
+   */
+  boardImageUrl?: string;
+}
+
+export interface PieceSetOption {
+  id: string;
+  name: string;
+  emoji: string;
+  /** Subfolder under public/pieces/ (e.g. "wood-classic") with its own
+   * light/dark piece SVGs. Omitted = the original default set directly at
+   * public/pieces/{light,dark}/*.svg. Independent of BoardSkinOption — any
+   * piece set can pair with any board skin. */
+  folder?: string;
+  /**
+   * This set's SVG viewBox dimensions, passed as the <img> width/height
+   * HTML attributes (not CSS) so the browser has an unambiguous intrinsic
+   * aspect ratio to scale from — these SVGs declare a viewBox but no root
+   * width/height, and relying on the browser to infer aspect ratio from
+   * viewBox alone proved unreliable in testing (classic's square 100x100
+   * rendered wildly oversized/clipped in at least one render). CSS
+   * max-width/max-height still does the actual visual constraining.
+   */
+  intrinsicSize: { width: number; height: number };
 }
 
 export interface LessonStep {

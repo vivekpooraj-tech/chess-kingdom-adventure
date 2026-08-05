@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import clsx from "clsx";
 import type { PieceSymbol } from "chess.js";
 import { getLesson, FREE_DAY_LIMIT } from "@/content/lessons";
 import { getMinigameConfigForDay } from "@/content/minigame-configs";
@@ -34,6 +35,7 @@ export default function LessonPage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [buddy, setBuddy] = useState(BUDDIES[0]);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
+  const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     async function load() {
@@ -53,6 +55,7 @@ export default function LessonPage() {
       const child = resolution.child!;
       setChildId(child.id);
       setBoardSkinId(child.board_skin_id);
+      setPieceSetId(child.piece_set_id);
       const matchedBuddy = BUDDIES.find((b) => b.id === child.buddy_id);
       if (matchedBuddy) setBuddy(matchedBuddy);
 
@@ -121,7 +124,15 @@ export default function LessonPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3 }}
-            className="w-full max-w-lg flex flex-col items-center gap-6"
+            // Board-containing steps get a wider column — max-w-lg (the
+            // default, good for reading text) was silently capping the
+            // board's own `size` prop well below what was actually asked
+            // for, since ChessBoard's width maxes out at 100% of this
+            // parent.
+            className={clsx(
+              "w-full flex flex-col items-center gap-6",
+              step.type === "puzzle" || step.type === "mini_match" ? "max-w-2xl" : "max-w-lg"
+            )}
           >
             {step.type === "story" && (
               <StoryStep title={lesson.title} storyBeat={lesson.storyBeat} buddy={buddy} onNext={next} />
@@ -139,6 +150,7 @@ export default function LessonPage() {
                 dayNumber={lesson.dayNumber}
                 childId={childId}
                 boardSkinId={boardSkinId}
+                pieceSetId={pieceSetId}
                 onNext={next}
               />
             )}
@@ -158,6 +170,7 @@ export default function LessonPage() {
                 prompt={lesson.miniMatch.prompt}
                 movesRequired={lesson.miniMatch.movesRequired}
                 boardSkinId={boardSkinId}
+                pieceSetId={pieceSetId}
                 onNext={next}
               />
             )}
@@ -255,6 +268,7 @@ function PuzzleStep({
   dayNumber,
   childId,
   boardSkinId,
+  pieceSetId,
   onNext,
 }: {
   fen: string;
@@ -263,6 +277,7 @@ function PuzzleStep({
   dayNumber: number;
   childId: string;
   boardSkinId?: string;
+  pieceSetId?: string;
   onNext: () => void;
 }) {
   const [moved, setMoved] = useState(false);
@@ -305,8 +320,9 @@ function PuzzleStep({
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={360}
+        size={600}
         boardSkinId={boardSkinId}
+        pieceSetId={pieceSetId}
         onMove={(opts) => handleMove(opts.piece)}
         onGameOver={(result) => {
           if (result.isCheckmate && result.winner === "w") {
@@ -342,12 +358,14 @@ function MiniMatchStep({
   prompt,
   movesRequired,
   boardSkinId,
+  pieceSetId,
   onNext,
 }: {
   fen: string;
   prompt: string;
   movesRequired: number;
   boardSkinId?: string;
+  pieceSetId?: string;
   onNext: () => void;
 }) {
   const [moveCount, setMoveCount] = useState(0);
@@ -360,8 +378,9 @@ function MiniMatchStep({
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={360}
+        size={600}
         boardSkinId={boardSkinId}
+        pieceSetId={pieceSetId}
         onMove={() => setMoveCount((c) => c + 1)}
         onGameOver={(result) => {
           if (result.isCheckmate && result.winner === "w") {

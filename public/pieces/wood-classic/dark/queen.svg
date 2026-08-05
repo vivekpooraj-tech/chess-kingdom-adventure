@@ -1,0 +1,43 @@
+<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wood-queen-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#120B04"/>
+      <stop offset="18%" stop-color="#221609"/>
+      <stop offset="42%" stop-color="#5C4630"/>
+      <stop offset="58%" stop-color="#3A2A1C"/>
+      <stop offset="82%" stop-color="#221609"/>
+      <stop offset="100%" stop-color="#120B04"/>
+    </linearGradient>
+    <linearGradient id="sheen-queen-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="40%" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="shadow-queen-dark" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- contact shadow -->
+  <ellipse cx="100.0" cy="290.0" rx="58" ry="11" fill="url(#shadow-queen-dark)" />
+  <!-- piece body -->
+  <g stroke="#000000" stroke-width="1.4" stroke-linejoin="round">
+    <path d="M 87.40,244.00 C 87.26,244.67 88.31,246.00 86.56,248.00 C 84.81,250.00 81.66,253.00 76.90,256.00 C 72.14,259.00 61.15,263.20 58.00,266.00 C 54.85,268.80 55.34,270.87 58.00,272.80 C 60.66,274.73 71.58,276.27 73.96,277.60 C 76.34,278.93 72.84,279.73 72.28,280.80 C 71.72,281.87 70.88,283.47 70.60,284.00 L 129.40,284.00 C 129.12,283.47 128.28,281.87 127.72,280.80 C 127.16,279.73 123.66,278.93 126.04,277.60 C 128.42,276.27 139.34,274.73 142.00,272.80 C 144.66,270.87 145.15,268.80 142.00,266.00 C 138.85,263.20 127.86,259.00 123.10,256.00 C 118.34,253.00 115.19,250.00 113.44,248.00 C 111.69,246.00 112.74,244.67 112.60,244.00 Z" fill="url(#wood-queen-dark)"/>
+    <path d="M 67.87,144.00 C 70.58,147.33 80.28,156.50 84.12,164.00 C 87.97,171.50 89.67,181.50 90.93,189.00 C 92.19,196.50 92.06,202.33 91.68,209.00 C 91.31,215.67 89.92,223.17 88.66,229.00 C 87.40,234.83 84.88,241.50 84.12,244.00 L 115.88,244.00 C 115.12,241.50 112.60,234.83 111.34,229.00 C 110.08,223.17 108.69,215.67 108.32,209.00 C 107.94,202.33 107.81,196.50 109.07,189.00 C 110.33,181.50 112.03,171.50 115.88,164.00 C 119.72,156.50 129.42,147.33 132.13,144.00 Z" fill="url(#wood-queen-dark)"/>
+    <path d="M 78.06,110.00 C 76.39,111.70 70.54,116.80 68.08,120.20 C 65.62,123.60 62.76,127.28 63.29,130.40 C 63.82,133.52 68.48,136.63 71.27,138.90 C 74.06,141.17 78.59,143.15 80.05,144.00 L 119.95,144.00 C 121.41,143.15 125.94,141.17 128.73,138.90 C 131.52,136.63 136.18,133.52 136.71,130.40 C 137.24,127.28 134.38,123.60 131.92,120.20 C 129.46,116.80 123.61,111.70 121.94,110.00 Z" fill="url(#wood-queen-dark)"/>
+    <path d="M 80.5,108.7 L 84.5,82.0 L 92.5,108.7 Z" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1.2" stroke-linejoin="round"/>
+    <circle cx="84.5" cy="82.0" r="4" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1"/>
+    <path d="M 74.3,108.7 L 77.3,82.0 L 86.3,108.7 Z" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1.2" stroke-linejoin="round"/>
+    <circle cx="77.3" cy="82.0" r="4" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1"/>
+    <path d="M 72.1,108.7 L 74.8,82.0 L 84.1,108.7 Z" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1.2" stroke-linejoin="round"/>
+    <circle cx="74.8" cy="82.0" r="4" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1"/>
+    <path d="M 74.3,108.7 L 77.3,82.0 L 86.3,108.7 Z" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1.2" stroke-linejoin="round"/>
+    <circle cx="77.3" cy="82.0" r="4" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1"/>
+    <path d="M 80.5,108.7 L 84.5,82.0 L 92.5,108.7 Z" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1.2" stroke-linejoin="round"/>
+    <circle cx="84.5" cy="82.0" r="4" fill="url(#wood-queen-dark)" stroke="#000000" stroke-width="1"/>
+
+  </g>
+      <path d="M 88.0,144.0 Q 82.0,264.0 94.0,282.0 L 102.0,282.0 Q 92.0,264.0 98.0,144.0 Z" fill="url(#sheen-queen-dark)" stroke="none"/>
+
+</svg>

@@ -25,6 +25,7 @@ export default function OnlineGamePage() {
   const router = useRouter();
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
+  const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [game, setGame] = useState<OnlineGame | null | "loading">("loading");
   const supabaseRef = useRef(createClient());
 
@@ -50,6 +51,7 @@ export default function OnlineGamePage() {
       if (cancelled) return;
       setChildId(resolution.child!.id);
       setBoardSkinId(resolution.child!.board_skin_id);
+      setPieceSetId(resolution.child!.piece_set_id);
 
       const initial = await getOnlineGame(supabase, params.gameId);
       if (cancelled) return;
@@ -217,8 +219,9 @@ export default function OnlineGamePage() {
         <ChessBoard
           fen={game.fen}
           playableColor={myColor}
-          size={380}
+          size={560}
           boardSkinId={boardSkinId}
+          pieceSetId={pieceSetId}
           onMove={(opts) => handleMove(opts.fen)}
           onGameOver={handleGameOver}
         />

@@ -104,6 +104,19 @@ export default async function KingdomMapPage() {
           </div>
         </Link>
 
+        <Link
+          href="/kingdom-map/piece-set"
+          className="flex items-center gap-4 rounded-card bg-white/85 shadow-toy p-5 w-full max-w-md"
+        >
+          <span className="text-4xl">♟️</span>
+          <div>
+            <p className="font-display text-lg text-kingdom-night">Change Pieces</p>
+            <p className="font-body text-sm text-kingdom-night/70">
+              Pick a new style for your chess pieces
+            </p>
+          </div>
+        </Link>
+
         <AchievementBadges earnedKeys={earnedKeys} />
 
         <Link

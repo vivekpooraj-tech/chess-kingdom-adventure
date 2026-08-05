@@ -6,6 +6,7 @@ export interface ChildProfile {
   avatar_id: string | null;
   buddy_id: string | null;
   board_skin_id: string;
+  piece_set_id: string;
   current_day: number;
 }
 
@@ -176,6 +177,18 @@ export async function updateChildBoardSkin(
   const { error } = await supabase
     .from("children")
     .update({ board_skin_id: boardSkinId })
+    .eq("id", childId);
+  if (error) throw error;
+}
+
+export async function updateChildPieceSet(
+  supabase: SupabaseClient,
+  childId: string,
+  pieceSetId: string
+) {
+  const { error } = await supabase
+    .from("children")
+    .update({ piece_set_id: pieceSetId })
     .eq("id", childId);
   if (error) throw error;
 }

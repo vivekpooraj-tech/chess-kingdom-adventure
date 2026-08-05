@@ -7,7 +7,7 @@ export default function OnboardingBoardPage() {
     <BoardSkinPicker
       heading="Pick your Board! 🎨"
       confirmLabel="Enter the Kingdom! →"
-      redirectTo="/kingdom-map"
+      redirectTo="/onboarding/pieces"
     />
   );
 }

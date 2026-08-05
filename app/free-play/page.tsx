@@ -36,6 +36,7 @@ export default function FreePlayPage() {
   const [view, setView] = useState<ViewState>({ status: "loading" });
   const [gameKey, setGameKey] = useState(0);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
+  const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     async function load() {
@@ -55,6 +56,7 @@ export default function FreePlayPage() {
       }
       const child = resolution.child!;
       setBoardSkinId(child.board_skin_id);
+      setPieceSetId(child.piece_set_id);
 
       const completedDays = await getCompletedDays(supabase, child.id);
       const total = LESSONS.length;
@@ -144,8 +146,9 @@ export default function FreePlayPage() {
           playableColor="w"
           opponent="stockfish"
           difficulty={view.difficulty}
-          size={400}
+          size={600}
           boardSkinId={boardSkinId}
+          pieceSetId={pieceSetId}
           onGameOver={(result) => handleGameOver(view.difficulty, result)}
         />
         <Button

@@ -33,6 +33,16 @@ export const BOARD_SKINS: BoardSkinOption[] = [
     lightSquare: "rgba(255, 107, 107, 0.3)", // kingdom-coral/30
     darkSquare: "rgba(109, 90, 230, 0.65)", // kingdom-royal/65
   },
+  {
+    id: "wood-classic",
+    name: "Wood Classic",
+    emoji: "♟️",
+    // Approximate flat colors for the picker's checkerboard swatch — the
+    // actual board uses the textured image below, not these.
+    lightSquare: "#EAD6A8",
+    darkSquare: "#4A2E17",
+    boardImageUrl: "/boards/wood-classic.svg",
+  },
 ];
 
 export const DEFAULT_BOARD_SKIN_ID = BOARD_SKINS[0].id;

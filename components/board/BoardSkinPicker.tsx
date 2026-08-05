@@ -27,6 +27,7 @@ export function BoardSkinPicker({
   const [selected, setSelected] = useState<string>(DEFAULT_BOARD_SKIN_ID);
   const [childId, setChildId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -54,10 +55,16 @@ export function BoardSkinPicker({
   async function confirm() {
     if (!childId) return;
     setSaving(true);
-    const supabase = createClient();
-    await updateChildBoardSkin(supabase, childId, selected);
-    setSaving(false);
-    router.push(redirectTo);
+    setError(null);
+    try {
+      const supabase = createClient();
+      await updateChildBoardSkin(supabase, childId, selected);
+      router.push(redirectTo);
+    } catch (err) {
+      console.error("Failed to save board skin", err);
+      setError("Couldn't save that — please try again.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -92,6 +99,8 @@ export function BoardSkinPicker({
           </motion.button>
         ))}
       </div>
+
+      {error && <p className="font-body text-sm text-kingdom-coral text-center">{error}</p>}
 
       <Button size="lg" disabled={!selected || saving} onClick={confirm}>
         {saving ? "Saving..." : confirmLabel}

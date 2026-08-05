@@ -1,0 +1,35 @@
+<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wood-bishop-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#120B04"/>
+      <stop offset="18%" stop-color="#221609"/>
+      <stop offset="42%" stop-color="#5C4630"/>
+      <stop offset="58%" stop-color="#3A2A1C"/>
+      <stop offset="82%" stop-color="#221609"/>
+      <stop offset="100%" stop-color="#120B04"/>
+    </linearGradient>
+    <linearGradient id="sheen-bishop-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="40%" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="shadow-bishop-dark" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- contact shadow -->
+  <ellipse cx="100.0" cy="290.0" rx="58" ry="11" fill="url(#shadow-bishop-dark)" />
+  <!-- piece body -->
+  <g stroke="#000000" stroke-width="1.4" stroke-linejoin="round">
+    <path d="M 89.20,242.00 C 89.08,242.70 89.98,244.10 88.48,246.20 C 86.98,248.30 84.28,251.45 80.20,254.60 C 76.12,257.75 66.70,262.16 64.00,265.10 C 61.30,268.04 61.72,270.21 64.00,272.24 C 66.28,274.27 75.64,275.88 77.68,277.28 C 79.72,278.68 76.72,279.52 76.24,280.64 C 75.76,281.76 75.04,283.44 74.80,284.00 L 125.20,284.00 C 124.96,283.44 124.24,281.76 123.76,280.64 C 123.28,279.52 120.28,278.68 122.32,277.28 C 124.36,275.88 133.72,274.27 136.00,272.24 C 138.28,270.21 138.70,268.04 136.00,265.10 C 133.30,262.16 123.88,257.75 119.80,254.60 C 115.72,251.45 113.02,248.30 111.52,246.20 C 110.02,244.10 110.92,242.70 110.80,242.00 Z" fill="url(#wood-bishop-dark)"/>
+    <path d="M 92.80,124.00 C 91.84,126.36 88.84,132.26 87.04,138.16 C 85.24,144.06 83.14,150.94 82.00,159.40 C 80.86,167.86 79.84,180.05 80.20,188.90 C 80.56,197.75 82.66,205.62 84.16,212.50 C 85.66,219.38 88.24,225.28 89.20,230.20 C 90.16,235.12 89.80,240.03 89.92,242.00 L 110.08,242.00 C 110.20,240.03 109.84,235.12 110.80,230.20 C 111.76,225.28 114.34,219.38 115.84,212.50 C 117.34,205.62 119.44,197.75 119.80,188.90 C 120.16,180.05 119.14,167.86 118.00,159.40 C 116.86,150.94 114.76,144.06 112.96,138.16 C 111.16,132.26 108.16,126.36 107.20,124.00 Z" fill="url(#wood-bishop-dark)"/>
+    <path d="M 89.20,108.00 C 90.04,109.33 93.64,113.33 94.24,116.00 C 94.84,118.67 93.04,122.67 92.80,124.00 L 107.20,124.00 C 106.96,122.67 105.16,118.67 105.76,116.00 C 106.36,113.33 109.96,109.33 110.80,108.00 Z" fill="url(#wood-bishop-dark)"/>
+    <circle cx="100.0" cy="96.0" r="9" fill="url(#wood-bishop-dark)"/>
+    <path d="M 97.0,142.0 Q 109.0,165.4 97.0,188.9" fill="none" stroke="#000000" stroke-width="3.4" stroke-linecap="round"/>
+
+  </g>
+      <path d="M 92.0,124.0 Q 86.0,254.0 96.0,282.0 L 102.0,282.0 Q 94.0,254.0 100.0,124.0 Z" fill="url(#sheen-bishop-dark)" stroke="none"/>
+
+</svg>
