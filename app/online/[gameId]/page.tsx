@@ -11,6 +11,7 @@ import {
   updateGameFen,
   finishOnlineGame,
   sendReaction,
+  applyMatchRating,
   OnlineGame,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
@@ -27,6 +28,7 @@ export default function OnlineGamePage() {
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [game, setGame] = useState<OnlineGame | null | "loading">("loading");
+  const [newRating, setNewRating] = useState<number | null>(null);
   const supabaseRef = useRef(createClient());
 
   // Load the current child + initial game state, then subscribe to live
@@ -126,6 +128,12 @@ export default function OnlineGamePage() {
     const winner = result.isDraw ? "draw" : result.winner;
     if (winner) {
       await finishOnlineGame(supabaseRef.current, params.gameId, winner);
+      if (game && game !== "loading" && game.match_type === "random") {
+        const supabase = supabaseRef.current;
+        await applyMatchRating(supabase, params.gameId).catch(() => {});
+        const { data } = await supabase.from("children").select("rating").eq("id", childId!).single();
+        if (data) setNewRating(data.rating);
+      }
     }
   }
 
@@ -190,6 +198,11 @@ export default function OnlineGamePage() {
           <h1 className="font-display text-xl text-kingdom-night">
             {isDraw ? "It's a Draw!" : iWon ? "You Won!" : "Better Luck Next Time!"}
           </h1>
+          {game.match_type === "random" && newRating !== null && (
+            <p className="font-body text-sm text-kingdom-night/60">
+              Your rating is now <span className="font-bold">{newRating}</span>
+            </p>
+          )}
           <Link href="/kingdom-map">
             <Button>Back to the Kingdom Map →</Button>
           </Link>
@@ -203,6 +216,10 @@ export default function OnlineGamePage() {
     const myColor: Color = isHost ? game.host_color : game.host_color === "w" ? "b" : "w";
     const myReaction = isHost ? game.host_reaction : game.guest_reaction;
     const theirReaction = isHost ? game.guest_reaction : game.host_reaction;
+    // Random-match opponents are strangers, not people the child already
+    // knows via an invite link — no chat/emoji there, matching the app's
+    // no-open-contact-with-strangers policy (see docs/01-PRD.md).
+    const showSocial = game.match_type !== "random";
 
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 py-8">
@@ -210,7 +227,7 @@ export default function OnlineGamePage() {
           Playing as {myColor === "w" ? "White" : "Black"}
         </h1>
 
-        {theirReaction && (
+        {showSocial && theirReaction && (
           <p className="font-body text-lg bg-white/80 rounded-card px-4 py-2 shadow-toy">
             {theirReaction}
           </p>
@@ -226,31 +243,35 @@ export default function OnlineGamePage() {
           onGameOver={handleGameOver}
         />
 
-        <div className="flex flex-wrap gap-2 justify-center max-w-md">
-          {EMOJI_REACTIONS.map((e) => (
-            <button
-              key={e}
-              onClick={() => handleReaction(e)}
-              className="text-2xl bg-white/70 rounded-full w-10 h-10 flex items-center justify-center shadow-sm"
-            >
-              {e}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 justify-center max-w-md">
-          {QUICK_CHAT_PHRASES.map((phrase) => (
-            <button
-              key={phrase}
-              onClick={() => handleReaction(phrase)}
-              className="text-sm bg-white/70 rounded-full px-3 py-1 shadow-sm font-body"
-            >
-              {phrase}
-            </button>
-          ))}
-        </div>
+        {showSocial && (
+          <>
+            <div className="flex flex-wrap gap-2 justify-center max-w-md">
+              {EMOJI_REACTIONS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => handleReaction(e)}
+                  className="text-2xl bg-white/70 rounded-full w-10 h-10 flex items-center justify-center shadow-sm"
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2 justify-center max-w-md">
+              {QUICK_CHAT_PHRASES.map((phrase) => (
+                <button
+                  key={phrase}
+                  onClick={() => handleReaction(phrase)}
+                  className="text-sm bg-white/70 rounded-full px-3 py-1 shadow-sm font-body"
+                >
+                  {phrase}
+                </button>
+              ))}
+            </div>
 
-        {myReaction && (
-          <p className="font-body text-xs text-kingdom-night/40">You sent: {myReaction}</p>
+            {myReaction && (
+              <p className="font-body text-xs text-kingdom-night/40">You sent: {myReaction}</p>
+            )}
+          </>
         )}
       </main>
     );

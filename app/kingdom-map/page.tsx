@@ -69,6 +69,19 @@ export default async function KingdomMapPage() {
           isPremium={isPremium}
         />
 
+        <Link
+          href="/puzzles"
+          className="flex items-center gap-4 rounded-card bg-kingdom-royal/90 shadow-toy p-5 w-full max-w-md"
+        >
+          <span className="text-4xl">🧩</span>
+          <div>
+            <p className="font-display text-lg text-white">Puzzle Trainer</p>
+            <p className="font-body text-sm text-white/80">
+              Find the checkmate — real puzzles, anytime!
+            </p>
+          </div>
+        </Link>
+
         {completedDays.length >= LESSONS.length && (
           <Link
             href="/free-play"
@@ -79,6 +92,21 @@ export default async function KingdomMapPage() {
               <p className="font-display text-lg text-kingdom-night">Free Play Arena</p>
               <p className="font-body text-sm text-kingdom-night/70">
                 Play a full game anytime — pick your difficulty!
+              </p>
+            </div>
+          </Link>
+        )}
+
+        {completedDays.length >= LESSONS.length && (
+          <Link
+            href="/matchmaking"
+            className="flex items-center gap-4 rounded-card bg-kingdom-coral/90 shadow-toy p-5 w-full max-w-md"
+          >
+            <span className="text-4xl">🌍</span>
+            <div>
+              <p className="font-display text-lg text-white">Play Someone New</p>
+              <p className="font-body text-sm text-white/80">
+                Rated matches against players worldwide
               </p>
             </div>
           </Link>

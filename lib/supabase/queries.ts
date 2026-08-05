@@ -7,6 +7,7 @@ export interface ChildProfile {
   buddy_id: string | null;
   board_skin_id: string;
   piece_set_id: string;
+  rating: number;
   current_day: number;
 }
 
@@ -371,6 +372,10 @@ export interface OnlineGame {
   winner: "w" | "b" | "draw" | null;
   host_reaction: string | null;
   guest_reaction: string | null;
+  /** "random" games (worldwide matchmaking) hide quick-chat/emoji in the
+   * UI and settle rating changes on finish — "invite" games (the
+   * original friend-link mode) are unaffected. */
+  match_type: "invite" | "random";
 }
 
 export async function createOnlineGame(
@@ -452,6 +457,52 @@ export async function sendReaction(
     .from("online_games")
     .update({ [field]: reaction })
     .eq("id", gameId);
+  if (error) throw error;
+}
+
+// --- Random matchmaking (rating-based, post-course-completion) ----------
+
+export interface MatchmakingResult {
+  matched: boolean;
+  gameId: string | null;
+}
+
+/**
+ * Atomically pairs with the closest-rated waiting opponent, or enqueues
+ * the caller if nobody's waiting — see find_or_create_match() in
+ * supabase/migrations/0008_matchmaking.sql for the actual matching logic
+ * (it has to run server-side in a single transaction to be race-safe).
+ */
+export async function findOrCreateMatch(
+  supabase: SupabaseClient,
+  childId: string,
+  rating: number
+): Promise<MatchmakingResult> {
+  const { data, error } = await supabase.rpc("find_or_create_match", {
+    p_child_id: childId,
+    p_rating: rating,
+  });
+  if (error) throw error;
+  const row = data?.[0];
+  return { matched: row?.matched ?? false, gameId: row?.game_id ?? null };
+}
+
+/** Leaves the queue — used both for an explicit "Cancel search" and as
+ * cleanup if the child navigates away while still waiting. */
+export async function cancelMatchmaking(supabase: SupabaseClient, childId: string): Promise<void> {
+  const { error } = await supabase
+    .from("matchmaking_queue")
+    .delete()
+    .eq("child_id", childId)
+    .eq("status", "waiting");
+  if (error) throw error;
+}
+
+/** Settles ELO-style rating changes for a finished random match — see
+ * apply_match_rating() in the same migration for why this is safe to call
+ * from either (or both) players' clients. */
+export async function applyMatchRating(supabase: SupabaseClient, gameId: string): Promise<void> {
+  const { error } = await supabase.rpc("apply_match_rating", { p_game_id: gameId });
   if (error) throw error;
 }
 

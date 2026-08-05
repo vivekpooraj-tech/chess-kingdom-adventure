@@ -64,6 +64,23 @@ export interface PieceSetOption {
   intrinsicSize: { width: number; height: number };
 }
 
+export interface ChessPuzzle {
+  id: string;
+  fen: string;
+  sideToMove: "w" | "b";
+  /**
+   * No stored solution move list — validated algorithmically instead (see
+   * lib/chess-engine/puzzleValidation.ts). mate-in-1: any move that
+   * delivers checkmate is correct. mate-in-2: the first move must lead to
+   * mate-in-1 against EVERY legal opponent reply, not just one hand-picked
+   * line — that's the actual definition of a sound mate-in-2, and it means
+   * the puzzle stays correct no matter which legal defense the opponent
+   * (or a curious kid poking at replies) actually plays.
+   */
+  mateIn: 1 | 2;
+  theme: string;
+}
+
 export interface LessonStep {
   id: string;
   type: "story" | "minigame" | "puzzle" | "ai_chat" | "mini_match" | "reward";

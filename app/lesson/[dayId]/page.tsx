@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/Card";
 import { BuddyAvatar } from "@/components/buddy/BuddyAvatar";
 import { BuddyChat } from "@/components/buddy/BuddyChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { DragToTarget } from "@/components/minigames/engines/DragToTarget";
 import { MemoryFlip } from "@/components/minigames/engines/MemoryFlip";
 import { TimedReaction } from "@/components/minigames/engines/TimedReaction";
@@ -315,6 +316,7 @@ function PuzzleStep({
   return (
     <Card className="flex flex-col items-center gap-5">
       <h2 className="font-display text-xl text-kingdom-night text-center">{prompt}</h2>
+      <SideToMoveIndicator color="w" />
       <ChessBoard
         key={boardKey}
         fen={fen}
@@ -374,6 +376,7 @@ function MiniMatchStep({
   return (
     <Card className="flex flex-col items-center gap-5">
       <h2 className="font-display text-xl text-kingdom-night text-center">{prompt}</h2>
+      <SideToMoveIndicator color="w" />
       <ChessBoard
         fen={fen}
         playableColor="w"
