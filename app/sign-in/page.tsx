@@ -23,12 +23,18 @@ export default function SignInPage() {
     setLoading(true);
     setError(null);
     const supabase = createClient();
-    // Inside the wrapped Android app, the https callback URL can't reach
-    // us directly — see CapacitorDeepLinkHandler for why a custom scheme
-    // is needed instead. Web sign-in is unaffected.
-    const redirectTo = Capacitor.isNativePlatform()
-      ? "chesskingdom://auth/callback"
-      : `${window.location.origin}/auth/callback`;
+    // Redirecting straight to a chesskingdom:// custom scheme from
+    // Supabase's server-side verification step turned out to get silently
+    // blocked by Chrome — the email link already goes through 2-3
+    // automatic redirects (Gmail's link-safety wrapper, the email
+    // provider's click-tracking, then Supabase itself) before reaching
+    // this, and Chrome restricts handing off to an external app after
+    // that many hops with no direct user gesture. Landing on our own
+    // https page first is reliable (confirmed in testing), so the native
+    // case is flagged via ?platform=native and the handoff to the app
+    // happens from there instead — see app/auth/callback/route.ts.
+    const base = `${window.location.origin}/auth/callback`;
+    const redirectTo = Capacitor.isNativePlatform() ? `${base}?platform=native` : base;
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
