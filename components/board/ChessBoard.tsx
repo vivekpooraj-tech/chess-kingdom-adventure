@@ -254,21 +254,23 @@ export function ChessBoard({
       */}
       <style jsx>{`
         .board-outer {
-          width: ${size}px;
-          max-width: 100%;
-          /* Only constraining by width (via max-width) was fine in
-             portrait, where height is plentiful, but in landscape a phone
-             might only have ~375px of height while the board tries to
-             render at up to 760px wide (and, via aspect-ratio, just as
-             tall) — it overflowed badly. max-height plus aspect-ratio lets
-             the browser pick the largest square that fits BOTH the
-             available width and height. */
-          max-height: 75vh;
+          /* A separate max-width + max-height (previous attempt) doesn't
+             work here: width was an EXPLICIT pixel value, and CSS only
+             lets aspect-ratio derive the AUTO dimension (height) from an
+             explicit one, not the other way around — so max-height
+             clamped height alone, leaving width at its full explicit
+             value and breaking the square into a short, wide rectangle.
+             Since the interactive grid inside is positioned by percentage
+             against this box, a non-square parent scattered pieces
+             outside the visible board in landscape. Folding every
+             constraint into width itself (via min()) keeps width as the
+             single source of truth, so aspect-ratio always derives a
+             matching, correct height from it — guaranteed square. */
+          width: min(${size}px, 100%, 75vh);
         }
         @media (max-width: 639px) {
           .board-outer {
-            width: calc(100% + 3rem);
-            max-width: calc(100% + 3rem);
+            width: min(calc(100% + 3rem), 75vh);
             margin-left: -1.5rem;
             margin-right: -1.5rem;
           }
