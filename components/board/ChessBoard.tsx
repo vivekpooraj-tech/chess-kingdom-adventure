@@ -256,6 +256,14 @@ export function ChessBoard({
         .board-outer {
           width: ${size}px;
           max-width: 100%;
+          /* Only constraining by width (via max-width) was fine in
+             portrait, where height is plentiful, but in landscape a phone
+             might only have ~375px of height while the board tries to
+             render at up to 760px wide (and, via aspect-ratio, just as
+             tall) — it overflowed badly. max-height plus aspect-ratio lets
+             the browser pick the largest square that fits BOTH the
+             available width and height. */
+          max-height: 75vh;
         }
         @media (max-width: 639px) {
           .board-outer {
