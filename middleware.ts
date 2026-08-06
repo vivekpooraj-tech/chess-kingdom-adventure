@@ -37,7 +37,13 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isPublic = PUBLIC_PATHS.some(
-    (p) => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith("/auth/")
+    (p) =>
+      request.nextUrl.pathname === p ||
+      request.nextUrl.pathname.startsWith("/auth/") ||
+      // Well-known verification files (e.g. Android App Links'
+      // assetlinks.json) are fetched by the OS/other services with no
+      // session cookie at all — same reasoning as the Stripe webhook above.
+      request.nextUrl.pathname.startsWith("/.well-known/")
   );
 
   if (!user && !isPublic) {

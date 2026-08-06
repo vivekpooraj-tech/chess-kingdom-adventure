@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.chesskingdom.adventure",
+      "sha256_cert_fingerprints": [
+        "B8:45:02:DC:D3:F7:4C:F8:16:83:C0:FE:C4:CC:4D:71:98:4C:D0:5F:AC:57:84:7D:39:D8:C4:06:AF:14:2D:B6"
+      ]
+    }
+  }
+]

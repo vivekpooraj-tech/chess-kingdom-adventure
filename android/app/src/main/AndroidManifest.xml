@@ -22,6 +22,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Android App Links: makes the OS route links to this domain
+                 (e.g. the magic-link email's callback URL) straight into
+                 this app instead of the system browser. autoVerify="true"
+                 tells Android to check /.well-known/assetlinks.json on the
+                 domain at install time to confirm this app is the real
+                 owner before it takes over — that file has to match this
+                 app's signing certificate, which means switching from the
+                 debug keystore to a release keystore later requires
+                 updating assetlinks.json's fingerprint too. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="chess-kingdom-adventure-opal.vercel.app" />
+            </intent-filter>
+
         </activity>
 
         <provider
