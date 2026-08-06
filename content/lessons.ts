@@ -23,11 +23,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good pawn moves to win this mini match.",
-      movesRequired: 3,
+      prompt: "Make 6 good pawn moves to win this mini match.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Village Wakes" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Pawn!" },
       { id: "s2", type: "minigame", title: "Pawn Race" },
       { id: "s3", type: "puzzle", title: "Guard the Path" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -50,11 +51,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/1N2K1N1 w - - 0 1",
-      prompt: "Make 3 good Knight or Pawn moves to clear the forest path.",
-      movesRequired: 3,
+      prompt: "Make 6 good Knight or Pawn moves to clear the forest path.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Forest Awakens" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Knight!" },
       { id: "s2", type: "minigame", title: "Knight's Memory Match" },
       { id: "s3", type: "puzzle", title: "Find the Knight's Jump" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -77,11 +79,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/2B1KB2 w - - 0 1",
-      prompt: "Make 3 good Bishop or Pawn moves to relight the Hall.",
-      movesRequired: 3,
+      prompt: "Make 6 good Bishop or Pawn moves to relight the Hall.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Hall Grows Dim" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Bishop!" },
       { id: "s2", type: "minigame", title: "Diagonal Catch" },
       { id: "s3", type: "puzzle", title: "Light the Diagonal" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -104,11 +107,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w - - 0 1",
-      prompt: "Make 3 good Rook or Pawn moves to clear the corridor.",
-      movesRequired: 3,
+      prompt: "Make 6 good Rook or Pawn moves to clear the corridor.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Corridor Rusts Shut" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Rook!" },
       { id: "s2", type: "minigame", title: "Rook's Charge" },
       { id: "s3", type: "puzzle", title: "Charge the Corridor" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -131,11 +135,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3QK3 w - - 0 1",
-      prompt: "Make 3 good Queen or Pawn moves to restore the court.",
-      movesRequired: 3,
+      prompt: "Make 6 good Queen or Pawn moves to restore the court.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Music Fades" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Queen!" },
       { id: "s2", type: "minigame", title: "Queen's Memory Vault" },
       { id: "s3", type: "puzzle", title: "Sweep the Court" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -158,11 +163,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/5RK1 w - - 0 1",
-      prompt: "Make 3 good King or Pawn moves to keep your King safe.",
-      movesRequired: 3,
+      prompt: "Make 6 good King or Pawn moves to keep your King safe.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Shadow Draws Near" },
+      { id: "s1b", type: "piece_intro", title: "Meet the King!" },
       { id: "s2", type: "minigame", title: "King's Careful Walk" },
       { id: "s3", type: "puzzle", title: "Take a Careful Step" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -185,11 +191,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/2N5/8/PPPPPPPP/4K1N1 w - - 0 1",
-      prompt: "Make 3 good Knight or Pawn moves to practice your forks.",
-      movesRequired: 3,
+      prompt: "Make 6 good Knight or Pawn moves to practice your forks.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Knights' Secret Trick" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Knight!" },
       { id: "s2", type: "minigame", title: "Fork the Targets" },
       { id: "s3", type: "puzzle", title: "Find the Fork" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -212,11 +219,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/5BK1 w - - 0 1",
-      prompt: "Make 3 good Bishop or Pawn moves to practice pinning.",
-      movesRequired: 3,
+      prompt: "Make 6 good Bishop or Pawn moves to practice pinning.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Archive's Secret" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Bishop!" },
       { id: "s2", type: "minigame", title: "Bishop's Pin Memory" },
       { id: "s3", type: "puzzle", title: "Line Up the Pin" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -239,11 +247,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4KR2 w - - 0 1",
-      prompt: "Make 3 good Rook or Pawn moves to hold the watch.",
-      movesRequired: 3,
+      prompt: "Make 6 good Rook or Pawn moves to hold the watch.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "Shadows on the Back Rank" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Rook!" },
       { id: "s2", type: "minigame", title: "Back-Rank Watch" },
       { id: "s3", type: "puzzle", title: "Guard the Back Rank" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -266,11 +275,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3QK3 w - - 0 1",
-      prompt: "Make 3 good Queen or Pawn moves for your final trial.",
-      movesRequired: 3,
+      prompt: "Make 6 good Queen or Pawn moves for your final trial.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Final Stand" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Queen!" },
       { id: "s2", type: "minigame", title: "Deliver Checkmate" },
       { id: "s3", type: "puzzle", title: "Close In for Mate" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -293,11 +303,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good opening moves to control the center.",
-      movesRequired: 3,
+      prompt: "Make 6 good opening moves to control the center.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "Welcome to the Intermediate Kingdom" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Pawn!" },
       { id: "s2", type: "minigame", title: "Claim the Center" },
       { id: "s3", type: "puzzle", title: "Push for the Center" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -320,11 +331,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/5N2/PPPPPPPP/4K1N1 w - - 0 1",
-      prompt: "Make 3 good Knight or Pawn moves to reach the outpost.",
-      movesRequired: 3,
+      prompt: "Make 6 good Knight or Pawn moves to reach the outpost.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Old Knight's Secret" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Knight!" },
       { id: "s2", type: "minigame", title: "Find the Outpost" },
       { id: "s3", type: "puzzle", title: "Settle the Outpost" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -347,11 +359,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/1B4B1/8/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good Bishop or Pawn moves with your twin Bishops.",
-      movesRequired: 3,
+      prompt: "Make 6 good Bishop or Pawn moves with your twin Bishops.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Gallery of Light" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Bishop!" },
       { id: "s2", type: "minigame", title: "Twin Bishops' Reflexes" },
       { id: "s3", type: "puzzle", title: "Show the Pair's Power" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -374,11 +387,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3RK3 w - - 0 1",
-      prompt: "Make 3 good Rook or Pawn moves down the open file.",
-      movesRequired: 3,
+      prompt: "Make 6 good Rook or Pawn moves down the open file.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Road Opens" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Rook!" },
       { id: "s2", type: "minigame", title: "Race the Open File" },
       { id: "s3", type: "puzzle", title: "Take the Open Road" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -401,11 +415,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good King or Pawn moves to escort your Pawn home.",
-      movesRequired: 3,
+      prompt: "Make 6 good King or Pawn moves to escort your Pawn home.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "One Pawn's Long Journey" },
+      { id: "s1b", type: "piece_intro", title: "Meet the King!" },
       { id: "s2", type: "minigame", title: "Remember the Promotion Path" },
       { id: "s3", type: "puzzle", title: "March Toward Promotion" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -428,11 +443,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good Pawn or King moves in the sprint.",
-      movesRequired: 3,
+      prompt: "Make 6 good Pawn or King moves in the sprint.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Pawn Breaks Free" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Pawn!" },
       { id: "s2", type: "minigame", title: "Sprint the Pawn" },
       { id: "s3", type: "puzzle", title: "Race to the Finish" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -455,11 +471,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/3N4/8/PPPPPPPP/3RK3 w - - 0 1",
-      prompt: "Make 3 good Knight or Pawn moves to set up the ambush.",
-      movesRequired: 3,
+      prompt: "Make 6 good Knight or Pawn moves to set up the ambush.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "Something's Hiding Behind the Knight" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Knight!" },
       { id: "s2", type: "minigame", title: "Remember the Ambush" },
       { id: "s3", type: "puzzle", title: "Spring the Ambush" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -482,11 +499,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/2B5/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good Bishop or Pawn moves to practice your skewer.",
-      movesRequired: 3,
+      prompt: "Make 6 good Bishop or Pawn moves to practice your skewer.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Dazzling Diagonal Trick" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Bishop!" },
       { id: "s2", type: "minigame", title: "Skewer Reflexes" },
       { id: "s3", type: "puzzle", title: "Line Up the Skewer" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -509,11 +527,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/3R4/8/8/PPPPPPPP/3RK3 w - - 0 1",
-      prompt: "Make 3 good Rook or Pawn moves to build your tower.",
-      movesRequired: 3,
+      prompt: "Make 6 good Rook or Pawn moves to build your tower.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Engineers' Secret" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Rook!" },
       { id: "s2", type: "minigame", title: "Stack the Tower" },
       { id: "s3", type: "puzzle", title: "Double the Rooks" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -536,11 +555,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/3QK3 w - - 0 1",
-      prompt: "Make 3 good Queen or Pawn moves to win your Trial.",
-      movesRequired: 3,
+      prompt: "Make 6 good Queen or Pawn moves to win your Trial.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Grand Hall Awaits" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Queen!" },
       { id: "s2", type: "minigame", title: "Tournament Reflexes" },
       { id: "s3", type: "puzzle", title: "Open the Trial" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -563,11 +583,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/R3K3 w - - 0 1",
-      prompt: "Make 3 good King, Rook, or Pawn moves in the dance.",
-      movesRequired: 3,
+      prompt: "Make 6 good King, Rook, or Pawn moves in the dance.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "Welcome to the Advanced Kingdom" },
+      { id: "s1b", type: "piece_intro", title: "Meet the King!" },
       { id: "s2", type: "minigame", title: "Step Toward Safety" },
       { id: "s3", type: "puzzle", title: "Begin the Dance" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -590,11 +611,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good Pawn or King moves to build your chain.",
-      movesRequired: 3,
+      prompt: "Make 6 good Pawn or King moves to build your chain.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "Pawns Hold Hands" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Pawn!" },
       { id: "s2", type: "minigame", title: "Remember the Chain" },
       { id: "s3", type: "puzzle", title: "Link the Chain" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -617,11 +639,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/6B1/3N4/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good Knight, Bishop, or Pawn moves in the rivalry.",
-      movesRequired: 3,
+      prompt: "Make 6 good Knight, Bishop, or Pawn moves in the rivalry.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Old Rivalry" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Knight!" },
       { id: "s2", type: "minigame", title: "Knight vs Bishop Reflexes" },
       { id: "s3", type: "puzzle", title: "Choose Your Champion" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -644,11 +667,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K1B1 w - - 0 1",
-      prompt: "Make 3 good Bishop or Pawn moves from the watchtower.",
-      movesRequired: 3,
+      prompt: "Make 6 good Bishop or Pawn moves from the watchtower.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Watchtower's View" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Bishop!" },
       { id: "s2", type: "minigame", title: "Spot the Long Diagonal" },
       { id: "s3", type: "puzzle", title: "Take the Watchtower" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -671,11 +695,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/3R4/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good Rook or Pawn moves on patrol.",
-      movesRequired: 3,
+      prompt: "Make 6 good Rook or Pawn moves on patrol.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "Halfway Through the Advanced Kingdom" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Rook!" },
       { id: "s2", type: "minigame", title: "Remember the Patrol Route" },
       { id: "s3", type: "puzzle", title: "Send the Rook Out" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -698,11 +723,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/3Q4/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good Queen or Pawn moves on your daring strike.",
-      movesRequired: 3,
+      prompt: "Make 6 good Queen or Pawn moves on your daring strike.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Bold Charge" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Queen!" },
       { id: "s2", type: "minigame", title: "Queen's Quick Strike" },
       { id: "s3", type: "puzzle", title: "Charge In Carefully" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -725,11 +751,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/4K3/8/PPPPPPPP/8 w - - 0 1",
-      prompt: "Make 3 good King or Pawn moves with your brave King.",
-      movesRequired: 3,
+      prompt: "Make 6 good King or Pawn moves with your brave King.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The King's Surprising Secret" },
+      { id: "s1b", type: "piece_intro", title: "Meet the King!" },
       { id: "s2", type: "minigame", title: "March the Brave King" },
       { id: "s3", type: "puzzle", title: "Lead from the Front" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -752,11 +779,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good Pawn or King moves in the march.",
-      movesRequired: 3,
+      prompt: "Make 6 good Pawn or King moves in the march.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Majority Assembles" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Pawn!" },
       { id: "s2", type: "minigame", title: "Remember the Marching Order" },
       { id: "s3", type: "puzzle", title: "Begin the March" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -779,11 +807,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "4k3/pppppppp/8/3N4/8/8/PPPPPPPP/4K3 w - - 0 1",
-      prompt: "Make 3 good Knight or Pawn moves to hold the blockade.",
-      movesRequired: 3,
+      prompt: "Make 6 good Knight or Pawn moves to hold the blockade.",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "One Last Lesson" },
+      { id: "s1b", type: "piece_intro", title: "Meet the Knight!" },
       { id: "s2", type: "minigame", title: "Blockade Reflexes" },
       { id: "s3", type: "puzzle", title: "Hold the Blockade" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
@@ -806,11 +835,12 @@ export const LESSONS: Lesson[] = [
 },
     miniMatch: {
       fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-      prompt: "Play 3 real opening moves against the Shadow King himself!",
-      movesRequired: 3,
+      prompt: "Play 6 real opening moves against the Shadow King himself!",
+      movesRequired: 6,
     },
     steps: [
       { id: "s1", type: "story", title: "The Whole Kingdom Watches" },
+      { id: "s1b", type: "piece_intro", title: "Meet the King!" },
       { id: "s2", type: "minigame", title: "The Shadow King's Final Trial" },
       { id: "s3", type: "puzzle", title: "Make Your First Move" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },

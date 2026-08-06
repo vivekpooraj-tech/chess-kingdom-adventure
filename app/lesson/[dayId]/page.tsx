@@ -7,6 +7,9 @@ import clsx from "clsx";
 import type { PieceSymbol } from "chess.js";
 import { getLesson, FREE_DAY_LIMIT } from "@/content/lessons";
 import { getMinigameConfigForDay } from "@/content/minigame-configs";
+import { getPieceLibraryEntry } from "@/content/pieceLibrary";
+import { getPieceSet } from "@/content/pieceSets";
+import type { Piece } from "@/lib/types";
 import { BUDDIES } from "@/content/buddies";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -139,6 +142,10 @@ export default function LessonPage() {
               <StoryStep title={lesson.title} storyBeat={lesson.storyBeat} buddy={buddy} onNext={next} />
             )}
 
+            {step.type === "piece_intro" && (
+              <PieceIntroStep piece={lesson.crystal} pieceSetId={pieceSetId} onNext={next} />
+            )}
+
             {step.type === "minigame" && (
               <MinigameStep dayNumber={lesson.dayNumber} onComplete={next} />
             )}
@@ -203,6 +210,64 @@ function StoryStep({
       <h2 className="font-display text-2xl text-kingdom-night">{title}</h2>
       <p className="font-body text-lg text-kingdom-night/80">{storyBeat}</p>
       <Button onClick={onNext}>Let's go! →</Button>
+    </Card>
+  );
+}
+
+function PieceIntroStep({
+  piece,
+  pieceSetId,
+  onNext,
+}: {
+  piece: Piece;
+  pieceSetId?: string;
+  onNext: () => void;
+}) {
+  const entry = getPieceLibraryEntry(piece);
+  const pieceSet = getPieceSet(pieceSetId);
+  const folder = pieceSet.folder ? `${pieceSet.folder}/` : "";
+
+  return (
+    <Card className="flex flex-col items-center gap-4 text-center">
+      <div className="flex items-center gap-2 bg-kingdom-sky/10 rounded-card p-3">
+        <img
+          src={`/pieces/${folder}light/${entry.piece}.svg`}
+          alt={`Light ${entry.name}`}
+          width={pieceSet.intrinsicSize.width}
+          height={pieceSet.intrinsicSize.height}
+          style={{ width: 64, height: 64, objectFit: "contain" }}
+          draggable={false}
+        />
+        <img
+          src={`/pieces/${folder}dark/${entry.piece}.svg`}
+          alt={`Dark ${entry.name}`}
+          width={pieceSet.intrinsicSize.width}
+          height={pieceSet.intrinsicSize.height}
+          style={{ width: 64, height: 64, objectFit: "contain" }}
+          draggable={false}
+        />
+      </div>
+
+      <h2 className="font-display text-2xl text-kingdom-night">Meet the {entry.name}!</h2>
+      <span className="font-body text-xs bg-kingdom-gold/20 text-kingdom-night/70 rounded-full px-3 py-1">
+        {entry.value === null ? "Priceless!" : `Worth ${entry.value} point${entry.value === 1 ? "" : "s"}`}
+      </span>
+
+      <div className="text-left w-full">
+        <p className="font-display text-sm text-kingdom-royal mb-1">How it moves</p>
+        <p className="font-body text-kingdom-night/80">{entry.howItMoves}</p>
+      </div>
+
+      <div className="text-left w-full">
+        <p className="font-display text-sm text-kingdom-royal mb-1">Role & Power</p>
+        <p className="font-body text-kingdom-night/80">{entry.role}</p>
+      </div>
+
+      <p className="font-body text-sm text-kingdom-night/60 bg-kingdom-gold/10 rounded-card p-3">
+        💡 {entry.funFact}
+      </p>
+
+      <Button onClick={onNext}>Got it! →</Button>
     </Card>
   );
 }

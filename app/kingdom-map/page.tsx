@@ -70,6 +70,19 @@ export default async function KingdomMapPage() {
         />
 
         <Link
+          href="/piece-library"
+          className="flex items-center gap-4 rounded-card bg-kingdom-sky/90 shadow-toy p-5 w-full max-w-md"
+        >
+          <span className="text-4xl">📖</span>
+          <div>
+            <p className="font-display text-lg text-white">Piece Library</p>
+            <p className="font-body text-sm text-white/80">
+              How each piece moves, and its role & power
+            </p>
+          </div>
+        </Link>
+
+        <Link
           href="/puzzles"
           className="flex items-center gap-4 rounded-card bg-kingdom-royal/90 shadow-toy p-5 w-full max-w-md"
         >

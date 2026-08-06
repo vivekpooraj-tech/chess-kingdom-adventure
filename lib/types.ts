@@ -83,7 +83,7 @@ export interface ChessPuzzle {
 
 export interface LessonStep {
   id: string;
-  type: "story" | "minigame" | "puzzle" | "ai_chat" | "mini_match" | "reward";
+  type: "story" | "piece_intro" | "minigame" | "puzzle" | "ai_chat" | "mini_match" | "reward";
   title: string;
 }
 
