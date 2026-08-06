@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { CapacitorDeepLinkHandler } from "@/components/CapacitorDeepLinkHandler";
 
 export const metadata: Metadata = {
   title: "Chess Kingdom Adventure",
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen">
+        <CapacitorDeepLinkHandler />
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -22,15 +23,33 @@ export default function SignInPage() {
     setLoading(true);
     setError(null);
     const supabase = createClient();
+    // Inside the wrapped Android app, the https callback URL can't reach
+    // us directly — see CapacitorDeepLinkHandler for why a custom scheme
+    // is needed instead. Web sign-in is unaffected.
+    const redirectTo = Capacitor.isNativePlatform()
+      ? "chesskingdom://auth/callback"
+      : `${window.location.origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: redirectTo,
       },
     });
     setLoading(false);
     if (error) {
-      setError(error.message);
+      // error.message isn't always a usable string — some Supabase error
+      // shapes (e.g. a raw 500 from the mail sender) don't populate it the
+      // way supabase-js expects. Confirmed in testing: it comes back as
+      // the literal 2-character string "{}" for this specific failure, not
+      // empty/undefined — a plain truthy check let it straight through, so
+      // this checks for actual letters instead of just non-emptiness.
+      const rawMessage = error.message?.trim();
+      const isUsableMessage = rawMessage && /[a-zA-Z]/.test(rawMessage);
+      setError(
+        isUsableMessage
+          ? rawMessage
+          : "Something went wrong sending that email — please try again in a moment."
+      );
     } else {
       setSent(true);
     }

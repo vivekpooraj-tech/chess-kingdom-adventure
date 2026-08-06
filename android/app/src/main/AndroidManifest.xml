@@ -40,6 +40,25 @@
                     android:host="chess-kingdom-adventure-opal.vercel.app" />
             </intent-filter>
 
+            <!-- Custom scheme for the magic-link sign-in flow specifically.
+                 The App Links filter above can't handle it: the actual
+                 email link points at Supabase's own domain first (for
+                 token verification), and only Supabase's server redirects
+                 to our domain afterward — Android only intercepts the
+                 FIRST tap of an external link, so by the time our domain
+                 shows up mid-redirect-chain inside Chrome, App Links never
+                 gets a chance to claim it. A custom scheme sidesteps this:
+                 Chrome can't handle a non-http(s) scheme at all, so Android
+                 is forced to hand it straight to whichever app registered
+                 it — no domain-ownership proof needed, unlike App Links.
+                 See CapacitorDeepLinkHandler for what receives this. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="chesskingdom" />
+            </intent-filter>
+
         </activity>
 
         <provider
