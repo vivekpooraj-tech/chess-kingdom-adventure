@@ -91,7 +91,7 @@ export default async function ProfilePage() {
 
         <div className="w-full max-w-md flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>Customize</p>
-          <ListItemRow href="/kingdom-map/piece-set">
+          <ListItemRow href="/kingdom-map/customize">
             <span className="text-2xl flex-none">{pieceSet.emoji}</span>
             <div className="flex-1 min-w-0">
               <p className="font-classic-display text-sm text-premium-ivory">Change Pieces</p>
@@ -99,7 +99,7 @@ export default async function ProfilePage() {
             </div>
             <span className="text-premium-gold text-lg flex-none">→</span>
           </ListItemRow>
-          <ListItemRow href="/kingdom-map/board-skin">
+          <ListItemRow href="/kingdom-map/customize">
             <span className="text-2xl flex-none">{boardSkin.emoji}</span>
             <div className="flex-1 min-w-0">
               <p className="font-classic-display text-sm text-premium-ivory">Change Board</p>

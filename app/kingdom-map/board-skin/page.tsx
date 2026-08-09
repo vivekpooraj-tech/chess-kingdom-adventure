@@ -1,9 +1,9 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { BoardSkinPicker } from "@/components/board/BoardSkinPicker";
-
+// Superseded by the combined Customize Your Chessboard screen (Phase 13),
+// which shows pieces and board together with a live preview instead of two
+// separate single-purpose editors. Kept as a redirect, not deleted, so any
+// existing link/bookmark to this route still works.
 export default function EditBoardSkinPage() {
-  return (
-    <BoardSkinPicker heading="Choose your Board" confirmLabel="Save →" redirectTo="/profile" tone="premium" />
-  );
+  redirect("/kingdom-map/customize");
 }

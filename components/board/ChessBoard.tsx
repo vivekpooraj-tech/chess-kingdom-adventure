@@ -28,6 +28,23 @@ const PIECE_FILE_NAME: Record<PieceSymbol, string> = {
   k: "king",
 };
 
+// Bounding box each piece renders within, as a % of its square (Phase 13).
+// Every set's SVG viewBox is now cropped tight to its own ink — no more
+// shared oversized canvases with huge margins around shorter pieces — so
+// these percentages map directly to visual size on the board instead of
+// fighting stale canvas whitespace. Sized per piece type, not uniformly, so
+// a rook's naturally blockier silhouette and a pawn's naturally smaller one
+// still read as consistent visual weight next to a king/queen at the same
+// board.
+const PIECE_BOX_PCT: Record<PieceSymbol, number> = {
+  k: 92,
+  q: 92,
+  b: 90,
+  n: 90,
+  r: 88,
+  p: 86,
+};
+
 export interface ChessBoardProps {
   /** Starting position; defaults to the standard game start. */
   fen?: string;
@@ -491,18 +508,10 @@ export function ChessBoard({
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.6, opacity: 0 }}
                       className="flex items-center justify-center drop-shadow-sm"
-                      // Pawns are the shortest/simplest piece in every set —
-                      // at the same bounding box as everything else, they
-                      // read as noticeably smaller. Boxing them larger (not
-                      // scaling the image itself, so it still lands via
-                      // object-fit: contain) makes them visually match the
-                      // other pieces' apparent size instead of looking
-                      // undersized in comparison.
-                      style={
-                        piece.type === "p"
-                          ? { width: "98%", height: "98%" }
-                          : { width: "90%", height: "90%" }
-                      }
+                      style={{
+                        width: `${PIECE_BOX_PCT[piece.type]}%`,
+                        height: `${PIECE_BOX_PCT[piece.type]}%`,
+                      }}
                     >
                       <img
                         src={`/pieces/${pieceFolder}${piece.color === "w" ? "light" : "dark"}/${
