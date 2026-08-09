@@ -117,3 +117,45 @@ export function CloseIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+// --- Cinematic video player controls (Phase 12) ---
+
+export function PauseIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <path d="M8 5 V19" />
+      <path d="M16 5 V19" />
+    </svg>
+  );
+}
+
+export function SoundOnIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <path d="M4 10 V14 H8 L13 18 V6 L8 10 Z" />
+      <path d="M16.5 9 C17.5 10 17.5 14 16.5 15" />
+      <path d="M19 7 C21 9 21 15 19 17" />
+    </svg>
+  );
+}
+
+export function SoundOffIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <path d="M4 10 V14 H8 L13 18 V6 L8 10 Z" />
+      <path d="M17 9 L21 15" />
+      <path d="M21 9 L17 15" />
+    </svg>
+  );
+}
+
+export function FullscreenIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <path d="M8 4 H4 V8" />
+      <path d="M16 4 H20 V8" />
+      <path d="M8 20 H4 V16" />
+      <path d="M16 20 H20 V16" />
+    </svg>
+  );
+}

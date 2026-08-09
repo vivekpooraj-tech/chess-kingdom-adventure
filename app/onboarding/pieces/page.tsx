@@ -7,7 +7,7 @@ export default function OnboardingPiecesPage() {
     <PieceSetPicker
       heading="Pick your Pieces! ♟️"
       confirmLabel="Enter the Kingdom! →"
-      redirectTo="/kingdom-map"
+      redirectTo="/welcome"
     />
   );
 }

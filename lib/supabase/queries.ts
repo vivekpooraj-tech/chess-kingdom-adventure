@@ -695,11 +695,16 @@ export async function saveAcademyVideoProgress(
   if (error) throw error;
 }
 
+/** quizScore is null for completions that never involved a quiz — e.g. the
+ * first-time cinematic intro (app/welcome), which reuses this same content
+ * row/table rather than inventing a parallel "seen it" mechanism. The
+ * child_academy_progress.quiz_score column is already nullable for exactly
+ * this reason ("null until taken"). */
 export async function completeAcademyContent(
   supabase: SupabaseClient,
   childId: string,
   contentId: string,
-  quizScore: number
+  quizScore: number | null
 ): Promise<void> {
   const { error } = await supabase.from("child_academy_progress").upsert(
     {
