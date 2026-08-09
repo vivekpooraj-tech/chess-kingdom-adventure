@@ -75,3 +75,16 @@ export const PUZZLES: ChessPuzzle[] = [
     theme: "Queen & King",
   },
 ];
+
+/**
+ * Deterministic "puzzle of the day" — same pick for every player on a given
+ * calendar date, no extra scheduling table needed. Cycles through the real
+ * PUZZLES bank by day-of-year, so it's honest about only having this many
+ * positions today rather than implying a curated daily drop.
+ */
+export function getDailyPuzzle(date: Date = new Date()): ChessPuzzle {
+  const start = new Date(date.getFullYear(), 0, 0);
+  const diff = date.getTime() - start.getTime();
+  const dayOfYear = Math.floor(diff / 86_400_000);
+  return PUZZLES[dayOfYear % PUZZLES.length];
+}

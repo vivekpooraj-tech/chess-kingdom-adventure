@@ -1,34 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import clsx from "clsx";
 import type { PieceSymbol } from "chess.js";
 import { getLesson, FREE_DAY_LIMIT } from "@/content/lessons";
 import { getMinigameConfigForDay } from "@/content/minigame-configs";
-import { getPieceLibraryEntry } from "@/content/pieceLibrary";
-import { getPieceSet } from "@/content/pieceSets";
-import type { Piece } from "@/lib/types";
 import { BUDDIES } from "@/content/buddies";
+import { KINGDOM_ZONES, getZoneForDay, KingdomZone } from "@/content/kingdomZones";
+import { getAchievement, AchievementDef } from "@/content/achievements";
+import { getSkillTagLabel } from "@/lib/lessonLabels";
+import { TEXT } from "@/lib/designSystem";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { BuddyAvatar } from "@/components/buddy/BuddyAvatar";
 import { BuddyChat } from "@/components/buddy/BuddyChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { DragToTarget } from "@/components/minigames/engines/DragToTarget";
 import { MemoryFlip } from "@/components/minigames/engines/MemoryFlip";
 import { TimedReaction } from "@/components/minigames/engines/TimedReaction";
 import { ConfettiBurst } from "@/components/rewards/ConfettiBurst";
+import { LessonHeader } from "@/components/lesson/LessonHeader";
+import { AchievementUnlockReveal } from "@/components/achievements/AchievementUnlockReveal";
 import { createClient } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   markLessonComplete,
   recordPuzzleAttempt,
+  localDateString,
+  getTodayPreviewCount,
+  incrementPreviewCount,
+  getCompletedDays,
+  evaluateAndAwardAchievements,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
+import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
+import { getAcademyRecommendation } from "@/lib/chessMind/academyRecommendations";
+
+const DAILY_PREVIEW_LIMIT = 3;
+
+type ViewMode = "loading" | "locked" | "full" | "preview";
+
+interface ZoneProgress {
+  zone: KingdomZone;
+  completedInZone: number;
+  totalInZone: number;
+  /** Set only if this lesson was the last day of its zone AND a next zone exists. */
+  justUnlockedZone: KingdomZone | null;
+}
+
+interface RewardData {
+  newAchievement: AchievementDef | null;
+  zoneProgress: ZoneProgress | null;
+}
 
 export default function LessonPage() {
   const params = useParams<{ dayId: string }>();
@@ -38,8 +64,11 @@ export default function LessonPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [childId, setChildId] = useState<string | null>(null);
   const [buddy, setBuddy] = useState(BUDDIES[0]);
-  const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
-  const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  const [mode, setMode] = useState<ViewMode>("loading");
+  const [previewDone, setPreviewDone] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [rewardData, setRewardData] = useState<RewardData | null>(null);
+  const rewardEvaluatedRef = useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -58,112 +87,228 @@ export default function LessonPage() {
       }
       const child = resolution.child!;
       setChildId(child.id);
-      setBoardSkinId(child.board_skin_id);
-      setPieceSetId(child.piece_set_id);
       const matchedBuddy = BUDDIES.find((b) => b.id === child.buddy_id);
       if (matchedBuddy) setBuddy(matchedBuddy);
 
-      // Defense in depth: the Kingdom Map already hides/redirects premium
-      // days for free accounts, but someone could still type a lesson URL
-      // directly (e.g. /lesson/4) — check again here before showing content.
       const dayNumber = Number(params.dayId);
-      if (dayNumber > FREE_DAY_LIMIT) {
-        const { data: parent } = await supabase
-          .from("parents")
-          .select("premium_status")
-          .eq("auth_user_id", user.id)
-          .single();
-        if (parent?.premium_status !== "premium") {
-          router.push("/kingdom-map");
-          return;
-        }
+      if (dayNumber <= FREE_DAY_LIMIT) {
+        setMode("full");
+        return;
+      }
+
+      const { data: parent } = await supabase
+        .from("parents")
+        .select("premium_status")
+        .eq("auth_user_id", user.id)
+        .single();
+
+      if (parent?.premium_status === "premium") {
+        setIsPremium(true);
+        setMode("full");
+        return;
+      }
+
+      // Free account on a locked day: up to DAILY_PREVIEW_LIMIT puzzle
+      // previews per day, from ANY locked day — a "try before you buy"
+      // sample of the paid content, not tied to one specific day.
+      const today = localDateString();
+      const usedToday = await getTodayPreviewCount(supabase, child.id, today);
+      if (usedToday >= DAILY_PREVIEW_LIMIT) {
+        setMode("locked");
+      } else {
+        await incrementPreviewCount(supabase, child.id, today);
+        setMode("preview");
       }
     }
     load();
-  }, [router]);
+  }, [router, params.dayId]);
+
+  const step = lesson?.steps[stepIndex];
+
+  // The moment the Reward step is reached, the lesson is genuinely
+  // complete — this is where markLessonComplete fires (not on "Continue",
+  // which now just navigates away), so the achievement/zone data shown on
+  // the Reward screen reflects reality rather than a guess made before the
+  // completion was even recorded.
+  useEffect(() => {
+    if (!lesson || !childId || step?.type !== "reward" || rewardEvaluatedRef.current) return;
+    rewardEvaluatedRef.current = true;
+
+    async function evaluate() {
+      const supabase = createClient();
+      await markLessonComplete(supabase, childId!, lesson!.dayNumber);
+      const completedDays = await getCompletedDays(supabase, childId!);
+      const newlyEarned = await evaluateAndAwardAchievements(
+        supabase,
+        childId!,
+        completedDays,
+        isPremium
+      ).catch(() => [] as string[]);
+      const newAchievement = newlyEarned.length > 0 ? getAchievement(newlyEarned[0]) ?? null : null;
+
+      const zone = getZoneForDay(lesson!.dayNumber);
+      const zoneLessonDays = Array.from(
+        { length: zone.dayEnd - zone.dayStart + 1 },
+        (_, i) => zone.dayStart + i
+      );
+      const completedInZone = zoneLessonDays.filter((d) => completedDays.includes(d)).length;
+      const isLastDayOfZone = lesson!.dayNumber === zone.dayEnd;
+      const nextZone = KINGDOM_ZONES.find((z) => z.dayStart === zone.dayEnd + 1) ?? null;
+
+      setRewardData({
+        newAchievement,
+        zoneProgress: {
+          zone,
+          completedInZone,
+          totalInZone: zoneLessonDays.length,
+          justUnlockedZone: isLastDayOfZone ? nextZone : null,
+        },
+      });
+    }
+    evaluate();
+  }, [lesson, childId, step, isPremium]);
 
   if (!lesson) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p className="font-display text-xl">This part of the Kingdom is still being built!</p>
+      <main className="min-h-screen bg-premium-midnight flex items-center justify-center px-6">
+        <p className={TEXT.body}>This part of the Kingdom is still being built.</p>
       </main>
     );
   }
 
-  if (!childId) {
-    // Still loading the child profile / premium check from the effect above.
-    return <main className="min-h-screen" />;
+  if (!childId || mode === "loading") {
+    // Still loading the child profile / premium+preview check from the effect above.
+    return <main className="min-h-screen bg-premium-midnight" />;
   }
 
-  const step = lesson.steps[stepIndex];
   const next = () => setStepIndex((i) => Math.min(i + 1, lesson.steps.length - 1));
 
-  async function finishLesson() {
-    if (childId && lesson) {
-      const supabase = createClient();
-      await markLessonComplete(supabase, childId, lesson.dayNumber);
-    }
+  function goToKingdomMap() {
     router.push("/kingdom-map");
   }
 
+  if (mode === "locked") {
+    return (
+      <main className="min-h-screen bg-premium-midnight flex items-center justify-center px-6">
+        <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
+          <span className="text-5xl">🔒</span>
+          <h1 className={TEXT.heading}>Today's free previews are used up</h1>
+          <p className={TEXT.body}>
+            You've tried {DAILY_PREVIEW_LIMIT} puzzle previews today — come back tomorrow for
+            more, or unlock every day right now.
+          </p>
+          <UpgradeButton tone="premium" />
+          <Link
+            href="/kingdom-map"
+            className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          >
+            Back to Home
+          </Link>
+        </SecondaryCard>
+      </main>
+    );
+  }
+
+  if (mode === "preview") {
+    return (
+      <ScreenTimeGate childId={childId}>
+        <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6 py-10">
+          <span className={`${TEXT.meta} text-premium-gold`}>
+            Free Preview — Day {lesson.dayNumber}
+          </span>
+          {!previewDone ? (
+            <PuzzleStep
+              fen={lesson.puzzle.fen}
+              prompt={lesson.puzzle.prompt}
+              acceptedPieceTypes={lesson.puzzle.acceptedPieceTypes}
+              crystal={lesson.crystal}
+              dayNumber={lesson.dayNumber}
+              childId={childId}
+              onNext={() => setPreviewDone(true)}
+            />
+          ) : (
+            <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
+              <span className="text-5xl">✨</span>
+              <h2 className={TEXT.heading}>Enjoyed that? There's a whole adventure waiting.</h2>
+              <p className={TEXT.body}>
+                Unlock Day {lesson.dayNumber}'s full story, mini-games, and more — plus every
+                other day, forever.
+              </p>
+              <UpgradeButton tone="premium" />
+              <Link
+                href="/kingdom-map"
+                className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+              >
+                Back to Home
+              </Link>
+            </SecondaryCard>
+          )}
+        </main>
+      </ScreenTimeGate>
+    );
+  }
+
+  // mode === "full"
+  const zone = getZoneForDay(lesson.dayNumber);
+
   return (
     <ScreenTimeGate childId={childId}>
-      <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6 py-10">
-        {/* Progress dots */}
-        <div className="flex gap-2">
-          {lesson.steps.map((s, i) => (
-            <div
-              key={s.id}
-              className={`w-3 h-3 rounded-full ${
-                i <= stepIndex ? "bg-kingdom-gold" : "bg-kingdom-night/15"
-              }`}
-            />
-          ))}
-        </div>
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 py-8">
+        <LessonHeader
+          zoneName={zone.name}
+          zoneEmoji={zone.emoji}
+          dayNumber={lesson.dayNumber}
+          title={lesson.title}
+          stepIndex={stepIndex}
+          totalSteps={lesson.steps.length}
+        />
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={step.id}
+            key={step!.id}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3 }}
-            // Board-containing steps get a wider column — max-w-lg (the
-            // default, good for reading text) was silently capping the
-            // board's own `size` prop well below what was actually asked
-            // for, since ChessBoard's width maxes out at 100% of this
-            // parent.
-            className={clsx(
-              "w-full flex flex-col items-center gap-6",
-              step.type === "puzzle" || step.type === "mini_match" ? "max-w-4xl" : "max-w-lg"
-            )}
+            className="w-full max-w-lg flex flex-col items-center gap-6"
           >
-            {step.type === "story" && (
-              <StoryStep title={lesson.title} storyBeat={lesson.storyBeat} buddy={buddy} onNext={next} />
-            )}
-
-            {step.type === "piece_intro" && (
-              <PieceIntroStep piece={lesson.crystal} pieceSetId={pieceSetId} onNext={next} />
-            )}
-
-            {step.type === "minigame" && (
-              <MinigameStep dayNumber={lesson.dayNumber} onComplete={next} />
-            )}
-
-            {step.type === "puzzle" && (
-              <PuzzleStep
-                fen={lesson.puzzle.fen}
-                prompt={lesson.puzzle.prompt}
-                acceptedPieceTypes={lesson.puzzle.acceptedPieceTypes}
-                dayNumber={lesson.dayNumber}
-                childId={childId}
-                boardSkinId={boardSkinId}
-                pieceSetId={pieceSetId}
+            {step!.type === "story" && (
+              <StoryStep
+                title={lesson.title}
+                storyBeat={lesson.storyBeat}
+                objective={lesson.puzzle.prompt}
+                skillTags={lesson.skillTags}
+                buddy={buddy}
                 onNext={next}
               />
             )}
 
-            {step.type === "ai_chat" && (
+            {step!.type === "piece_intro" && (
+              <PieceIntroStep
+                title={step!.title}
+                crystal={lesson.crystal}
+                fen={lesson.puzzle.fen}
+                onNext={next}
+              />
+            )}
+
+            {step!.type === "minigame" && (
+              <MinigameStep dayNumber={lesson.dayNumber} onComplete={next} />
+            )}
+
+            {step!.type === "puzzle" && (
+              <PuzzleStep
+                fen={lesson.puzzle.fen}
+                prompt={lesson.puzzle.prompt}
+                acceptedPieceTypes={lesson.puzzle.acceptedPieceTypes}
+                crystal={lesson.crystal}
+                dayNumber={lesson.dayNumber}
+                childId={childId}
+                onNext={next}
+              />
+            )}
+
+            {step!.type === "ai_chat" && (
               <BuddyChat
                 buddyEmoji={buddy.emoji}
                 buddyName={buddy.name}
@@ -172,19 +317,24 @@ export default function LessonPage() {
               />
             )}
 
-            {step.type === "mini_match" && (
+            {step!.type === "mini_match" && (
               <MiniMatchStep
                 fen={lesson.miniMatch.fen}
                 prompt={lesson.miniMatch.prompt}
                 movesRequired={lesson.miniMatch.movesRequired}
-                boardSkinId={boardSkinId}
-                pieceSetId={pieceSetId}
+                crystal={lesson.crystal}
                 onNext={next}
               />
             )}
 
-            {step.type === "reward" && (
-              <RewardStep title={step.title} onFinish={finishLesson} />
+            {step!.type === "reward" && (
+              <RewardStep
+                lessonTitle={lesson.title}
+                skillTags={lesson.skillTags}
+                rewardData={rewardData}
+                recommendation={getAcademyRecommendation(lesson.crystal, lesson.skillTags)}
+                onFinish={goToKingdomMap}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -196,96 +346,98 @@ export default function LessonPage() {
 function StoryStep({
   title,
   storyBeat,
+  objective,
+  skillTags,
   buddy,
   onNext,
 }: {
   title: string;
   storyBeat: string;
+  objective: string;
+  skillTags: string[];
   buddy: (typeof BUDDIES)[number];
   onNext: () => void;
 }) {
   return (
-    <Card className="flex flex-col items-center gap-5 text-center">
+    <PrimaryCard className="flex flex-col items-center gap-5 text-center">
       <BuddyAvatar emoji={buddy.emoji} size="lg" />
-      <h2 className="font-display text-2xl text-kingdom-night">{title}</h2>
-      <p className="font-body text-lg text-kingdom-night/80">{storyBeat}</p>
-      <Button onClick={onNext}>Let's go! →</Button>
-    </Card>
+      <h2 className={TEXT.heading}>{title}</h2>
+      <p className="font-classic-body text-base text-premium-ivory/80 leading-relaxed">
+        {storyBeat}
+      </p>
+
+      <div className="w-full rounded-premiumBtn bg-premium-midnightDeep border border-premium-gold/15 p-4 text-left">
+        <p className={`${TEXT.meta} text-premium-gold mb-1`}>Today's Goal</p>
+        <p className="font-classic-body text-sm text-premium-ivory/90">{objective}</p>
+        {skillTags.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-1">
+            {skillTags.map((tag) => (
+              <li key={tag} className="font-classic-body text-xs text-premium-ivory/60 flex gap-2">
+                <span className="text-premium-gold flex-none">•</span>
+                {getSkillTagLabel(tag)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <Button tone="premium" onClick={onNext}>
+        Continue →
+      </Button>
+    </PrimaryCard>
   );
 }
 
+/**
+ * The "SEE" stage (Phase 11 point 1/5) — maps the lesson data's
+ * `piece_intro` step (previously unhandled by any render branch, so it
+ * silently rendered nothing) onto the loop's "see the concept demonstrated
+ * on the board" moment. Uses only data the lesson already has — the step's
+ * own title and the puzzle's real starting position — no invented facts.
+ */
 function PieceIntroStep({
-  piece,
-  pieceSetId,
+  title,
+  crystal,
+  fen,
   onNext,
 }: {
-  piece: Piece;
-  pieceSetId?: string;
+  title: string;
+  crystal: string;
+  fen: string;
   onNext: () => void;
 }) {
-  const entry = getPieceLibraryEntry(piece);
-  const pieceSet = getPieceSet(pieceSetId);
-  const folder = pieceSet.folder ? `${pieceSet.folder}/` : "";
-
   return (
-    <Card className="flex flex-col items-center gap-4 text-center">
-      <div className="flex items-center gap-2 bg-kingdom-sky/10 rounded-card p-3">
-        <img
-          src={`/pieces/${folder}light/${entry.piece}.svg`}
-          alt={`Light ${entry.name}`}
-          width={pieceSet.intrinsicSize.width}
-          height={pieceSet.intrinsicSize.height}
-          style={{ width: 64, height: 64, objectFit: "contain" }}
-          draggable={false}
-        />
-        <img
-          src={`/pieces/${folder}dark/${entry.piece}.svg`}
-          alt={`Dark ${entry.name}`}
-          width={pieceSet.intrinsicSize.width}
-          height={pieceSet.intrinsicSize.height}
-          style={{ width: 64, height: 64, objectFit: "contain" }}
-          draggable={false}
-        />
-      </div>
-
-      <h2 className="font-display text-2xl text-kingdom-night">Meet the {entry.name}!</h2>
-      <span className="font-body text-xs bg-kingdom-gold/20 text-kingdom-night/70 rounded-full px-3 py-1">
-        {entry.value === null ? "Priceless!" : `Worth ${entry.value} point${entry.value === 1 ? "" : "s"}`}
-      </span>
-
-      <div className="text-left w-full">
-        <p className="font-display text-sm text-kingdom-royal mb-1">How it moves</p>
-        <p className="font-body text-kingdom-night/80">{entry.howItMoves}</p>
-      </div>
-
-      <div className="text-left w-full">
-        <p className="font-display text-sm text-kingdom-royal mb-1">Role & Power</p>
-        <p className="font-body text-kingdom-night/80">{entry.role}</p>
-      </div>
-
-      <p className="font-body text-sm text-kingdom-night/60 bg-kingdom-gold/10 rounded-card p-3">
-        💡 {entry.funFact}
+    <SecondaryCard className="flex flex-col items-center gap-5 text-center">
+      <p className={`${TEXT.meta} text-premium-gold`}>See it on the board</p>
+      <h2 className={TEXT.heading}>{title}</h2>
+      <ChessBoard fen={fen} size={320} readOnly />
+      <p className={TEXT.body}>
+        Here's where the {crystal} starts. Let's see how it moves.
       </p>
-
-      <Button onClick={onNext}>Got it! →</Button>
-    </Card>
+      <Button tone="premium" onClick={onNext}>
+        Continue →
+      </Button>
+    </SecondaryCard>
   );
 }
 
 /**
  * Looks up the day's minigame config (content/minigame-configs.ts) and
  * renders whichever engine that day uses — DragToTarget, MemoryFlip, or
- * TimedReaction — with that day's specific content.
+ * TimedReaction — with that day's specific content. The engines themselves
+ * keep their existing playful styling on purpose (Phase 11 point 25 —
+ * "premium UI + chess adventure," and these mini-games are the adventure
+ * side of that balance); only the surrounding shell was redesigned.
  */
 function MinigameStep({ dayNumber, onComplete }: { dayNumber: number; onComplete: () => void }) {
   const config = getMinigameConfigForDay(dayNumber);
 
   if (!config) {
     return (
-      <Card className="flex flex-col items-center gap-4">
-        <p className="font-display text-lg">This mini-game isn't ready yet!</p>
-        <Button onClick={onComplete}>Skip for now →</Button>
-      </Card>
+      <SecondaryCard className="flex flex-col items-center gap-4">
+        <p className={TEXT.body}>This mini-game isn't ready yet.</p>
+        <Button tone="premium" onClick={onComplete}>Skip for now →</Button>
+      </SecondaryCard>
     );
   }
 
@@ -331,19 +483,17 @@ function PuzzleStep({
   fen,
   prompt,
   acceptedPieceTypes,
+  crystal,
   dayNumber,
   childId,
-  boardSkinId,
-  pieceSetId,
   onNext,
 }: {
   fen: string;
   prompt: string;
   acceptedPieceTypes: PieceSymbol[] | "any";
+  crystal: string;
   dayNumber: number;
   childId: string;
-  boardSkinId?: string;
-  pieceSetId?: string;
   onNext: () => void;
 }) {
   const [moved, setMoved] = useState(false);
@@ -379,17 +529,14 @@ function PuzzleStep({
   }
 
   return (
-    <Card className="flex flex-col items-center gap-5">
-      <h2 className="font-display text-xl text-kingdom-night text-center">{prompt}</h2>
-      <SideToMoveIndicator color="w" />
+    <SecondaryCard className="flex flex-col items-center gap-5 w-full">
+      <p className="font-classic-body text-base text-premium-ivory text-center">{prompt}</p>
       <ChessBoard
         key={boardKey}
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={760}
-        boardSkinId={boardSkinId}
-        pieceSetId={pieceSetId}
+        size={360}
         onMove={(opts) => handleMove(opts.piece)}
         onGameOver={(result) => {
           if (result.isCheckmate && result.winner === "w") {
@@ -398,25 +545,29 @@ function PuzzleStep({
         }}
       />
       {checkmated && (
-        <p className="font-display text-lg text-kingdom-gold">Checkmate! Incredible! 👑</p>
+        <p className="font-classic-display text-lg text-premium-gold text-center">
+          Checkmate — incredible.
+        </p>
       )}
       {!checkmated && moved && wasCorrect && (
-        <p className="font-display text-lg text-kingdom-forest">Wonderful! Well done!</p>
+        <p className="font-classic-display text-lg text-emerald-400 text-center">
+          Excellent. That's how the {crystal} does it.
+        </p>
       )}
       {!checkmated && moved && !wasCorrect && (
         <div className="flex flex-col items-center gap-2">
-          <p className="font-display text-lg text-kingdom-coral">
-            Nice move! Next time, try moving the piece from today's lesson.
+          <p className="font-classic-body text-sm text-red-300 text-center">
+            Not quite — look for a move with the {crystal} from today's lesson.
           </p>
-          <Button variant="ghost" size="md" onClick={tryAgain}>
+          <Button tone="premium" variant="ghost" size="md" onClick={tryAgain}>
             Try Again
           </Button>
         </div>
       )}
-      <Button disabled={!moved} onClick={onNext}>
+      <Button tone="premium" disabled={!moved} onClick={onNext}>
         Continue →
       </Button>
-    </Card>
+    </SecondaryCard>
   );
 }
 
@@ -424,31 +575,42 @@ function MiniMatchStep({
   fen,
   prompt,
   movesRequired,
-  boardSkinId,
-  pieceSetId,
+  crystal,
   onNext,
 }: {
   fen: string;
   prompt: string;
   movesRequired: number;
-  boardSkinId?: string;
-  pieceSetId?: string;
+  crystal: string;
   onNext: () => void;
 }) {
+  const [started, setStarted] = useState(false);
   const [moveCount, setMoveCount] = useState(0);
   const [checkmated, setCheckmated] = useState(false);
 
+  if (!started) {
+    return (
+      <SecondaryCard className="flex flex-col items-center gap-4 text-center">
+        <p className={`${TEXT.meta} text-premium-gold`}>Put It Into Practice</p>
+        <h2 className={TEXT.heading}>Now use what you learned.</h2>
+        <p className={TEXT.body}>{prompt}</p>
+        <Button tone="premium" onClick={() => setStarted(true)}>
+          Start Mini Match →
+        </Button>
+      </SecondaryCard>
+    );
+  }
+
+  const complete = checkmated || moveCount >= movesRequired;
+
   return (
-    <Card className="flex flex-col items-center gap-5">
-      <h2 className="font-display text-xl text-kingdom-night text-center">{prompt}</h2>
-      <SideToMoveIndicator color="w" />
+    <SecondaryCard className="flex flex-col items-center gap-5 w-full">
+      <p className="font-classic-body text-sm text-premium-ivory/70 text-center">{prompt}</p>
       <ChessBoard
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={760}
-        boardSkinId={boardSkinId}
-        pieceSetId={pieceSetId}
+        size={360}
         onMove={() => setMoveCount((c) => c + 1)}
         onGameOver={(result) => {
           if (result.isCheckmate && result.winner === "w") {
@@ -457,36 +619,135 @@ function MiniMatchStep({
         }}
       />
       {checkmated ? (
-        <p className="font-display text-lg text-kingdom-gold">Checkmate! Incredible! 👑</p>
+        <p className="font-classic-display text-lg text-premium-gold">Checkmate — incredible.</p>
+      ) : complete ? (
+        <p className="font-classic-display text-base text-emerald-400">
+          Nice work. You put the {crystal} into practice.
+        </p>
       ) : (
-        <p className="font-body text-kingdom-night/60">
+        <p className={TEXT.caption}>
           {Math.min(moveCount, movesRequired)}/{movesRequired} moves
         </p>
       )}
-      <Button disabled={!checkmated && moveCount < movesRequired} onClick={onNext}>
+      <Button tone="premium" disabled={!complete} onClick={onNext}>
         Finish the Duel →
       </Button>
-    </Card>
+    </SecondaryCard>
   );
 }
 
-function RewardStep({ title, onFinish }: { title: string; onFinish: () => void }) {
+function RewardStep({
+  lessonTitle,
+  skillTags,
+  rewardData,
+  recommendation,
+  onFinish,
+}: {
+  lessonTitle: string;
+  skillTags: string[];
+  rewardData: RewardData | null;
+  recommendation: ReturnType<typeof getAcademyRecommendation>;
+  onFinish: () => void;
+}) {
+  // rewardData is null only for the brief moment the completion/achievement
+  // evaluation is in flight (see the useEffect above) — a light loading
+  // state rather than showing wrong/incomplete progress.
+  if (!rewardData) {
+    return (
+      <SecondaryCard className="flex flex-col items-center gap-4 text-center">
+        <p className={TEXT.body}>Wrapping up the lesson…</p>
+      </SecondaryCard>
+    );
+  }
+
+  const { newAchievement, zoneProgress } = rewardData;
+
   return (
-    <Card className="flex flex-col items-center gap-5 text-center relative overflow-hidden">
+    <PrimaryCard className="flex flex-col items-center gap-5 text-center relative overflow-hidden w-full">
       <ConfettiBurst />
       <motion.div
         initial={{ scale: 0, rotate: -20 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: "spring", stiffness: 200, damping: 12 }}
-        className="text-7xl"
+        className="text-6xl"
       >
         💎
       </motion.div>
-      <h2 className="font-display text-2xl text-kingdom-night capitalize">{title}</h2>
-      <p className="font-body text-kingdom-night/70">
-        Great work! +50 coins, +1 Castle Brick
-      </p>
-      <Button onClick={onFinish}>Back to the Kingdom Map →</Button>
-    </Card>
+      <div>
+        <p className={`${TEXT.meta} text-premium-gold`}>Lesson Complete</p>
+        <h2 className={`${TEXT.heading} mt-1`}>The {lessonTitle} lesson is complete.</h2>
+      </div>
+
+      {skillTags.length > 0 && (
+        <div className="w-full rounded-premiumBtn bg-premium-midnightDeep border border-white/10 p-4 text-left">
+          <p className={`${TEXT.meta} text-premium-gold mb-2`}>You Learned</p>
+          <ul className="flex flex-col gap-1.5">
+            {skillTags.map((tag) => (
+              <li key={tag} className="font-classic-body text-sm text-premium-ivory/85 flex gap-2">
+                <span className="text-emerald-400 flex-none">✓</span>
+                {getSkillTagLabel(tag)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {newAchievement && <AchievementUnlockReveal achievement={newAchievement} />}
+
+      {zoneProgress && (
+        <div className="w-full rounded-premiumBtn bg-premium-midnightDeep border border-white/10 p-4 text-left">
+          <p className={`${TEXT.meta} text-premium-gold mb-2`}>Kingdom Progress</p>
+          <p className="font-classic-display text-sm text-premium-ivory mb-1.5">
+            {zoneProgress.zone.emoji} {zoneProgress.zone.name}
+          </p>
+          <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-premium-goldMuted to-premium-gold"
+              style={{
+                width: `${Math.round((zoneProgress.completedInZone / zoneProgress.totalInZone) * 100)}%`,
+              }}
+            />
+          </div>
+          <p className={`${TEXT.caption} mt-1`}>
+            {zoneProgress.completedInZone}/{zoneProgress.totalInZone} days complete
+          </p>
+
+          {zoneProgress.justUnlockedZone && (
+            <div className="mt-3 pt-3 border-t border-white/10 text-center">
+              <p className={`${TEXT.meta} text-premium-gold`}>New Area Unlocked</p>
+              <p className="font-classic-display text-base text-premium-ivory mt-0.5">
+                {zoneProgress.justUnlockedZone.emoji} {zoneProgress.justUnlockedZone.name}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {recommendation && (
+        <Link
+          href={recommendation.href}
+          className="w-full rounded-premiumBtn border border-premium-gold/30 bg-premium-gold/10 px-4 py-3 text-left hover:bg-premium-gold/15 transition-colors"
+        >
+          <p className={`${TEXT.meta} text-premium-gold`}>Want to train this skill?</p>
+          <p className="font-classic-body text-sm text-premium-ivory/80 mt-0.5">
+            {recommendation.reason}
+          </p>
+          <p className="font-classic-display text-sm text-premium-ivory mt-1">
+            Try {recommendation.label} →
+          </p>
+        </Link>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-3 w-full">
+        <Button tone="premium" className="flex-1" onClick={onFinish}>
+          Continue Journey →
+        </Button>
+        <Link href="/academy" className="flex-1">
+          <Button tone="premium" variant="ghost" className="w-full">
+            Back to Academy
+          </Button>
+        </Link>
+      </div>
+    </PrimaryCard>
   );
 }

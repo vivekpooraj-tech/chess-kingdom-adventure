@@ -4,8 +4,17 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Lesson } from "@/lib/types";
 import { FREE_DAY_LIMIT } from "@/content/lessons";
+import { KINGDOM_ZONES } from "@/content/kingdomZones";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
+import { LockIcon, CheckIcon } from "@/components/nav/icons";
+import { TEXT } from "@/lib/designSystem";
 
+/**
+ * The Kingdom Journey, grouped by zone (Phase 10B point 11 — "Pawn Village
+ * -> Knight Forest -> ... use visual progression"). All access logic
+ * (unlocked / needsPremium / completed) is unchanged from before this
+ * redesign — this only changes how it's grouped and presented.
+ */
 export function KingdomMapCards({
   lessons,
   currentDay,
@@ -18,69 +27,116 @@ export function KingdomMapCards({
   isPremium: boolean;
 }) {
   return (
-    <div className="relative w-full max-w-md">
-      {lessons.map((lesson) => {
-        const reachedByProgress = lesson.dayNumber <= currentDay;
-        const needsPremium = lesson.dayNumber > FREE_DAY_LIMIT && !isPremium;
-        const unlocked = reachedByProgress && !needsPremium;
-        const completed = completedDays.includes(lesson.dayNumber);
-
-        const card = (
-          <motion.div
-            whileTap={unlocked ? { scale: 0.96 } : {}}
-            className="flex items-center gap-4 rounded-card bg-white/85 shadow-toy p-5 mb-4"
-            style={{ opacity: unlocked ? 1 : 0.5 }}
-          >
-            <div className="w-16 h-16 rounded-full bg-kingdom-gold/80 flex items-center justify-center text-3xl">
-              {completed ? "💎" : needsPremium ? "⭐" : unlocked ? "✨" : "🔒"}
-            </div>
-            <div>
-              <p className="font-display text-lg text-kingdom-night">
-                Day {lesson.dayNumber}: {lesson.title}
-              </p>
-              <p className="font-body text-sm text-kingdom-night/60 capitalize">
-                {lesson.crystal} Crystal{" "}
-                {completed ? "— Recovered!" : needsPremium ? "— Premium" : ""}
-              </p>
-            </div>
-          </motion.div>
+    <div className="w-full max-w-md flex flex-col gap-6">
+      {KINGDOM_ZONES.map((zone) => {
+        const zoneLessons = lessons.filter(
+          (l) => l.dayNumber >= zone.dayStart && l.dayNumber <= zone.dayEnd
         );
+        if (zoneLessons.length === 0) return null;
 
-        // A day needing premium is still a real, reachable link — it goes
-        // to the lesson page, which itself redirects to /upgrade if not
-        // premium (defense in depth, not just a UI-level lock).
-        if (unlocked || needsPremium) {
-          return (
-            <Link key={lesson.dayNumber} href={`/lesson/${lesson.dayNumber}`}>
-              {card}
-            </Link>
-          );
-        }
+        const zoneCompletedCount = zoneLessons.filter((l) =>
+          completedDays.includes(l.dayNumber)
+        ).length;
+        const zoneReached = currentDay >= zone.dayStart;
+        const zoneComplete = zoneCompletedCount === zoneLessons.length;
 
         return (
-          <div key={lesson.dayNumber} className="pointer-events-none">
-            {card}
+          <div key={zone.id} className="flex flex-col gap-2">
+            {/* Zone header — aspirational, not punitive, for zones not yet
+                reached: same treatment as reached zones, just dimmer and
+                without a progress count (nothing to report yet). */}
+            <div className={`flex items-center gap-2 ${!zoneReached ? "opacity-50" : ""}`}>
+              <span className="text-xl flex-none">{zone.emoji}</span>
+              <h3 className={TEXT.subheading}>{zone.name}</h3>
+              {zoneComplete && (
+                <CheckIcon className="w-4 h-4 text-emerald-400 flex-none" />
+              )}
+              {zoneReached && !zoneComplete && (
+                <span className={`${TEXT.caption} ml-auto`}>
+                  {zoneCompletedCount}/{zoneLessons.length}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {zoneLessons.map((lesson) => {
+                const reachedByProgress = lesson.dayNumber <= currentDay;
+                const needsPremium = lesson.dayNumber > FREE_DAY_LIMIT && !isPremium;
+                const unlocked = reachedByProgress && !needsPremium;
+                const completed = completedDays.includes(lesson.dayNumber);
+
+                const row = (
+                  <motion.div
+                    whileTap={unlocked ? { scale: 0.98 } : {}}
+                    className={`flex items-center gap-3 rounded-premiumCard p-4 transition-colors ${
+                      completed
+                        ? "bg-premium-navy border border-premium-gold/25"
+                        : unlocked
+                        ? "bg-premium-navy border border-white/5 hover:border-premium-gold/20"
+                        : "bg-premium-navy/40 border border-white/5"
+                    }`}
+                    style={{ opacity: unlocked || completed ? 1 : 0.55 }}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-none ${
+                        completed
+                          ? "bg-premium-gold/20 text-premium-gold"
+                          : needsPremium
+                          ? "bg-premium-gold/10 text-premium-gold/70"
+                          : unlocked
+                          ? "bg-emerald-500/15 text-emerald-300"
+                          : "bg-white/5 text-premium-ivory/30"
+                      }`}
+                    >
+                      {completed ? (
+                        <CheckIcon className="w-5 h-5" />
+                      ) : (
+                        <LockIcon className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-classic-display text-sm text-premium-ivory truncate">
+                        Day {lesson.dayNumber}: {lesson.title}
+                      </p>
+                      <p className={`${TEXT.caption} normal-case capitalize`}>
+                        {lesson.crystal} Crystal
+                        {completed ? " — Recovered" : needsPremium ? " — Premium" : ""}
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+
+                // A day needing premium is still a real, reachable link — it
+                // goes to the lesson page, which itself redirects to
+                // /upgrade if not premium (defense in depth, not just a
+                // UI-level lock).
+                if (unlocked || needsPremium) {
+                  return (
+                    <Link key={lesson.dayNumber} href={`/lesson/${lesson.dayNumber}`}>
+                      {row}
+                    </Link>
+                  );
+                }
+
+                return (
+                  <div key={lesson.dayNumber} className="pointer-events-none">
+                    {row}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         );
       })}
 
       {!isPremium && (
-        <div className="flex flex-col items-center gap-3 rounded-card bg-kingdom-gold/10 p-5 mb-4">
-          <p className="font-body text-kingdom-night/70 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-premiumCard bg-gradient-to-br from-premium-gold/15 to-premium-navy border border-premium-gold/30 p-5">
+          <p className={`${TEXT.body} text-center`}>
             Unlock every day of the adventure, forever — no subscription.
           </p>
-          <UpgradeButton />
+          <UpgradeButton tone="premium" />
         </div>
       )}
-
-      <div className="flex items-center gap-4 rounded-card bg-white/40 p-5 opacity-40">
-        <div className="w-16 h-16 rounded-full bg-kingdom-night/10 flex items-center justify-center text-3xl">
-          🔒
-        </div>
-        <p className="font-display text-lg text-kingdom-night/60">
-          Days {lessons.length + 1}–30 unlock as the adventure grows!
-        </p>
-      </div>
     </div>
   );
 }

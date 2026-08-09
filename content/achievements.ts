@@ -1,29 +1,51 @@
 export type AchievementCriteria =
   | { type: "complete_day"; day: number }
   | { type: "complete_count"; count: number }
-  | { type: "premium" };
+  | { type: "premium" }
+  /** contentId matches an id in content/academyVideos.ts (or future Academy content). */
+  | { type: "academy_complete"; contentId: string }
+  /** Distinct openings actually DISCOVERED (reached in a real game) — see content/openings.ts. */
+  | { type: "opening_count"; count: number }
+  /** Distinct openings whose Academy detail page has been STUDIED. */
+  | { type: "opening_studied_count"; count: number }
+  /** Distinct gambit openings discovered. */
+  | { type: "gambit_count"; count: number }
+  /** Openings that have reached MASTERED status (see lib/openings/practiceTracking.ts). */
+  | { type: "opening_mastered_count"; count: number }
+  /** Total correct answers across all Chess Mind modules combined. */
+  | { type: "chess_mind_count"; count: number }
+  | { type: "online_wins"; count: number };
+
+export type AchievementCategory = "learning" | "thinking" | "playing" | "exploration";
 
 export interface AchievementDef {
   key: string;
   title: string;
   description: string;
   emoji: string;
+  category: AchievementCategory;
   criteria: AchievementCriteria;
 }
 
 /**
  * Kept modest and honest on purpose: every entry here is something we can
- * actually detect from real tracked data (child_lesson_progress,
- * parents.premium_status) — no "500 achievements" fantasy list with badges
- * for things the app doesn't measure (attention span, mistake trends, etc.
- * aren't tracked anywhere yet, so there's no achievement for them).
+ * actually detect from real tracked data — no badges for things the app
+ * doesn't measure. The four categories match the product spec's
+ * Learning/Thinking/Playing/Exploration split; where the spec named a
+ * specific sub-skill this app doesn't have real data for yet (e.g.
+ * "Pattern Master" — no Pattern Recognition module exists, see Chess
+ * Mind's "Soon" categories), it's substituted with an achievement tied to
+ * a module that's actually built (Spatial Thinking, Chess Mathematics)
+ * rather than added as a badge nothing can ever earn.
  */
 export const ACHIEVEMENTS: AchievementDef[] = [
+  // --- Learning --------------------------------------------------------
   {
     key: "first_steps",
     title: "First Steps",
     description: "Completed Day 1 — woke up the Pawn Village!",
     emoji: "🐣",
+    category: "learning",
     criteria: { type: "complete_day", day: 1 },
   },
   {
@@ -31,6 +53,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Knight Master",
     description: "Completed Day 2 — learned the Knight's jump!",
     emoji: "🐴",
+    category: "learning",
     criteria: { type: "complete_day", day: 2 },
   },
   {
@@ -38,6 +61,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Bishop Master",
     description: "Completed Day 3 — lit up the Hall of Light!",
     emoji: "🔮",
+    category: "learning",
     criteria: { type: "complete_day", day: 3 },
   },
   {
@@ -45,6 +69,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Rook Master",
     description: "Completed Day 4 — cleared the Iron Corridor!",
     emoji: "🏰",
+    category: "learning",
     criteria: { type: "complete_day", day: 4 },
   },
   {
@@ -52,6 +77,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Queen Master",
     description: "Completed Day 5 — restored the Grand Court!",
     emoji: "👑",
+    category: "learning",
     criteria: { type: "complete_day", day: 5 },
   },
   {
@@ -59,6 +85,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "King's Guard",
     description: "Completed Day 6 — protected the Throne Room!",
     emoji: "🛡️",
+    category: "learning",
     criteria: { type: "complete_day", day: 6 },
   },
   {
@@ -66,6 +93,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "All Six Crystals",
     description: "Recovered every Chess Crystal — Pawn to King!",
     emoji: "💎",
+    category: "learning",
     criteria: { type: "complete_count", count: 6 },
   },
   {
@@ -73,6 +101,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Fork Finder",
     description: "Completed Day 7 — the Knight's Fork Academy!",
     emoji: "🍴",
+    category: "learning",
     criteria: { type: "complete_day", day: 7 },
   },
   {
@@ -80,6 +109,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Pin Master",
     description: "Completed Day 8 — the Bishop's Pin Trial!",
     emoji: "📌",
+    category: "learning",
     criteria: { type: "complete_day", day: 8 },
   },
   {
@@ -87,6 +117,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Watchtower",
     description: "Completed Day 9 — guarded the Back Rank!",
     emoji: "🗼",
+    category: "learning",
     criteria: { type: "complete_day", day: 9 },
   },
   {
@@ -94,6 +125,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Champion of the Kingdom",
     description: "Completed Day 10 — the Checkmate Finale!",
     emoji: "🏆",
+    category: "learning",
     criteria: { type: "complete_day", day: 10 },
   },
   {
@@ -101,6 +133,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Halfway Hero",
     description: "Completed 5 lessons total!",
     emoji: "⭐",
+    category: "learning",
     criteria: { type: "complete_count", count: 5 },
   },
   {
@@ -108,6 +141,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Premium Adventurer",
     description: "Unlocked the whole Kingdom!",
     emoji: "✨",
+    category: "learning",
     criteria: { type: "premium" },
   },
   {
@@ -115,6 +149,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Ten Lessons Strong",
     description: "Completed 10 lessons total!",
     emoji: "🔟",
+    category: "learning",
     criteria: { type: "complete_count", count: 10 },
   },
   {
@@ -122,6 +157,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Intermediate Kingdom Graduate",
     description: "Completed Day 15 — mastered the Promotion Road!",
     emoji: "🎓",
+    category: "learning",
     criteria: { type: "complete_day", day: 15 },
   },
   {
@@ -129,6 +165,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Twenty Lessons Strong",
     description: "Completed 20 lessons total!",
     emoji: "🥇",
+    category: "learning",
     criteria: { type: "complete_count", count: 20 },
   },
   {
@@ -136,6 +173,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Tournament Trial Winner",
     description: "Completed Day 20 — your first Tournament Trial!",
     emoji: "🏅",
+    category: "learning",
     criteria: { type: "complete_day", day: 20 },
   },
   {
@@ -143,6 +181,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Advanced Kingdom Graduate",
     description: "Completed Day 25 — halfway through the Advanced Kingdom!",
     emoji: "📯",
+    category: "learning",
     criteria: { type: "complete_day", day: 25 },
   },
   {
@@ -150,7 +189,94 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Champion of Chess Kingdom Adventure",
     description: "Completed all 30 days and defeated the Shadow King!",
     emoji: "👑",
+    category: "learning",
     criteria: { type: "complete_day", day: 30 },
+  },
+
+  // --- Thinking (Chess Mind) --------------------------------------------
+  {
+    key: "chess_mind_novice",
+    title: "Sharp Mind",
+    description: "Solved 10 Chess Mind challenges — Spatial Thinking or Chess Mathematics.",
+    emoji: "🧠",
+    category: "thinking",
+    criteria: { type: "chess_mind_count", count: 10 },
+  },
+  {
+    key: "chess_mind_adept",
+    title: "Quick Calculator",
+    description: "Solved 50 Chess Mind challenges — real practice adds up!",
+    emoji: "⚡",
+    category: "thinking",
+    criteria: { type: "chess_mind_count", count: 50 },
+  },
+
+  // --- Playing -----------------------------------------------------------
+  {
+    key: "first_win",
+    title: "First Victory",
+    description: "Won your first online game!",
+    emoji: "🥳",
+    category: "playing",
+    criteria: { type: "online_wins", count: 1 },
+  },
+  {
+    key: "ten_wins",
+    title: "Rising Contender",
+    description: "Won 10 online games.",
+    emoji: "🎖️",
+    category: "playing",
+    criteria: { type: "online_wins", count: 10 },
+  },
+
+  // --- Exploration ---------------------------------------------------------
+  {
+    key: "chess_historian",
+    title: "Chess Historian",
+    description: "Learned how chess crossed the world, from ancient India to the game played today.",
+    emoji: "🏛️",
+    category: "exploration",
+    criteria: { type: "academy_complete", contentId: "history-of-chess" },
+  },
+  {
+    key: "opening_explorer",
+    title: "Opening Explorer",
+    description: "Discovered 5 different named openings in real games.",
+    emoji: "🧭",
+    category: "exploration",
+    criteria: { type: "opening_count", count: 5 },
+  },
+  {
+    key: "opening_scholar",
+    title: "Opening Scholar",
+    description: "Studied 10 different openings in the Academy — a real repertoire!",
+    emoji: "📚",
+    category: "exploration",
+    criteria: { type: "opening_studied_count", count: 10 },
+  },
+  {
+    key: "first_gambit",
+    title: "Gambit Player",
+    description: "Played into a real gambit line for the first time.",
+    emoji: "♟️",
+    category: "exploration",
+    criteria: { type: "gambit_count", count: 1 },
+  },
+  {
+    key: "gambit_hunter",
+    title: "Gambit Hunter",
+    description: "Discovered 3 different gambit openings.",
+    emoji: "⚔️",
+    category: "exploration",
+    criteria: { type: "gambit_count", count: 3 },
+  },
+  {
+    key: "opening_master",
+    title: "Opening Master",
+    description: "Practiced an opening successfully enough times to truly master it.",
+    emoji: "🏆",
+    category: "exploration",
+    criteria: { type: "opening_mastered_count", count: 1 },
   },
 ];
 

@@ -3,7 +3,9 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 
-const COLORS = ["#FFC53D", "#FF6B6B", "#4ADE80", "#38BDF8", "#6D5AE6"];
+// Premium palette confetti — gold/ivory/emerald rather than the bright
+// rainbow used elsewhere, so a celebration moment still reads as "premium."
+const COLORS = ["#D4AF37", "#F7F3E8", "#34D399", "#B8944A", "#6EE7B7"];
 
 interface ConfettiBurstProps {
   pieceCount?: number;

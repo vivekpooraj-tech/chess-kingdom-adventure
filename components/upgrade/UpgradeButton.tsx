@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 
-export function UpgradeButton({ label = "Unlock Everything — $29.99" }: { label?: string }) {
+export function UpgradeButton({
+  label = "Unlock Everything — $29.99",
+  tone = "adventure",
+}: {
+  label?: string;
+  tone?: "adventure" | "premium";
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,10 +33,18 @@ export function UpgradeButton({ label = "Unlock Everything — $29.99" }: { labe
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <Button onClick={startCheckout} disabled={loading}>
+      <Button tone={tone} onClick={startCheckout} disabled={loading}>
         {loading ? "Starting checkout..." : label}
       </Button>
-      {error && <p className="font-body text-sm text-kingdom-coral">{error}</p>}
+      {error && (
+        <p
+          className={
+            tone === "premium" ? "font-classic-body text-sm text-red-300" : "font-body text-sm text-kingdom-coral"
+          }
+        >
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -8,17 +8,22 @@ import {
   resolveActiveChild,
   getOnlineGame,
   joinOnlineGame,
-  updateGameFen,
+  appendGameMove,
   finishOnlineGame,
   sendReaction,
   applyMatchRating,
+  recordOpeningEncounter,
   OnlineGame,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { QUICK_CHAT_PHRASES, EMOJI_REACTIONS } from "@/content/quickChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { Card } from "@/components/ui/Card";
+import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { OpeningBadge } from "@/components/game/OpeningBadge";
+import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
+import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
+import { TEXT } from "@/lib/designSystem";
 import type { Color } from "chess.js";
 
 export default function OnlineGamePage() {
@@ -29,6 +34,9 @@ export default function OnlineGamePage() {
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [game, setGame] = useState<OnlineGame | null | "loading">("loading");
   const [newRating, setNewRating] = useState<number | null>(null);
+  const [openingMatch, setOpeningMatch] = useState<OpeningMatch | null>(null);
+  const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
+  const seenOpeningIdsRef = useRef<Set<string>>(new Set());
   const supabaseRef = useRef(createClient());
 
   // Load the current child + initial game state, then subscribe to live
@@ -83,22 +91,40 @@ export default function OnlineGamePage() {
     };
   }, [params.gameId, router]);
 
+  // Opening recognition reads game.moves (synced from the DB, appended to by
+  // whichever player made each move) rather than ChessBoard's own history —
+  // see appendGameMove's doc comment for why that's necessary here.
+  useEffect(() => {
+    if (!game || game === "loading" || !childId) return;
+    const match = recognizeOpening(game.moves);
+    if (match && match.opening.id !== dismissedOpeningId) {
+      setOpeningMatch(match);
+    } else if (!match) {
+      setOpeningMatch(null);
+    }
+    if (match && !seenOpeningIdsRef.current.has(match.opening.id)) {
+      seenOpeningIdsRef.current.add(match.opening.id);
+      recordOpeningEncounter(supabaseRef.current, childId, match.opening.id).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game, childId]);
+
   if (game === "loading" || !childId) {
     return <main className="min-h-screen" />;
   }
 
   if (!game) {
     return (
-      <main className="min-h-screen flex items-center justify-center px-6">
-        <Card className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
+      <main className="min-h-screen bg-premium-midnight flex items-center justify-center px-6">
+        <SecondaryCard className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
           <span className="text-5xl">🔍</span>
-          <p className="font-display text-lg text-kingdom-night">
+          <p className={TEXT.body}>
             This game link isn't valid, or the game no longer exists.
           </p>
           <Link href="/kingdom-map">
-            <Button>Back to the Kingdom Map →</Button>
+            <Button tone="premium">Back to the Kingdom Map →</Button>
           </Link>
-        </Card>
+        </SecondaryCard>
       </main>
     );
   }
@@ -120,8 +146,8 @@ export default function OnlineGamePage() {
     }
   }
 
-  async function handleMove(fen: string) {
-    await updateGameFen(supabaseRef.current, params.gameId, fen);
+  async function handleMove(fen: string, san: string) {
+    await appendGameMove(supabaseRef.current, params.gameId, fen, san);
   }
 
   async function handleGameOver(result: { isCheckmate: boolean; isDraw: boolean; winner: Color | null }) {
@@ -145,28 +171,26 @@ export default function OnlineGamePage() {
   if (game.status === "waiting" && isHost) {
     const inviteUrl = typeof window !== "undefined" ? window.location.href : "";
     return (
-      <main className="min-h-screen flex items-center justify-center px-6">
-        <Card className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
+      <main className="min-h-screen bg-premium-midnight flex items-center justify-center px-6">
+        <SecondaryCard className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
           <span className="text-5xl animate-floaty">⏳</span>
-          <h1 className="font-display text-xl text-kingdom-night">
-            Waiting for a friend to join!
-          </h1>
-          <p className="font-body text-sm text-kingdom-night/60">
-            Share this link with them:
-          </p>
+          <h1 className={TEXT.heading}>Waiting for a friend to join!</h1>
+          <p className={TEXT.caption}>Share this link with them:</p>
           <input
             readOnly
             value={inviteUrl}
             onClick={(e) => (e.target as HTMLInputElement).select()}
-            className="w-full text-center text-sm rounded-btn px-3 py-2 border-2 border-kingdom-night/10 font-body"
+            aria-label="Invite link"
+            className="w-full text-center text-sm rounded-premiumBtn px-3 py-2 border border-white/15 bg-premium-midnightDeep text-premium-ivory font-classic-body"
           />
           <Button
+            tone="premium"
             variant="ghost"
             onClick={() => navigator.clipboard?.writeText(inviteUrl)}
           >
             Copy Link
           </Button>
-        </Card>
+        </SecondaryCard>
       </main>
     );
   }
@@ -174,14 +198,12 @@ export default function OnlineGamePage() {
   // --- Someone else's open game, not yet joined ---
   if (canJoin) {
     return (
-      <main className="min-h-screen flex items-center justify-center px-6">
-        <Card className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
+      <main className="min-h-screen bg-premium-midnight flex items-center justify-center px-6">
+        <SecondaryCard className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
           <span className="text-5xl">⚔️</span>
-          <h1 className="font-display text-xl text-kingdom-night">
-            You've been challenged to a game!
-          </h1>
-          <Button onClick={handleJoin}>Join This Game →</Button>
-        </Card>
+          <h1 className={TEXT.heading}>You've been challenged to a game!</h1>
+          <Button tone="premium" onClick={handleJoin}>Join This Game →</Button>
+        </SecondaryCard>
       </main>
     );
   }
@@ -192,21 +214,27 @@ export default function OnlineGamePage() {
     const iWon = game.winner === myColor;
     const isDraw = game.winner === "draw";
     return (
-      <main className="min-h-screen flex items-center justify-center px-6">
-        <Card className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6">
+        <PrimaryCard className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
           <span className="text-5xl">{isDraw ? "🤝" : iWon ? "🏆" : "🤔"}</span>
-          <h1 className="font-display text-xl text-kingdom-night">
+          <h1 className={TEXT.heading}>
             {isDraw ? "It's a Draw!" : iWon ? "You Won!" : "Better Luck Next Time!"}
           </h1>
           {game.match_type === "random" && newRating !== null && (
-            <p className="font-body text-sm text-kingdom-night/60">
-              Your rating is now <span className="font-bold">{newRating}</span>
+            <p className={TEXT.body}>
+              Your rating is now <span className="text-premium-gold font-semibold">{newRating}</span>
             </p>
           )}
           <Link href="/kingdom-map">
-            <Button>Back to the Kingdom Map →</Button>
+            <Button tone="premium">Back to the Kingdom Map →</Button>
           </Link>
-        </Card>
+        </PrimaryCard>
+
+        {/* Only populated if this session was present for the live game —
+            online_games' move history exists, but there's no way to
+            recover which opening was played from a page load that lands
+            directly on an already-finished game. */}
+        {openingMatch && <GameEndOpeningSummary match={openingMatch} />}
       </main>
     );
   }
@@ -222,13 +250,13 @@ export default function OnlineGamePage() {
     const showSocial = game.match_type !== "random";
 
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 py-8">
-        <h1 className="font-display text-xl text-kingdom-night">
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-4 px-6 py-8">
+        <h1 className={TEXT.heading}>
           Playing as {myColor === "w" ? "White" : "Black"}
         </h1>
 
         {showSocial && theirReaction && (
-          <p className="font-body text-lg bg-white/80 rounded-card px-4 py-2 shadow-toy">
+          <p className="font-classic-body text-lg bg-premium-navy border border-premium-gold/20 rounded-premiumCard px-4 py-2 text-premium-ivory">
             {theirReaction}
           </p>
         )}
@@ -239,9 +267,19 @@ export default function OnlineGamePage() {
           size={680}
           boardSkinId={boardSkinId}
           pieceSetId={pieceSetId}
-          onMove={(opts) => handleMove(opts.fen)}
+          onMove={(opts) => handleMove(opts.fen, opts.san)}
           onGameOver={handleGameOver}
         />
+
+        {openingMatch && (
+          <OpeningBadge
+            match={openingMatch}
+            onDismiss={() => {
+              setDismissedOpeningId(openingMatch.opening.id);
+              setOpeningMatch(null);
+            }}
+          />
+        )}
 
         {showSocial && (
           <>
@@ -250,7 +288,7 @@ export default function OnlineGamePage() {
                 <button
                   key={e}
                   onClick={() => handleReaction(e)}
-                  className="text-2xl bg-white/70 rounded-full w-10 h-10 flex items-center justify-center shadow-sm"
+                  className="text-2xl bg-premium-navy border border-white/10 rounded-full w-10 h-10 flex items-center justify-center hover:border-premium-gold/30 transition-colors"
                 >
                   {e}
                 </button>
@@ -261,7 +299,7 @@ export default function OnlineGamePage() {
                 <button
                   key={phrase}
                   onClick={() => handleReaction(phrase)}
-                  className="text-sm bg-white/70 rounded-full px-3 py-1 shadow-sm font-body"
+                  className="text-sm bg-premium-navy border border-white/10 text-premium-ivory/80 rounded-full px-3 py-1 font-classic-body hover:border-premium-gold/30 transition-colors"
                 >
                   {phrase}
                 </button>
@@ -269,7 +307,7 @@ export default function OnlineGamePage() {
             </div>
 
             {myReaction && (
-              <p className="font-body text-xs text-kingdom-night/40">You sent: {myReaction}</p>
+              <p className={TEXT.caption}>You sent: {myReaction}</p>
             )}
           </>
         )}

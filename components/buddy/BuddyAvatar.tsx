@@ -17,8 +17,9 @@ export function BuddyAvatar({ emoji, size = "md", talking = false }: BuddyAvatar
   return (
     <motion.div
       className={clsx(
-        "rounded-full bg-gradient-to-br from-kingdom-sky to-kingdom-royal",
-        "flex items-center justify-center shadow-toy select-none",
+        "rounded-full bg-gradient-to-br from-premium-navyLight to-premium-midnight",
+        "border border-premium-gold/30 shadow-premiumGlow",
+        "flex items-center justify-center select-none",
         sizeClass
       )}
       animate={talking ? { scale: [1, 1.08, 1] } : { y: [0, -8, 0] }}

@@ -10,8 +10,9 @@ import { PUZZLES } from "@/content/puzzles";
 import { isSoundMateIn2FirstMove } from "@/lib/chess-engine/puzzleValidation";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
-import { Card } from "@/components/ui/Card";
+import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { TEXT } from "@/lib/designSystem";
 
 type Status = "playing" | "correct" | "incorrect";
 
@@ -98,18 +99,18 @@ export default function PuzzlesPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-6 py-10">
-      <h1 className="font-display text-3xl text-kingdom-night text-center">Puzzle Trainer 🧩</h1>
+    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6 py-10">
+      <h1 className={`${TEXT.display} text-center`}>Puzzle Trainer</h1>
 
-      <Card className="flex flex-col items-center gap-4 max-w-2xl w-full">
+      <PrimaryCard className="flex flex-col items-center gap-4 max-w-2xl w-full">
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <span className="font-body text-sm bg-kingdom-royal/15 text-kingdom-royal rounded-full px-3 py-1 font-bold">
+          <span className="font-classic-body text-sm bg-premium-emerald/25 text-emerald-300 rounded-full px-3 py-1 font-semibold">
             Mate in {puzzle.mateIn}
           </span>
-          <span className="font-body text-sm bg-kingdom-gold/20 text-kingdom-night/70 rounded-full px-3 py-1">
+          <span className="font-classic-body text-sm bg-premium-gold/15 text-premium-gold rounded-full px-3 py-1">
             {puzzle.theme}
           </span>
-          <SideToMoveIndicator color={puzzle.sideToMove} />
+          <SideToMoveIndicator color={puzzle.sideToMove} tone="premium" />
         </div>
 
         <ChessBoard
@@ -126,34 +127,34 @@ export default function PuzzlesPage() {
 
         {status === "correct" && (
           <div className="flex flex-col items-center gap-3">
-            <p className="font-display text-lg text-kingdom-gold">Checkmate! You found it! 👑</p>
-            <Button onClick={nextPuzzle}>Next Puzzle →</Button>
+            <p className="font-classic-display text-lg text-premium-gold">Checkmate — you found it.</p>
+            <Button tone="premium" onClick={nextPuzzle}>Next Puzzle →</Button>
           </div>
         )}
         {status === "incorrect" && (
           <div className="flex flex-col items-center gap-3">
-            <p className="font-display text-lg text-kingdom-coral">
-              Not quite — take another look!
+            <p className="font-classic-display text-lg text-red-300">
+              Not quite — take another look.
             </p>
-            <Button variant="ghost" onClick={resetPuzzle}>
+            <Button tone="premium" variant="ghost" onClick={resetPuzzle}>
               Try Again
             </Button>
           </div>
         )}
         {status === "playing" && moveCount === 1 && (
-          <p className="font-body text-sm text-kingdom-night/50 italic">
+          <p className={`${TEXT.caption} normal-case italic`}>
             Good move! Now find the checkmate.
           </p>
         )}
-      </Card>
+      </PrimaryCard>
 
-      <p className="font-body text-sm text-kingdom-night/60">Solved this session: {solvedCount}</p>
+      <p className={TEXT.caption}>Solved this session: {solvedCount}</p>
 
       <Link
         href="/kingdom-map"
-        className="font-body text-sm text-kingdom-night/40 underline underline-offset-2"
+        className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
       >
-        Back to the Kingdom Map
+        Back to Home
       </Link>
     </main>
   );

@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/stripe/client";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { BRAND } from "@/lib/brand";
 
 /**
  * Verifies payment directly against the Stripe API using the session_id
@@ -84,7 +85,7 @@ export default async function UpgradeSuccessPage({
               Welcome to Premium!
             </h1>
             <p className="font-body text-kingdom-night/70">
-              Every day of the Chess Kingdom Adventure is unlocked, forever.
+              Every day of {BRAND.name} is unlocked, forever.
             </p>
             <Link href="/kingdom-map">
               <Button>Back to the Kingdom →</Button>

@@ -12,8 +12,10 @@ import {
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { LESSONS } from "@/content/lessons";
-import { Card } from "@/components/ui/Card";
+import { SecondaryCard, PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { BRAND } from "@/lib/brand";
+import { TEXT } from "@/lib/designSystem";
 
 type ViewState =
   | { status: "loading" }
@@ -121,41 +123,38 @@ export default function MatchmakingPage() {
 
   if (view.status === "locked") {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-6">
-        <Card className="max-w-sm w-full flex flex-col items-center gap-5 text-center">
-          <span className="text-6xl">🔒</span>
-          <h1 className="font-display text-2xl text-kingdom-night">Play Someone New</h1>
-          <p className="font-body text-kingdom-night/70">
-            Finish all {view.total} days of the Chess Kingdom Adventure to unlock worldwide
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6">
+        <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
+          <span className="text-5xl">🔒</span>
+          <h1 className={TEXT.heading}>Play Someone New</h1>
+          <p className={TEXT.body}>
+            Finish all {view.total} days of {BRAND.name} to unlock worldwide
             matches! You've completed {view.completed} of {view.total} so far.
           </p>
           <Link href="/kingdom-map">
-            <Button>Back to the Kingdom Map →</Button>
+            <Button tone="premium">Back to the Kingdom Map →</Button>
           </Link>
-        </Card>
+        </SecondaryCard>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6 py-12">
-      <h1 className="font-display text-3xl text-kingdom-night text-center">
-        Play Someone New 🌍
-      </h1>
+    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-8 px-6 py-12">
+      <h1 className={`${TEXT.display} text-center`}>Play Someone New</h1>
 
-      <Card className="max-w-sm w-full flex flex-col items-center gap-5 text-center">
+      <PrimaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center">
         <div className="flex flex-col items-center gap-1">
-          <span className="text-5xl">🏅</span>
-          <p className="font-body text-kingdom-night/60 text-sm">Your Rating</p>
-          <p className="font-display text-3xl text-kingdom-night">{view.rating}</p>
+          <p className={TEXT.caption}>Your Rating</p>
+          <p className="font-classic-display text-3xl text-premium-gold">{view.rating}</p>
         </div>
 
         {view.status === "idle" && (
           <>
-            <p className="font-body text-kingdom-night/70">
-              We'll find you an opponent with a similar rating, anywhere in the world!
+            <p className={TEXT.body}>
+              We'll find you an opponent with a similar rating, anywhere in the world.
             </p>
-            <Button size="lg" onClick={findOpponent}>
+            <Button tone="premium" size="lg" onClick={findOpponent}>
               Find Opponent →
             </Button>
           </>
@@ -163,30 +162,28 @@ export default function MatchmakingPage() {
 
         {view.status === "searching" && (
           <>
-            <p className="font-body text-kingdom-night/70 animate-pulse">
-              Searching for an opponent...
-            </p>
-            <Button variant="ghost" onClick={cancelSearch}>
+            <p className={`${TEXT.body} animate-pulse`}>Searching for an opponent...</p>
+            <Button tone="premium" variant="ghost" onClick={cancelSearch}>
               Cancel Search
             </Button>
           </>
         )}
 
         {view.status === "error" && (
-          <p className="font-body text-kingdom-coral">{view.message}</p>
+          <p className="font-classic-body text-sm text-red-300">{view.message}</p>
         )}
-      </Card>
+      </PrimaryCard>
 
-      <p className="font-body text-xs text-kingdom-night/40 max-w-sm text-center">
+      <p className={`${TEXT.caption} normal-case max-w-sm text-center`}>
         These games are with players you don't know, so chat and emoji reactions are
         turned off here to keep things safe.
       </p>
 
       <Link
         href="/kingdom-map"
-        className="font-body text-sm text-kingdom-night/40 underline underline-offset-2"
+        className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
       >
-        Back to the Kingdom Map
+        Back to Home
       </Link>
     </main>
   );

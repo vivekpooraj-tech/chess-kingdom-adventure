@@ -34,7 +34,14 @@ export interface ChessBoardProps {
   /** Restrict which side the child is allowed to move (useful for puzzles). */
   playableColor?: Color;
   /** Called after every legal move the child makes. */
-  onMove?: (opts: { fen: string; san: string; isCheckmate: boolean; piece: PieceSymbol }) => void;
+  onMove?: (opts: {
+    fen: string;
+    san: string;
+    isCheckmate: boolean;
+    piece: PieceSymbol;
+    from: Square;
+    to: Square;
+  }) => void;
   /** Called when the child attempts an illegal move — used for AI mistake-explanations. */
   onIllegalAttempt?: (from: Square, to: Square) => void;
   /**
@@ -44,6 +51,23 @@ export interface ChessBoardProps {
    * game (e.g. Stockfish delivers checkmate).
    */
   onGameOver?: (result: { isCheckmate: boolean; isDraw: boolean; winner: Color | null }) => void;
+  /**
+   * Fires after every ply — both the child's moves and the opponent's —
+   * with the current game state. For chrome around the board (move list,
+   * captured pieces) that needs to stay in sync without keeping its own
+   * separate Chess instance. `capturedByWhite`/`capturedByBlack` assume a
+   * standard starting position; callers passing a custom `fen` (puzzles,
+   * lessons) should ignore that part since "captured relative to a
+   * non-standard start" isn't a meaningful concept.
+   */
+  onPositionChange?: (opts: {
+    fen: string;
+    history: string[];
+    turn: Color;
+    isCheck: boolean;
+    capturedByWhite: PieceSymbol[];
+    capturedByBlack: PieceSymbol[];
+  }) => void;
   /**
    * Auto-opponent for the non-playable side. The board enforces real chess
    * turn order, so without *something* replying, a `playableColor` board
@@ -72,6 +96,14 @@ export interface ChessBoardProps {
    * flat-silhouette set when omitted or unrecognized. Independent of
    * boardSkinId — any piece set can pair with any board skin. */
   pieceSetId?: string;
+  /**
+   * Pure display mode — clicks don't select or move pieces, and the
+   * auto-opponent never runs. For showing a position (e.g. stepping
+   * through an opening's move sequence in the Academy) without letting the
+   * viewer accidentally change it. The caller drives what's shown by
+   * changing `fen`; this component never mutates state on its own.
+   */
+  readOnly?: boolean;
 }
 
 /**
@@ -81,17 +113,47 @@ export interface ChessBoardProps {
  * make accessible (keyboard/switch-control friendly later). React DnD can be
  * layered on top later as an alternate input mode if desired.
  */
+const STANDARD_PIECE_COUNTS: Record<PieceSymbol, number> = { p: 8, n: 2, b: 2, r: 2, q: 1, k: 1 };
+
+/** Pieces missing from each side relative to a standard start — i.e. what
+ * the other side has captured. Meaningless for a non-standard `fen`. */
+function computeCaptured(game: Chess): {
+  capturedByWhite: PieceSymbol[];
+  capturedByBlack: PieceSymbol[];
+} {
+  const present: Record<Color, Record<PieceSymbol, number>> = {
+    w: { p: 0, n: 0, b: 0, r: 0, q: 0, k: 0 },
+    b: { p: 0, n: 0, b: 0, r: 0, q: 0, k: 0 },
+  };
+  for (const row of game.board()) {
+    for (const sq of row) {
+      if (sq) present[sq.color][sq.type]++;
+    }
+  }
+  const missing = (color: Color): PieceSymbol[] => {
+    const out: PieceSymbol[] = [];
+    (Object.keys(STANDARD_PIECE_COUNTS) as PieceSymbol[]).forEach((type) => {
+      const count = STANDARD_PIECE_COUNTS[type] - present[color][type];
+      for (let i = 0; i < count; i++) out.push(type);
+    });
+    return out;
+  };
+  return { capturedByWhite: missing("b"), capturedByBlack: missing("w") };
+}
+
 export function ChessBoard({
   fen,
   playableColor,
   onMove,
   onIllegalAttempt,
   onGameOver,
+  onPositionChange,
   opponent,
   difficulty = "easy",
   size = 480,
   boardSkinId,
   pieceSetId,
+  readOnly = false,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
   const skin = useMemo(() => getBoardSkin(boardSkinId), [boardSkinId]);
@@ -120,6 +182,20 @@ export function ChessBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [renderTick, fen]);
 
+  useEffect(() => {
+    if (!onPositionChange) return;
+    const { capturedByWhite, capturedByBlack } = computeCaptured(game);
+    onPositionChange({
+      fen: game.fen(),
+      history: game.history(),
+      turn: game.turn(),
+      isCheck: game.isCheck(),
+      capturedByWhite,
+      capturedByBlack,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderTick, fen]);
+
   function playRandomMove() {
     const moves = game.moves({ verbose: true });
     if (moves.length === 0) return;
@@ -133,6 +209,7 @@ export function ChessBoard({
 
   // Auto-opponent — see the `opponent` doc comment above.
   useEffect(() => {
+    if (readOnly) return;
     if (!opponent || !playableColor) return;
     if (game.isGameOver()) return;
     if (game.turn() === playableColor) return; // still the child's turn — nothing to do
@@ -178,9 +255,23 @@ export function ChessBoard({
     return new Set(moves.map((m) => m.to as Square));
   }, [selected, game]);
 
+  // Presentation only — chess.js's own isCheck()/turn() decide whether and
+  // whose king to highlight, no separate check-detection logic.
+  const checkedKingSquare = useMemo(() => {
+    if (!game.isCheck()) return null;
+    const mover = game.turn();
+    for (const row of game.board()) {
+      for (const cell of row) {
+        if (cell && cell.type === "k" && cell.color === mover) return cell.square as Square;
+      }
+    }
+    return null;
+  }, [game]);
+
 
   const handleSquareClick = useCallback(
     (square: Square) => {
+      if (readOnly) return;
       const piece = game.get(square);
 
       // Selecting a piece
@@ -209,6 +300,8 @@ export function ChessBoard({
             san: move.san,
             isCheckmate: game.isCheckmate(),
             piece: move.piece,
+            from: move.from as Square,
+            to: move.to as Square,
           });
         }
       } else if (piece && (!playableColor || piece.color === playableColor)) {
@@ -219,7 +312,7 @@ export function ChessBoard({
         setSelected(null);
       }
     },
-    [selected, legalTargets, game, playableColor, onMove, onIllegalAttempt]
+    [selected, legalTargets, game, playableColor, onMove, onIllegalAttempt, readOnly]
   );
 
   // Image-backed skins (skin.boardImageUrl) draw their own frame/coordinate
@@ -277,7 +370,7 @@ export function ChessBoard({
         }
       `}</style>
       <div
-        className="board-outer relative rounded-card overflow-hidden shadow-toy select-none mx-auto"
+        className="board-outer relative rounded-card overflow-hidden shadow-premiumCard ring-1 ring-premium-gold/10 select-none mx-auto"
         style={{ aspectRatio: "1 / 1" }}
     >
       {skin.boardImageUrl && (
@@ -310,6 +403,7 @@ export function ChessBoard({
             const isSelected = selected === square;
             const isLegalTarget = legalTargets.has(square);
             const isLastMove = lastMove && (lastMove.from === square || lastMove.to === square);
+            const isCheckedKing = checkedKingSquare === square;
             // Inline style always wins over a Tailwind class, so the
             // last-move highlight has to be folded into this same value
             // rather than layered on via a separate "bg-kingdom-gold/30"
@@ -341,10 +435,15 @@ export function ChessBoard({
                 onClick={() => handleSquareClick(square)}
                 className={clsx(
                   "relative flex items-center justify-center transition-colors w-full h-full",
-                  isSelected && "ring-4 ring-inset ring-kingdom-gold"
+                  isSelected && "ring-4 ring-inset ring-kingdom-gold",
+                  isCheckedKing && !isSelected && "ring-4 ring-inset ring-red-500/80"
                 )}
-                style={{ backgroundColor: squareBackground }}
-                aria-label={`${square}${piece ? ` — ${piece.color === "w" ? "white" : "black"} ${piece.type}` : ""}`}
+                style={{
+                  backgroundColor: isCheckedKing
+                    ? "rgba(239, 68, 68, 0.35)"
+                    : squareBackground,
+                }}
+                aria-label={`${square}${piece ? ` — ${piece.color === "w" ? "white" : "black"} ${piece.type}` : ""}${isCheckedKing ? " — in check" : ""}`}
               >
                 {isLegalTarget && !piece && (
                   <span className="absolute w-1/3 h-1/3 rounded-full bg-kingdom-gold/70" />
@@ -390,7 +489,7 @@ export function ChessBoard({
                       style={
                         piece.type === "p"
                           ? { width: "98%", height: "98%" }
-                          : { width: "88%", height: "88%" }
+                          : { width: "90%", height: "90%" }
                       }
                     >
                       <img

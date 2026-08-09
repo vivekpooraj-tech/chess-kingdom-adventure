@@ -5,3 +5,5 @@ node_modules
 public/stockfish
 .vercel
 .env*
+tsconfig.tsbuildinfo
+.claude/settings.local.json

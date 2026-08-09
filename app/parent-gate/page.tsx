@@ -105,6 +105,7 @@ function ParentGateInner() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+          aria-label={`What is ${challenge.a} + ${challenge.b}?`}
           className="w-32 text-center rounded-btn px-4 py-3 border-2 border-kingdom-night/10 font-body text-xl"
         />
         {error && <p className="font-body text-sm text-kingdom-coral">{error}</p>}

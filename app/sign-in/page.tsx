@@ -81,6 +81,7 @@ export default function SignInPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
+              aria-label="Email address"
               className="w-full rounded-btn px-4 py-3 border-2 border-kingdom-night/10 font-body text-lg"
             />
             {error && <p className="font-body text-sm text-kingdom-coral">{error}</p>}

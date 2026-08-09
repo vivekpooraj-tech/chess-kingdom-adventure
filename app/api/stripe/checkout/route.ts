@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe/client";
 import { createClient } from "@/lib/supabase/server";
+import { BRAND } from "@/lib/brand";
 
 // $29.99 one-time purchase — matches the PRD's business model ("no
 // subscriptions, unlock everything forever").
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
             currency: "usd",
             unit_amount: PREMIUM_PRICE_USD_CENTS,
             product_data: {
-              name: "Chess Kingdom Adventure — Premium",
+              name: `${BRAND.name} — Premium`,
               description: "Unlock every day of the adventure, forever. No subscription.",
             },
           },

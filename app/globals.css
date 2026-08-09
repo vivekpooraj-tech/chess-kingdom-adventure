@@ -8,7 +8,7 @@ body {
 }
 
 body {
-  font-family: "Nunito", system-ui, sans-serif;
+  font-family: var(--font-nunito), system-ui, sans-serif;
   background: linear-gradient(180deg, #bff0ff 0%, #eaffea 100%);
 }
 
@@ -20,4 +20,35 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ---- Premium / Classic Mode surface language -----------------------
+   Glass + gradient treatments used by premium chrome (Academy, upgrade
+   screens, achievement cards). Kept as plain CSS rather than Tailwind
+   utilities since backdrop-filter + layered gradients don't compress well
+   into single utility classes. */
+
+.bg-premium-midnight {
+  background: radial-gradient(120% 140% at 15% 0%, #1B2440 0%, #0F1629 45%, #080C18 100%);
+}
+
+.glass-panel {
+  background: rgba(27, 36, 64, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+}
+
+.glass-panel-light {
+  background: rgba(247, 243, 232, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(15, 22, 41, 0.08);
+}
+
+.text-gold-sheen {
+  background: linear-gradient(135deg, #F3D98B 0%, #D4AF37 45%, #B8944A 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

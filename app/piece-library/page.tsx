@@ -8,7 +8,9 @@ import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { getPieceSet } from "@/content/pieceSets";
 import { PIECE_LIBRARY } from "@/content/pieceLibrary";
-import { Card } from "@/components/ui/Card";
+import { SecondaryCard } from "@/components/ui/Card";
+import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { TEXT } from "@/lib/designSystem";
 
 export default function PieceLibraryPage() {
   const router = useRouter();
@@ -44,19 +46,20 @@ export default function PieceLibraryPage() {
   const folder = pieceSet.folder ? `${pieceSet.folder}/` : "";
 
   return (
-    <main className="min-h-screen flex flex-col items-center gap-8 px-6 py-12">
+    <>
+    <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-8 px-6 pt-12 pb-24">
       <div className="text-center">
-        <h1 className="font-display text-3xl text-kingdom-night">The Piece Library 📖</h1>
-        <p className="font-body text-kingdom-night/70 mt-2">
-          Meet the six chess pieces — how they move, and their role & power!
+        <h1 className={TEXT.display}>The Piece Library</h1>
+        <p className={`${TEXT.body} mt-2`}>
+          Meet the six chess pieces — how they move, and their role & power.
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-3xl w-full">
         {PIECE_LIBRARY.map((entry) => (
-          <Card key={entry.piece} className="flex flex-col gap-3">
+          <SecondaryCard key={entry.piece} className="flex flex-col gap-3">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1 bg-kingdom-sky/10 rounded-card p-2">
+              <div className="flex items-center gap-1 bg-premium-midnightDeep rounded-premiumBtn p-2">
                 <img
                   src={`/pieces/${folder}light/${entry.piece}.svg`}
                   alt={`Light ${entry.name}`}
@@ -75,36 +78,38 @@ export default function PieceLibraryPage() {
                 />
               </div>
               <div className="flex-1">
-                <h2 className="font-display text-xl text-kingdom-night">{entry.name}</h2>
-                <span className="font-body text-xs bg-kingdom-gold/20 text-kingdom-night/70 rounded-full px-2 py-0.5">
-                  {entry.value === null ? "Priceless!" : `Worth ${entry.value} point${entry.value === 1 ? "" : "s"}`}
+                <h2 className={TEXT.subheading}>{entry.name}</h2>
+                <span className="font-classic-body text-xs bg-premium-gold/15 text-premium-gold rounded-full px-2 py-0.5">
+                  {entry.value === null ? "Priceless" : `Worth ${entry.value} point${entry.value === 1 ? "" : "s"}`}
                 </span>
               </div>
             </div>
 
             <div>
-              <p className="font-display text-sm text-kingdom-royal mb-1">How it moves</p>
-              <p className="font-body text-sm text-kingdom-night/80">{entry.howItMoves}</p>
+              <p className={`${TEXT.meta} text-premium-gold mb-1`}>How it moves</p>
+              <p className={TEXT.body}>{entry.howItMoves}</p>
             </div>
 
             <div>
-              <p className="font-display text-sm text-kingdom-royal mb-1">Role & Power</p>
-              <p className="font-body text-sm text-kingdom-night/80">{entry.role}</p>
+              <p className={`${TEXT.meta} text-premium-gold mb-1`}>Role & Power</p>
+              <p className={TEXT.body}>{entry.role}</p>
             </div>
 
-            <p className="font-body text-xs text-kingdom-night/60 bg-kingdom-gold/10 rounded-card p-3">
-              💡 {entry.funFact}
+            <p className="font-classic-body text-xs text-premium-ivory/60 bg-premium-midnightDeep rounded-premiumBtn p-3">
+              {entry.funFact}
             </p>
-          </Card>
+          </SecondaryCard>
         ))}
       </div>
 
       <Link
-        href="/kingdom-map"
-        className="font-body text-sm text-kingdom-night/40 underline underline-offset-2"
+        href="/discover"
+        className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
       >
-        Back to the Kingdom Map
+        Back to Discover
       </Link>
     </main>
+    <PrimaryNav />
+    </>
   );
 }

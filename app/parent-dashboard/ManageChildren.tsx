@@ -6,8 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import { createChild, ChildProfile } from "@/lib/supabase/queries";
 import { setActiveChildIdClient } from "@/lib/childSession";
 import { AVATARS } from "@/content/avatars";
-import { Card } from "@/components/ui/Card";
+import { SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { TEXT } from "@/lib/designSystem";
 
 export function ManageChildren({
   initialChildren,
@@ -44,8 +45,8 @@ export function ManageChildren({
   }
 
   return (
-    <Card className="w-full max-w-lg flex flex-col gap-4">
-      <h2 className="font-display text-lg text-kingdom-night">Children</h2>
+    <SecondaryCard className="w-full max-w-lg flex flex-col gap-4">
+      <h2 className={TEXT.heading}>Children</h2>
 
       <ul className="flex flex-col gap-2">
         {children.map((child) => {
@@ -54,21 +55,21 @@ export function ManageChildren({
           return (
             <li
               key={child.id}
-              className={`flex items-center justify-between rounded-card px-4 py-3 ${
-                isActive ? "bg-kingdom-gold/20" : "bg-kingdom-night/5"
+              className={`flex items-center justify-between rounded-premiumBtn px-4 py-3 ${
+                isActive ? "bg-premium-gold/10 border border-premium-gold/30" : "bg-premium-midnightDeep"
               }`}
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{avatar?.emoji ?? "🧒"}</span>
                 <div>
-                  <p className="font-body text-kingdom-night">{child.display_name}</p>
-                  <p className="font-body text-xs text-kingdom-night/50">
+                  <p className="font-classic-body text-sm text-premium-ivory">{child.display_name}</p>
+                  <p className={`${TEXT.caption} normal-case`}>
                     Day {child.current_day}
                     {isActive ? " · Currently viewing" : ""}
                   </p>
                 </div>
               </div>
-              <Button size="md" variant="ghost" onClick={() => playAs(child.id)}>
+              <Button tone="premium" size="md" variant="ghost" onClick={() => playAs(child.id)}>
                 Play →
               </Button>
             </li>
@@ -82,13 +83,14 @@ export function ManageChildren({
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder="New child's name"
-          className="flex-1 rounded-btn px-4 py-2 border-2 border-kingdom-night/10 font-body"
+          aria-label="New child's name"
+          className="flex-1 rounded-premiumBtn px-4 py-2 border border-white/15 bg-premium-midnightDeep text-premium-ivory font-classic-body placeholder:text-premium-ivory/30"
           maxLength={40}
         />
-        <Button size="md" onClick={handleAdd} disabled={!newName.trim() || adding}>
+        <Button tone="premium" size="md" onClick={handleAdd} disabled={!newName.trim() || adding}>
           {adding ? "Adding..." : "+ Add Child"}
         </Button>
       </div>
-    </Card>
+    </SecondaryCard>
   );
 }

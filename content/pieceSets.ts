@@ -24,10 +24,24 @@ export const PIECE_SETS: PieceSetOption[] = [
     folder: "aurelia",
     intrinsicSize: { width: 1024, height: 1024 },
   },
+  {
+    id: "neostaunton-hand",
+    name: "NeoStaunton",
+    emoji: "♞",
+    folder: "neostaunton-hand",
+    intrinsicSize: { width: 257, height: 545 },
+  },
 ];
 
-export const DEFAULT_PIECE_SET_ID = PIECE_SETS[0].id;
+// NeoStaunton is the signature premium piece style (Phase 10B point 31) —
+// explicit id rather than PIECE_SETS[0] so the picker's display order can
+// change independently of which set new children start with.
+export const DEFAULT_PIECE_SET_ID = "neostaunton-hand";
 
 export function getPieceSet(id: string | null | undefined): PieceSetOption {
-  return PIECE_SETS.find((s) => s.id === id) ?? PIECE_SETS[0];
+  return (
+    PIECE_SETS.find((s) => s.id === id) ??
+    PIECE_SETS.find((s) => s.id === DEFAULT_PIECE_SET_ID) ??
+    PIECE_SETS[0]
+  );
 }

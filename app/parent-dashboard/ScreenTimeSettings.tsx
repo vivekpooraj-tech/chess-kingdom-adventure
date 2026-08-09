@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Card } from "@/components/ui/Card";
+import { SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { TEXT } from "@/lib/designSystem";
 
 interface ScreenTimeSettingsProps {
   parentId: string;
@@ -40,48 +41,44 @@ export function ScreenTimeSettings({
   }
 
   return (
-    <Card className="w-full max-w-lg flex flex-col gap-4">
-      <h2 className="font-display text-lg text-kingdom-night">Screen Time</h2>
+    <SecondaryCard className="w-full max-w-lg flex flex-col gap-4">
+      <h2 className={TEXT.heading}>Screen Time</h2>
 
       <label className="flex flex-col gap-1">
-        <span className="font-body text-sm text-kingdom-night/70">
-          Weekday limit (minutes)
-        </span>
+        <span className={`${TEXT.caption} normal-case`}>Weekday limit (minutes)</span>
         <input
           type="number"
           min={0}
           max={480}
           value={weekday}
           onChange={(e) => setWeekday(Number(e.target.value))}
-          className="rounded-btn px-4 py-2 border-2 border-kingdom-night/10 font-body"
+          className="rounded-premiumBtn px-4 py-2 border border-white/15 bg-premium-midnightDeep text-premium-ivory font-classic-body"
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="font-body text-sm text-kingdom-night/70">
-          Weekend limit (minutes)
-        </span>
+        <span className={`${TEXT.caption} normal-case`}>Weekend limit (minutes)</span>
         <input
           type="number"
           min={0}
           max={480}
           value={weekend}
           onChange={(e) => setWeekend(Number(e.target.value))}
-          className="rounded-btn px-4 py-2 border-2 border-kingdom-night/10 font-body"
+          className="rounded-premiumBtn px-4 py-2 border border-white/15 bg-premium-midnightDeep text-premium-ivory font-classic-body"
         />
       </label>
 
       <div className="flex items-center gap-3">
-        <Button size="md" onClick={save} disabled={saving}>
+        <Button tone="premium" size="md" onClick={save} disabled={saving}>
           {saving ? "Saving..." : "Save"}
         </Button>
-        {saved && <span className="font-body text-sm text-kingdom-forest">Saved!</span>}
+        {saved && <span className="font-classic-body text-sm text-emerald-400">Saved</span>}
       </div>
 
-      <p className="font-body text-xs text-kingdom-night/40 italic">
+      <p className={`${TEXT.caption} normal-case italic`}>
         These limits are stored but not yet enforced in the app — the lock-after-time-expires
         behavior described in the product plan is a future update.
       </p>
-    </Card>
+    </SecondaryCard>
   );
 }

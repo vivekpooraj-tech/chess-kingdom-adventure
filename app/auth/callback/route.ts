@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { BRAND } from "@/lib/brand";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Opening Chess Kingdom Adventure…</title>
+  <title>Opening ${BRAND.name}…</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body style="font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;text-align:center;padding:24px;margin:0;">
