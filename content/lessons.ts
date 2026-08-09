@@ -7,6 +7,16 @@ import { Lesson } from "@/lib/types";
  */
 export const FREE_DAY_LIMIT = 3;
 
+/**
+ * One shared daily budget of free puzzle interactions for non-premium
+ * accounts — covers both previewing a locked lesson's puzzle AND playing
+ * the standalone Puzzle Trainer (app/puzzles), so a free child gets a
+ * single, easy-to-explain "3 puzzles a day" limit rather than two
+ * different caps for two surfaces. Tracked via puzzle_preview_usage
+ * (see getTodayPreviewCount/incrementPreviewCount in lib/supabase/queries.ts).
+ */
+export const DAILY_PREVIEW_LIMIT = 3;
+
 export const LESSONS: Lesson[] = [
   {
     dayNumber: 1,

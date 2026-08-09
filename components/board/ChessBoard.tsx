@@ -371,7 +371,12 @@ export function ChessBoard({
       `}</style>
       <div
         className="board-outer relative rounded-card overflow-hidden shadow-premiumCard ring-1 ring-premium-gold/10 select-none mx-auto"
-        style={{ aspectRatio: "1 / 1" }}
+        style={{
+          aspectRatio: "1 / 1",
+          ...(skin.frameColor && !skin.boardImageUrl
+            ? { backgroundColor: skin.frameColor, padding: "3%", boxSizing: "border-box" }
+            : {}),
+        }}
     >
       {skin.boardImageUrl && (
         <img
@@ -427,7 +432,12 @@ export function ChessBoard({
             // already bake their own labels into the image.
             const showFileLabel = !skin.boardImageUrl && rIdx === 7;
             const showRankLabel = !skin.boardImageUrl && fIdx === 0;
-            const labelColorClass = isDark ? "text-white/80" : "text-kingdom-night/50";
+            const labelColorClass = skin.coordinateColor
+              ? undefined
+              : isDark
+              ? "text-white/80"
+              : "text-kingdom-night/50";
+            const labelColorStyle = skin.coordinateColor ? { color: skin.coordinateColor } : undefined;
 
             return (
               <button
@@ -457,6 +467,7 @@ export function ChessBoard({
                       "absolute bottom-0.5 left-1 font-body text-[10px] sm:text-xs font-bold leading-none pointer-events-none",
                       labelColorClass
                     )}
+                    style={labelColorStyle}
                   >
                     {file}
                   </span>
@@ -467,6 +478,7 @@ export function ChessBoard({
                       "absolute top-0.5 left-1 font-body text-[10px] sm:text-xs font-bold leading-none pointer-events-none",
                       labelColorClass
                     )}
+                    style={labelColorStyle}
                   >
                     {rank}
                   </span>

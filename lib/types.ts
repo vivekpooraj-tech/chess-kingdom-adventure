@@ -41,6 +41,13 @@ export interface BoardSkinOption {
    * grid is inset to line up with the image's drawn squares.
    */
   boardImageUrl?: string;
+  /** Optional flat-mode extras (ignored for image-backed skins, which bake
+   * their own frame/labels into boardImageUrl). frameColor draws an inset
+   * border around the board; coordinateColor overrides the default
+   * light/dark-derived file/rank label color. Both optional and additive —
+   * skins that omit them render exactly as before. */
+  frameColor?: string;
+  coordinateColor?: string;
 }
 
 export interface PieceSetOption {

@@ -1,13 +1,39 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FUNDAMENTALS_TOPICS } from "@/content/academyFundamentals";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
+import { createClient } from "@/lib/supabase/client";
+import { resolveActiveChild } from "@/lib/supabase/queries";
+import { getActiveChildIdClient } from "@/lib/childSession";
 
 export default function FundamentalsPage() {
+  // Best-effort — these example boards are read-only diagrams, so the page
+  // still works fully even if resolving the child fails (matches the same
+  // pattern used in Chess Mind's spatial/mathematics pages).
+  const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
+  const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
+      if (resolution.child) {
+        setBoardSkinId(resolution.child.board_skin_id);
+        setPieceSetId(resolution.child.piece_set_id);
+      }
+    }
+    load();
+  }, []);
+
   return (
     <>
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
@@ -30,7 +56,13 @@ export default function FundamentalsPage() {
               <p className={TEXT.body}>{topic.explanation}</p>
               {topic.exampleFen && (
                 <div className="flex flex-col items-center gap-2 pt-1">
-                  <ChessBoard fen={topic.exampleFen} size={240} readOnly />
+                  <ChessBoard
+                    fen={topic.exampleFen}
+                    size={240}
+                    readOnly
+                    boardSkinId={boardSkinId}
+                    pieceSetId={pieceSetId}
+                  />
                   {topic.exampleCaption && (
                     <p className={`${TEXT.caption} text-center italic normal-case`}>
                       {topic.exampleCaption}

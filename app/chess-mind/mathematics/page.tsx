@@ -101,6 +101,8 @@ export default function ChessMathematicsPage() {
   const [round, setRound] = useState<Round | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [childId, setChildId] = useState<string | null>(null);
+  const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
+  const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     setRound(generateRound("Beginner"));
@@ -111,7 +113,11 @@ export default function ChessMathematicsPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
       const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
-      if (resolution.child) setChildId(resolution.child.id);
+      if (resolution.child) {
+        setChildId(resolution.child.id);
+        setBoardSkinId(resolution.child.board_skin_id);
+        setPieceSetId(resolution.child.piece_set_id);
+      }
     }
     loadChild();
   }, []);
@@ -168,7 +174,15 @@ export default function ChessMathematicsPage() {
         </div>
 
         <div className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-5">
-          {round.fen && <ChessBoard fen={round.fen} size={220} readOnly />}
+          {round.fen && (
+            <ChessBoard
+              fen={round.fen}
+              size={220}
+              readOnly
+              boardSkinId={boardSkinId}
+              pieceSetId={pieceSetId}
+            />
+          )}
           <p className="font-classic-display text-lg text-premium-ivory text-center">
             {round.question}
           </p>

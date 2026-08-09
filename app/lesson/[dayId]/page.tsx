@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { PieceSymbol } from "chess.js";
-import { getLesson, FREE_DAY_LIMIT } from "@/content/lessons";
+import { getLesson, FREE_DAY_LIMIT, DAILY_PREVIEW_LIMIT } from "@/content/lessons";
 import { getMinigameConfigForDay } from "@/content/minigame-configs";
 import { BUDDIES } from "@/content/buddies";
 import { KINGDOM_ZONES, getZoneForDay, KingdomZone } from "@/content/kingdomZones";
@@ -39,8 +39,6 @@ import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
 import { getAcademyRecommendation } from "@/lib/chessMind/academyRecommendations";
 
-const DAILY_PREVIEW_LIMIT = 3;
-
 type ViewMode = "loading" | "locked" | "full" | "preview";
 
 interface ZoneProgress {
@@ -63,6 +61,8 @@ export default function LessonPage() {
 
   const [stepIndex, setStepIndex] = useState(0);
   const [childId, setChildId] = useState<string | null>(null);
+  const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
+  const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [buddy, setBuddy] = useState(BUDDIES[0]);
   const [mode, setMode] = useState<ViewMode>("loading");
   const [previewDone, setPreviewDone] = useState(false);
@@ -87,6 +87,8 @@ export default function LessonPage() {
       }
       const child = resolution.child!;
       setChildId(child.id);
+      setBoardSkinId(child.board_skin_id);
+      setPieceSetId(child.piece_set_id);
       const matchedBuddy = BUDDIES.find((b) => b.id === child.buddy_id);
       if (matchedBuddy) setBuddy(matchedBuddy);
 
@@ -224,6 +226,8 @@ export default function LessonPage() {
               crystal={lesson.crystal}
               dayNumber={lesson.dayNumber}
               childId={childId}
+              boardSkinId={boardSkinId}
+              pieceSetId={pieceSetId}
               onNext={() => setPreviewDone(true)}
             />
           ) : (
@@ -288,6 +292,8 @@ export default function LessonPage() {
                 title={step!.title}
                 crystal={lesson.crystal}
                 fen={lesson.puzzle.fen}
+                boardSkinId={boardSkinId}
+                pieceSetId={pieceSetId}
                 onNext={next}
               />
             )}
@@ -304,6 +310,8 @@ export default function LessonPage() {
                 crystal={lesson.crystal}
                 dayNumber={lesson.dayNumber}
                 childId={childId}
+                boardSkinId={boardSkinId}
+                pieceSetId={pieceSetId}
                 onNext={next}
               />
             )}
@@ -323,6 +331,8 @@ export default function LessonPage() {
                 prompt={lesson.miniMatch.prompt}
                 movesRequired={lesson.miniMatch.movesRequired}
                 crystal={lesson.crystal}
+                boardSkinId={boardSkinId}
+                pieceSetId={pieceSetId}
                 onNext={next}
               />
             )}
@@ -399,18 +409,22 @@ function PieceIntroStep({
   title,
   crystal,
   fen,
+  boardSkinId,
+  pieceSetId,
   onNext,
 }: {
   title: string;
   crystal: string;
   fen: string;
+  boardSkinId?: string;
+  pieceSetId?: string;
   onNext: () => void;
 }) {
   return (
     <SecondaryCard className="flex flex-col items-center gap-5 text-center">
       <p className={`${TEXT.meta} text-premium-gold`}>See it on the board</p>
       <h2 className={TEXT.heading}>{title}</h2>
-      <ChessBoard fen={fen} size={320} readOnly />
+      <ChessBoard fen={fen} size={320} readOnly boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
       <p className={TEXT.body}>
         Here's where the {crystal} starts. Let's see how it moves.
       </p>
@@ -486,6 +500,8 @@ function PuzzleStep({
   crystal,
   dayNumber,
   childId,
+  boardSkinId,
+  pieceSetId,
   onNext,
 }: {
   fen: string;
@@ -494,6 +510,8 @@ function PuzzleStep({
   crystal: string;
   dayNumber: number;
   childId: string;
+  boardSkinId?: string;
+  pieceSetId?: string;
   onNext: () => void;
 }) {
   const [moved, setMoved] = useState(false);
@@ -537,6 +555,8 @@ function PuzzleStep({
         playableColor="w"
         opponent="stockfish"
         size={360}
+        boardSkinId={boardSkinId}
+        pieceSetId={pieceSetId}
         onMove={(opts) => handleMove(opts.piece)}
         onGameOver={(result) => {
           if (result.isCheckmate && result.winner === "w") {
@@ -576,12 +596,16 @@ function MiniMatchStep({
   prompt,
   movesRequired,
   crystal,
+  boardSkinId,
+  pieceSetId,
   onNext,
 }: {
   fen: string;
   prompt: string;
   movesRequired: number;
   crystal: string;
+  boardSkinId?: string;
+  pieceSetId?: string;
   onNext: () => void;
 }) {
   const [started, setStarted] = useState(false);
@@ -611,6 +635,8 @@ function MiniMatchStep({
         playableColor="w"
         opponent="stockfish"
         size={360}
+        boardSkinId={boardSkinId}
+        pieceSetId={pieceSetId}
         onMove={() => setMoveCount((c) => c + 1)}
         onGameOver={(result) => {
           if (result.isCheckmate && result.winner === "w") {

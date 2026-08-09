@@ -21,6 +21,10 @@ import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { AchievementBadges } from "@/components/achievements/AchievementBadges";
+import { ListItemRow } from "@/components/ui/Card";
+import { getPieceSet } from "@/content/pieceSets";
+import { getBoardSkin } from "@/content/boardSkins";
+import { TEXT } from "@/lib/designSystem";
 
 function StatTile({ label, value, emoji }: { label: string; value: string; emoji: string }) {
   return (
@@ -57,6 +61,8 @@ export default async function ProfilePage() {
 
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
   const currentZone = getZoneForDay(Math.min(child.current_day, LESSONS.length));
+  const pieceSet = getPieceSet(child.piece_set_id);
+  const boardSkin = getBoardSkin(child.board_skin_id);
 
   const discovered = openingEncounters.filter((e) => e.first_seen_at);
   const studied = openingEncounters.filter((e) => e.studied_at);
@@ -82,6 +88,26 @@ export default async function ProfilePage() {
           rating={child.rating}
           streak={chessMindStreak}
         />
+
+        <div className="w-full max-w-md flex flex-col gap-2">
+          <p className={`${TEXT.caption} uppercase tracking-wide`}>Customize</p>
+          <ListItemRow href="/kingdom-map/piece-set">
+            <span className="text-2xl flex-none">{pieceSet.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-classic-display text-sm text-premium-ivory">Change Pieces</p>
+              <p className={`${TEXT.caption} normal-case`}>Currently {pieceSet.name}</p>
+            </div>
+            <span className="text-premium-gold text-lg flex-none">→</span>
+          </ListItemRow>
+          <ListItemRow href="/kingdom-map/board-skin">
+            <span className="text-2xl flex-none">{boardSkin.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-classic-display text-sm text-premium-ivory">Change Board</p>
+              <p className={`${TEXT.caption} normal-case`}>Currently {boardSkin.name}</p>
+            </div>
+            <span className="text-premium-gold text-lg flex-none">→</span>
+          </ListItemRow>
+        </div>
 
         <div className="w-full max-w-md grid grid-cols-2 sm:grid-cols-3 gap-3">
           <StatTile emoji="🗺️" value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Journey" />

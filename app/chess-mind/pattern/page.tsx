@@ -32,6 +32,8 @@ export default function PatternRecognitionPage() {
   const [pinAnswer, setPinAnswer] = useState<string | null>(null);
   const [solved, setSolved] = useState(0);
   const [childId, setChildId] = useState<string | null>(null);
+  const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
+  const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [boardKey, setBoardKey] = useState(0);
 
   useEffect(() => {
@@ -43,7 +45,11 @@ export default function PatternRecognitionPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
       const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
-      if (resolution.child) setChildId(resolution.child.id);
+      if (resolution.child) {
+        setChildId(resolution.child.id);
+        setBoardSkinId(resolution.child.board_skin_id);
+        setPieceSetId(resolution.child.piece_set_id);
+      }
     }
     loadChild();
   }, []);
@@ -131,6 +137,8 @@ export default function PatternRecognitionPage() {
             size={320}
             readOnly={challenge.type === "pin" || status !== "playing"}
             playableColor={challenge.type !== "pin" ? sideToMove : undefined}
+            boardSkinId={boardSkinId}
+            pieceSetId={pieceSetId}
             onMove={handleMove}
           />
 

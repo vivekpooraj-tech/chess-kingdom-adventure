@@ -6,6 +6,15 @@ import { BoardSkinOption } from "@/lib/types";
 // change.
 export const BOARD_SKINS: BoardSkinOption[] = [
   {
+    id: "walnut-ivory",
+    name: "Walnut & Ivory",
+    emoji: "👑",
+    lightSquare: "#E8D7B5",
+    darkSquare: "#6B4528",
+    frameColor: "#3A2417",
+    coordinateColor: "#F4E7C5",
+  },
+  {
     id: "classic-forest",
     name: "Classic Forest",
     emoji: "🌲",
@@ -45,8 +54,17 @@ export const BOARD_SKINS: BoardSkinOption[] = [
   },
 ];
 
-export const DEFAULT_BOARD_SKIN_ID = BOARD_SKINS[0].id;
+// The premium board is the new preferred default for anyone choosing for
+// the first time (onboarding, or a fallback when no preference is set).
+// Existing children keep whatever they already saved — this only changes
+// what NEW selections start from, matching the same DEFAULT_PIECE_SET_ID
+// pattern in content/pieceSets.ts.
+export const DEFAULT_BOARD_SKIN_ID = "walnut-ivory";
 
 export function getBoardSkin(id: string | null | undefined): BoardSkinOption {
-  return BOARD_SKINS.find((s) => s.id === id) ?? BOARD_SKINS[0];
+  return (
+    BOARD_SKINS.find((s) => s.id === id) ??
+    BOARD_SKINS.find((s) => s.id === DEFAULT_BOARD_SKIN_ID) ??
+    BOARD_SKINS[0]
+  );
 }
