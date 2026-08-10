@@ -28,20 +28,22 @@ const PIECE_FILE_NAME: Record<PieceSymbol, string> = {
   k: "king",
 };
 
-// Bounding box each piece renders within, as a % of its square (Phase 13).
-// Every set's SVG viewBox is now cropped tight to its own ink — no more
-// shared oversized canvases with huge margins around shorter pieces — so
-// these percentages map directly to visual size on the board instead of
-// fighting stale canvas whitespace. Sized per piece type, not uniformly, so
-// a rook's naturally blockier silhouette and a pawn's naturally smaller one
-// still read as consistent visual weight next to a king/queen at the same
-// board.
+// Bounding box each piece renders within, as a % of its square (Phase 13,
+// tuned again after Phase 14 feedback). Every set's SVG viewBox is cropped
+// tight to its own ink, but a tight bounding box isn't the same as visually
+// "full" — the pawn is a solid, chunky silhouette that fills almost all of
+// its own box, while the king/queen/bishop/knight/rook shapes are thinner
+// (a cross-topped stem, crenellations, a narrow profile) with real empty
+// space inside their own bbox. At equal box percentages those five read as
+// smaller than the pawn even though their bounding boxes aren't. Boxed
+// noticeably larger here to compensate, not because their bounding boxes
+// are bigger.
 const PIECE_BOX_PCT: Record<PieceSymbol, number> = {
-  k: 92,
-  q: 92,
-  b: 90,
-  n: 90,
-  r: 88,
+  k: 98,
+  q: 98,
+  b: 96,
+  n: 96,
+  r: 94,
   p: 86,
 };
 
