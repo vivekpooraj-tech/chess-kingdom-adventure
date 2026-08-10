@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 import { BRAND } from "@/lib/brand";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
-import { useArenaBoardSize } from "@/lib/hooks/useArenaBoardSize";
 import type { Difficulty } from "@/lib/chess-engine/stockfishEngine";
 
 type ViewState =
@@ -82,11 +81,6 @@ export default function FreePlayPage() {
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const [childId, setChildId] = useState<string | null>(null);
   const [seenOpeningIds, setSeenOpeningIds] = useState<Set<string>>(new Set());
-  // Reserve room for the arena header/exit row + the opponent/player rows
-  // above and below the board (~180px) — called unconditionally (rules of
-  // hooks) even though the computed size only matters in the "playing"
-  // state below.
-  const arenaBoardSize = useArenaBoardSize(180);
 
   useEffect(() => {
     async function load() {
@@ -231,20 +225,20 @@ export default function FreePlayPage() {
             <span className="text-xl">♟️</span> You
           </div>
         }
-        board={
+        renderBoard={(boardSize) => (
           <ChessBoard
             key={gameKey}
             playableColor="w"
             opponent="stockfish"
             difficulty={view.difficulty}
-            size={arenaBoardSize}
+            size={boardSize}
             arenaMode
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}
             onGameOver={(result) => handleGameOver(view.difficulty, result)}
             onPositionChange={handlePositionChange}
           />
-        }
+        )}
         sidePanel={
           <>
             {openingMatch && (

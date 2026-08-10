@@ -24,7 +24,6 @@ import { Button } from "@/components/ui/Button";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
-import { useArenaBoardSize } from "@/lib/hooks/useArenaBoardSize";
 import { TEXT } from "@/lib/designSystem";
 import type { Color } from "chess.js";
 
@@ -40,10 +39,6 @@ export default function OnlineGamePage() {
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const seenOpeningIdsRef = useRef<Set<string>>(new Set());
   const supabaseRef = useRef(createClient());
-  // Called unconditionally (rules of hooks) — only matters once the game
-  // is actually active, reserving room for the arena header + reaction
-  // rows above/below the board.
-  const arenaBoardSize = useArenaBoardSize(200);
 
   // Load the current child + initial game state, then subscribe to live
   // updates (the opponent's moves and reactions arrive this way).
@@ -277,18 +272,18 @@ export default function OnlineGamePage() {
             You — {myColor === "w" ? "White" : "Black"}
           </div>
         }
-        board={
+        renderBoard={(boardSize) => (
           <ChessBoard
             fen={game.fen}
             playableColor={myColor}
-            size={arenaBoardSize}
+            size={boardSize}
             arenaMode
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}
             onMove={(opts) => handleMove(opts.fen, opts.san)}
             onGameOver={handleGameOver}
           />
-        }
+        )}
         sidePanel={
           <>
             {openingMatch && (

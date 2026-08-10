@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 
-const MIN_SIZE = 280;
+// Was 280 — that floor forced an overflow at the shortest real landscape
+// phone heights (e.g. 812x375), where truly available height after
+// reserving chrome comes in under 280px. Lowering it lets the board size
+// itself to what's actually there instead of forcing an oversized board
+// that pushes the page into a scroll (Phase 16 section 8: "must fit
+// without scrolling" in landscape). Still comfortably larger than the old
+// pre-Phase-15 fixed sizes (360-680px) at every breakpoint that isn't this
+// extreme edge case.
+const MIN_SIZE = 240;
 const MAX_SIZE = 920;
 const DESKTOP_BREAKPOINT = 1024; // matches Tailwind's `lg`
 const DESKTOP_SIDE_PANEL_WIDTH = 340; // reserved for GameArenaLayout's side panel + gap

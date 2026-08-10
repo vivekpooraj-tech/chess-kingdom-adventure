@@ -1,45 +1,115 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { FullscreenIcon, CloseIcon } from "@/components/nav/icons";
 import { IconButton } from "@/components/ui/Button";
+import { useArenaBoardSize } from "@/lib/hooks/useArenaBoardSize";
+
+// Vertical gaps between the 4 stacked rows (header/opponent/board/player,
+// each separated by gap-2 = 8px -> 3 gaps) — the shell's own padding is
+// measured for real below (getComputedStyle), not hardcoded here, since it
+// genuinely differs between the base py-3 (mobile/landscape) and lg:py-6
+// (desktop) — an earlier fixed guess reserved the larger desktop padding
+// even in landscape mode, wasting real board space that Phase 16's
+// "no scroll in landscape" requirement needed back. +8px safety buffer for
+// sub-pixel row-height rounding (row heights come back as e.g. 19.2px,
+// which doesn't perfectly cancel through Math.floor()).
+const FIXED_GAPS = 24;
+const ROUNDING_BUFFER = 8;
+// Short landscape phones get noticeably tighter on vertical room than any
+// portrait breakpoint — shrinks the header's icon button and hides the
+// (purely decorative) title text to reclaim a few more px for the board,
+// per section 8's "shrink decorative elements before shrinking the board."
+const LANDSCAPE_QUERY = "(orientation: landscape) and (max-height: 500px)";
 
 /**
  * Board-first "Chess Arena" shell for actual gameplay (Free Play, Online
- * Game, Opening Practice) — NOT for lesson/study boards, which keep their
- * own page layouts untouched. Desktop (lg+) puts the board center-left and
- * a side panel (move list, controls, opening badge, etc.) on the right;
- * below `lg` the layout stacks board-first with the side panel content
- * flowing underneath. The caller renders its own `<ChessBoard arenaMode
- * size={useArenaBoardSize(...)} .../>` and passes it in as `board` — this
- * shell only owns the surrounding chrome, not the board itself, so there's
- * still exactly one ChessBoard implementation.
+ * Game) — NOT for lesson/study boards, which keep their own page layouts
+ * untouched. Desktop (lg+, or short landscape) puts the board center-left
+ * and a side panel (move list, controls, opening badge, etc.) on the
+ * right; otherwise the layout stacks board-first with the side panel
+ * flowing underneath.
+ *
+ * `renderBoard` is a render-prop rather than a plain ReactNode: this shell
+ * measures its own header/opponent/player row heights via ResizeObserver
+ * (Phase 16 — replaces Phase 15's hand-guessed reservedHeight constants
+ * with the real rendered chrome height) and only then knows how much
+ * vertical space is actually left for the board, so the caller's
+ * <ChessBoard size={...} arenaMode .../> has to be constructed *after*
+ * that measurement, not before. Still exactly one ChessBoard
+ * implementation — this shell never renders board content itself, it just
+ * decides what size to hand the caller's own board element.
  *
  * No chess clock/timer exists anywhere in this app's data model (verified
  * before building this) — the top/bottom rows show whatever player info
- * the caller has (name, avatar, difficulty/rating badge), not a fabricated
- * clock.
+ * the caller has (name, avatar, difficulty/rating badge), not a
+ * fabricated clock.
  */
 export function GameArenaLayout({
   title,
   onExit,
   opponentRow,
   playerRow,
-  board,
+  renderBoard,
   sidePanel,
 }: {
   title: string;
   onExit: () => void;
   opponentRow: ReactNode;
   playerRow: ReactNode;
-  board: ReactNode;
+  renderBoard: (boardSize: number) => ReactNode;
   sidePanel?: ReactNode;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const opponentRowRef = useRef<HTMLDivElement | null>(null);
+  const playerRowRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
+  const [isCompactLandscape, setIsCompactLandscape] = useState(false);
+  // Sane fallback for the very first paint before ResizeObserver's first
+  // callback fires (effectively instant, but React still needs an initial
+  // value) — not a guess used for real sizing, just a one-frame default.
+  const [chromeHeight, setChromeHeight] = useState(160);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const mql = window.matchMedia(LANDSCAPE_QUERY);
+    setIsCompactLandscape(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsCompactLandscape(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  useLayoutEffect(() => {
+    function measure() {
+      const style = containerRef.current ? getComputedStyle(containerRef.current) : null;
+      const paddingV = style
+        ? parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+        : 48;
+      const h =
+        (headerRef.current?.offsetHeight ?? 0) +
+        (opponentRowRef.current?.offsetHeight ?? 0) +
+        (playerRowRef.current?.offsetHeight ?? 0) +
+        FIXED_GAPS +
+        paddingV +
+        ROUNDING_BUFFER;
+      setChromeHeight(h);
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (headerRef.current) ro.observe(headerRef.current);
+    if (opponentRowRef.current) ro.observe(opponentRowRef.current);
+    if (playerRowRef.current) ro.observe(playerRowRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [isCompactLandscape]);
+
+  const boardSize = useArenaBoardSize(chromeHeight);
+
+  useLayoutEffect(() => {
     setFullscreenSupported(typeof document !== "undefined" && document.fullscreenEnabled === true);
     function onChange() {
       setIsFullscreen(document.fullscreenElement === containerRef.current);
@@ -96,36 +166,42 @@ export function GameArenaLayout({
       <div className="arena-row w-full flex flex-col lg:flex-row gap-4 lg:gap-8 lg:items-center lg:justify-center">
         {/* Board column */}
         <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-          <div className="w-full flex items-center justify-between gap-2">
+          <div ref={headerRef} className="w-full flex items-center justify-between gap-2">
             <button
               onClick={onExit}
               aria-label="Exit game"
-              className="flex items-center gap-1.5 font-classic-body text-xs text-premium-ivory/50 hover:text-premium-ivory transition-colors"
+              className="flex items-center gap-1.5 font-classic-body text-xs text-premium-ivory/50 hover:text-premium-ivory transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded"
             >
               <CloseIcon className="w-4 h-4" /> Exit
             </button>
-            <h1 className="font-classic-display text-sm sm:text-base text-premium-ivory/80 truncate">
-              {title}
-            </h1>
+            {!isCompactLandscape && (
+              <h1 className="font-classic-display text-sm sm:text-base text-premium-ivory/80 truncate">
+                {title}
+              </h1>
+            )}
             {fullscreenSupported ? (
               <IconButton
                 label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                 tone="premium"
-                size={32}
+                size={isCompactLandscape ? 24 : 32}
                 onClick={toggleFullscreen}
               >
-                <FullscreenIcon className="w-4 h-4" />
+                <FullscreenIcon className={isCompactLandscape ? "w-3 h-3" : "w-4 h-4"} />
               </IconButton>
             ) : (
-              <span className="w-8" aria-hidden="true" />
+              <span className={isCompactLandscape ? "w-6" : "w-8"} aria-hidden="true" />
             )}
           </div>
 
-          <div className="w-full flex items-center">{opponentRow}</div>
+          <div ref={opponentRowRef} className="w-full flex items-center">
+            {opponentRow}
+          </div>
 
-          <div className="w-full flex items-center justify-center">{board}</div>
+          <div className="w-full flex items-center justify-center">{renderBoard(boardSize)}</div>
 
-          <div className="w-full flex items-center">{playerRow}</div>
+          <div ref={playerRowRef} className="w-full flex items-center">
+            {playerRow}
+          </div>
         </div>
 
         {/* Side panel — desktop + short landscape: fixed-width right
