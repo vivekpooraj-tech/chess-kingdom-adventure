@@ -31,6 +31,19 @@ export const PIECE_SETS: PieceSetOption[] = [
     // Every file in this set shares the same "0 0 100 100" viewBox exactly.
     intrinsicSize: { width: 100, height: 100 },
   },
+  {
+    id: "royal-legends",
+    name: "Royal Legends",
+    emoji: "⚜️",
+    folder: "royal-legends",
+    // Raster artwork (an SVG wrapper embedding a cropped PNG per piece,
+    // not vector paths) — sliced from a single supplied illustration,
+    // background-cleaned, and tightly cropped per piece the same way the
+    // other sets' viewBoxes were in Phase 13. Heavier files than the
+    // vector sets (~100-200KB each vs a few KB) since there's no vector
+    // source to draw from.
+    intrinsicSize: { width: 231, height: 449 },
+  },
 ];
 
 // NeoStaunton is the signature premium piece style (Phase 10B point 31) —
