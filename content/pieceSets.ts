@@ -31,6 +31,14 @@ export const PIECE_SETS: PieceSetOption[] = [
     folder: "neostaunton-hand",
     intrinsicSize: { width: 257, height: 545 },
   },
+  {
+    id: "kingdom-characters",
+    name: "Kingdom Characters",
+    emoji: "🛡️",
+    folder: "kingdom-characters",
+    // Every file in this set shares the same "0 0 100 100" viewBox exactly.
+    intrinsicSize: { width: 100, height: 100 },
+  },
 ];
 
 // NeoStaunton is the signature premium piece style (Phase 10B point 31) —
