@@ -9,6 +9,7 @@ import { resolveActiveChild, getCompletedDays, recordOpeningEncounter } from "@/
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { LESSONS } from "@/content/lessons";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { GameArenaLayout } from "@/components/game/GameArenaLayout";
 import { GameChrome } from "@/components/game/GameChrome";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 import { BRAND } from "@/lib/brand";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
+import { useArenaBoardSize } from "@/lib/hooks/useArenaBoardSize";
 import type { Difficulty } from "@/lib/chess-engine/stockfishEngine";
 
 type ViewState =
@@ -80,6 +82,11 @@ export default function FreePlayPage() {
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const [childId, setChildId] = useState<string | null>(null);
   const [seenOpeningIds, setSeenOpeningIds] = useState<Set<string>>(new Set());
+  // Reserve room for the arena header/exit row + the opponent/player rows
+  // above and below the board (~180px) — called unconditionally (rules of
+  // hooks) even though the computed size only matters in the "playing"
+  // state below.
+  const arenaBoardSize = useArenaBoardSize(180);
 
   useEffect(() => {
     async function load() {
@@ -208,40 +215,60 @@ export default function FreePlayPage() {
   }
 
   if (view.status === "playing") {
+    const difficultyInfo = DIFFICULTY_INFO.find((d) => d.key === view.difficulty)!;
     return (
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-5 px-6 py-8">
-        <h1 className={`${TEXT.heading} text-center capitalize`}>{view.difficulty} Match</h1>
-        <ChessBoard
-          key={gameKey}
-          playableColor="w"
-          opponent="stockfish"
-          difficulty={view.difficulty}
-          size={480}
-          boardSkinId={boardSkinId}
-          pieceSetId={pieceSetId}
-          onGameOver={(result) => handleGameOver(view.difficulty, result)}
-          onPositionChange={handlePositionChange}
-        />
-        {openingMatch && (
-          <OpeningBadge
-            match={openingMatch}
-            onDismiss={() => {
-              setDismissedOpeningId(openingMatch.opening.id);
-              setOpeningMatch(null);
-            }}
+      <GameArenaLayout
+        title={`${difficultyInfo.label} Match`}
+        onExit={() => setView({ status: "picking-difficulty" })}
+        opponentRow={
+          <div className="flex items-center gap-2 font-classic-body text-sm text-premium-ivory/70">
+            <span className="text-xl">{difficultyInfo.emoji}</span>
+            Stockfish — {difficultyInfo.label}
+          </div>
+        }
+        playerRow={
+          <div className="flex items-center gap-2 font-classic-body text-sm text-premium-ivory">
+            <span className="text-xl">♟️</span> You
+          </div>
+        }
+        board={
+          <ChessBoard
+            key={gameKey}
+            playableColor="w"
+            opponent="stockfish"
+            difficulty={view.difficulty}
+            size={arenaBoardSize}
+            arenaMode
+            boardSkinId={boardSkinId}
+            pieceSetId={pieceSetId}
+            onGameOver={(result) => handleGameOver(view.difficulty, result)}
+            onPositionChange={handlePositionChange}
           />
-        )}
-        <GameChrome
-          capturedByWhite={position.capturedByWhite}
-          capturedByBlack={position.capturedByBlack}
-          history={position.history}
-          statusText={position.isCheck ? "Check" : position.turn === "w" ? "White to move" : "Black to move"}
-          hint={hint}
-        />
-        <Button tone="premium" variant="ghost" onClick={() => setView({ status: "picking-difficulty" })}>
-          Change Difficulty
-        </Button>
-      </main>
+        }
+        sidePanel={
+          <>
+            {openingMatch && (
+              <OpeningBadge
+                match={openingMatch}
+                onDismiss={() => {
+                  setDismissedOpeningId(openingMatch.opening.id);
+                  setOpeningMatch(null);
+                }}
+              />
+            )}
+            <GameChrome
+              capturedByWhite={position.capturedByWhite}
+              capturedByBlack={position.capturedByBlack}
+              history={position.history}
+              statusText={position.isCheck ? "Check" : position.turn === "w" ? "White to move" : "Black to move"}
+              hint={hint}
+            />
+            <Button tone="premium" variant="ghost" onClick={() => setView({ status: "picking-difficulty" })}>
+              Change Difficulty
+            </Button>
+          </>
+        }
+      />
     );
   }
 

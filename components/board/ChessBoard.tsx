@@ -29,22 +29,24 @@ const PIECE_FILE_NAME: Record<PieceSymbol, string> = {
 };
 
 // Bounding box each piece renders within, as a % of its square (Phase 13,
-// tuned again after Phase 14 feedback). Every set's SVG viewBox is cropped
-// tight to its own ink, but a tight bounding box isn't the same as visually
-// "full" — the pawn is a solid, chunky silhouette that fills almost all of
-// its own box, while the king/queen/bishop/knight/rook shapes are thinner
-// (a cross-topped stem, crenellations, a narrow profile) with real empty
-// space inside their own bbox. At equal box percentages those five read as
-// smaller than the pawn even though their bounding boxes aren't. Boxed
-// noticeably larger here to compensate, not because their bounding boxes
-// are bigger.
+// tuned again after Phase 14 feedback, retuned once more in Phase 15 to
+// fit that phase's explicit visual target ranges — king 90-95%, queen
+// 90-93%, bishop/knight 88-93%, rook 86-91%, pawn 78-84%, pawn always the
+// smallest). Every set's SVG viewBox is cropped tight to its own ink, but
+// a tight bounding box isn't the same as visually "full" — the pawn is a
+// solid, chunky silhouette that fills almost all of its own box, while the
+// king/queen/bishop/knight/rook shapes are thinner (a cross-topped stem,
+// crenellations, a narrow profile) with real empty space inside their own
+// bbox. At equal box percentages those five read as smaller than the pawn
+// even though their bounding boxes aren't. Boxed larger here to compensate,
+// not because their bounding boxes are bigger.
 const PIECE_BOX_PCT: Record<PieceSymbol, number> = {
-  k: 98,
-  q: 98,
-  b: 96,
-  n: 96,
-  r: 94,
-  p: 86,
+  k: 93,
+  q: 92,
+  b: 91,
+  n: 91,
+  r: 89,
+  p: 82,
 };
 
 export interface ChessBoardProps {
@@ -123,6 +125,16 @@ export interface ChessBoardProps {
    * changing `fen`; this component never mutates state on its own.
    */
   readOnly?: boolean;
+  /**
+   * Phase 15 — raises the board's internal viewport-height ceiling from
+   * 75vh to 90vh for actual gameplay screens (Free Play, Online Game,
+   * Opening Practice) via useArenaBoardSize, which already pass a much
+   * larger `size`. Every other call site (lessons, Academy, Chess Mind,
+   * onboarding, the customize preview) omits this and keeps the exact
+   * existing 75vh behavior — this is purely additive, opt-in per call
+   * site, not a change to the default.
+   */
+  arenaMode?: boolean;
 }
 
 /**
@@ -173,6 +185,7 @@ export function ChessBoard({
   boardSkinId,
   pieceSetId,
   readOnly = false,
+  arenaMode = false,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
   const skin = useMemo(() => getBoardSkin(boardSkinId), [boardSkinId]);
@@ -378,11 +391,11 @@ export function ChessBoard({
              constraint into width itself (via min()) keeps width as the
              single source of truth, so aspect-ratio always derives a
              matching, correct height from it — guaranteed square. */
-          width: min(${size}px, 100%, 75vh);
+          width: min(${size}px, 100%, ${arenaMode ? "90vh" : "75vh"});
         }
         @media (max-width: 639px) {
           .board-outer {
-            width: min(calc(100% + 3rem), 75vh);
+            width: min(calc(100% + 3rem), ${arenaMode ? "90vh" : "75vh"});
             margin-left: -1.5rem;
             margin-right: -1.5rem;
           }

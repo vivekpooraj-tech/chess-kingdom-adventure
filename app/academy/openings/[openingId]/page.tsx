@@ -15,6 +15,7 @@ import {
   recordOpeningPracticeAttempt,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { useArenaBoardSize } from "@/lib/hooks/useArenaBoardSize";
 
 /** FEN after each ply, 0 = starting position, computed once client-side by
  * replaying the opening's own (already chess.js-verified) move list — the
@@ -295,6 +296,11 @@ function PracticePanel({
   const [gameKey] = useState(() => Math.random());
   const [history, setHistory] = useState<string[]>([]);
   const [recorded, setRecorded] = useState(false);
+  // Practice mode is real gameplay (a full game against Stockfish, tracked
+  // via recordOpeningPracticeAttempt) embedded inside the Opening detail
+  // page rather than a dedicated route — reserves room for that page's own
+  // header/description/back-link chrome, which stays visible around it.
+  const arenaBoardSize = useArenaBoardSize(260);
   if (!opening) return null;
 
   const matchedSoFar = history.every((san, i) => san === opening.moves[i]);
@@ -314,7 +320,8 @@ function PracticePanel({
         playableColor="w"
         opponent="stockfish"
         difficulty="easy"
-        size={360}
+        size={arenaBoardSize}
+        arenaMode
         boardSkinId={boardSkinId}
         pieceSetId={pieceSetId}
         onPositionChange={(pos) => setHistory(pos.history)}

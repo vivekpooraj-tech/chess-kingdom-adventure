@@ -18,11 +18,13 @@ import {
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { QUICK_CHAT_PHRASES, EMOJI_REACTIONS } from "@/content/quickChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { GameArenaLayout } from "@/components/game/GameArenaLayout";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
+import { useArenaBoardSize } from "@/lib/hooks/useArenaBoardSize";
 import { TEXT } from "@/lib/designSystem";
 import type { Color } from "chess.js";
 
@@ -38,6 +40,10 @@ export default function OnlineGamePage() {
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const seenOpeningIdsRef = useRef<Set<string>>(new Set());
   const supabaseRef = useRef(createClient());
+  // Called unconditionally (rules of hooks) — only matters once the game
+  // is actually active, reserving room for the arena header + reaction
+  // rows above/below the board.
+  const arenaBoardSize = useArenaBoardSize(200);
 
   // Load the current child + initial game state, then subscribe to live
   // updates (the opponent's moves and reactions arrive this way).
@@ -250,68 +256,83 @@ export default function OnlineGamePage() {
     const showSocial = game.match_type !== "random";
 
     return (
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-4 px-6 py-8">
-        <h1 className={TEXT.heading}>
-          Playing as {myColor === "w" ? "White" : "Black"}
-        </h1>
-
-        {showSocial && theirReaction && (
-          <p className="font-classic-body text-lg bg-premium-navy border border-premium-gold/20 rounded-premiumCard px-4 py-2 text-premium-ivory">
-            {theirReaction}
-          </p>
-        )}
-
-        <ChessBoard
-          fen={game.fen}
-          playableColor={myColor}
-          size={680}
-          boardSkinId={boardSkinId}
-          pieceSetId={pieceSetId}
-          onMove={(opts) => handleMove(opts.fen, opts.san)}
-          onGameOver={handleGameOver}
-        />
-
-        {openingMatch && (
-          <OpeningBadge
-            match={openingMatch}
-            onDismiss={() => {
-              setDismissedOpeningId(openingMatch.opening.id);
-              setOpeningMatch(null);
-            }}
+      <GameArenaLayout
+        title={game.match_type === "random" ? "Random Match" : "Friend Match"}
+        onExit={() => router.push("/kingdom-map")}
+        opponentRow={
+          <div className="flex items-center justify-between w-full font-classic-body text-sm text-premium-ivory/70">
+            <span className="flex items-center gap-2">
+              <span className="text-xl">⚔️</span> Opponent
+            </span>
+            {showSocial && theirReaction && (
+              <span className="bg-premium-navy border border-premium-gold/20 rounded-full px-3 py-1 text-premium-ivory">
+                {theirReaction}
+              </span>
+            )}
+          </div>
+        }
+        playerRow={
+          <div className="flex items-center gap-2 font-classic-body text-sm text-premium-ivory">
+            <span className="text-xl">♟️</span>
+            You — {myColor === "w" ? "White" : "Black"}
+          </div>
+        }
+        board={
+          <ChessBoard
+            fen={game.fen}
+            playableColor={myColor}
+            size={arenaBoardSize}
+            arenaMode
+            boardSkinId={boardSkinId}
+            pieceSetId={pieceSetId}
+            onMove={(opts) => handleMove(opts.fen, opts.san)}
+            onGameOver={handleGameOver}
           />
-        )}
-
-        {showSocial && (
+        }
+        sidePanel={
           <>
-            <div className="flex flex-wrap gap-2 justify-center max-w-md">
-              {EMOJI_REACTIONS.map((e) => (
-                <button
-                  key={e}
-                  onClick={() => handleReaction(e)}
-                  className="text-2xl bg-premium-navy border border-white/10 rounded-full w-10 h-10 flex items-center justify-center hover:border-premium-gold/30 transition-colors"
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center max-w-md">
-              {QUICK_CHAT_PHRASES.map((phrase) => (
-                <button
-                  key={phrase}
-                  onClick={() => handleReaction(phrase)}
-                  className="text-sm bg-premium-navy border border-white/10 text-premium-ivory/80 rounded-full px-3 py-1 font-classic-body hover:border-premium-gold/30 transition-colors"
-                >
-                  {phrase}
-                </button>
-              ))}
-            </div>
+            {openingMatch && (
+              <OpeningBadge
+                match={openingMatch}
+                onDismiss={() => {
+                  setDismissedOpeningId(openingMatch.opening.id);
+                  setOpeningMatch(null);
+                }}
+              />
+            )}
 
-            {myReaction && (
-              <p className={TEXT.caption}>You sent: {myReaction}</p>
+            {showSocial && (
+              <div className="rounded-premiumCard bg-premium-navy p-3 flex flex-col gap-2 shadow-premiumCard">
+                <div className="flex flex-wrap gap-2">
+                  {EMOJI_REACTIONS.map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => handleReaction(e)}
+                      className="text-xl bg-premium-navyLight border border-white/10 rounded-full w-9 h-9 flex items-center justify-center hover:border-premium-gold/30 transition-colors"
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {QUICK_CHAT_PHRASES.map((phrase) => (
+                    <button
+                      key={phrase}
+                      onClick={() => handleReaction(phrase)}
+                      className="text-xs bg-premium-navyLight border border-white/10 text-premium-ivory/80 rounded-full px-3 py-1.5 font-classic-body hover:border-premium-gold/30 transition-colors"
+                    >
+                      {phrase}
+                    </button>
+                  ))}
+                </div>
+                {myReaction && (
+                  <p className={TEXT.caption}>You sent: {myReaction}</p>
+                )}
+              </div>
             )}
           </>
-        )}
-      </main>
+        }
+      />
     );
   }
 
