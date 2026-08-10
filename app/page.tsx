@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { WebSwingHero } from "@/components/WebSwingHero";
+import { Logo } from "@/components/branding/Logo";
 
 export default function SplashPage() {
   return (
@@ -23,14 +24,7 @@ export default function SplashPage() {
         transition={{ duration: 0.5, delay: 1.5 }}
         className="flex flex-col items-center gap-4"
       >
-        <h1 className="font-display text-5xl text-kingdom-night drop-shadow-sm">
-          Chess Kingdom
-          <br />
-          Adventure
-        </h1>
-        <p className="font-body text-lg text-kingdom-night/70 max-w-sm">
-          Rescue the Chess Kingdom, one magical crystal at a time!
-        </p>
+        <Logo variant="full" size={340} className="drop-shadow-lg" />
         <Link href="/sign-in">
           <Button size="lg">Start the Adventure! ✨</Button>
         </Link>

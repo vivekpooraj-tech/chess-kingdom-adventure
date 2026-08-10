@@ -233,7 +233,7 @@ export default function LessonPage() {
           ) : (
             <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
               <span className="text-5xl">✨</span>
-              <h2 className={TEXT.heading}>Your Chess Kingdom adventure continues!</h2>
+              <h2 className={TEXT.heading}>Your Chess Mind journey continues!</h2>
               <p className={TEXT.body}>
                 You've explored {getZoneForDay(lesson.dayNumber).name} — unlock the full Chess
                 Journey and keep exploring every zone, forever.

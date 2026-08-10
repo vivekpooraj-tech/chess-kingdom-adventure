@@ -186,7 +186,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   },
   {
     key: "kingdom_champion",
-    title: "Champion of Chess Kingdom Adventure",
+    title: "Champion of Chess Mind",
     description: "Completed all 30 days and defeated the Shadow King!",
     emoji: "👑",
     category: "learning",

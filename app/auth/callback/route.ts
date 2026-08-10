@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body style="font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;text-align:center;padding:24px;margin:0;">
-  <p style="font-size:18px;">Opening the Chess Kingdom app…</p>
+  <p style="font-size:18px;">Opening the ${BRAND.name} app…</p>
   <a href="${deepLink}" style="font-size:16px;color:#6D5AE6;">Tap here if it doesn't open automatically</a>
   <script>window.location.href = ${JSON.stringify(deepLink)};</script>
 </body>

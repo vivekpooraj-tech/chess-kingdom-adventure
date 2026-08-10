@@ -3,6 +3,7 @@
 import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { FullscreenIcon, CloseIcon } from "@/components/nav/icons";
 import { IconButton } from "@/components/ui/Button";
+import { Logo } from "@/components/branding/Logo";
 import { useArenaBoardSize } from "@/lib/hooks/useArenaBoardSize";
 
 // Vertical gaps between the 4 stacked rows (header/opponent/board/player,
@@ -167,13 +168,22 @@ export function GameArenaLayout({
         {/* Board column */}
         <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
           <div ref={headerRef} className="w-full flex items-center justify-between gap-2">
-            <button
-              onClick={onExit}
-              aria-label="Exit game"
-              className="flex items-center gap-1.5 font-classic-body text-xs text-premium-ivory/50 hover:text-premium-ivory transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded"
-            >
-              <CloseIcon className="w-4 h-4" /> Exit
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Gameplay screens have no other persistent nav (unlike
+                  PrimaryNav-based screens) — this is the only way back to
+                  the dashboard without using the browser back button. Purely
+                  additive width, not height, so it never affects the
+                  ResizeObserver-measured chromeHeight the board size is
+                  computed from. */}
+              <Logo variant="compact" size={isCompactLandscape ? 16 : 20} href="/kingdom-map" />
+              <button
+                onClick={onExit}
+                aria-label="Exit game"
+                className="flex items-center gap-1.5 font-classic-body text-xs text-premium-ivory/50 hover:text-premium-ivory transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded"
+              >
+                <CloseIcon className="w-4 h-4" /> Exit
+              </button>
+            </div>
             {!isCompactLandscape && (
               <h1 className="font-classic-display text-sm sm:text-base text-premium-ivory/80 truncate">
                 {title}

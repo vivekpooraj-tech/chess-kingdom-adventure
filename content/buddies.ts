@@ -11,7 +11,7 @@ export const BUDDIES: BuddyOption[] = [
     emoji: "🦉",
     personality:
       "Warm, patient, a little bit silly. Loves puns about chess pieces. Never says 'wrong' — always 'let's see what happens if...'",
-    greeting: "Hoo-hoo! I'm Ollie. Ready to explore the Chess Kingdom together?",
+    greeting: "Hoo-hoo! I'm Ollie. Ready to explore Chess Mind together?",
     encouragement: [
       "Ooo, nice thinking!",
       "You're getting sharper every day!",

@@ -15,6 +15,8 @@ import { getActiveChildIdClient } from "@/lib/childSession";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 import { Button, IconButton } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
+import { BRAND } from "@/lib/brand";
+import { Logo } from "@/components/branding/Logo";
 import {
   PlayIcon,
   PauseIcon,
@@ -180,9 +182,8 @@ export default function WelcomePage() {
               transition={{ duration: 0.6 }}
               className="flex flex-col items-center text-center max-w-sm"
             >
-              <p className={`${TEXT.meta} text-premium-gold`}>Chess Kingdom</p>
-              <h1 className={`${TEXT.display} mt-2`}>Welcome to Chess Kingdom</h1>
-              <p className={`${TEXT.body} mt-3`}>
+              <Logo variant="full" size={260} />
+              <p className={`${TEXT.body} mt-4`}>
                 Every kingdom has an origin. Before your journey begins, discover where the game
                 itself began.
               </p>
@@ -288,7 +289,7 @@ export default function WelcomePage() {
               <h1 className={`${TEXT.display} mt-2`}>The game is thousands of years old.</h1>
               <p className={`${TEXT.heading} mt-1`}>Now your journey begins.</p>
               <Button tone="premium" className="mt-8" onClick={enterKingdom}>
-                Enter Chess Kingdom →
+                Enter {BRAND.name} →
               </Button>
             </motion.div>
           )}

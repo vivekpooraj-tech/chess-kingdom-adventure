@@ -9,9 +9,9 @@
  *   - android/app/src/main/res/values/strings.xml  (Android launcher label)
  */
 export const BRAND = {
-  name: "Chess Kingdom Adventure",
-  shortName: "Kingdom Chess",
-  tagline: "Learn chess through story, magic, and play.",
+  name: "Chess Mind",
+  shortName: "Chess Mind",
+  tagline: "Think. Learn. Master.",
   academyName: "Chess Academy",
   academyTagline: "Learn. Practice. Master.",
 } as const;

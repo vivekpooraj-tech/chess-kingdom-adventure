@@ -848,7 +848,7 @@ export const LESSONS: Lesson[] = [
       { id: "s3", type: "puzzle", title: "Make Your First Move" },
       { id: "s4", type: "ai_chat", title: "Chat with Ollie" },
       { id: "s5", type: "mini_match", title: "The Final Battle" },
-      { id: "s6", type: "reward", title: "Champion of Chess Kingdom Adventure!" },
+      { id: "s6", type: "reward", title: "Champion of Chess Mind!" },
     ],
   },
 ];

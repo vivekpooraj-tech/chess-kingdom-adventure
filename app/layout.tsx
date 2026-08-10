@@ -33,9 +33,26 @@ const sourceSans = Source_Sans_3({
   variable: "--font-source-sans",
 });
 
+const metaDescription = `${BRAND.name} — ${BRAND.tagline}`;
+
 export const metadata: Metadata = {
+  // Without this, Next.js resolves the relative OG/Twitter image paths
+  // below against "http://localhost:3000" even in production builds.
+  metadataBase: new URL("https://chess-kingdom-adventure-opal.vercel.app"),
   title: BRAND.name,
-  description: BRAND.tagline,
+  description: metaDescription,
+  openGraph: {
+    title: BRAND.name,
+    description: metaDescription,
+    // Casing is exact and load-bearing here — see components/branding/Logo.tsx.
+    images: ["/Assets/logo/chess-mind-full.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: BRAND.name,
+    description: metaDescription,
+    images: ["/Assets/logo/chess-mind-full.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
