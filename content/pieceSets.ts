@@ -3,14 +3,6 @@ import { PieceSetOption } from "@/lib/types";
 // Independent of board skins — any piece set can pair with any board.
 export const PIECE_SETS: PieceSetOption[] = [
   {
-    id: "classic",
-    name: "Classic",
-    emoji: "♟️",
-    // No folder: uses the original flat-silhouette set directly at
-    // public/pieces/{light,dark}/*.svg.
-    intrinsicSize: { width: 100, height: 100 },
-  },
-  {
     id: "wood-classic",
     name: "Wood Carved",
     emoji: "🪵",
