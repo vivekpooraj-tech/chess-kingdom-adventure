@@ -5,12 +5,13 @@
  * components, so they're easy to find and tune.
  *
  * Deliberately implemented as a bonus "zone spotlight" rather than
- * literally advancing `children.current_day` or bypassing FREE_DAY_LIMIT —
- * the day-gate is server-enforced (see supabase/migrations/
- * 0009_mark_lesson_complete_rpc.sql) specifically to close a real paywall
- * bypass found during Phase 5, and this feature shouldn't reopen it. The
- * reward is real (a genuine, visible unlock on the Kingdom Map) without
- * touching the paywall-sensitive progression.
+ * literally advancing `children.current_day` or bypassing the per-zone
+ * free-lesson gate — the day-gate is server-enforced (see
+ * supabase/migrations/0009_mark_lesson_complete_rpc.sql and its Phase 14
+ * successor) specifically to close a real paywall bypass found during
+ * Phase 5, and this feature shouldn't reopen it. The reward is real (a
+ * genuine, visible unlock on the Kingdom Map) without touching the
+ * paywall-sensitive progression.
  */
 export interface KingdomUnlockRule {
   moduleId: string;

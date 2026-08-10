@@ -12,7 +12,8 @@ import {
   getRecentUsageMinutes,
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
-import { LESSONS, FREE_DAY_LIMIT } from "@/content/lessons";
+import { LESSONS } from "@/content/lessons";
+import { getFreeDayNumbers } from "@/content/kingdomZones";
 import { BUDDIES } from "@/content/buddies";
 import { AVATARS } from "@/content/avatars";
 import { getAchievement } from "@/content/achievements";
@@ -262,7 +263,9 @@ export default async function ParentDashboardPage() {
         <p className={`${TEXT.body} self-start`}>
           {parent.premium_status === "premium"
             ? "Premium — all available content unlocked."
-            : `Free plan — Days 1-${FREE_DAY_LIMIT} available.`}
+            : `Free plan — the first lessons of every Kingdom zone are available (${
+                getFreeDayNumbers().length
+              } lessons total).`}
         </p>
         {parent.premium_status !== "premium" && <UpgradeButton tone="premium" />}
       </SecondaryCard>

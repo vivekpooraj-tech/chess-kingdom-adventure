@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { LESSONS, FREE_DAY_LIMIT } from "@/content/lessons";
+import { LESSONS } from "@/content/lessons";
 import { BUDDIES } from "@/content/buddies";
 import { AVATARS } from "@/content/avatars";
 import { ACHIEVEMENTS } from "@/content/achievements";
-import { getZoneForDay } from "@/content/kingdomZones";
+import { getZoneForDay, isDayFree } from "@/content/kingdomZones";
 import { getDailyPuzzle } from "@/content/puzzles";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -97,7 +97,7 @@ export default async function KingdomMapPage() {
         title: nextLesson.title,
         storyBeat: nextLesson.storyBeat,
         zoneEmoji: currentZone.emoji,
-        locked: nextLesson.dayNumber > FREE_DAY_LIMIT && !isPremium,
+        locked: !isDayFree(nextLesson.dayNumber) && !isPremium,
       } as const)
     : ({ kind: "practice" as const } as const);
 

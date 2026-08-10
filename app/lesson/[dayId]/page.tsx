@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { PieceSymbol } from "chess.js";
-import { getLesson, FREE_DAY_LIMIT, DAILY_PREVIEW_LIMIT } from "@/content/lessons";
+import { getLesson, DAILY_PREVIEW_LIMIT } from "@/content/lessons";
 import { getMinigameConfigForDay } from "@/content/minigame-configs";
 import { BUDDIES } from "@/content/buddies";
-import { KINGDOM_ZONES, getZoneForDay, KingdomZone } from "@/content/kingdomZones";
+import { KINGDOM_ZONES, getZoneForDay, isDayFree, KingdomZone } from "@/content/kingdomZones";
 import { getAchievement, AchievementDef } from "@/content/achievements";
 import { getSkillTagLabel } from "@/lib/lessonLabels";
 import { TEXT } from "@/lib/designSystem";
@@ -93,7 +93,7 @@ export default function LessonPage() {
       if (matchedBuddy) setBuddy(matchedBuddy);
 
       const dayNumber = Number(params.dayId);
-      if (dayNumber <= FREE_DAY_LIMIT) {
+      if (isDayFree(dayNumber)) {
         setMode("full");
         return;
       }
@@ -233,17 +233,17 @@ export default function LessonPage() {
           ) : (
             <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
               <span className="text-5xl">✨</span>
-              <h2 className={TEXT.heading}>Enjoyed that? There's a whole adventure waiting.</h2>
+              <h2 className={TEXT.heading}>Your Chess Kingdom adventure continues!</h2>
               <p className={TEXT.body}>
-                Unlock Day {lesson.dayNumber}'s full story, mini-games, and more — plus every
-                other day, forever.
+                You've explored {getZoneForDay(lesson.dayNumber).name} — unlock the full Chess
+                Journey and keep exploring every zone, forever.
               </p>
-              <UpgradeButton tone="premium" />
+              <UpgradeButton tone="premium" label="Unlock Full Journey →" />
               <Link
                 href="/kingdom-map"
                 className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
               >
-                Back to Home
+                Keep Exploring
               </Link>
             </SecondaryCard>
           )}

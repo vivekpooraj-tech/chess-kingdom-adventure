@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Lesson } from "@/lib/types";
-import { FREE_DAY_LIMIT } from "@/content/lessons";
-import { KINGDOM_ZONES } from "@/content/kingdomZones";
+import { KINGDOM_ZONES, isDayFree, getFreeDayNumbers } from "@/content/kingdomZones";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
 import { LockIcon, CheckIcon } from "@/components/nav/icons";
 import { TEXT } from "@/lib/designSystem";
@@ -26,6 +25,20 @@ export function KingdomMapCards({
   completedDays: number[];
   isPremium: boolean;
 }) {
+  // Every free day across the whole Kingdom, e.g. [1,2,3,6,7,11,12,...].
+  // A plain `dayNumber <= currentDay` sequential check would trap a free
+  // user at the first premium day forever, since current_day only
+  // advances past a day once it's completed and free users can never
+  // complete a premium one — so a later zone's free lessons must instead
+  // be reachable once every free day *before* them (skipping the
+  // unreachable premium days in between) has been completed.
+  const freeDayNumbers = getFreeDayNumbers();
+  function isLessonReached(dayNumber: number): boolean {
+    if (dayNumber <= currentDay) return true;
+    if (!isDayFree(dayNumber)) return false;
+    return freeDayNumbers.filter((d) => d < dayNumber).every((d) => completedDays.includes(d));
+  }
+
   return (
     <div className="w-full max-w-md flex flex-col gap-6">
       {KINGDOM_ZONES.map((zone) => {
@@ -37,7 +50,7 @@ export function KingdomMapCards({
         const zoneCompletedCount = zoneLessons.filter((l) =>
           completedDays.includes(l.dayNumber)
         ).length;
-        const zoneReached = currentDay >= zone.dayStart;
+        const zoneReached = isLessonReached(zone.dayStart);
         const zoneComplete = zoneCompletedCount === zoneLessons.length;
 
         return (
@@ -60,8 +73,8 @@ export function KingdomMapCards({
 
             <div className="flex flex-col gap-2">
               {zoneLessons.map((lesson) => {
-                const reachedByProgress = lesson.dayNumber <= currentDay;
-                const needsPremium = lesson.dayNumber > FREE_DAY_LIMIT && !isPremium;
+                const reachedByProgress = isLessonReached(lesson.dayNumber);
+                const needsPremium = !isDayFree(lesson.dayNumber) && !isPremium;
                 const unlocked = reachedByProgress && !needsPremium;
                 const completed = completedDays.includes(lesson.dayNumber);
 

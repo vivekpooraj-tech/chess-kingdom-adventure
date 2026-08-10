@@ -1,13 +1,6 @@
 import { Lesson } from "@/lib/types";
 
 /**
- * Days 1 through this number are free; anything beyond requires
- * parents.premium_status === 'premium'. Matches the "$29.99 one-time
- * purchase, unlock everything forever" model from the PRD.
- */
-export const FREE_DAY_LIMIT = 3;
-
-/**
  * One shared daily budget of free puzzle interactions for non-premium
  * accounts — covers both previewing a locked lesson's puzzle AND playing
  * the standalone Puzzle Trainer (app/puzzles), so a free child gets a
