@@ -419,19 +419,38 @@ export interface OnlineGame {
    * original friend-link mode) are unaffected. */
   match_type: "invite" | "random";
   /** Full SAN move history, appended to by whichever client makes each
-   * move — see appendGameMove(). Needed for opening recognition, since
+   * move — see submitOnlineMove(). Needed for opening recognition, since
    * ChessBoard's own move history resets whenever its `fen` prop changes
    * (which happens every move here, driven by Realtime sync). */
   moves: string[];
+  /** References an id in content/timeControls.ts, e.g. "10+0" — null for
+   * games created before Phase 16B (untimed; the clock UI simply doesn't
+   * render for these). */
+  time_control: string | null;
+  initial_time_ms: number | null;
+  increment_ms: number;
+  /** Authoritative remaining time — always trust these over any local
+   * countdown. Written ONLY by submit_online_move/claim_timeout/
+   * join_online_game (see supabase/migrations/0017_online_game_clocks.sql);
+   * the client has no direct write access to these columns at all
+   * (column-level REVOKE), so there's nothing to "trust the client" about. */
+  white_time_ms: number | null;
+  black_time_ms: number | null;
+  /** Server timestamp the current player's clock started counting down
+   * from — combine with white_time_ms/black_time_ms + current_turn to
+   * derive the live remaining time client-side for display only. */
+  last_move_at: string | null;
+  current_turn: "w" | "b" | null;
 }
 
 export async function createOnlineGame(
   supabase: SupabaseClient,
-  hostChildId: string
+  hostChildId: string,
+  timeControlId: string
 ): Promise<OnlineGame> {
   const { data, error } = await supabase
     .from("online_games")
-    .insert({ host_child_id: hostChildId })
+    .insert({ host_child_id: hostChildId, time_control: timeControlId })
     .select()
     .single();
   if (error || !data) throw error ?? new Error("Failed to create game");
@@ -452,67 +471,108 @@ export async function getOnlineGame(
 }
 
 /**
- * Compare-and-swap join: the `.is('guest_child_id', null)` filter means
- * this UPDATE matches zero rows (and returns false) if someone already
- * claimed the guest slot between this player loading the page and clicking
- * join — RLS alone can't express that race-safety, so the app query does.
+ * Server-side join (supabase/migrations/0017_online_game_clocks.sql) —
+ * needed beyond just consistency with the other online-game writes: the
+ * clock's start time (last_move_at) has to come from the database's own
+ * clock, never a client-supplied timestamp. Same compare-and-swap
+ * race-safety as before (only succeeds if guest_child_id was still null),
+ * now enforced inside the RPC instead of via a client-side filter.
  */
 export async function joinOnlineGame(
   supabase: SupabaseClient,
   gameId: string,
   guestChildId: string
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("online_games")
-    .update({ guest_child_id: guestChildId, status: "active" })
-    .eq("id", gameId)
-    .is("guest_child_id", null)
-    .select();
+  const { data, error } = await supabase.rpc("join_online_game", {
+    p_game_id: gameId,
+    p_guest_child_id: guestChildId,
+  });
   if (error) throw error;
-  return (data ?? []).length > 0;
+  return data === true;
 }
 
-export async function updateGameFen(
-  supabase: SupabaseClient,
-  gameId: string,
-  fen: string
-): Promise<void> {
-  const { error } = await supabase.from("online_games").update({ fen }).eq("id", gameId);
-  if (error) throw error;
+export interface SubmitMoveResult {
+  whiteTimeMs: number | null;
+  blackTimeMs: number | null;
+  status: "waiting" | "active" | "finished";
+  winner: "w" | "b" | "draw" | null;
 }
 
 /**
- * Updates the position AND appends the move that produced it, in one
- * write. Read-then-write on `moves` — safe here because only the player
- * who just made a move calls this for that move, so there's no concurrent
- * writer racing to append the same slot (same reasoning as
- * addUsageMinutes elsewhere in this file).
+ * The single atomic move+clock operation (supabase/migrations/
+ * 0017_online_game_clocks.sql) — replaces the old plain client
+ * .update({fen, moves}), which had no server-side turn or timing
+ * enforcement at all. Deducts real elapsed time (server clock) from the
+ * mover's own remaining time and rejects the move if that clock had
+ * already reached zero — check `result.status === "finished"` after
+ * calling this, since a move can come back rejected-by-timeout as a
+ * normal result rather than a thrown error (an error here would roll back
+ * the very update that marks the game finished — see the migration's
+ * comment on why).
  */
-export async function appendGameMove(
+export async function submitOnlineMove(
   supabase: SupabaseClient,
   gameId: string,
+  childId: string,
   fen: string,
   san: string
-): Promise<void> {
-  const { data: current } = await supabase
-    .from("online_games")
-    .select("moves")
-    .eq("id", gameId)
-    .single();
-  const moves = [...(current?.moves ?? []), san];
-  const { error } = await supabase.from("online_games").update({ fen, moves }).eq("id", gameId);
+): Promise<SubmitMoveResult> {
+  const { data, error } = await supabase.rpc("submit_online_move", {
+    p_game_id: gameId,
+    p_child_id: childId,
+    p_fen: fen,
+    p_san: san,
+  });
   if (error) throw error;
+  const row = data?.[0];
+  return {
+    whiteTimeMs: row?.white_time_ms ?? null,
+    blackTimeMs: row?.black_time_ms ?? null,
+    status: row?.status ?? "active",
+    winner: row?.winner ?? null,
+  };
 }
 
+/**
+ * Asks the server to check whether the side currently on move has run out
+ * of time, using the server's own clock — a premature or malicious call
+ * just returns the unchanged current state, it can't force a timeout that
+ * hasn't genuinely happened yet. Typically polled by the player who is
+ * NOT on move, watching the opponent's clock run out.
+ */
+export async function claimTimeout(
+  supabase: SupabaseClient,
+  gameId: string,
+  childId: string
+): Promise<{ status: "waiting" | "active" | "finished"; winner: "w" | "b" | "draw" | null }> {
+  const { data, error } = await supabase.rpc("claim_timeout", {
+    p_game_id: gameId,
+    p_child_id: childId,
+  });
+  if (error) throw error;
+  const row = data?.[0];
+  return { status: row?.status ?? "active", winner: row?.winner ?? null };
+}
+
+/**
+ * Called when a client locally detects checkmate/draw via chess.js —
+ * unchanged trust model from before (this app has never re-validated
+ * chess legality server-side; that's a separate, pre-existing scope from
+ * the clock work this phase is about). Moved to an RPC purely so
+ * status/winner can be locked down from direct client writes without
+ * also breaking this call site.
+ */
 export async function finishOnlineGame(
   supabase: SupabaseClient,
   gameId: string,
+  childId: string,
   winner: "w" | "b" | "draw"
 ): Promise<void> {
-  const { error } = await supabase
-    .from("online_games")
-    .update({ status: "finished", winner })
-    .eq("id", gameId);
+  const { error } = await supabase.rpc("finish_online_game_by_result", {
+    p_game_id: gameId,
+    p_child_id: childId,
+    p_winner: winner,
+  });
   if (error) throw error;
 }
 

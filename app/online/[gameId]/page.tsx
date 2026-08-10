@@ -8,7 +8,8 @@ import {
   resolveActiveChild,
   getOnlineGame,
   joinOnlineGame,
-  appendGameMove,
+  submitOnlineMove,
+  claimTimeout,
   finishOnlineGame,
   sendReaction,
   applyMatchRating,
@@ -19,12 +20,14 @@ import { getActiveChildIdClient } from "@/lib/childSession";
 import { QUICK_CHAT_PHRASES, EMOJI_REACTIONS } from "@/content/quickChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
+import { ChessClock } from "@/components/game/ChessClock";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import { TEXT } from "@/lib/designSystem";
+import { getTimeControl } from "@/content/timeControls";
 import type { Color } from "chess.js";
 
 export default function OnlineGamePage() {
@@ -39,6 +42,13 @@ export default function OnlineGamePage() {
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const seenOpeningIdsRef = useRef<Set<string>>(new Set());
   const supabaseRef = useRef(createClient());
+  // Locally-ticked DISPLAY ONLY values, re-derived from server-authoritative
+  // state (game.white_time_ms/black_time_ms/last_move_at/current_turn) on
+  // every render of the effect below — never the source of truth. The
+  // server enforces timing via submit_online_move/claim_timeout regardless
+  // of what these show.
+  const [displayWhiteMs, setDisplayWhiteMs] = useState<number | null>(null);
+  const [displayBlackMs, setDisplayBlackMs] = useState<number | null>(null);
 
   // Load the current child + initial game state, then subscribe to live
   // updates (the opponent's moves and reactions arrive this way).
@@ -94,7 +104,7 @@ export default function OnlineGamePage() {
 
   // Opening recognition reads game.moves (synced from the DB, appended to by
   // whichever player made each move) rather than ChessBoard's own history —
-  // see appendGameMove's doc comment for why that's necessary here.
+  // see submitOnlineMove's doc comment for why that's necessary here.
   useEffect(() => {
     if (!game || game === "loading" || !childId) return;
     const match = recognizeOpening(game.moves);
@@ -109,6 +119,50 @@ export default function OnlineGamePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, childId]);
+
+  // Local display countdown — re-anchored to the server's own numbers every
+  // time `game` changes (a fresh Realtime UPDATE resets the effect below),
+  // and ticked every 250ms in between purely for a smooth-looking clock.
+  // Refreshing/closing the browser just re-runs this from the DB's current
+  // state; nothing about actual remaining time lives in the client.
+  useEffect(() => {
+    if (game === "loading" || !game || !game.time_control) {
+      setDisplayWhiteMs(null);
+      setDisplayBlackMs(null);
+      return;
+    }
+    function tick() {
+      if (game === "loading" || !game) return;
+      const elapsed = game.last_move_at ? Date.now() - new Date(game.last_move_at).getTime() : 0;
+      let w = game.white_time_ms ?? 0;
+      let b = game.black_time_ms ?? 0;
+      if (game.status === "active") {
+        if (game.current_turn === "w") w = Math.max(0, w - elapsed);
+        else if (game.current_turn === "b") b = Math.max(0, b - elapsed);
+      }
+      setDisplayWhiteMs(w);
+      setDisplayBlackMs(b);
+    }
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [game]);
+
+  // Enforces timeouts against opponents who stop responding — polls the
+  // server, which independently re-derives whether time has genuinely run
+  // out from its own clock (clock_timestamp() in claim_timeout) before
+  // acting, so this poll can't be used to force a false timeout.
+  useEffect(() => {
+    if (game === "loading" || !game || game.status !== "active" || !game.time_control || !childId) return;
+    const id = setInterval(async () => {
+      const result = await claimTimeout(supabaseRef.current, params.gameId, childId);
+      if (result.status === "finished") {
+        const fresh = await getOnlineGame(supabaseRef.current, params.gameId);
+        setGame(fresh);
+      }
+    }, 3000);
+    return () => clearInterval(id);
+  }, [game, childId, params.gameId]);
 
   if (game === "loading" || !childId) {
     return <main className="min-h-screen" />;
@@ -148,13 +202,17 @@ export default function OnlineGamePage() {
   }
 
   async function handleMove(fen: string, san: string) {
-    await appendGameMove(supabaseRef.current, params.gameId, fen, san);
+    // If this rejects because the mover's own server-tracked clock had
+    // already hit zero, the Realtime UPDATE from the server-side finish
+    // (inside submit_online_move) will land momentarily and flip the view
+    // to the "finished" branch below — no separate handling needed here.
+    await submitOnlineMove(supabaseRef.current, params.gameId, childId!, fen, san);
   }
 
   async function handleGameOver(result: { isCheckmate: boolean; isDraw: boolean; winner: Color | null }) {
     const winner = result.isDraw ? "draw" : result.winner;
     if (winner) {
-      await finishOnlineGame(supabaseRef.current, params.gameId, winner);
+      await finishOnlineGame(supabaseRef.current, params.gameId, childId!, winner);
       if (game && game !== "loading" && game.match_type === "random") {
         const supabase = supabaseRef.current;
         await applyMatchRating(supabase, params.gameId).catch(() => {});
@@ -171,11 +229,17 @@ export default function OnlineGamePage() {
   // --- Waiting for a friend (host's view) ---
   if (game.status === "waiting" && isHost) {
     const inviteUrl = typeof window !== "undefined" ? window.location.href : "";
+    const hostTimeControl = game.time_control ? getTimeControl(game.time_control) : null;
     return (
       <main className="min-h-screen bg-premium-midnight flex items-center justify-center px-6">
         <SecondaryCard className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
           <span className="text-5xl animate-floaty">⏳</span>
           <h1 className={TEXT.heading}>Waiting for a friend to join!</h1>
+          {hostTimeControl && (
+            <p className={TEXT.caption}>
+              Time Control: <span className="text-premium-ivory">{hostTimeControl.label}</span> ({hostTimeControl.description})
+            </p>
+          )}
           <p className={TEXT.caption}>Share this link with them:</p>
           <input
             readOnly
@@ -198,12 +262,18 @@ export default function OnlineGamePage() {
 
   // --- Someone else's open game, not yet joined ---
   if (canJoin) {
+    const joinTimeControl = game.time_control ? getTimeControl(game.time_control) : null;
     return (
       <main className="min-h-screen bg-premium-midnight flex items-center justify-center px-6">
         <SecondaryCard className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
           <span className="text-5xl">⚔️</span>
           <h1 className={TEXT.heading}>You've been challenged to a game!</h1>
-          <Button tone="premium" onClick={handleJoin}>Join This Game →</Button>
+          {joinTimeControl && (
+            <p className={TEXT.caption}>
+              Time Control: <span className="text-premium-ivory">{joinTimeControl.label}</span> ({joinTimeControl.description})
+            </p>
+          )}
+          <Button tone="premium" onClick={handleJoin}>Accept Game →</Button>
         </SecondaryCard>
       </main>
     );
@@ -214,6 +284,24 @@ export default function OnlineGamePage() {
     const myColor: Color = isHost ? game.host_color : game.host_color === "w" ? "b" : "w";
     const iWon = game.winner === myColor;
     const isDraw = game.winner === "draw";
+    // A clock reaching exactly 0 only ever happens via submit_online_move's
+    // or claim_timeout's timeout branch (finish_online_game_by_result, used
+    // for checkmate/draw, never touches the clock columns) — so this is a
+    // real, server-derived signal, not a guess, and needs no schema change.
+    const expiredColor: "w" | "b" | null =
+      game.time_control && !isDraw
+        ? game.white_time_ms === 0
+          ? "w"
+          : game.black_time_ms === 0
+          ? "b"
+          : null
+        : null;
+    const isTimeout = expiredColor !== null;
+    const reasonText = isTimeout
+      ? expiredColor === myColor
+        ? "You ran out of time."
+        : "Your opponent ran out of time."
+      : null;
     return (
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6">
         <PrimaryCard className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
@@ -221,6 +309,7 @@ export default function OnlineGamePage() {
           <h1 className={TEXT.heading}>
             {isDraw ? "It's a Draw!" : iWon ? "You Won!" : "Better Luck Next Time!"}
           </h1>
+          {reasonText && <p className={TEXT.caption}>{reasonText}</p>}
           {game.match_type === "random" && newRating !== null && (
             <p className={TEXT.body}>
               Your rating is now <span className="text-premium-gold font-semibold">{newRating}</span>
@@ -249,6 +338,10 @@ export default function OnlineGamePage() {
     // knows via an invite link — no chat/emoji there, matching the app's
     // no-open-contact-with-strangers policy (see docs/01-PRD.md).
     const showSocial = game.match_type !== "random";
+    const opponentColor: Color = myColor === "w" ? "b" : "w";
+    const myMs = myColor === "w" ? displayWhiteMs : displayBlackMs;
+    const opponentMs = opponentColor === "w" ? displayWhiteMs : displayBlackMs;
+    const hasClock = game.time_control !== null && myMs !== null && opponentMs !== null;
 
     return (
       <GameArenaLayout
@@ -259,17 +352,23 @@ export default function OnlineGamePage() {
             <span className="flex items-center gap-2">
               <span className="text-xl">⚔️</span> Opponent
             </span>
-            {showSocial && theirReaction && (
-              <span className="bg-premium-navy border border-premium-gold/20 rounded-full px-3 py-1 text-premium-ivory">
-                {theirReaction}
-              </span>
-            )}
+            <span className="flex items-center gap-2">
+              {showSocial && theirReaction && (
+                <span className="bg-premium-navy border border-premium-gold/20 rounded-full px-3 py-1 text-premium-ivory">
+                  {theirReaction}
+                </span>
+              )}
+              {hasClock && <ChessClock ms={opponentMs!} active={game.current_turn === opponentColor} />}
+            </span>
           </div>
         }
         playerRow={
-          <div className="flex items-center gap-2 font-classic-body text-sm text-premium-ivory">
-            <span className="text-xl">♟️</span>
-            You — {myColor === "w" ? "White" : "Black"}
+          <div className="flex items-center justify-between w-full font-classic-body text-sm text-premium-ivory">
+            <span className="flex items-center gap-2">
+              <span className="text-xl">♟️</span>
+              You — {myColor === "w" ? "White" : "Black"}
+            </span>
+            {hasClock && <ChessClock ms={myMs!} active={game.current_turn === myColor} />}
           </div>
         }
         renderBoard={(boardSize) => (
