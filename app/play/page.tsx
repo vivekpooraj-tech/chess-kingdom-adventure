@@ -8,7 +8,9 @@ import { TEXT } from "@/lib/designSystem";
  * nav's "Play" item instead of dumping the child straight onto the Home
  * dashboard. Presentational only, same pattern as app/academy/page.tsx:
  * each destination (Puzzles, Free Play, Matchmaking) already gates itself
- * (course-complete checks, auth) — no need to duplicate that logic here.
+ * (auth, and — for Free Play/Matchmaking/Invite a Friend — the daily free
+ * game limit in supabase/migrations/0019_daily_free_game_limits.sql) — no
+ * need to duplicate that logic here.
  */
 const MODES: {
   id: string;

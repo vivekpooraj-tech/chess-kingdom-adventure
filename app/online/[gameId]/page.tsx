@@ -25,6 +25,7 @@ import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
+import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import { TEXT } from "@/lib/designSystem";
 import { getTimeControl } from "@/content/timeControls";
@@ -42,6 +43,8 @@ export default function OnlineGamePage() {
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const seenOpeningIdsRef = useRef<Set<string>>(new Set());
   const supabaseRef = useRef(createClient());
+  const [joinBlocked, setJoinBlocked] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   // Locally-ticked DISPLAY ONLY values, re-derived from server-authoritative
   // state (game.white_time_ms/black_time_ms/last_move_at/current_turn) on
   // every render of the effect below — never the source of truth. The
@@ -190,15 +193,18 @@ export default function OnlineGamePage() {
 
   async function handleJoin() {
     const supabase = supabaseRef.current;
-    const joined = await joinOnlineGame(supabase, params.gameId, childId!);
-    if (joined) {
-      const fresh = await getOnlineGame(supabase, params.gameId);
-      setGame(fresh);
-    } else {
-      // Someone else claimed the guest slot first — refresh to show reality.
-      const fresh = await getOnlineGame(supabase, params.gameId);
-      setGame(fresh);
+    const result = await joinOnlineGame(supabase, params.gameId, childId!);
+    if (result.blocked) {
+      // Either the host or the guest has used their 2 free multiplayer
+      // games today — see supabase/migrations/0019_daily_free_game_limits.sql.
+      // Nothing was created; stay on this screen and show the paywall.
+      setJoinBlocked(true);
+      return;
     }
+    // Either joined successfully, or someone else claimed the guest slot
+    // first — either way, refetch to show reality.
+    const fresh = await getOnlineGame(supabase, params.gameId);
+    setGame(fresh);
   }
 
   async function handleMove(fen: string, san: string) {
@@ -273,8 +279,18 @@ export default function OnlineGamePage() {
               Time Control: <span className="text-premium-ivory">{joinTimeControl.label}</span> ({joinTimeControl.description})
             </p>
           )}
-          <Button tone="premium" onClick={handleJoin}>Accept Game →</Button>
+          {joinBlocked ? (
+            <>
+              <p className={TEXT.body}>Your 2 free multiplayer games for today are used.</p>
+              <Button tone="premium" onClick={() => setShowPaywall(true)}>
+                Unlock Unlimited Play
+              </Button>
+            </>
+          ) : (
+            <Button tone="premium" onClick={handleJoin}>Accept Game →</Button>
+          )}
         </SecondaryCard>
+        {showPaywall && <GameLimitPaywall gameType="multiplayer" onDismiss={() => setShowPaywall(false)} />}
       </main>
     );
   }

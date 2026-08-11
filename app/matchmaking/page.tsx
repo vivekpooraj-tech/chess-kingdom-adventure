@@ -6,20 +6,19 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
-  getCompletedDays,
   findOrCreateMatch,
   cancelMatchmaking,
+  getFreeGameStatus,
+  FreeGameStatus,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { LESSONS } from "@/content/lessons";
-import { SecondaryCard, PrimaryCard } from "@/components/ui/Card";
+import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { BRAND } from "@/lib/brand";
+import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { TEXT } from "@/lib/designSystem";
 
 type ViewState =
   | { status: "loading" }
-  | { status: "locked"; completed: number; total: number }
   | { status: "idle"; rating: number }
   | { status: "searching"; rating: number }
   | { status: "error"; rating: number; message: string };
@@ -27,6 +26,8 @@ type ViewState =
 export default function MatchmakingPage() {
   const router = useRouter();
   const [view, setView] = useState<ViewState>({ status: "loading" });
+  const [gameStatus, setGameStatus] = useState<FreeGameStatus | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
   const childIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -47,13 +48,9 @@ export default function MatchmakingPage() {
       const child = resolution.child!;
       childIdRef.current = child.id;
 
-      const completedDays = await getCompletedDays(supabase, child.id);
-      const total = LESSONS.length;
-      if (completedDays.length < total) {
-        setView({ status: "locked", completed: completedDays.length, total });
-      } else {
-        setView({ status: "idle", rating: child.rating });
-      }
+      const status = await getFreeGameStatus(supabase, child.id);
+      setGameStatus(status);
+      setView({ status: "idle", rating: child.rating });
     }
     load();
   }, [router]);
@@ -73,19 +70,34 @@ export default function MatchmakingPage() {
   async function findOpponent() {
     if (view.status !== "idle" || !childIdRef.current) return;
     const rating = view.rating;
-    setView({ status: "searching", rating });
+    const childId = childIdRef.current;
 
+    // find_or_create_match itself checks free-multiplayer eligibility
+    // BEFORE joining the queue or creating anything (see
+    // supabase/migrations/0019_daily_free_game_limits.sql) — this call is
+    // the "before creating/joining a match" check, not a separate step.
     const supabase = createClient();
+    let result;
     try {
-      const result = await findOrCreateMatch(supabase, childIdRef.current, rating);
-      if (result.matched && result.gameId) {
-        router.push(`/online/${result.gameId}`);
-        return;
-      }
+      result = await findOrCreateMatch(supabase, childId, rating);
     } catch (err) {
       setView({ status: "error", rating, message: "Couldn't start matchmaking — please try again." });
       return;
     }
+
+    if (result.blocked) {
+      const fresh = await getFreeGameStatus(supabase, childId);
+      setGameStatus(fresh);
+      setShowPaywall(true);
+      return;
+    }
+
+    if (result.matched && result.gameId) {
+      router.push(`/online/${result.gameId}`);
+      return;
+    }
+
+    setView({ status: "searching", rating });
 
     // Not matched yet — wait for someone else's find_or_create_match call
     // to claim our queue row (see the migration for why this is race-safe).
@@ -121,24 +133,6 @@ export default function MatchmakingPage() {
     return <main className="min-h-screen" />;
   }
 
-  if (view.status === "locked") {
-    return (
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6">
-        <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
-          <span className="text-5xl">🔒</span>
-          <h1 className={TEXT.heading}>Play Someone New</h1>
-          <p className={TEXT.body}>
-            Finish all {view.total} days of {BRAND.name} to unlock worldwide
-            matches! You've completed {view.completed} of {view.total} so far.
-          </p>
-          <Link href="/kingdom-map">
-            <Button tone="premium">Back to the Kingdom Map →</Button>
-          </Link>
-        </SecondaryCard>
-      </main>
-    );
-  }
-
   return (
     <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-8 px-6 py-12">
       <h1 className={`${TEXT.display} text-center`}>Play Someone New</h1>
@@ -148,6 +142,13 @@ export default function MatchmakingPage() {
           <p className={TEXT.caption}>Your Rating</p>
           <p className="font-classic-display text-3xl text-premium-gold">{view.rating}</p>
         </div>
+
+        {gameStatus && !gameStatus.isPremium && (
+          <div className="flex flex-col items-center gap-0.5">
+            <p className={TEXT.caption}>Multiplayer</p>
+            <p className={TEXT.body}>{gameStatus.mpRemaining} of 2 free games remaining today</p>
+          </div>
+        )}
 
         {view.status === "idle" && (
           <>
@@ -185,6 +186,8 @@ export default function MatchmakingPage() {
       >
         Back to Home
       </Link>
+
+      {showPaywall && <GameLimitPaywall gameType="multiplayer" onDismiss={() => setShowPaywall(false)} />}
     </main>
   );
 }

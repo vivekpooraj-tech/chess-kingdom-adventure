@@ -3,33 +3,47 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { resolveActiveChild, createOnlineGame } from "@/lib/supabase/queries";
+import { resolveActiveChild, createInviteGame } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { Button } from "@/components/ui/Button";
+import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { TIME_CONTROLS, DEFAULT_TIME_CONTROL_ID } from "@/content/timeControls";
 
 export function InviteFriendButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [timeControlId, setTimeControlId] = useState(DEFAULT_TIME_CONTROL_ID);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   async function handleClick() {
     setLoading(true);
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.push("/sign-in");
-      return;
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/sign-in");
+        return;
+      }
+      const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
+      if (resolution.needsSelection) {
+        router.push("/choose-child");
+        return;
+      }
+      // create_invite_game checks the host's free-multiplayer eligibility
+      // server-side before creating anything — no credit is spent here
+      // either way, since sharing a link nobody joins isn't a game that
+      // started (see supabase/migrations/0019_daily_free_game_limits.sql).
+      const result = await createInviteGame(supabase, resolution.child!.id, timeControlId);
+      if (result.blocked || !result.id) {
+        setShowPaywall(true);
+        return;
+      }
+      router.push(`/online/${result.id}`);
+    } finally {
+      setLoading(false);
     }
-    const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
-    if (resolution.needsSelection) {
-      router.push("/choose-child");
-      return;
-    }
-    const game = await createOnlineGame(supabase, resolution.child!.id, timeControlId);
-    router.push(`/online/${game.id}`);
   }
 
   return (
@@ -56,6 +70,7 @@ export function InviteFriendButton() {
       <Button onClick={handleClick} disabled={loading}>
         {loading ? "Creating..." : "Invite a Friend to Play →"}
       </Button>
+      {showPaywall && <GameLimitPaywall gameType="multiplayer" onDismiss={() => setShowPaywall(false)} />}
     </div>
   );
 }

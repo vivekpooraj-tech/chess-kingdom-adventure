@@ -5,24 +5,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { PieceSymbol } from "chess.js";
 import { createClient } from "@/lib/supabase/client";
-import { resolveActiveChild, getCompletedDays, recordOpeningEncounter } from "@/lib/supabase/queries";
+import { resolveActiveChild, recordOpeningEncounter, getFreeGameStatus, startAiGame, FreeGameStatus } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { LESSONS } from "@/content/lessons";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
 import { GameChrome } from "@/components/game/GameChrome";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
-import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
+import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
+import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
-import { BRAND } from "@/lib/brand";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import type { Difficulty } from "@/lib/chess-engine/stockfishEngine";
 
 type ViewState =
   | { status: "loading" }
-  | { status: "locked"; completed: number; total: number }
   | { status: "picking-difficulty" }
   | { status: "playing"; difficulty: Difficulty }
   | { status: "game-over"; difficulty: Difficulty; result: GameResult };
@@ -81,6 +79,9 @@ export default function FreePlayPage() {
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const [childId, setChildId] = useState<string | null>(null);
   const [seenOpeningIds, setSeenOpeningIds] = useState<Set<string>>(new Set());
+  const [gameStatus, setGameStatus] = useState<FreeGameStatus | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [startingGame, setStartingGame] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -103,26 +104,41 @@ export default function FreePlayPage() {
       setBoardSkinId(child.board_skin_id);
       setPieceSetId(child.piece_set_id);
 
-      const completedDays = await getCompletedDays(supabase, child.id);
-      const total = LESSONS.length;
-
-      if (completedDays.length < total) {
-        setView({ status: "locked", completed: completedDays.length, total });
-      } else {
-        setView({ status: "picking-difficulty" });
-      }
+      const status = await getFreeGameStatus(supabase, child.id);
+      setGameStatus(status);
+      setView({ status: "picking-difficulty" });
     }
     load();
   }, [router]);
 
-  function startGame(difficulty: Difficulty) {
-    setGameKey((k) => k + 1);
-    setPosition(EMPTY_POSITION);
-    setPrevCapturedCount(0);
-    setHint(null);
-    setOpeningMatch(null);
-    setDismissedOpeningId(null);
-    setView({ status: "playing", difficulty });
+  // Checks + consumes a daily free-game credit server-side BEFORE the
+  // board ever renders — clicking a difficulty is the earliest point a
+  // real "game start" exists for Free Play (see
+  // supabase/migrations/0019_daily_free_game_limits.sql), so this is
+  // exactly where eligibility has to be enforced, not after.
+  async function startGame(difficulty: Difficulty) {
+    if (!childId || startingGame) return;
+    setStartingGame(true);
+    try {
+      const supabase = createClient();
+      const result = await startAiGame(supabase, childId);
+      if (!result.allowed) {
+        const fresh = await getFreeGameStatus(supabase, childId);
+        setGameStatus(fresh);
+        setShowPaywall(true);
+        return;
+      }
+      setGameStatus((prev) => (prev ? { ...prev, aiRemaining: result.remaining } : prev));
+      setGameKey((k) => k + 1);
+      setPosition(EMPTY_POSITION);
+      setPrevCapturedCount(0);
+      setHint(null);
+      setOpeningMatch(null);
+      setDismissedOpeningId(null);
+      setView({ status: "playing", difficulty });
+    } finally {
+      setStartingGame(false);
+    }
   }
 
   function handleGameOver(difficulty: Difficulty, result: GameResult) {
@@ -158,37 +174,29 @@ export default function FreePlayPage() {
     return <main className="min-h-screen bg-premium-midnight" />;
   }
 
-  if (view.status === "locked") {
-    return (
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6">
-        <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
-          <span className="text-5xl">🔒</span>
-          <h1 className={TEXT.heading}>Free Play Arena</h1>
-          <p className={TEXT.body}>
-            Finish all {view.total} days of {BRAND.name} to unlock the Arena!
-            You've completed {view.completed} of {view.total} so far.
-          </p>
-          <Link href="/kingdom-map">
-            <Button tone="premium">Back to the Kingdom Map →</Button>
-          </Link>
-        </SecondaryCard>
-      </main>
-    );
-  }
-
   if (view.status === "picking-difficulty") {
+    const exhausted = gameStatus && !gameStatus.isPremium && gameStatus.aiRemaining === 0;
     return (
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-8 px-6 py-12">
         <h1 className={`${TEXT.display} text-center`}>Free Play Arena</h1>
         <p className={`${TEXT.body} text-center max-w-sm`}>
           Choose your opponent's strength and play a full game, start to finish!
         </p>
+        {gameStatus && !gameStatus.isPremium && (
+          <div className="flex flex-col items-center gap-0.5">
+            <p className={TEXT.caption}>AI Games</p>
+            <p className={TEXT.body}>{gameStatus.aiRemaining} of 2 free games remaining today</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-4 max-w-sm w-full">
           {DIFFICULTY_INFO.map((d) => (
             <button
               key={d.key}
-              onClick={() => startGame(d.key)}
-              className="flex items-center gap-4 rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 text-left"
+              onClick={() => (exhausted ? setShowPaywall(true) : startGame(d.key))}
+              disabled={startingGame}
+              className={`flex items-center gap-4 rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 text-left ${
+                exhausted ? "opacity-50" : ""
+              }`}
             >
               <span className="text-4xl">{d.emoji}</span>
               <div>
@@ -204,6 +212,7 @@ export default function FreePlayPage() {
         >
           Back to the Kingdom Map
         </Link>
+        {showPaywall && <GameLimitPaywall gameType="ai" onDismiss={() => setShowPaywall(false)} />}
       </main>
     );
   }

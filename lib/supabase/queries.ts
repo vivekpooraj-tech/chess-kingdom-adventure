@@ -402,6 +402,56 @@ export async function evaluateAndAwardAchievements(
   return newlyEarned;
 }
 
+// --- Daily free game limits (supabase/migrations/0019_daily_free_game_limits.sql) ---
+// A separate entitlement layer from the lesson/Academy paywall below —
+// gates actual gameplay (Free Play vs AI, Random Match, Invite a Friend),
+// not lesson-day access. Free children get 2 AI + 2 multiplayer games per
+// rolling 24h window; premium is unlimited. See the migration's header
+// comment for the exact rule on when a game counts as "started."
+
+export interface FreeGameStatus {
+  isPremium: boolean;
+  aiRemaining: number | null;
+  aiNextAvailableAt: string | null;
+  mpRemaining: number | null;
+  mpNextAvailableAt: string | null;
+}
+
+/** Read-only — never consumes a credit. For the "X of 2 free games
+ * remaining today" indicator, shown before any game starts. */
+export async function getFreeGameStatus(supabase: SupabaseClient, childId: string): Promise<FreeGameStatus> {
+  const { data, error } = await supabase.rpc("get_free_game_status", { p_child_id: childId });
+  if (error) throw error;
+  const row = data?.[0];
+  return {
+    isPremium: row?.is_premium ?? false,
+    aiRemaining: row?.ai_remaining ?? null,
+    aiNextAvailableAt: row?.ai_next_available_at ?? null,
+    mpRemaining: row?.mp_remaining ?? null,
+    mpNextAvailableAt: row?.mp_next_available_at ?? null,
+  };
+}
+
+export interface StartGameResult {
+  allowed: boolean;
+  remaining: number | null;
+  nextAvailableAt: string | null;
+}
+
+/** Called the moment a child picks a difficulty on the Free Play screen,
+ * before the board renders — the only "AI game started" event that exists
+ * (Free Play has no server-side game row; Stockfish runs client-side). */
+export async function startAiGame(supabase: SupabaseClient, childId: string): Promise<StartGameResult> {
+  const { data, error } = await supabase.rpc("start_ai_game", { p_child_id: childId });
+  if (error) throw error;
+  const row = data?.[0];
+  return {
+    allowed: row?.allowed ?? false,
+    remaining: row?.remaining ?? null,
+    nextAvailableAt: row?.next_available_at ?? null,
+  };
+}
+
 // --- Online multiplayer -----------------------------------------------
 
 export interface OnlineGame {
@@ -443,18 +493,33 @@ export interface OnlineGame {
   current_turn: "w" | "b" | null;
 }
 
-export async function createOnlineGame(
+export interface CreateInviteGameResult {
+  id: string | null;
+  /** True if the host has used their 2 free multiplayer games today
+   * (premium hosts never see this) — no game row was created. */
+  blocked: boolean;
+}
+
+/**
+ * SECURITY DEFINER RPC (supabase/migrations/0019_daily_free_game_limits.sql)
+ * — replaces the old plain client .insert(), which had no way to check the
+ * host's free-multiplayer allowance server-side before handing out an
+ * invite link. Does NOT consume a credit itself (see the migration's
+ * header comment on when a game is "consumed") — only join_online_game
+ * does, once a friend actually joins.
+ */
+export async function createInviteGame(
   supabase: SupabaseClient,
   hostChildId: string,
   timeControlId: string
-): Promise<OnlineGame> {
-  const { data, error } = await supabase
-    .from("online_games")
-    .insert({ host_child_id: hostChildId, time_control: timeControlId })
-    .select()
-    .single();
-  if (error || !data) throw error ?? new Error("Failed to create game");
-  return data as OnlineGame;
+): Promise<CreateInviteGameResult> {
+  const { data, error } = await supabase.rpc("create_invite_game", {
+    p_host_child_id: hostChildId,
+    p_time_control: timeControlId,
+  });
+  if (error) throw error;
+  const row = data?.[0];
+  return { id: row?.id ?? null, blocked: row?.blocked ?? false };
 }
 
 export async function getOnlineGame(
@@ -478,17 +543,25 @@ export async function getOnlineGame(
  * race-safety as before (only succeeds if guest_child_id was still null),
  * now enforced inside the RPC instead of via a client-side filter.
  */
+export interface JoinOnlineGameResult {
+  joined: boolean;
+  /** True if the join was rejected because the host or guest has used
+   * their 2 free multiplayer games today (never true for premium). */
+  blocked: boolean;
+}
+
 export async function joinOnlineGame(
   supabase: SupabaseClient,
   gameId: string,
   guestChildId: string
-): Promise<boolean> {
+): Promise<JoinOnlineGameResult> {
   const { data, error } = await supabase.rpc("join_online_game", {
     p_game_id: gameId,
     p_guest_child_id: guestChildId,
   });
   if (error) throw error;
-  return data === true;
+  const row = data?.[0];
+  return { joined: row?.joined ?? false, blocked: row?.blocked ?? false };
 }
 
 export interface SubmitMoveResult {
@@ -590,18 +663,24 @@ export async function sendReaction(
   if (error) throw error;
 }
 
-// --- Random matchmaking (rating-based, post-course-completion) ----------
+// --- Random matchmaking (rating-based; gated by the free multiplayer
+// daily limit above, not by lesson completion) ----------------------------
 
 export interface MatchmakingResult {
   matched: boolean;
   gameId: string | null;
+  /** True if the caller has used their 2 free multiplayer games today —
+   * never joined the queue (never true for premium). */
+  blocked: boolean;
 }
 
 /**
  * Atomically pairs with the closest-rated waiting opponent, or enqueues
  * the caller if nobody's waiting — see find_or_create_match() in
- * supabase/migrations/0008_matchmaking.sql for the actual matching logic
- * (it has to run server-side in a single transaction to be race-safe).
+ * supabase/migrations/0008_matchmaking.sql (matching logic) and
+ * 0019_daily_free_game_limits.sql (free-multiplayer eligibility, checked
+ * for both sides of a pairing) for why this has to run server-side in a
+ * single transaction to be race-safe.
  */
 export async function findOrCreateMatch(
   supabase: SupabaseClient,
@@ -614,7 +693,7 @@ export async function findOrCreateMatch(
   });
   if (error) throw error;
   const row = data?.[0];
-  return { matched: row?.matched ?? false, gameId: row?.game_id ?? null };
+  return { matched: row?.matched ?? false, gameId: row?.game_id ?? null, blocked: row?.blocked ?? false };
 }
 
 /** Leaves the queue — used both for an explicit "Cancel search" and as
