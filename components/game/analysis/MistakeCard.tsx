@@ -1,8 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 import { CATEGORY_INFO } from "@/lib/analysis/moveClassification";
 import { formatMoveNumber } from "@/lib/analysis/format";
-import type { AnalyzedMove } from "@/lib/analysis/gameAnalysis";
+import type { AnalyzedMove, CompletedGameRecord } from "@/lib/analysis/gameAnalysis";
+import { MistakeReviewStepper } from "./MistakeReviewStepper";
 
 const MINI_BOARD_SIZE = 150;
 
@@ -15,16 +20,20 @@ export interface EnrichedMistake extends AnalyzedMove {
  * category badge, plain-language "why," reusable principle, and a
  * before/after/better-move board comparison so the change is visible, not
  * just described. Reuses ChessBoard(readOnly) for all three mini-boards —
- * no new board renderer. */
+ * no new board renderer. "Review Position" (below) adds a step-back-3-moves
+ * view on top of this, also reusing ChessBoard(readOnly). */
 export function MistakeCard({
   mistake,
+  record,
   boardSkinId,
   pieceSetId,
 }: {
   mistake: EnrichedMistake;
+  record: CompletedGameRecord;
   boardSkinId?: string;
   pieceSetId?: string;
 }) {
+  const [reviewOpen, setReviewOpen] = useState(false);
   const info = CATEGORY_INFO[mistake.category];
   const moveLabel = `${formatMoveNumber(mistake.ply, mistake.mover)} ${mistake.san}${mistake.category === "blunder" ? "??" : "?"}`;
 
@@ -86,6 +95,14 @@ export function MistakeCard({
           </div>
           <p className={TEXT.caption}>One strong option was {mistake.bestMove.san}.</p>
         </div>
+      )}
+
+      <Button tone="premium" variant="ghost" onClick={() => setReviewOpen((v) => !v)}>
+        {reviewOpen ? "Hide Review Position" : "Review Position →"}
+      </Button>
+
+      {reviewOpen && (
+        <MistakeReviewStepper mistake={mistake} record={record} boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
       )}
     </div>
   );

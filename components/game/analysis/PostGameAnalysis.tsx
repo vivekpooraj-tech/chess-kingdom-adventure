@@ -230,7 +230,7 @@ export function PostGameAnalysis({
                 </button>
               </div>
               {currentMistake && (
-                <MistakeCard mistake={currentMistake} boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
+                <MistakeCard mistake={currentMistake} record={record} boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
               )}
             </>
           )}
