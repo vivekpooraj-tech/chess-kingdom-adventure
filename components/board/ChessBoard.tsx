@@ -126,6 +126,12 @@ export interface ChessBoardProps {
    */
   readOnly?: boolean;
   /**
+   * Optional historical position to display while keeping this board's live
+   * game instance intact. This lets an arena player review earlier moves and
+   * return to the current game without resetting its move history.
+   */
+  displayFen?: string;
+  /**
    * Phase 15 — raises the board's internal viewport-height ceiling from
    * 75vh to 90vh for actual gameplay screens (Free Play, Online Game,
    * Opening Practice) via useArenaBoardSize, which already pass a much
@@ -185,9 +191,13 @@ export function ChessBoard({
   boardSkinId,
   pieceSetId,
   readOnly = false,
+  displayFen,
   arenaMode = false,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
+  // `game` always remains the live game. A separate instance is only used
+  // for drawing a past position during review mode, never for move logic.
+  const displayGame = useMemo(() => (displayFen ? new Chess(displayFen) : game), [displayFen, game]);
   const skin = useMemo(() => getBoardSkin(boardSkinId), [boardSkinId]);
   const pieceSet = useMemo(() => getPieceSet(pieceSetId), [pieceSetId]);
   const [renderTick, forceRender] = useState(0);
@@ -195,6 +205,12 @@ export function ChessBoard({
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null);
   const [engineThinking, setEngineThinking] = useState(false);
   const gameOverReportedRef = useRef(false);
+
+  // A live square selection belongs to the current position, never to a
+  // historical one being reviewed.
+  useEffect(() => {
+    if (displayFen) setSelected(null);
+  }, [displayFen]);
 
   useEffect(() => {
     gameOverReportedRef.current = false;
@@ -290,15 +306,15 @@ export function ChessBoard({
   // Presentation only — chess.js's own isCheck()/turn() decide whether and
   // whose king to highlight, no separate check-detection logic.
   const checkedKingSquare = useMemo(() => {
-    if (!game.isCheck()) return null;
-    const mover = game.turn();
-    for (const row of game.board()) {
+    if (!displayGame.isCheck()) return null;
+    const mover = displayGame.turn();
+    for (const row of displayGame.board()) {
       for (const cell of row) {
         if (cell && cell.type === "k" && cell.color === mover) return cell.square as Square;
       }
     }
     return null;
-  }, [game]);
+  }, [displayGame]);
 
 
   const handleSquareClick = useCallback(
@@ -435,11 +451,11 @@ export function ChessBoard({
         {displayRanks.map((rank, rIdx) =>
           displayFiles.map((file, fIdx) => {
             const square = `${file}${rank}` as Square;
-            const piece = game.get(square);
+            const piece = displayGame.get(square);
             const isDark = (rIdx + fIdx) % 2 === 1;
             const isSelected = selected === square;
             const isLegalTarget = legalTargets.has(square);
-            const isLastMove = lastMove && (lastMove.from === square || lastMove.to === square);
+            const isLastMove = !displayFen && lastMove && (lastMove.from === square || lastMove.to === square);
             const isCheckedKing = checkedKingSquare === square;
             // Inline style always wins over a Tailwind class, so the
             // last-move highlight has to be folded into this same value

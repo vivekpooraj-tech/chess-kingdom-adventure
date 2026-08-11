@@ -88,6 +88,9 @@ export default function FreePlayPage() {
   const [gameStatus, setGameStatus] = useState<FreeGameStatus | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [startingGame, setStartingGame] = useState(false);
+  // A historical ply shown on the board while the live game remains safely
+  // in memory. null means the board is showing the current position.
+  const [reviewPly, setReviewPly] = useState<number | null>(null);
   // Ply-by-ply log captured live during play — the source of truth for the
   // post-game analysis screen (section 14: "preserve the complete move
   // history"). A ref, not state: it's written on every ply but only ever
@@ -147,6 +150,7 @@ export default function FreePlayPage() {
       setHint(null);
       setOpeningMatch(null);
       setDismissedOpeningId(null);
+      setReviewPly(null);
       moveLogRef.current = [];
       gameStartedAtRef.current = new Date().toISOString();
       setView({ status: "playing", difficulty });
@@ -258,6 +262,15 @@ export default function FreePlayPage() {
 
   if (view.status === "playing") {
     const difficultyInfo = DIFFICULTY_INFO.find((d) => d.key === view.difficulty)!;
+    const totalPlies = position.history.length;
+    const isReviewing = reviewPly !== null;
+    const displayedPly = reviewPly ?? totalPlies;
+    const reviewFen =
+      reviewPly === null
+        ? undefined
+        : reviewPly === 0
+        ? STANDARD_START_FEN
+        : moveLogRef.current[reviewPly - 1]?.fen ?? position.fen;
     return (
       <GameArenaLayout
         title={`${difficultyInfo.label} Match`}
@@ -283,6 +296,8 @@ export default function FreePlayPage() {
             arenaMode
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}
+            displayFen={reviewFen}
+            readOnly={isReviewing}
             onGameOver={(result) => handleGameOver(view.difficulty, result)}
             onPositionChange={handlePositionChange}
           />
@@ -305,6 +320,56 @@ export default function FreePlayPage() {
               statusText={position.isCheck ? "Check" : position.turn === "w" ? "White to move" : "Black to move"}
               hint={hint}
             />
+            {totalPlies > 0 && (
+              <div className="w-full max-w-[480px] rounded-premiumCard bg-premium-navy p-4 flex flex-col gap-3 shadow-premiumCard">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-classic-display text-base text-premium-ivory">Review Moves</p>
+                    <p className="font-classic-body text-xs text-premium-ivory/55">
+                      {isReviewing
+                        ? displayedPly === 0
+                          ? "Starting position"
+                          : `After move ${Math.ceil(displayedPly / 2)}${displayedPly % 2 === 0 ? "…" : ""}`
+                        : "Check an earlier position"}
+                    </p>
+                  </div>
+                  {isReviewing && (
+                    <button
+                      onClick={() => setReviewPly(null)}
+                      className="font-classic-body text-xs text-premium-gold underline underline-offset-2"
+                    >
+                      Live game
+                    </button>
+                  )}
+                </div>
+                {!isReviewing ? (
+                  <Button tone="premium" variant="secondary" size="md" onClick={() => setReviewPly(Math.max(0, totalPlies - 1))}>
+                    Review previous move
+                  </Button>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      tone="premium"
+                      variant="secondary"
+                      size="md"
+                      disabled={displayedPly === 0}
+                      onClick={() => setReviewPly((ply) => Math.max(0, (ply ?? totalPlies) - 1))}
+                    >
+                      ← Previous
+                    </Button>
+                    <Button
+                      tone="premium"
+                      variant="secondary"
+                      size="md"
+                      disabled={displayedPly === totalPlies}
+                      onClick={() => setReviewPly((ply) => Math.min(totalPlies, (ply ?? totalPlies) + 1))}
+                    >
+                      Next →
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
             <Button tone="premium" variant="ghost" onClick={() => setView({ status: "picking-difficulty" })}>
               Change Difficulty
             </Button>
