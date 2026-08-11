@@ -57,6 +57,12 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Skip static assets and Next internals; run on everything else so the
-  // session cookie stays fresh across the whole app.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // session cookie stays fresh across the whole app. The `.*\..*` clause
+  // excludes any request whose path contains a dot (public/ files like
+  // piece SVGs, the Chess Mind logo, app/icon.png, stockfish's .wasm, etc.)
+  // — previously only _next/static, _next/image, and favicon.ico were
+  // excluded, so every other public/ asset was silently being redirected
+  // to /sign-in for signed-out visitors instead of served (caught when the
+  // new logo/favicon didn't render on the signed-out splash page).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };
