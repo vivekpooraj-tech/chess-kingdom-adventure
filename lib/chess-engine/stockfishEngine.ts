@@ -184,6 +184,22 @@ class StockfishEngine {
       return result.evalCp;
     });
   }
+
+  /**
+   * Post-game analysis only (Chess Mind's "what should you have played
+   * instead" feature) — always searches at a strong, fixed setting
+   * regardless of what difficulty the game was actually played at, since
+   * the point is to show the objectively best continuation, not to
+   * replicate the (deliberately weakened) opponent the child just played.
+   * Does not touch DIFFICULTY_SETTINGS or any gameplay-facing method —
+   * purely additive.
+   */
+  async findBestMove(fen: string): Promise<EngineResult> {
+    return this.enqueue(async () => {
+      await this.init();
+      return this.runSearch(fen, 18, 10);
+    });
+  }
 }
 
 export const stockfish = new StockfishEngine();

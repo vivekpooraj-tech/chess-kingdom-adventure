@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { PieceSymbol } from "chess.js";
+import type { PieceSymbol, Color } from "chess.js";
 import { createClient } from "@/lib/supabase/client";
 import { resolveActiveChild, recordOpeningEncounter, getFreeGameStatus, startAiGame, FreeGameStatus } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
@@ -11,19 +11,23 @@ import { ChessBoard } from "@/components/board/ChessBoard";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
 import { GameChrome } from "@/components/game/GameChrome";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
-import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
 import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
+import { PostGameAnalysis } from "@/components/game/analysis/PostGameAnalysis";
 import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import type { Difficulty } from "@/lib/chess-engine/stockfishEngine";
+import type { CompletedGameRecord, PlayedMove } from "@/lib/analysis/gameAnalysis";
+
+const STANDARD_START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 type ViewState =
   | { status: "loading" }
   | { status: "picking-difficulty" }
   | { status: "playing"; difficulty: Difficulty }
-  | { status: "game-over"; difficulty: Difficulty; result: GameResult };
+  | { status: "game-over"; record: CompletedGameRecord }
+  | { status: "analysis"; record: CompletedGameRecord };
 
 interface GameResult {
   isCheckmate: boolean;
@@ -32,6 +36,7 @@ interface GameResult {
 }
 
 interface PositionState {
+  fen: string;
   history: string[];
   turn: "w" | "b";
   isCheck: boolean;
@@ -40,6 +45,7 @@ interface PositionState {
 }
 
 const EMPTY_POSITION: PositionState = {
+  fen: "",
   history: [],
   turn: "w",
   isCheck: false,
@@ -82,6 +88,12 @@ export default function FreePlayPage() {
   const [gameStatus, setGameStatus] = useState<FreeGameStatus | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [startingGame, setStartingGame] = useState(false);
+  // Ply-by-ply log captured live during play — the source of truth for the
+  // post-game analysis screen (section 14: "preserve the complete move
+  // history"). A ref, not state: it's written on every ply but only ever
+  // read once, at game-over, so it doesn't need to trigger re-renders.
+  const moveLogRef = useRef<PlayedMove[]>([]);
+  const gameStartedAtRef = useRef<string>("");
 
   useEffect(() => {
     async function load() {
@@ -135,6 +147,8 @@ export default function FreePlayPage() {
       setHint(null);
       setOpeningMatch(null);
       setDismissedOpeningId(null);
+      moveLogRef.current = [];
+      gameStartedAtRef.current = new Date().toISOString();
       setView({ status: "playing", difficulty });
     } finally {
       setStartingGame(false);
@@ -142,13 +156,38 @@ export default function FreePlayPage() {
   }
 
   function handleGameOver(difficulty: Difficulty, result: GameResult) {
-    setView({ status: "game-over", difficulty, result });
+    const difficultyInfo = DIFFICULTY_INFO.find((d) => d.key === difficulty)!;
+    const record: CompletedGameRecord = {
+      startFen: STANDARD_START_FEN,
+      moves: moveLogRef.current,
+      result,
+      playerColor: "w",
+      opponentLabel: `Computer — ${difficultyInfo.label}`,
+      difficulty,
+      startedAt: gameStartedAtRef.current || new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      openingName: openingMatch?.opening.name ?? null,
+    };
+    setView({ status: "game-over", record });
   }
 
   function handlePositionChange(pos: PositionState) {
     setHint(getHint(pos, prevCapturedCount));
     setPrevCapturedCount(pos.capturedByWhite.length + pos.capturedByBlack.length);
     setPosition(pos);
+
+    // Preserves the complete move history live, ply by ply — fires once
+    // per ply (see ChessBoard's onPositionChange doc comment), for both
+    // the child's own moves and Stockfish's replies. `pos.turn` is whose
+    // turn it is NEXT, so the mover of the ply that just happened is the
+    // other color.
+    if (pos.history.length > moveLogRef.current.length) {
+      const ply = pos.history.length - 1;
+      moveLogRef.current = [
+        ...moveLogRef.current,
+        { ply, san: pos.history[ply], fen: pos.fen, mover: pos.turn === "w" ? "b" : "w" },
+      ];
+    }
 
     const match = recognizeOpening(pos.history);
     // A dismissed opening stays dismissed — UNLESS a more specific match
@@ -275,44 +314,52 @@ export default function FreePlayPage() {
     );
   }
 
-  // status === "game-over"
-  const { result, difficulty } = view;
-  const playerWon = result.isCheckmate && result.winner === "w";
-  const opponentWon = result.isCheckmate && result.winner === "b";
+  if (view.status === "analysis") {
+    return (
+      <PostGameAnalysis
+        record={view.record}
+        boardSkinId={boardSkinId}
+        pieceSetId={pieceSetId}
+        onPlayAgain={() => startGame(view.record.difficulty)}
+        onBack={() => setView({ status: "picking-difficulty" })}
+      />
+    );
+  }
+
+  // status === "game-over" — a deliberately lightweight result card shown
+  // immediately at checkmate. The completed game (view.record) is NOT
+  // discarded here — "Review Game" carries it straight into the full
+  // PostGameAnalysis screen, and the game never auto-navigates away on its
+  // own (section 1/2 of the brief this implements).
+  const { record } = view;
+  const playerWon = record.result.isCheckmate && record.result.winner === record.playerColor;
+  const opponentWon = record.result.isCheckmate && record.result.winner !== record.playerColor && record.result.winner !== null;
+  const moveNumber = Math.ceil(record.moves.length / 2);
 
   return (
     <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6">
       <PrimaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center">
-        <span className="text-5xl">{playerWon ? "🏆" : opponentWon ? "🤔" : "🤝"}</span>
-        <h1 className={TEXT.heading}>
-          {playerWon
-            ? "Checkmate — You Won!"
-            : opponentWon
-            ? "Checkmate — Try Again!"
-            : "It's a Draw!"}
-        </h1>
-        <p className={TEXT.body}>
-          {playerWon
-            ? "Excellent game — you outplayed the opponent."
-            : opponentWon
-            ? "So close. Every game teaches you something new."
-            : "A hard-fought battle with no winner this time."}
-        </p>
-        <div className="flex gap-3">
-          <Button tone="premium" onClick={() => startGame(difficulty)}>Play Again</Button>
-          <Button tone="premium" variant="ghost" onClick={() => setView({ status: "picking-difficulty" })}>
-            Change Difficulty
-          </Button>
+        <p className={`${TEXT.meta} text-premium-gold`}>Chess Mind</p>
+        <h1 className={TEXT.heading}>Game Over</h1>
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-5xl">{playerWon ? "🏆" : opponentWon ? "♔" : "🤝"}</span>
+          <p className="font-classic-display text-xl text-premium-ivory">
+            {playerWon ? "You won" : opponentWon ? "You lost" : "Draw"}
+          </p>
+          {record.result.isCheckmate && (
+            <p className={TEXT.caption}>Checkmate on move {moveNumber}</p>
+          )}
         </div>
-        <Link
-          href="/kingdom-map"
-          className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
-        >
-          Back to the Kingdom Map
-        </Link>
+        <Button tone="premium" onClick={() => setView({ status: "analysis", record })}>
+          Review Game
+        </Button>
+        <div className="flex gap-3">
+          <Button tone="premium" variant="ghost" onClick={() => startGame(record.difficulty)}>Play Again</Button>
+          <Link href="/kingdom-map">
+            <Button tone="premium" variant="ghost">Back to the Kingdom Map</Button>
+          </Link>
+        </div>
       </PrimaryCard>
-
-      {openingMatch && <GameEndOpeningSummary match={openingMatch} />}
     </main>
   );
 }
