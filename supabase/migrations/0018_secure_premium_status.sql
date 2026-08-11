@@ -1,0 +1,25 @@
+-- Closes a pre-existing security gap found while auditing payment flow for
+-- Phase "Regional Pricing + Discount Codes": parents.premium_status had no
+-- column-level write protection — RLS's "parents can update own row" policy
+-- only checks auth_user_id = auth.uid(), with no restriction on WHICH
+-- columns. Any signed-in parent could call
+-- supabase.from('parents').update({premium_status:'premium'}) directly from
+-- the browser and grant themselves premium for free, completely bypassing
+-- Stripe. RLS is row-level only — it can't stop a client from writing an
+-- allowed row's specific column, only column-level REVOKE can (same
+-- reasoning as supabase/migrations/0017_online_game_clocks.sql).
+--
+-- The two legitimate write paths already use, or are updated in this same
+-- phase to use, the Supabase service-role admin client
+-- (lib/supabase/admin.ts), which is unaffected by this REVOKE:
+--   1. app/api/stripe/webhook/route.ts — already used the admin client.
+--   2. app/upgrade/success/page.tsx — updated in this phase to use the
+--      admin client too, after independently re-verifying the Stripe
+--      Checkout Session (payment_status === "paid" and the parent_id in
+--      the session metadata matches the signed-in user).
+-- No RPC is introduced for this — an RPC granted to `authenticated` would
+-- reintroduce the exact same hole (any signed-in user could call it
+-- directly), since the check that actually matters (real proof of payment
+-- from Stripe's API) can only happen in the Next.js server code, not in a
+-- plpgsql function with no network access.
+revoke update (premium_status) on public.parents from authenticated;

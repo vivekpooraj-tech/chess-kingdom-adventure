@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStripe } from "@/lib/stripe/client";
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BRAND } from "@/lib/brand";
@@ -60,7 +61,14 @@ export default async function UpgradeSuccessPage({
     } else if (session.payment_status !== "paid") {
       errorMessage = "Payment hasn't completed yet — check your Stripe dashboard.";
     } else {
-      const { error: updateError } = await supabase
+      // premium_status is REVOKEd from direct client/RLS-scoped writes
+      // (supabase/migrations/0018_secure_premium_status.sql) — this is now
+      // the only other legitimate write path besides the webhook, and it
+      // only runs after the payment_status/parent_id checks above, using
+      // Stripe's own record of the session, not anything the client
+      // claimed.
+      const supabaseAdmin = getSupabaseAdmin();
+      const { error: updateError } = await supabaseAdmin
         .from("parents")
         .update({ premium_status: "premium" })
         .eq("id", parent.id);
