@@ -77,14 +77,17 @@ export interface ChessPuzzle {
   sideToMove: "w" | "b";
   /**
    * No stored solution move list — validated algorithmically instead (see
-   * lib/chess-engine/puzzleValidation.ts). mate-in-1: any move that
-   * delivers checkmate is correct. mate-in-2: the first move must lead to
-   * mate-in-1 against EVERY legal opponent reply, not just one hand-picked
-   * line — that's the actual definition of a sound mate-in-2, and it means
-   * the puzzle stays correct no matter which legal defense the opponent
-   * (or a curious kid poking at replies) actually plays.
+   * lib/chess-engine/puzzleValidation.ts, isSoundMateInNFirstMove/
+   * hasMateInN). mate-in-1: any move that delivers checkmate is correct.
+   * mate-in-2/3: each non-final move must lead to a forced mate one move
+   * shorter against EVERY legal opponent reply, not just one hand-picked
+   * line — that's the actual definition of a sound forcing sequence, and it
+   * means the puzzle stays correct no matter which legal defense the
+   * opponent (or a curious kid poking at replies) actually plays. Every
+   * entry in content/puzzles.ts is verified via exactMateDepth() to have
+   * exactly this mate distance, not an easier one.
    */
-  mateIn: 1 | 2;
+  mateIn: 1 | 2 | 3;
   theme: string;
 }
 

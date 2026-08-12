@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
@@ -12,8 +12,8 @@ import {
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { DAILY_PREVIEW_LIMIT } from "@/content/lessons";
-import { PUZZLES } from "@/content/puzzles";
-import { isSoundMateIn2FirstMove } from "@/lib/chess-engine/puzzleValidation";
+import { PUZZLES, getDailyPuzzle } from "@/content/puzzles";
+import { isSoundMateInNFirstMove } from "@/lib/chess-engine/puzzleValidation";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
@@ -23,8 +23,38 @@ import { TEXT } from "@/lib/designSystem";
 
 type Status = "playing" | "correct" | "incorrect";
 
+const OBJECTIVE_TEXT: Record<1 | 2 | 3, string> = {
+  1: "Find the winning move.",
+  2: "Find the first move that forces checkmate in 2 moves.",
+  3: "Calculate the sequence and force checkmate in 3 moves.",
+};
+
+// useSearchParams() requires a Suspense boundary in the App Router.
 export default function PuzzlesPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-premium-midnight" />}>
+      <PuzzlesPageInner />
+    </Suspense>
+  );
+}
+
+function PuzzlesPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // A puzzle id in the URL (e.g. from the Daily Challenge card) opens that
+  // specific puzzle. Otherwise this page opens on TODAY's daily puzzle —
+  // not an arbitrary fixed index — so a bare /puzzles visit always matches
+  // whatever the Kingdom Map's Daily Challenge card is currently showing.
+  const requestedId = searchParams.get("id");
+  const initialIndex = (() => {
+    if (requestedId) {
+      const i = PUZZLES.findIndex((p) => p.id === requestedId);
+      if (i !== -1) return i;
+    }
+    return PUZZLES.findIndex((p) => p.id === getDailyPuzzle().id);
+  })();
+
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [loaded, setLoaded] = useState(false);
@@ -32,7 +62,7 @@ export default function PuzzlesPage() {
   const [isPremium, setIsPremium] = useState(false);
   const [todayCount, setTodayCount] = useState(0);
 
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(initialIndex);
   const [boardKey, setBoardKey] = useState(0);
   const [moveCount, setMoveCount] = useState(0);
   const [status, setStatus] = useState<Status>("playing");
@@ -40,6 +70,17 @@ export default function PuzzlesPage() {
 
   const puzzle = PUZZLES[index];
   const limitReached = !isPremium && todayCount >= DAILY_PREVIEW_LIMIT;
+
+  // The FEN the player's NEXT move should be validated from — the puzzle's
+  // own starting position at first, then whatever position the auto-
+  // opponent's reply lands on after each of the player's non-final moves.
+  // Never the live game's post-move FEN (that's `opts.fen` in handleMove,
+  // which is the position AFTER the move being validated, not before it).
+  const [beforeFen, setBeforeFen] = useState(puzzle.fen);
+
+  useEffect(() => {
+    setBeforeFen(puzzle.fen);
+  }, [puzzle.fen]);
 
   useEffect(() => {
     async function load() {
@@ -82,6 +123,7 @@ export default function PuzzlesPage() {
     setBoardKey((k) => k + 1);
     setMoveCount(0);
     setStatus("playing");
+    setBeforeFen(puzzle.fen);
   }
 
   function nextPuzzle() {
@@ -102,8 +144,16 @@ export default function PuzzlesPage() {
     }
   }
 
+  // Fires after every ply (the child's own move AND the auto-opponent's
+  // reply) — used only to track the position the NEXT player move should
+  // be validated from. See the `beforeFen` doc comment above.
+  function handlePositionChange(pos: { fen: string }) {
+    setBeforeFen(pos.fen);
+  }
+
   function handleMove(opts: { fen: string; san: string; isCheckmate: boolean }) {
-    if (puzzle.mateIn === 1) {
+    const isFinalMove = moveCount === puzzle.mateIn - 1;
+    if (isFinalMove) {
       if (opts.isCheckmate) {
         markSolved();
       } else {
@@ -112,25 +162,22 @@ export default function PuzzlesPage() {
       return;
     }
 
-    // mate-in-2
-    if (moveCount === 0) {
-      if (isSoundMateIn2FirstMove(puzzle.fen, opts.san)) {
-        setMoveCount(1); // opponent auto-replies (ChessBoard's opponent="stockfish"), then it's the child's second move
-      } else {
-        setStatus("incorrect");
-      }
+    // Not the last move yet — must be a sound forcing move against every
+    // legal reply, checked from the position it was actually played from
+    // (beforeFen), not the puzzle's original starting FEN.
+    const remainingDepth = puzzle.mateIn - moveCount;
+    if (isSoundMateInNFirstMove(beforeFen, opts.san, remainingDepth)) {
+      setMoveCount((c) => c + 1); // opponent auto-replies (ChessBoard's opponent="stockfish"), then the child's next move
     } else {
-      if (opts.isCheckmate) {
-        markSolved();
-      } else {
-        setStatus("incorrect");
-      }
+      setStatus("incorrect");
     }
   }
 
   if (!loaded) {
     return <main className="min-h-screen" />;
   }
+
+  const movesRemaining = puzzle.mateIn - moveCount;
 
   return (
     <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6 py-10">
@@ -150,7 +197,7 @@ export default function PuzzlesPage() {
         <PrimaryCard className="flex flex-col items-center gap-4 max-w-2xl w-full">
           <div className="flex flex-wrap items-center justify-center gap-3">
             <span className="font-classic-body text-sm bg-premium-emerald/25 text-emerald-300 rounded-full px-3 py-1 font-semibold">
-              Mate in {puzzle.mateIn}
+              ♟ Checkmate in {puzzle.mateIn}
             </span>
             <span className="font-classic-body text-sm bg-premium-gold/15 text-premium-gold rounded-full px-3 py-1">
               {puzzle.theme}
@@ -158,16 +205,21 @@ export default function PuzzlesPage() {
             <SideToMoveIndicator color={puzzle.sideToMove} tone="premium" />
           </div>
 
+          {status === "playing" && moveCount === 0 && (
+            <p className={`${TEXT.caption} normal-case`}>{OBJECTIVE_TEXT[puzzle.mateIn]}</p>
+          )}
+
           <ChessBoard
             key={boardKey}
             fen={puzzle.fen}
             playableColor={puzzle.sideToMove}
-            opponent={puzzle.mateIn === 2 ? "stockfish" : undefined}
+            opponent={puzzle.mateIn > 1 ? "stockfish" : undefined}
             difficulty="easy"
             size={520}
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}
             onMove={handleMove}
+            onPositionChange={handlePositionChange}
           />
 
           {status === "correct" && (
@@ -186,9 +238,11 @@ export default function PuzzlesPage() {
               </Button>
             </div>
           )}
-          {status === "playing" && moveCount === 1 && (
+          {status === "playing" && moveCount > 0 && (
             <p className={`${TEXT.caption} normal-case italic`}>
-              Good move! Now find the checkmate.
+              {movesRemaining === 1
+                ? "Good move! Now find the checkmate."
+                : `Good move! ${movesRemaining} moves to go.`}
             </p>
           )}
         </PrimaryCard>
