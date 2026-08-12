@@ -268,7 +268,15 @@ export function ChessBoard({
       if (opponent === "stockfish") {
         setEngineThinking(true);
         try {
-          const { move: uciMove } = await stockfish.getBestMove(game.fen(), difficulty);
+          // "very-easy" picks deliberately weaker moves via its own
+          // candidate-selection strategy (see getBeginnerMove's doc
+          // comment) rather than just searching at Easy's depth — every
+          // other difficulty is unaffected, still going through
+          // getBestMove exactly as before.
+          const { move: uciMove } =
+            difficulty === "very-easy"
+              ? await stockfish.getBeginnerMove(game.fen())
+              : await stockfish.getBestMove(game.fen(), difficulty);
           if (cancelled) return;
           const from = uciMove.slice(0, 2) as Square;
           const to = uciMove.slice(2, 4) as Square;

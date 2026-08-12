@@ -54,6 +54,7 @@ const EMPTY_POSITION: PositionState = {
 };
 
 const DIFFICULTY_INFO: { key: Difficulty; label: string; emoji: string; blurb: string }[] = [
+  { key: "very-easy", label: "Very Easy", emoji: "🐣", blurb: "Perfect for your first games." },
   { key: "easy", label: "Easy", emoji: "🌱", blurb: "A gentle, beatable opponent." },
   { key: "medium", label: "Medium", emoji: "⚔️", blurb: "A real challenge." },
   { key: "hard", label: "Hard", emoji: "🔥", blurb: "Only for Kingdom Champions!" },
