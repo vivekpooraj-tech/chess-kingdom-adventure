@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { ListItemRow } from "@/components/ui/Card";
 import { CHESS_MIND_CATEGORIES, getChessMindCategory } from "@/content/chessMindCategories";
 import { getDailyChallengeCategoryId } from "@/lib/chessMind/dailyChallenge";
 import { getUnlockedKingdomBonuses, UnlockedBonus } from "@/lib/chessMind/kingdomUnlocks";
@@ -140,16 +141,20 @@ export default function ChessMindPage() {
           </div>
         )}
 
-        <div className="w-full max-w-md flex flex-col gap-3">
+        {/* A flat list of rows, not a stack of up to 10 individually-
+            shadowed cards — ListItemRow (design system, components/ui/
+            Card.tsx) keeps the same content but reads as one list, not a
+            wall of identical boxes. The three feature cards above (Daily
+            Challenge, Continue Training, Kingdom Bonuses) stay full cards —
+            they're genuinely different, higher-priority content, not list
+            entries. */}
+        <div className="w-full max-w-md flex flex-col gap-1.5">
           {CHESS_MIND_CATEGORIES.map((cat) => {
             const score = stats[cat.id] ?? 0;
             if (!cat.href) {
               return (
-                <div
-                  key={cat.id}
-                  className="flex items-center gap-4 rounded-premiumCard bg-premium-navy/50 p-5 opacity-50"
-                >
-                  <span className="text-3xl">{cat.emoji}</span>
+                <ListItemRow key={cat.id} className="opacity-50">
+                  <span className="text-2xl">{cat.emoji}</span>
                   <div className="flex-1">
                     <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                     <p className="font-classic-body text-xs text-premium-ivory/50">{cat.description}</p>
@@ -157,16 +162,12 @@ export default function ChessMindPage() {
                   <span className="font-classic-body text-[10px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
                     SOON
                   </span>
-                </div>
+                </ListItemRow>
               );
             }
             return (
-              <Link
-                key={cat.id}
-                href={cat.href}
-                className="flex items-center gap-4 rounded-premiumCard bg-premium-navy shadow-premiumCard p-5"
-              >
-                <span className="text-3xl">{cat.emoji}</span>
+              <ListItemRow key={cat.id} href={cat.href}>
+                <span className="text-2xl">{cat.emoji}</span>
                 <div className="flex-1">
                   <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                   <p className="font-classic-body text-xs text-premium-ivory/50">{cat.description}</p>
@@ -177,7 +178,7 @@ export default function ChessMindPage() {
                   )}
                 </div>
                 <span className="text-premium-gold text-lg">→</span>
-              </Link>
+              </ListItemRow>
             );
           })}
         </div>

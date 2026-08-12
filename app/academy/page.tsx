@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { ListItemRow } from "@/components/ui/Card";
 import { BRAND } from "@/lib/brand";
 import { TEXT } from "@/lib/designSystem";
 
@@ -72,14 +73,14 @@ export default function AcademyPage() {
           </p>
         </div>
 
-        <div className="w-full max-w-md flex flex-col gap-3">
+        {/* A flat list of rows, not a stack of 7 individually-shadowed
+            cards — ListItemRow (design system, components/ui/Card.tsx)
+            keeps the same content but reads as one coherent list. */}
+        <div className="w-full max-w-md flex flex-col gap-1.5">
           {CATEGORIES.map((cat) =>
             "soon" in cat ? (
-              <div
-                key={cat.id}
-                className="flex items-center gap-4 rounded-premiumCard bg-premium-navy/40 border border-white/5 p-5 opacity-60"
-              >
-                <span className="text-3xl flex-none">{cat.emoji}</span>
+              <ListItemRow key={cat.id} className="opacity-50">
+                <span className="text-2xl flex-none">{cat.emoji}</span>
                 <div className="flex-1">
                   <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                   <p className={TEXT.caption}>{cat.description}</p>
@@ -87,20 +88,16 @@ export default function AcademyPage() {
                 <span className="font-classic-body text-[10px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
                   SOON
                 </span>
-              </div>
+              </ListItemRow>
             ) : (
-              <Link
-                key={cat.id}
-                href={cat.href}
-                className="flex items-center gap-4 rounded-premiumCard bg-premium-navy shadow-premiumCard border border-white/5 hover:border-premium-gold/30 transition-colors p-5"
-              >
-                <span className="text-3xl flex-none">{cat.emoji}</span>
+              <ListItemRow key={cat.id} href={cat.href}>
+                <span className="text-2xl flex-none">{cat.emoji}</span>
                 <div className="flex-1">
                   <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                   <p className={TEXT.caption}>{cat.description}</p>
                 </div>
                 <span className="text-premium-gold text-lg flex-none">→</span>
-              </Link>
+              </ListItemRow>
             )
           )}
         </div>

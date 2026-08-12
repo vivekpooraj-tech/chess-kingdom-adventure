@@ -174,7 +174,7 @@ export default async function KingdomMapPage() {
             href="/profile"
             className="grid grid-cols-4 gap-2 rounded-premiumCard bg-premium-navy/70 border border-white/5 p-3 hover:border-premium-gold/20 transition-colors"
           >
-            <StatTile value={child.rating.toLocaleString()} label="Rating" />
+            <StatTile value={onlineWinsCount} label="Online Wins" />
             <StatTile value={`${earnedKeys.length}/${ACHIEVEMENTS.length}`} label="Achievements" />
             <StatTile value={openingEncounters.length} label="Openings" />
             <StatTile value={chessMindTotalSolved} label="Chess Mind" />
