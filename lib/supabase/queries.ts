@@ -491,6 +491,14 @@ export interface OnlineGame {
    * derive the live remaining time client-side for display only. */
   last_move_at: string | null;
   current_turn: "w" | "b" | null;
+  /** True once apply_match_rating() has settled this game's rating change
+   * (only ever true for match_type="random") — the four *_before/*_after
+   * columns below are only meaningful once this is true. */
+  rating_applied: boolean;
+  host_rating_before: number | null;
+  host_rating_after: number | null;
+  guest_rating_before: number | null;
+  guest_rating_after: number | null;
 }
 
 export interface CreateInviteGameResult {

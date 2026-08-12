@@ -31,6 +31,28 @@ import { TEXT } from "@/lib/designSystem";
 import { getTimeControl } from "@/content/timeControls";
 import type { Color } from "chess.js";
 
+/**
+ * Numeric-only rating result — no skill labels (Beginner/Intermediate/
+ * etc.) anywhere in this app's rating display. Shows the server-calculated
+ * before/after values from apply_match_rating() exactly as computed, e.g.
+ * "1,247 -> 1,271" with a "+24"/"-28" delta line underneath.
+ */
+function RatingDeltaRow({ label, before, after }: { label: string; before: number; after: number }) {
+  const delta = after - before;
+  const deltaText = delta > 0 ? `+${delta}` : `${delta}`;
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <p className="font-classic-body text-[10px] uppercase tracking-wide text-premium-ivory/50">{label}</p>
+      <p className="font-classic-display text-lg text-premium-ivory">
+        {before.toLocaleString()} <span className="text-premium-ivory/40">→</span> {after.toLocaleString()}
+      </p>
+      <p className={`font-classic-body text-sm font-semibold ${delta > 0 ? "text-emerald-400" : delta < 0 ? "text-red-300" : "text-premium-ivory/60"}`}>
+        {deltaText}
+      </p>
+    </div>
+  );
+}
+
 export default function OnlineGamePage() {
   const params = useParams<{ gameId: string }>();
   const router = useRouter();
@@ -38,7 +60,6 @@ export default function OnlineGamePage() {
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [game, setGame] = useState<OnlineGame | null | "loading">("loading");
-  const [newRating, setNewRating] = useState<number | null>(null);
   const [openingMatch, setOpeningMatch] = useState<OpeningMatch | null>(null);
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const seenOpeningIdsRef = useRef<Set<string>>(new Set());
@@ -221,9 +242,17 @@ export default function OnlineGamePage() {
       await finishOnlineGame(supabaseRef.current, params.gameId, childId!, winner);
       if (game && game !== "loading" && game.match_type === "random") {
         const supabase = supabaseRef.current;
+        // Idempotent server-side (rating_applied) — safe even if the
+        // opponent's client gets there first. Whichever call actually does
+        // the work persists before/after values on the game row itself
+        // (host_rating_before/after, guest_rating_before/after), so a
+        // direct refetch here gets the real numbers for BOTH players
+        // regardless of who triggered the settlement. The existing
+        // Realtime subscription will also pick this row update up on its
+        // own; this refetch just avoids waiting on that round trip.
         await applyMatchRating(supabase, params.gameId).catch(() => {});
-        const { data } = await supabase.from("children").select("rating").eq("id", childId!).single();
-        if (data) setNewRating(data.rating);
+        const fresh = await getOnlineGame(supabase, params.gameId);
+        if (fresh) setGame(fresh);
       }
     }
   }
@@ -318,6 +347,21 @@ export default function OnlineGamePage() {
         ? "You ran out of time."
         : "Your opponent ran out of time."
       : null;
+    const myRatingBefore = isHost ? game.host_rating_before : game.guest_rating_before;
+    const myRatingAfter = isHost ? game.host_rating_after : game.guest_rating_after;
+    const opponentRatingBefore = isHost ? game.guest_rating_before : game.host_rating_before;
+    const opponentRatingAfter = isHost ? game.guest_rating_after : game.host_rating_after;
+    // typeof-number, not `!== null`: if this code ever runs against a
+    // database that hasn't had the rating-columns migration applied yet,
+    // select("*") simply omits those keys and they come back `undefined`
+    // rather than `null` — `undefined !== null` is true, which would pass
+    // the old check and then crash on `.toLocaleString()` below.
+    const ratingSettled =
+      game.match_type === "random" &&
+      typeof myRatingBefore === "number" &&
+      typeof myRatingAfter === "number" &&
+      typeof opponentRatingBefore === "number" &&
+      typeof opponentRatingAfter === "number";
     return (
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6">
         <PrimaryCard className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
@@ -326,10 +370,11 @@ export default function OnlineGamePage() {
             {isDraw ? "It's a Draw!" : iWon ? "You Won!" : "Better Luck Next Time!"}
           </h1>
           {reasonText && <p className={TEXT.caption}>{reasonText}</p>}
-          {game.match_type === "random" && newRating !== null && (
-            <p className={TEXT.body}>
-              Your rating is now <span className="text-premium-gold font-semibold">{newRating}</span>
-            </p>
+          {ratingSettled && (
+            <div className="w-full flex flex-col gap-3">
+              <RatingDeltaRow label="You" before={myRatingBefore!} after={myRatingAfter!} />
+              <RatingDeltaRow label="Opponent" before={opponentRatingBefore!} after={opponentRatingAfter!} />
+            </div>
           )}
           <Link href="/kingdom-map">
             <Button tone="premium">Back to the Kingdom Map →</Button>

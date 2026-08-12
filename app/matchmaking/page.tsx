@@ -140,7 +140,7 @@ export default function MatchmakingPage() {
       <PrimaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center">
         <div className="flex flex-col items-center gap-1">
           <p className={TEXT.caption}>Your Rating</p>
-          <p className="font-classic-display text-3xl text-premium-gold">{view.rating}</p>
+          <p className="font-classic-display text-3xl text-premium-gold">{view.rating.toLocaleString()}</p>
         </div>
 
         {gameStatus && !gameStatus.isPremium && (

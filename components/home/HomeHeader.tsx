@@ -46,9 +46,9 @@ export function HomeHeader({
         </div>
         <div className="text-right flex-none">
           <p className="font-classic-body text-[10px] uppercase tracking-wide text-premium-ivory/50">
-            Rating
+            Chess Rating
           </p>
-          <p className="font-classic-display text-lg leading-tight">{rating}</p>
+          <p className="font-classic-display text-lg leading-tight">{rating.toLocaleString()}</p>
         </div>
       </div>
 
