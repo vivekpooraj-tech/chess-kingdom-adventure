@@ -58,9 +58,22 @@ export async function POST(request: NextRequest) {
       discounts = [{ promotion_code: appliedPromotionCodeId }];
     }
 
+    // UPI (the rail Google Pay/PhonePe/Paytm all use in India) is only a
+    // valid Checkout payment_method_type when the session currency is INR —
+    // Stripe's API rejects the session outright if it's included for any
+    // other currency. regionalPrice.currency already resolves to "inr" for
+    // country=IN (lib/pricing/regions.ts), so this stays in sync with the
+    // existing regional-pricing logic automatically, no separate country
+    // check needed. Whether UPI actually appears on the hosted Checkout
+    // page also depends on UPI being enabled as a payment method on the
+    // Stripe account itself (Dashboard → Settings → Payment methods) — that
+    // account-level toggle is outside what this code can control.
+    const paymentMethodTypes: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] =
+      regionalPrice.currency === "inr" ? ["card", "upi"] : ["card"];
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      payment_method_types: paymentMethodTypes,
       line_items: [
         {
           price_data: {
