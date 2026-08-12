@@ -265,12 +265,18 @@ export default function FreePlayPage() {
     const totalPlies = position.history.length;
     const isReviewing = reviewPly !== null;
     const displayedPly = reviewPly ?? totalPlies;
+    // Hard 3-move cap: never let review reach further back than 3 real
+    // plies, and never fabricate a position — when fewer than 3 plies have
+    // been played, this naturally floors at 0 (the starting position),
+    // which is itself a real, valid review target.
+    const minReviewPly = Math.max(0, totalPlies - 3);
     const reviewFen =
       reviewPly === null
         ? undefined
         : reviewPly === 0
         ? STANDARD_START_FEN
         : moveLogRef.current[reviewPly - 1]?.fen ?? position.fen;
+    const reviewPlies = Array.from({ length: totalPlies - minReviewPly + 1 }, (_, i) => minReviewPly + i);
     return (
       <GameArenaLayout
         title={`${difficultyInfo.label} Match`}
@@ -287,20 +293,78 @@ export default function FreePlayPage() {
           </div>
         }
         renderBoard={(boardSize) => (
-          <ChessBoard
-            key={gameKey}
-            playableColor="w"
-            opponent="stockfish"
-            difficulty={view.difficulty}
-            size={boardSize}
-            arenaMode
-            boardSkinId={boardSkinId}
-            pieceSetId={pieceSetId}
-            displayFen={reviewFen}
-            readOnly={isReviewing}
-            onGameOver={(result) => handleGameOver(view.difficulty, result)}
-            onPositionChange={handlePositionChange}
-          />
+          <div className="w-full flex flex-col items-center gap-2">
+            {/*
+              This is a VIEW-ONLY history control, not a takeback/undo. The
+              live `game` chess.js instance inside ChessBoard is keyed only
+              on `fen` (never changed here), so it's never touched by
+              review navigation — see displayFen's doc comment on
+              ChessBoard. readOnly additionally hard-blocks square clicks
+              and the auto-opponent effect while reviewing, so the AI can
+              never move and no move can ever be submitted from a
+              historical position.
+            */}
+            <ChessBoard
+              key={gameKey}
+              playableColor="w"
+              opponent="stockfish"
+              difficulty={view.difficulty}
+              size={boardSize}
+              arenaMode
+              boardSkinId={boardSkinId}
+              pieceSetId={pieceSetId}
+              displayFen={reviewFen}
+              readOnly={isReviewing}
+              onGameOver={(result) => handleGameOver(view.difficulty, result)}
+              onPositionChange={handlePositionChange}
+            />
+            {totalPlies > 0 && !isReviewing && (
+              <button
+                type="button"
+                onClick={() => setReviewPly(Math.max(minReviewPly, totalPlies - 1))}
+                className="font-classic-body text-xs text-premium-ivory/55 hover:text-premium-gold underline underline-offset-2 transition-colors"
+              >
+                ← Review previous moves
+              </button>
+            )}
+            {isReviewing && (
+              <div className="w-full max-w-[480px] flex flex-col items-center gap-2">
+                <div className="w-full rounded-premiumBtn bg-premium-gold/10 border border-premium-gold/30 px-3 py-2 flex items-center justify-between gap-2">
+                  <p className="font-classic-body text-xs text-premium-gold">
+                    👁 {displayedPly === 0 ? "REVIEWING STARTING POSITION" : `REVIEWING MOVE ${displayedPly}`}
+                  </p>
+                  <p className="font-classic-body text-xs text-premium-ivory/50 whitespace-nowrap">
+                    Current move: {totalPlies}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap justify-center" role="group" aria-label="Step through recent moves">
+                  {reviewPlies.map((ply) => (
+                    <button
+                      key={ply}
+                      type="button"
+                      onClick={() => setReviewPly(ply === totalPlies ? null : ply)}
+                      className={`font-classic-body text-xs rounded-premiumBtn px-2.5 py-1.5 transition-colors ${
+                        ply === displayedPly
+                          ? "bg-premium-gold/20 text-premium-gold border border-premium-gold/40"
+                          : "bg-premium-navyLight text-premium-ivory/70 border border-white/10 hover:border-white/25"
+                      }`}
+                    >
+                      {ply === minReviewPly && ply !== totalPlies ? "← " : ""}
+                      {ply === 0 ? "Start" : `Move ${ply}`}
+                      {ply === totalPlies ? " → Current" : ""}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReviewPly(null)}
+                  className="font-classic-body text-xs text-premium-gold underline underline-offset-2"
+                >
+                  → Back to Game
+                </button>
+              </div>
+            )}
+          </div>
         )}
         sidePanel={
           <>
@@ -320,56 +384,6 @@ export default function FreePlayPage() {
               statusText={position.isCheck ? "Check" : position.turn === "w" ? "White to move" : "Black to move"}
               hint={hint}
             />
-            {totalPlies > 0 && (
-              <div className="w-full max-w-[480px] rounded-premiumCard bg-premium-navy p-4 flex flex-col gap-3 shadow-premiumCard">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-classic-display text-base text-premium-ivory">Review Moves</p>
-                    <p className="font-classic-body text-xs text-premium-ivory/55">
-                      {isReviewing
-                        ? displayedPly === 0
-                          ? "Starting position"
-                          : `After move ${Math.ceil(displayedPly / 2)}${displayedPly % 2 === 0 ? "…" : ""}`
-                        : "Check an earlier position"}
-                    </p>
-                  </div>
-                  {isReviewing && (
-                    <button
-                      onClick={() => setReviewPly(null)}
-                      className="font-classic-body text-xs text-premium-gold underline underline-offset-2"
-                    >
-                      Live game
-                    </button>
-                  )}
-                </div>
-                {!isReviewing ? (
-                  <Button tone="premium" variant="secondary" size="md" onClick={() => setReviewPly(Math.max(0, totalPlies - 1))}>
-                    Review previous move
-                  </Button>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      tone="premium"
-                      variant="secondary"
-                      size="md"
-                      disabled={displayedPly === 0}
-                      onClick={() => setReviewPly((ply) => Math.max(0, (ply ?? totalPlies) - 1))}
-                    >
-                      ← Previous
-                    </Button>
-                    <Button
-                      tone="premium"
-                      variant="secondary"
-                      size="md"
-                      disabled={displayedPly === totalPlies}
-                      onClick={() => setReviewPly((ply) => Math.min(totalPlies, (ply ?? totalPlies) + 1))}
-                    >
-                      Next →
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
             <Button tone="premium" variant="ghost" onClick={() => setView({ status: "picking-difficulty" })}>
               Change Difficulty
             </Button>
