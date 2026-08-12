@@ -8,7 +8,6 @@ export function HomeHeader({
   zone,
   currentDay,
   totalDays,
-  rating,
   streak,
 }: {
   displayName: string;
@@ -16,7 +15,6 @@ export function HomeHeader({
   zone: KingdomZone;
   currentDay: number;
   totalDays: number;
-  rating: number;
   /** Consecutive-day Chess Mind activity streak — the one real, measured
    * streak in the app currently (see getChessMindStreak). Shown here as
    * the header's general streak per the Phase 10B brief; 0 hides it. */
@@ -43,12 +41,6 @@ export function HomeHeader({
             <span>{zone.emoji}</span>
             <span>{zone.name}</span>
           </p>
-        </div>
-        <div className="text-right flex-none">
-          <p className="font-classic-body text-[10px] uppercase tracking-wide text-premium-ivory/50">
-            Chess Rating
-          </p>
-          <p className="font-classic-display text-lg leading-tight">{rating.toLocaleString()}</p>
         </div>
       </div>
 

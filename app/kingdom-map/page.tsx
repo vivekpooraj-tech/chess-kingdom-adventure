@@ -111,7 +111,6 @@ export default async function KingdomMapPage() {
           zone={currentZone}
           currentDay={child.current_day}
           totalDays={LESSONS.length}
-          rating={child.rating}
           streak={chessMindStreak}
         />
 

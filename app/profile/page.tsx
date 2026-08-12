@@ -85,7 +85,6 @@ export default async function ProfilePage() {
           zone={currentZone}
           currentDay={child.current_day}
           totalDays={LESSONS.length}
-          rating={child.rating}
           streak={chessMindStreak}
         />
 
