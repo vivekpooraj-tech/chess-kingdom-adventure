@@ -374,6 +374,8 @@ export async function evaluateAndAwardAchievements(
       earned = isPremium;
     } else if (achievement.criteria.type === "academy_complete") {
       earned = completedAcademyIds.includes(achievement.criteria.contentId);
+    } else if (achievement.criteria.type === "academy_complete_all") {
+      earned = achievement.criteria.contentIds.every((id) => completedAcademyIds.includes(id));
     } else if (achievement.criteria.type === "opening_count") {
       earned = discoveredIds.length >= achievement.criteria.count;
     } else if (achievement.criteria.type === "opening_studied_count") {
@@ -877,6 +879,27 @@ export async function getCompletedAcademyContentIds(
     .eq("status", "completed");
   if (error) throw error;
   return (data ?? []).map((r) => r.content_id);
+}
+
+/** Batch status lookup for a course's own lesson list (e.g. the Tactics
+ * landing page's ○/◐/✓ per-lesson indicators) — one query instead of one
+ * per lesson. Same child_academy_progress table as everything else above;
+ * just a different read shape, not a new progress system. */
+export async function getAcademyProgressForIds(
+  supabase: SupabaseClient,
+  childId: string,
+  contentIds: string[]
+): Promise<Record<string, "in_progress" | "completed">> {
+  if (contentIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("child_academy_progress")
+    .select("content_id, status")
+    .eq("child_id", childId)
+    .in("content_id", contentIds);
+  if (error) throw error;
+  const result: Record<string, "in_progress" | "completed"> = {};
+  for (const row of data ?? []) result[row.content_id] = row.status;
+  return result;
 }
 
 // --- Opening encounters (Chess Mind / Exploration progress) -------------

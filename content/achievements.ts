@@ -4,6 +4,8 @@ export type AchievementCriteria =
   | { type: "premium" }
   /** contentId matches an id in content/academyVideos.ts (or future Academy content). */
   | { type: "academy_complete"; contentId: string }
+  /** Every id in contentIds must be completed — e.g. all 21 Tactics lessons (content/tacticsLessons.ts). */
+  | { type: "academy_complete_all"; contentIds: string[] }
   /** Distinct openings actually DISCOVERED (reached in a real game) — see content/openings.ts. */
   | { type: "opening_count"; count: number }
   /** Distinct openings whose Academy detail page has been STUDIED. */
@@ -191,6 +193,23 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     emoji: "👑",
     category: "learning",
     criteria: { type: "complete_day", day: 30 },
+  },
+  {
+    key: "tactics_master",
+    title: "Tactics Master",
+    description: "Completed every lesson in the Academy Tactics course — forks, pins, skewers, and everything in between.",
+    emoji: "⚔️",
+    category: "learning",
+    criteria: {
+      type: "academy_complete_all",
+      contentIds: [
+        "what-is-a-tactic", "checks-captures-threats", "forks", "pins", "skewers",
+        "discovered-attacks", "double-attacks", "removing-the-defender", "deflection", "decoy",
+        "overloading", "zwischenzug", "back-rank-tactics", "discovered-check", "double-check",
+        "trapped-pieces", "clearance", "combining-tactical-ideas", "tactical-vision",
+        "mixed-tactical-practice", "final-tactics-challenge",
+      ],
+    },
   },
 
   // --- Thinking (Chess Mind) --------------------------------------------

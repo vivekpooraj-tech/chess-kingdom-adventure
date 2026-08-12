@@ -74,12 +74,17 @@ export function CompactCard({ className, children, ...props }: HTMLAttributes<HT
 
 interface ListItemRowProps extends HTMLAttributes<HTMLDivElement> {
   href?: string;
+  /** Renders as a <button> instead of a <Link> — for a row whose click
+   * should NOT navigate (e.g. a locked/premium item that opens a paywall
+   * instead of the page it represents). Ignored if `href` is also set. */
+  onClick?: () => void;
   children: ReactNode;
 }
 
 /** Renders as a <Link> when `href` is given (the common case — a list item
- * that navigates somewhere), otherwise a plain row. */
-export function ListItemRow({ href, className, children, ...props }: ListItemRowProps) {
+ * that navigates somewhere), a <button> when only `onClick` is given,
+ * otherwise a plain row. */
+export function ListItemRow({ href, onClick, className, children, ...props }: ListItemRowProps) {
   const rowClass = clsx(
     "flex items-center gap-3 rounded-premiumBtn bg-premium-navy/60 hover:bg-premium-navy px-4 py-3 transition-colors",
     className
@@ -89,6 +94,13 @@ export function ListItemRow({ href, className, children, ...props }: ListItemRow
       <Link href={href} className={rowClass}>
         {children}
       </Link>
+    );
+  }
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={clsx(rowClass, "w-full text-left")}>
+        {children}
+      </button>
     );
   }
   return (

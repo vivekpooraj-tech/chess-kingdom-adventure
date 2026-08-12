@@ -35,7 +35,7 @@ const CATEGORIES: AcademyCategory[] = [
     title: "Tactics",
     emoji: "⚔️",
     description: "Forks, pins, skewers, and the patterns that win material.",
-    soon: true,
+    href: "/academy/tactics",
   },
   {
     id: "strategy",
