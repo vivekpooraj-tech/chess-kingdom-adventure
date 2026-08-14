@@ -20,6 +20,22 @@ function randomChallenge() {
   return { a, b, answer: a + b };
 }
 
+/**
+ * TEMPORARY DEV-ONLY TESTING BYPASS — skips only this arithmetic-challenge
+ * friction step, not Supabase auth itself (proceedPastGate() below still
+ * requires a real authenticated session and does the exact same child
+ * resolution as a normal solved-challenge submit). `NODE_ENV` is inlined by
+ * Next.js at build time and is always "production" for `next build`/`next
+ * start`, so the `&&` short-circuits to `false` and this whole branch is
+ * dead-code-eliminated from any production bundle — the env var alone can't
+ * turn it on there. Remove this block (and DEV_BYPASS_PARENT_GATE's call
+ * site below) once local testing is done; it's not meant to be a permanent
+ * fixture.
+ */
+const DEV_BYPASS_PARENT_GATE =
+  process.env.NODE_ENV === "development" &&
+  process.env.NEXT_PUBLIC_DEV_BYPASS_PARENT_GATE === "true";
+
 export default function ParentGatePage() {
   // useSearchParams() requires a Suspense boundary in the App Router.
   return (
@@ -42,14 +58,15 @@ function ParentGateInner() {
     setChallenge(randomChallenge());
   }, []);
 
-  async function handleSubmit() {
-    if (Number(input) !== challenge.answer) {
-      setError("Not quite — try the new question below.");
-      setChallenge(randomChallenge());
-      setInput("");
-      return;
-    }
+  useEffect(() => {
+    if (DEV_BYPASS_PARENT_GATE) proceedPastGate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // The real post-challenge logic — unchanged from before, just pulled out
+  // so the dev bypass above can reuse it exactly instead of faking its own
+  // version of "what happens after the gate."
+  async function proceedPastGate() {
     setChecking(true);
     const supabase = createClient();
     const {
@@ -88,6 +105,20 @@ function ParentGateInner() {
     } else {
       router.push("/onboarding/avatar");
     }
+  }
+
+  async function handleSubmit() {
+    if (Number(input) !== challenge.answer) {
+      setError("Not quite — try the new question below.");
+      setChallenge(randomChallenge());
+      setInput("");
+      return;
+    }
+    await proceedPastGate();
+  }
+
+  if (DEV_BYPASS_PARENT_GATE) {
+    return <main className="min-h-screen" />;
   }
 
   return (
