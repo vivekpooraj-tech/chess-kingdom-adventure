@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +18,20 @@ export default function SignInPage() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Read via window.location instead of useSearchParams() — this page is
+  // prerendered statically, and useSearchParams() would force it dynamic
+  // (and needs a Suspense boundary). /auth/callback lands here with
+  // ?error=auth_failed when a magic-link code was missing, expired, or
+  // already used, so the user isn't just silently bounced back with no
+  // explanation.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "auth_failed") {
+      setError("That sign-in link expired or was already used — please request a new one.");
+      window.history.replaceState({}, "", "/sign-in");
+    }
+  }, []);
 
   async function sendMagicLink() {
     setLoading(true);

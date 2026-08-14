@@ -33,10 +33,13 @@ export function CapacitorDeepLinkHandler() {
       const handle = await App.addListener("appUrlOpen", async (data) => {
         const url = new URL(data.url);
         const code = url.searchParams.get("code");
-        if (!code) return;
+        if (!code) {
+          router.push("/sign-in?error=auth_failed");
+          return;
+        }
         const supabase = createClient();
-        await supabase.auth.exchangeCodeForSession(code);
-        router.push("/parent-gate");
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        router.push(error ? "/sign-in?error=auth_failed" : "/parent-gate");
       });
       if (cancelled) {
         handle.remove();
