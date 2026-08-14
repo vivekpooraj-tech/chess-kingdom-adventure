@@ -3,6 +3,7 @@ import { Baloo_2, Nunito, Fraunces, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { CapacitorDeepLinkHandler } from "@/components/CapacitorDeepLinkHandler";
 import { MotionProvider } from "@/components/MotionProvider";
+import { DevTestModeBar } from "@/components/dev/DevTestModeBar";
 import { BRAND } from "@/lib/brand";
 
 // Adventure Mode faces. These were referenced in tailwind.config.ts as bare
@@ -68,6 +69,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             the OS-level prefers-reduced-motion setting via this one wrapper,
             rather than each animated component needing its own check. */}
         <MotionProvider>{children}</MotionProvider>
+        {/* Renders nothing unless LOCAL_TEST_MODE is on (lib/devTestMode.ts) —
+            see that file for why a production build can't activate it. */}
+        <DevTestModeBar />
       </body>
     </html>
   );

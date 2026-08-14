@@ -7,34 +7,24 @@ import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { LOCAL_TEST_MODE } from "@/lib/devTestMode";
 
 /**
  * Per docs/04-user-flows.md: a lightweight "is an adult here" check before
  * any setup screen — not real security, just enough friction that a young
  * child can't stumble through account setup on their own. Also reused to
  * gate entry to the parent dashboard via ?next=/parent-dashboard.
+ *
+ * LOCAL_TEST_MODE (lib/devTestMode.ts) skips only this arithmetic-challenge
+ * friction step, not Supabase auth itself — proceedPastGate() below still
+ * requires a real authenticated session and does the exact same child
+ * resolution as a normal solved-challenge submit.
  */
 function randomChallenge() {
   const a = 3 + Math.floor(Math.random() * 6);
   const b = 3 + Math.floor(Math.random() * 6);
   return { a, b, answer: a + b };
 }
-
-/**
- * TEMPORARY DEV-ONLY TESTING BYPASS — skips only this arithmetic-challenge
- * friction step, not Supabase auth itself (proceedPastGate() below still
- * requires a real authenticated session and does the exact same child
- * resolution as a normal solved-challenge submit). `NODE_ENV` is inlined by
- * Next.js at build time and is always "production" for `next build`/`next
- * start`, so the `&&` short-circuits to `false` and this whole branch is
- * dead-code-eliminated from any production bundle — the env var alone can't
- * turn it on there. Remove this block (and DEV_BYPASS_PARENT_GATE's call
- * site below) once local testing is done; it's not meant to be a permanent
- * fixture.
- */
-const DEV_BYPASS_PARENT_GATE =
-  process.env.NODE_ENV === "development" &&
-  process.env.NEXT_PUBLIC_DEV_BYPASS_PARENT_GATE === "true";
 
 export default function ParentGatePage() {
   // useSearchParams() requires a Suspense boundary in the App Router.
@@ -59,7 +49,7 @@ function ParentGateInner() {
   }, []);
 
   useEffect(() => {
-    if (DEV_BYPASS_PARENT_GATE) proceedPastGate();
+    if (LOCAL_TEST_MODE) proceedPastGate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -117,7 +107,7 @@ function ParentGateInner() {
     await proceedPastGate();
   }
 
-  if (DEV_BYPASS_PARENT_GATE) {
+  if (LOCAL_TEST_MODE) {
     return <main className="min-h-screen" />;
   }
 
