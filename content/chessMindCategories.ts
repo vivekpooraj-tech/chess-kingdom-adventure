@@ -8,14 +8,16 @@ export interface ChessMindCategory {
 }
 
 /**
- * All 8 categories from the product spec. Five are real and playable
- * (pattern, visualization, memory, spatial, mathematics). Calculation,
- * tactical, and reaction are listed — establishing the real shape of the
- * feature — but not yet built: each needs either live engine verification
- * per generated position (Calculation) or the same attack-detection
- * primitives Pattern Recognition uses, applied to a faster timed format
- * (Tactical Thinking, Reaction). Marked "Soon" rather than stubbed, same
- * convention used everywhere else in this app.
+ * All 8 categories from the product spec. Six are real and playable
+ * (pattern, visualization, calculation, memory, spatial, mathematics).
+ * Calculation (content/chessMindCalculation.ts) uses curated, chess.js-
+ * verified positions rather than live per-generation engine grading —
+ * the same "verify once at authoring time" approach every other category
+ * here already uses, not procedural generation. Tactical and reaction are
+ * still listed — establishing the real shape of the feature — but not yet
+ * built: both need the same attack-detection primitives Pattern
+ * Recognition uses, applied to a faster timed format. Marked "Soon" rather
+ * than stubbed, same convention used everywhere else in this app.
  */
 export const CHESS_MIND_CATEGORIES: ChessMindCategory[] = [
   {
@@ -37,7 +39,7 @@ export const CHESS_MIND_CATEGORIES: ChessMindCategory[] = [
     title: "Calculation",
     emoji: "🧮",
     description: "Find the best move, then look further ahead.",
-    href: null,
+    href: "/chess-mind/calculation",
   },
   {
     id: "memory",
