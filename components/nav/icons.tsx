@@ -21,6 +21,15 @@ export function PlayIcon({ className }: IconProps) {
   );
 }
 
+export function KingdomIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <path d="M4 20 V8 H7 V5 H10.5 V8 H13.5 V5 H17 V8 H20 V20 Z" />
+      <path d="M10 20 V15 H14 V20" />
+    </svg>
+  );
+}
+
 export function AcademyIcon({ className }: IconProps) {
   return (
     <svg {...shared} className={className}>

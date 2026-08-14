@@ -275,6 +275,32 @@ export async function getTodayUsageMinutes(
   return data?.minutes_used ?? 0;
 }
 
+/**
+ * Server-side equivalent of what ScreenTimeGate used to compute itself on
+ * mount (auth check already done by the caller, limits + today's usage
+ * fetched in parallel instead of sequentially) — lets a Server Component
+ * page pass the initial gate status down as props instead of making the
+ * client redo the same round trips a second time right after the server
+ * already rendered the real page.
+ */
+export async function getScreenTimeStatus(
+  supabase: SupabaseClient,
+  authUserId: string,
+  childId: string
+): Promise<{ limitMinutes: number; usedMinutes: number }> {
+  const [limits, usedMinutes] = await Promise.all([
+    getScreenTimeLimits(supabase, authUserId),
+    getTodayUsageMinutes(supabase, childId, localDateString()),
+  ]);
+  const limitMinutes = isWeekend() ? limits.weekendMinutes : limits.weekdayMinutes;
+  return { limitMinutes, usedMinutes };
+}
+
+function isWeekend(d: Date = new Date()): boolean {
+  const day = d.getDay(); // 0 = Sunday, 6 = Saturday
+  return day === 0 || day === 6;
+}
+
 /** Total screen-time minutes over the last `days` days (today inclusive) —
  * real usage already recorded by addUsageMinutes, just summed for the
  * Parent Dashboard's "Time spent" section (Phase 10B point 22). */

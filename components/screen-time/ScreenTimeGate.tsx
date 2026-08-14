@@ -25,14 +25,36 @@ function isWeekend(d: Date = new Date()): boolean {
  * check is a reasonable approximation of that without needing to know
  * where every "natural checkpoint" is in every screen that uses this.
  *
- * Renders nothing (a blank loading state) until the first check completes,
- * to avoid a flash of playable content before we know whether time's up.
+ * `initialLimitMinutes`/`initialUsedMinutes` are optional: pass them when
+ * the caller is a Server Component that already resolved the user/child on
+ * this same request (see getScreenTimeStatus in lib/supabase/queries.ts) —
+ * this skips the client-side auth.getUser() + two more sequential queries
+ * that would otherwise blank the whole screen out again on every visit,
+ * even though the server already rendered the real content a moment
+ * earlier. Callers that can't do that server-side resolution (client-
+ * rendered pages that discover childId asynchronously) can omit them and
+ * keep the original fetch-then-render behavior unchanged.
  */
-export function ScreenTimeGate({ childId, children }: { childId: string; children: ReactNode }) {
-  const [status, setStatus] = useState<"loading" | "ok" | "locked">("loading");
-  const limitRef = useRef<number>(0);
-  const usedRef = useRef<number>(0);
-  const lockedRef = useRef(false);
+export function ScreenTimeGate({
+  childId,
+  initialLimitMinutes,
+  initialUsedMinutes,
+  children,
+}: {
+  childId: string;
+  initialLimitMinutes?: number;
+  initialUsedMinutes?: number;
+  children: ReactNode;
+}) {
+  const hasInitial = initialLimitMinutes !== undefined && initialUsedMinutes !== undefined;
+  const initiallyLocked = hasInitial && initialUsedMinutes! >= initialLimitMinutes!;
+
+  const [status, setStatus] = useState<"loading" | "ok" | "locked">(
+    hasInitial ? (initiallyLocked ? "locked" : "ok") : "loading"
+  );
+  const limitRef = useRef<number>(initialLimitMinutes ?? 0);
+  const usedRef = useRef<number>(initialUsedMinutes ?? 0);
+  const lockedRef = useRef(initiallyLocked);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +79,10 @@ export function ScreenTimeGate({ childId, children }: { childId: string; childre
       setStatus(alreadyOver ? "locked" : "ok");
     }
 
-    init();
+    // The initial state already came from the server render — no need to
+    // re-derive it with a redundant round trip before the interval takes
+    // over ongoing enforcement.
+    if (!hasInitial) init();
 
     const interval = setInterval(async () => {
       if (cancelled || lockedRef.current) return;

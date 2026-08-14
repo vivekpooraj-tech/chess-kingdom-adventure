@@ -50,14 +50,27 @@ export default async function ProfilePage() {
   const child = resolution.child!;
   if (!child.avatar_id || !child.buddy_id) redirect("/onboarding/avatar");
 
-  const completedDays = await getCompletedDays(supabase, child.id);
-  const earnedKeys = await getEarnedAchievementKeys(supabase, child.id);
-  const puzzleStats = await getPuzzleAccuracyStats(supabase, child.id);
-  const completedAcademyIds = await getCompletedAcademyContentIds(supabase, child.id);
-  const openingEncounters = await getOpeningEncounters(supabase, child.id);
-  const chessMindTotalSolved = await getChessMindTotalSolved(supabase, child.id);
-  const onlineWins = await getOnlineWinsCount(supabase, child.id);
-  const chessMindStreak = await getChessMindStreak(supabase, child.id).catch(() => 0);
+  // All eight of these are independent reads — no ordering dependency
+  // between them, so they run as one batch instead of one at a time.
+  const [
+    completedDays,
+    earnedKeys,
+    puzzleStats,
+    completedAcademyIds,
+    openingEncounters,
+    chessMindTotalSolved,
+    onlineWins,
+    chessMindStreak,
+  ] = await Promise.all([
+    getCompletedDays(supabase, child.id),
+    getEarnedAchievementKeys(supabase, child.id),
+    getPuzzleAccuracyStats(supabase, child.id),
+    getCompletedAcademyContentIds(supabase, child.id),
+    getOpeningEncounters(supabase, child.id),
+    getChessMindTotalSolved(supabase, child.id),
+    getOnlineWinsCount(supabase, child.id),
+    getChessMindStreak(supabase, child.id).catch(() => 0),
+  ]);
 
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
   const currentZone = getZoneForDay(Math.min(child.current_day, LESSONS.length));
@@ -166,13 +179,6 @@ export default async function ProfilePage() {
         </div>
 
         <AchievementBadges earnedKeys={earnedKeys} />
-
-        <Link
-          href="/kingdom-map"
-          className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
-        >
-          Back to the Kingdom Map
-        </Link>
       </main>
       <PrimaryNav />
     </>

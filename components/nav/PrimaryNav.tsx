@@ -2,28 +2,58 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PlayIcon, AcademyIcon, ChessMindIcon, DiscoverIcon, ProfileIcon } from "./icons";
+import { KingdomIcon, AcademyIcon, PlayIcon, ProfileIcon } from "./icons";
 
 type NavItem = {
   label: string;
   href: string;
   icon: (props: { className?: string }) => JSX.Element;
-  /** Matches this item as active for any path under `match` (defaults to `href`). */
+  /** Matches this item as active for any path under these prefixes too
+   * (defaults to just `href`) — for destinations reached from this tab
+   * that live at their own top-level route rather than as a /href/* child. */
   match?: string[];
   enabled: boolean;
 };
 
-// All five areas now route to real, working pages. "Home" (the command
-// center dashboard, currently at /kingdom-map) is reached via redirects
-// after sign-in/onboarding and via the various "Back to Home" links, not
-// via its own nav tab — matches the Phase 10B brief's exact five-item list.
+// Four primary destinations (Phase 19 simplification — down from five).
+// Chess Kingdom (/kingdom-map) is the beginner home/hub. Learn (/learn) is
+// a new combined index over the existing Academy and Chess Mind sections —
+// neither of those routes was removed, they're just no longer separate top-
+// level tabs (see app/learn/page.tsx, which links directly into their real
+// sub-pages). Discover also drops out of the bar without losing its route —
+// it's now one of Chess Kingdom's own destination cards instead.
 const NAV_ITEMS: NavItem[] = [
-  { label: "Play", href: "/play", icon: PlayIcon, enabled: true },
-  { label: "Academy", href: "/academy", icon: AcademyIcon, enabled: true },
-  { label: "Chess Mind", href: "/chess-mind", icon: ChessMindIcon, enabled: true },
-  { label: "Discover", href: "/discover", icon: DiscoverIcon, enabled: true },
+  {
+    label: "Chess Kingdom",
+    href: "/kingdom-map",
+    icon: KingdomIcon,
+    // Everything reachable from Chess Kingdom's own destination cards that
+    // isn't nested under /kingdom-map/* in the URL — still "inside" Chess
+    // Kingdom conceptually, so the tab should stay lit up for it.
+    match: ["/kingdom-map", "/discover", "/piece-library"],
+    enabled: true,
+  },
+  {
+    label: "Learn",
+    href: "/learn",
+    icon: AcademyIcon,
+    match: ["/learn", "/academy", "/chess-mind", "/lesson"],
+    enabled: true,
+  },
+  {
+    label: "Play",
+    href: "/play",
+    icon: PlayIcon,
+    match: ["/play", "/free-play", "/matchmaking", "/puzzles", "/online"],
+    enabled: true,
+  },
   { label: "Profile", href: "/profile", icon: ProfileIcon, enabled: true },
 ];
+
+function isNavItemActive(pathname: string, item: NavItem): boolean {
+  const prefixes = item.match ?? [item.href];
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
 
 export function PrimaryNav() {
   const pathname = usePathname();
@@ -35,7 +65,7 @@ export function PrimaryNav() {
     >
       <div className="mx-auto max-w-md flex items-stretch justify-between px-2">
         {NAV_ITEMS.map((item) => {
-          const isActive = item.enabled && pathname.startsWith(item.href);
+          const isActive = item.enabled && isNavItemActive(pathname, item);
           const Icon = item.icon;
 
           if (!item.enabled) {
@@ -58,6 +88,7 @@ export function PrimaryNav() {
             <Link
               key={item.label}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors ${
                 isActive ? "text-premium-gold" : "text-premium-ivory/60 hover:text-premium-ivory"
               }`}

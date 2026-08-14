@@ -19,6 +19,7 @@ import {
   getChessMindStatsByModule,
   getChessMindStreak,
   getOnlineWinsCount,
+  getScreenTimeStatus,
 } from "@/lib/supabase/queries";
 import { getUnlockedKingdomBonuses } from "@/lib/chessMind/kingdomUnlocks";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
@@ -30,7 +31,7 @@ import { HomeHeader } from "@/components/home/HomeHeader";
 import { HeroJourneyCard } from "@/components/home/HeroJourneyCard";
 import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
 import { DestinationCard } from "@/components/home/DestinationCard";
-import { PlayIcon, AcademyIcon, ChessMindIcon, DiscoverIcon } from "@/components/nav/icons";
+import { PlayIcon, AcademyIcon, DiscoverIcon } from "@/components/nav/icons";
 import { TEXT } from "@/lib/designSystem";
 
 export default async function KingdomMapPage() {
@@ -48,27 +49,43 @@ export default async function KingdomMapPage() {
   const child = resolution.child!;
   if (!child.avatar_id || !child.buddy_id) redirect("/onboarding/avatar");
 
-  const completedDays = await getCompletedDays(supabase, child.id);
   const buddy = BUDDIES.find((b) => b.id === child.buddy_id) ?? BUDDIES[0];
 
-  const { data: parent } = await supabase
-    .from("parents")
-    .select("premium_status")
-    .eq("auth_user_id", user.id)
-    .single();
+  // These reads are all independent of each other — previously awaited one
+  // at a time (each paying its own round-trip in sequence), which was the
+  // main cost behind Kingdom Map feeling slow to land on. Only the two
+  // calls after this block have a real dependency (on these results, and
+  // on each other), so they're the only ones still sequential.
+  const [
+    completedDays,
+    { data: parent },
+    completedAcademyIds,
+    openingEncounters,
+    chessMindTotalSolved,
+    onlineWinsCount,
+    chessMindStatsByModule,
+    chessMindStreak,
+    screenTimeStatus,
+  ] = await Promise.all([
+    getCompletedDays(supabase, child.id),
+    supabase.from("parents").select("premium_status").eq("auth_user_id", user.id).single(),
+    getCompletedAcademyContentIds(supabase, child.id),
+    getOpeningEncounters(supabase, child.id),
+    getChessMindTotalSolved(supabase, child.id),
+    getOnlineWinsCount(supabase, child.id),
+    getChessMindStatsByModule(supabase, child.id).catch(() => ({})),
+    getChessMindStreak(supabase, child.id).catch(() => 0),
+    getScreenTimeStatus(supabase, user.id, child.id),
+  ]);
   const isPremium = parent?.premium_status === "premium";
+  const kingdomBonuses = getUnlockedKingdomBonuses(chessMindStatsByModule);
 
   // Evaluated on every Kingdom Map visit — cheap, idempotent (won't
   // double-award), and this is where a child lands after every lesson
   // completion and every successful premium purchase, so it's the natural
-  // single place to catch newly-earned achievements.
-  const completedAcademyIds = await getCompletedAcademyContentIds(supabase, child.id);
-  const openingEncounters = await getOpeningEncounters(supabase, child.id);
-  const chessMindTotalSolved = await getChessMindTotalSolved(supabase, child.id);
-  const onlineWinsCount = await getOnlineWinsCount(supabase, child.id);
-  const chessMindStatsByModule = await getChessMindStatsByModule(supabase, child.id).catch(() => ({}));
-  const kingdomBonuses = getUnlockedKingdomBonuses(chessMindStatsByModule);
-  const chessMindStreak = await getChessMindStreak(supabase, child.id).catch(() => 0);
+  // single place to catch newly-earned achievements. This writes new
+  // achievement rows, and the read right after it needs to see those new
+  // rows, so both stay sequential rather than joining the batch above.
   const justEarnedKeys = await evaluateAndAwardAchievements(
     supabase,
     child.id,
@@ -103,8 +120,17 @@ export default async function KingdomMapPage() {
 
   return (
     <>
-      <ScreenTimeGate childId={child.id}>
+      <ScreenTimeGate
+        childId={child.id}
+        initialLimitMinutes={screenTimeStatus.limitMinutes}
+        initialUsedMinutes={screenTimeStatus.usedMinutes}
+      >
       <main className="min-h-screen flex flex-col items-center gap-6 bg-premium-midnight px-6 pt-8 pb-24">
+        <div className="text-center max-w-md">
+          <h1 className={TEXT.display}>Chess Kingdom</h1>
+          <p className={`${TEXT.body} mt-2`}>Your journey through chess.</p>
+        </div>
+
         <HomeHeader
           displayName={child.display_name}
           avatar={avatar}
@@ -120,7 +146,7 @@ export default async function KingdomMapPage() {
 
         {kingdomBonuses.length > 0 && (
           <Link
-            href="/chess-mind"
+            href="/learn"
             className="w-full max-w-md rounded-premiumCard bg-premium-gold/10 border border-premium-gold/30 p-4 flex items-center gap-3"
           >
             <span className="text-2xl">✨</span>
@@ -135,8 +161,11 @@ export default async function KingdomMapPage() {
           </Link>
         )}
 
-        {/* Main destinations — Play / Academy / Chess Mind / Discover. One
-            strong CTA per card, not a menu of sub-links (see DestinationCard). */}
+        {/* Main destinations — Play / Learn / Discover (Phase 19: Academy
+            and Chess Mind are combined into Learn; Discover moved here from
+            the primary nav — neither lost its route, see app/learn/page.tsx
+            and app/discover/page.tsx, both still fully intact). One strong
+            CTA per card, not a menu of sub-links (see DestinationCard). */}
         <div className="w-full max-w-md grid grid-cols-2 gap-3">
           <DestinationCard
             href="/play"
@@ -145,17 +174,11 @@ export default async function KingdomMapPage() {
             icon={PlayIcon}
           />
           <DestinationCard
-            href="/academy"
-            title="Academy"
-            description="Journey, Fundamentals, Origins, Openings"
+            href="/learn"
+            title="Learn"
+            description="Fundamentals, Origins, Openings, Chess Mind training"
             icon={AcademyIcon}
             accent="emerald"
-          />
-          <DestinationCard
-            href="/chess-mind"
-            title="Chess Mind"
-            description="Pattern, memory, visualization training"
-            icon={ChessMindIcon}
           />
           <DestinationCard
             href="/discover"
