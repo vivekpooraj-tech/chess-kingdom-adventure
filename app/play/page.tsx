@@ -53,7 +53,7 @@ export default function PlayPage() {
             </div>
             <span className="text-premium-gold text-lg flex-none">→</span>
           </Link>
-          <div className="rounded-premiumBtn bg-premium-navy/70 border border-white/5 px-4 py-3 flex items-center justify-between gap-3">
+          <div className="rounded-premiumBtn bg-premium-navy/70 border border-white/5 px-4 py-3 flex flex-col gap-3">
             <div>
               <p className="font-classic-body text-sm text-premium-ivory">Invite a Friend</p>
               <p className={TEXT.caption}>Send them a link to a game just for you two.</p>
