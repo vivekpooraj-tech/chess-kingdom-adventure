@@ -376,8 +376,10 @@ export default function OnlineGamePage() {
               <RatingDeltaRow label="Opponent" before={opponentRatingBefore!} after={opponentRatingAfter!} />
             </div>
           )}
-          <Link href="/kingdom-map">
-            <Button tone="premium">Back to the Kingdom Map →</Button>
+          <Link href={game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map"}>
+            <Button tone="premium">
+              {game.tournament_id ? "Back to Tournament →" : "Back to the Kingdom Map →"}
+            </Button>
           </Link>
         </PrimaryCard>
 
@@ -395,19 +397,29 @@ export default function OnlineGamePage() {
     const myColor: Color = isHost ? game.host_color : game.host_color === "w" ? "b" : "w";
     const myReaction = isHost ? game.host_reaction : game.guest_reaction;
     const theirReaction = isHost ? game.guest_reaction : game.host_reaction;
-    // Random-match opponents are strangers, not people the child already
-    // knows via an invite link — no chat/emoji there, matching the app's
-    // no-open-contact-with-strangers policy (see docs/01-PRD.md).
-    const showSocial = game.match_type !== "random";
+    // Random-match and tournament opponents are strangers, not people the
+    // child already knows via an invite link — no chat/emoji there,
+    // matching the app's no-open-contact-with-strangers policy (see
+    // docs/01-PRD.md). Group Tournament opponents get the same treatment
+    // as Random Match for the same reason.
+    const showSocial = game.match_type !== "random" && game.match_type !== "tournament";
     const opponentColor: Color = myColor === "w" ? "b" : "w";
     const myMs = myColor === "w" ? displayWhiteMs : displayBlackMs;
     const opponentMs = opponentColor === "w" ? displayWhiteMs : displayBlackMs;
     const hasClock = game.time_control !== null && myMs !== null && opponentMs !== null;
+    const arenaTitle =
+      game.match_type === "random"
+        ? "Random Match"
+        : game.match_type === "tournament"
+        ? `Tournament — Round ${game.round_number}`
+        : "Friend Match";
 
     return (
       <GameArenaLayout
-        title={game.match_type === "random" ? "Random Match" : "Friend Match"}
-        onExit={() => router.push("/kingdom-map")}
+        title={arenaTitle}
+        onExit={() =>
+          router.push(game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map")
+        }
         opponentRow={
           <div className="flex items-center justify-between w-full font-classic-body text-sm text-premium-ivory/70">
             <span className="flex items-center gap-2">

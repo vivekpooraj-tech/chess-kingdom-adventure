@@ -494,8 +494,17 @@ export interface OnlineGame {
   guest_reaction: string | null;
   /** "random" games (worldwide matchmaking) hide quick-chat/emoji in the
    * UI and settle rating changes on finish — "invite" games (the
-   * original friend-link mode) are unaffected. */
-  match_type: "invite" | "random";
+   * original friend-link mode) are unaffected. "tournament" games (Group
+   * Tournament, supabase/migrations/0023_group_tournaments.sql) also hide
+   * chat (same stranger-safety reasoning as "random") and never settle
+   * rating — apply_match_rating() already ignores anything that isn't
+   * "random". */
+  match_type: "invite" | "random" | "tournament";
+  /** Set only for match_type="tournament" games — which tournament/round/
+   * pairing this game belongs to. Never client-writable. */
+  tournament_id: string | null;
+  round_number: number | null;
+  tournament_pairing_id: string | null;
   /** Full SAN move history, appended to by whichever client makes each
    * move — see submitOnlineMove(). Needed for opening recognition, since
    * ChessBoard's own move history resets whenever its `fen` prop changes

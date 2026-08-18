@@ -62,6 +62,19 @@ export default function PlayPage() {
           </div>
         </SecondaryCard>
 
+        <Link
+          href="/play/tournaments"
+          className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center justify-between border border-white/5 hover:border-premium-gold/30 transition-colors"
+        >
+          <div>
+            <p className="font-classic-display text-lg text-premium-ivory">Group Tournament</p>
+            <p className="font-classic-body text-sm text-premium-ivory/60 mt-0.5">
+              Join a Swiss-style tournament — multiple rounds, real standings.
+            </p>
+          </div>
+          <span className="text-premium-gold text-lg flex-none">→</span>
+        </Link>
+
         <div className="w-full max-w-md flex flex-col gap-2">
           <DailyChallengeCard puzzle={dailyPuzzle} />
           <Link
