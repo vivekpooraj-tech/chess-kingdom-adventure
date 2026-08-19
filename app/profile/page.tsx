@@ -16,6 +16,7 @@ import {
   getChessMindTotalSolved,
   getChessMindStreak,
   getOnlineWinsCount,
+  getTodayRatingChange,
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
@@ -61,6 +62,7 @@ export default async function ProfilePage() {
     chessMindTotalSolved,
     onlineWins,
     chessMindStreak,
+    todayRatingChange,
   ] = await Promise.all([
     getCompletedDays(supabase, child.id),
     getEarnedAchievementKeys(supabase, child.id),
@@ -70,6 +72,7 @@ export default async function ProfilePage() {
     getChessMindTotalSolved(supabase, child.id),
     getOnlineWinsCount(supabase, child.id),
     getChessMindStreak(supabase, child.id).catch(() => 0),
+    getTodayRatingChange(supabase, child.id).catch(() => 0),
   ]);
 
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
@@ -100,6 +103,18 @@ export default async function ProfilePage() {
           totalDays={LESSONS.length}
           streak={chessMindStreak}
         />
+
+        <div className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center justify-between">
+          <div>
+            <p className={`${TEXT.caption} uppercase tracking-wide`}>Chess Rating</p>
+            <p className="font-classic-display text-3xl text-premium-gold">{child.rating.toLocaleString()}</p>
+          </div>
+          {todayRatingChange !== 0 && (
+            <p className={`font-classic-body text-sm font-semibold ${todayRatingChange > 0 ? "text-emerald-400" : "text-red-300"}`}>
+              {todayRatingChange > 0 ? `+${todayRatingChange}` : todayRatingChange} today
+            </p>
+          )}
+        </div>
 
         <div className="w-full max-w-md flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>Customize</p>

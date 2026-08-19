@@ -1084,6 +1084,31 @@ export async function getOnlineWinsCount(supabase: SupabaseClient, childId: stri
   }).length;
 }
 
+/** True once this child has completed at least one rated Random Match —
+ * used only to decide whether to show the "starting your rating journey"
+ * first-timer message vs. the normal matchmaking copy. */
+export async function hasRatingHistory(supabase: SupabaseClient, childId: string): Promise<boolean> {
+  const { count, error } = await supabase
+    .from("rating_history")
+    .select("id", { count: "exact", head: true })
+    .eq("child_id", childId);
+  if (error) throw error;
+  return (count ?? 0) > 0;
+}
+
+/** Net Random Match rating change so far today, from the server-written
+ * rating_history table (supabase/migrations/0026_rating_system_hardening.sql)
+ * — for the Profile page's "+N today" line. 0 if no rated games today. */
+export async function getTodayRatingChange(supabase: SupabaseClient, childId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from("rating_history")
+    .select("rating_change")
+    .eq("child_id", childId)
+    .gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
+  if (error) throw error;
+  return (data ?? []).reduce((sum, r) => sum + r.rating_change, 0);
+}
+
 // --- Opening progress ladder (DISCOVERED / STUDIED / PRACTICED / MASTERED) --
 
 export interface OpeningEncounterDetail {

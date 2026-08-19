@@ -9,6 +9,7 @@ import {
   findOrCreateMatch,
   cancelMatchmaking,
   getFreeGameStatus,
+  hasRatingHistory,
   FreeGameStatus,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
@@ -28,6 +29,7 @@ export default function MatchmakingPage() {
   const [view, setView] = useState<ViewState>({ status: "loading" });
   const [gameStatus, setGameStatus] = useState<FreeGameStatus | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [isFirstTimer, setIsFirstTimer] = useState(false);
   const childIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -48,8 +50,12 @@ export default function MatchmakingPage() {
       const child = resolution.child!;
       childIdRef.current = child.id;
 
-      const status = await getFreeGameStatus(supabase, child.id);
+      const [status, hasHistory] = await Promise.all([
+        getFreeGameStatus(supabase, child.id),
+        hasRatingHistory(supabase, child.id).catch(() => true),
+      ]);
       setGameStatus(status);
+      setIsFirstTimer(!hasHistory);
       setView({ status: "idle", rating: child.rating });
     }
     load();
@@ -141,6 +147,11 @@ export default function MatchmakingPage() {
         <div className="flex flex-col items-center gap-1">
           <p className={TEXT.caption}>Your Rating</p>
           <p className="font-classic-display text-3xl text-premium-gold">{view.rating.toLocaleString()}</p>
+          {isFirstTimer && (
+            <p className={`${TEXT.caption} normal-case mt-1 max-w-[220px]`}>
+              You're starting at 400. Win games to climb the ratings.
+            </p>
+          )}
         </div>
 
         {gameStatus && !gameStatus.isPremium && (
@@ -153,7 +164,7 @@ export default function MatchmakingPage() {
         {view.status === "idle" && (
           <>
             <p className={TEXT.body}>
-              We'll find you an opponent with a similar rating, anywhere in the world.
+              We'll find you the closest-rated opponent available, anywhere in the world.
             </p>
             <Button tone="premium" size="lg" onClick={findOpponent}>
               Find Opponent →
