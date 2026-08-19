@@ -6,7 +6,6 @@ import { BUDDIES } from "@/content/buddies";
 import { AVATARS } from "@/content/avatars";
 import { ACHIEVEMENTS } from "@/content/achievements";
 import { getZoneForDay, isDayFree } from "@/content/kingdomZones";
-import { getDailyPuzzle } from "@/content/puzzles";
 import { createClient } from "@/lib/supabase/server";
 import {
   resolveActiveChild,
@@ -100,7 +99,6 @@ export default async function KingdomMapPage() {
 
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
   const currentZone = getZoneForDay(Math.min(child.current_day, LESSONS.length));
-  const dailyPuzzle = getDailyPuzzle();
 
   // The home screen's single top recommendation: the next lesson in the
   // Kingdom Journey while there's one left, otherwise nudge back into
@@ -142,7 +140,7 @@ export default async function KingdomMapPage() {
 
         <HeroJourneyCard recommendation={heroRecommendation} />
 
-        <DailyChallengeCard puzzle={dailyPuzzle} />
+        <DailyChallengeCard />
 
         {kingdomBonuses.length > 0 && (
           <Link

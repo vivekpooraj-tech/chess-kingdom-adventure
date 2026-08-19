@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { getDailyPuzzle } from "@/content/puzzles";
 import { LOCAL_TEST_MODE } from "@/lib/devTestMode";
 
 /**
@@ -23,15 +22,13 @@ export function DevTestModeBar() {
     return null;
   }
 
-  const dailyPuzzle = getDailyPuzzle();
-
   const links: { label: string; href: string }[] = [
     { label: "Chess Kingdom", href: "/kingdom-map" },
     { label: "Learn", href: "/learn" },
     { label: "Chess Mind", href: "/chess-mind" },
     { label: "Play", href: "/play" },
     { label: "Random Match", href: "/matchmaking" },
-    { label: "Daily Challenge", href: `/puzzles?id=${dailyPuzzle.id}` },
+    { label: "Puzzle Trainer", href: "/puzzles" },
     { label: "Tactics", href: "/academy/tactics" },
     { label: "Profile", href: "/profile" },
     { label: "Premium Preview", href: "/dev/premium-preview" },

@@ -12,8 +12,9 @@ import {
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { DAILY_PREVIEW_LIMIT } from "@/content/lessons";
-import { PUZZLES, getDailyPuzzle } from "@/content/puzzles";
+import { PUZZLES } from "@/content/puzzles";
 import { isSoundMateInNFirstMove } from "@/lib/chess-engine/puzzleValidation";
+import { recordDailyChallengeResult } from "@/lib/supabase/dailyChallengeQueries";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
@@ -42,17 +43,19 @@ function PuzzlesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // A puzzle id in the URL (e.g. from the Daily Challenge card) opens that
-  // specific puzzle. Otherwise this page opens on TODAY's daily puzzle —
-  // not an arbitrary fixed index — so a bare /puzzles visit always matches
-  // whatever the Kingdom Map's Daily Challenge card is currently showing.
+  // A puzzle id in the URL (e.g. from the Daily Challenge card, which links
+  // here with &daily=1) opens that specific puzzle. A bare /puzzles visit
+  // (free practice, not tied to any specific day) just opens the first
+  // puzzle in the pool — the actual Daily Challenge is only ever reached
+  // via the DailyChallengeCard link now, never a fixed local rotation.
   const requestedId = searchParams.get("id");
+  const isDaily = searchParams.get("daily") === "1";
   const initialIndex = (() => {
     if (requestedId) {
       const i = PUZZLES.findIndex((p) => p.id === requestedId);
       if (i !== -1) return i;
     }
-    return PUZZLES.findIndex((p) => p.id === getDailyPuzzle().id);
+    return 0;
   })();
 
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
@@ -67,6 +70,7 @@ function PuzzlesPageInner() {
   const [moveCount, setMoveCount] = useState(0);
   const [status, setStatus] = useState<Status>("playing");
   const [solvedCount, setSolvedCount] = useState(0);
+  const [dailyAttempts, setDailyAttempts] = useState(0);
 
   const puzzle = PUZZLES[index];
   const limitReached = !isPremium && todayCount >= DAILY_PREVIEW_LIMIT;
@@ -131,6 +135,7 @@ function PuzzlesPageInner() {
     setBoardKey((k) => k + 1);
     setMoveCount(0);
     setStatus("playing");
+    setDailyAttempts(0);
   }
 
   function markSolved() {
@@ -142,6 +147,15 @@ function PuzzlesPageInner() {
         .then(setTodayCount)
         .catch(() => {});
     }
+    // Server-authoritative: this only ever writes to the daily_challenge_
+    // history row already created by get_daily_challenge (see
+    // DailyChallengeCard) — the RPC itself is idempotent (a duplicate or
+    // retried call can't double-count), matching the same client-reports-
+    // the-chess-outcome trust model as finish_online_game_by_result.
+    if (isDaily && childId) {
+      const supabase = createClient();
+      recordDailyChallengeResult(supabase, childId, localDateString(), true).catch(() => {});
+    }
   }
 
   // Fires after every ply (the child's own move AND the auto-opponent's
@@ -151,13 +165,22 @@ function PuzzlesPageInner() {
     setBeforeFen(pos.fen);
   }
 
+  function markIncorrect() {
+    setStatus("incorrect");
+    setDailyAttempts((n) => n + 1);
+    if (isDaily && childId) {
+      const supabase = createClient();
+      recordDailyChallengeResult(supabase, childId, localDateString(), false).catch(() => {});
+    }
+  }
+
   function handleMove(opts: { fen: string; san: string; isCheckmate: boolean }) {
     const isFinalMove = moveCount === puzzle.mateIn - 1;
     if (isFinalMove) {
       if (opts.isCheckmate) {
         markSolved();
       } else {
-        setStatus("incorrect");
+        markIncorrect();
       }
       return;
     }
@@ -169,7 +192,7 @@ function PuzzlesPageInner() {
     if (isSoundMateInNFirstMove(beforeFen, opts.san, remainingDepth)) {
       setMoveCount((c) => c + 1); // opponent auto-replies (ChessBoard's opponent="stockfish"), then the child's next move
     } else {
-      setStatus("incorrect");
+      markIncorrect();
     }
   }
 
@@ -222,7 +245,25 @@ function PuzzlesPageInner() {
             onPositionChange={handlePositionChange}
           />
 
-          {status === "correct" && (
+          {status === "correct" && isDaily && (
+            <div className="flex flex-col items-center gap-2 text-center">
+              <p className="font-classic-display text-lg text-premium-gold">Daily Challenge Complete ✓</p>
+              <p className={`${TEXT.caption} normal-case`}>
+                Today's challenge: Checkmate in {puzzle.mateIn} · Accuracy: {Math.round(100 / (dailyAttempts + 1))}%
+              </p>
+              <p className={`${TEXT.caption} normal-case italic`}>
+                {dailyAttempts === 0
+                  ? "Tomorrow's challenge will be a little harder."
+                  : dailyAttempts >= 2
+                  ? "Keep practicing — tomorrow's challenge will adapt to your progress."
+                  : "Nice work — see you tomorrow for the next one."}
+              </p>
+              <Link href="/kingdom-map" className="mt-1">
+                <Button tone="premium">Back to the Kingdom →</Button>
+              </Link>
+            </div>
+          )}
+          {status === "correct" && !isDaily && (
             <div className="flex flex-col items-center gap-3">
               <p className="font-classic-display text-lg text-premium-gold">Checkmate — you found it.</p>
               <Button tone="premium" onClick={nextPuzzle}>Next Puzzle →</Button>

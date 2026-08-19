@@ -2,7 +2,6 @@ import Link from "next/link";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { InviteFriendButton } from "@/components/multiplayer/InviteFriendButton";
 import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
-import { getDailyPuzzle } from "@/content/puzzles";
 import { SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
 
@@ -18,8 +17,6 @@ import { TEXT } from "@/lib/designSystem";
  * — no need to duplicate that logic here.
  */
 export default function PlayPage() {
-  const dailyPuzzle = getDailyPuzzle();
-
   return (
     <>
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
@@ -76,7 +73,7 @@ export default function PlayPage() {
         </Link>
 
         <div className="w-full max-w-md flex flex-col gap-2">
-          <DailyChallengeCard puzzle={dailyPuzzle} />
+          <DailyChallengeCard />
           <Link
             href="/puzzles"
             className="self-center font-body text-sm text-premium-ivory/40 underline underline-offset-2"

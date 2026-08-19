@@ -89,6 +89,17 @@ export interface ChessPuzzle {
    */
   mateIn: 1 | 2 | 3;
   theme: string;
+  /**
+   * Internal 1-6 difficulty tier used by the Daily Challenge selection RPC
+   * (get_daily_challenge) — computed objectively from solution precision
+   * and defender reply counts (see scripts/compute-puzzle-levels.js), not
+   * hand-guessed. Never shown to the player as a raw number or a label
+   * like "Beginner"/"Expert" — see components/home/DailyChallengeCard.tsx.
+   * Mirrored in supabase/migrations/0025_daily_challenge_progression.sql's
+   * daily_challenge_puzzles table; keep both in sync by hand, same
+   * tradeoff already accepted for TIME_CONTROLS ids.
+   */
+  level: 1 | 2 | 3 | 4 | 5 | 6;
 }
 
 export interface LessonStep {
