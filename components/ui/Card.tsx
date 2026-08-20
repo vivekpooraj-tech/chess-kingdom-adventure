@@ -86,7 +86,7 @@ interface ListItemRowProps extends HTMLAttributes<HTMLDivElement> {
  * otherwise a plain row. */
 export function ListItemRow({ href, onClick, className, children, ...props }: ListItemRowProps) {
   const rowClass = clsx(
-    "flex items-center gap-3 rounded-premiumBtn bg-premium-navy/60 hover:bg-premium-navy px-4 py-3 transition-colors",
+    "flex items-center gap-3 rounded-premiumBtn bg-premium-navy/60 hover:bg-premium-navy active:bg-premium-navy active:scale-[0.98] px-4 py-3 transition-[background-color,transform] duration-100",
     className
   );
   if (href) {

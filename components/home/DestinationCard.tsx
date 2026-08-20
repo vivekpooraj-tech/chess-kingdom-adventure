@@ -24,14 +24,14 @@ export function DestinationCard({
   return (
     <Link
       href={href}
-      className="group rounded-premiumCard bg-premium-navy shadow-premiumCard p-4 flex flex-col gap-3 border border-white/5 hover:border-premium-gold/30 transition-colors"
+      className="group rounded-premiumCard bg-premium-navy shadow-premiumCard p-4 flex flex-col gap-3 border border-white/5 hover:border-premium-gold/30 active:scale-[0.98] transition-all duration-100 min-h-[128px]"
     >
       <div
-        className={`w-10 h-10 rounded-premiumBtn flex items-center justify-center ${
+        className={`w-12 h-12 rounded-premiumBtn flex items-center justify-center ${
           accent === "emerald" ? "bg-emerald-500/15 text-emerald-300" : "bg-premium-gold/15 text-premium-gold"
         }`}
       >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-7 h-7" />
       </div>
       <div className="flex-1">
         <p className="font-classic-display text-base text-premium-ivory">{title}</p>

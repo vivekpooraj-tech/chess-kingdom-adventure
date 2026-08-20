@@ -14,6 +14,12 @@ const PUBLIC_PATHS = ["/", "/sign-in", "/auth/callback", "/api/stripe/webhook", 
 const DEV_AUTO_SIGNIN_PATH = "/api/dev/auto-signin";
 
 export async function middleware(request: NextRequest) {
+  // Never trust a client-supplied identity header — this gets set for real
+  // further down, only after middleware itself has verified the session
+  // against Supabase Auth. Stripping it first means a forged header on the
+  // incoming request can never survive into a Server Component.
+  request.headers.delete("x-user-id");
+
   let response = NextResponse.next({ request: { headers: request.headers } });
 
   const supabase = createServerClient(
@@ -72,6 +78,22 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = new URL("/sign-in", request.url);
     redirectUrl.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // Every protected Server Component was independently re-calling
+  // supabase.auth.getUser() itself, which re-validates the session against
+  // Supabase's Auth server over the network AGAIN — a second full round
+  // trip on every single tab tap, on top of the one middleware just did.
+  // Forwarding the already-verified id via a request header (never a
+  // client-settable one — stripped above) lets pages skip that redundant
+  // call. See getSessionUser() in lib/supabase/server.ts.
+  if (user) {
+    const headers = new Headers(request.headers);
+    headers.set("x-user-id", user.id);
+    const finalResponse = NextResponse.next({ request: { headers } });
+    // Carry forward any Set-Cookie written during getUser()'s token refresh.
+    response.cookies.getAll().forEach((cookie) => finalResponse.cookies.set(cookie));
+    return finalResponse;
   }
 
   return response;

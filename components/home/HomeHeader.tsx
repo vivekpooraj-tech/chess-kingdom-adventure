@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { AvatarOption } from "@/lib/types";
 import { KingdomZone } from "@/content/kingdomZones";
 import { FlameIcon } from "@/components/nav/icons";
+import { RatingBadge } from "@/components/ui/RatingBadge";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
 export function HomeHeader({
   displayName,
@@ -9,6 +12,7 @@ export function HomeHeader({
   currentDay,
   totalDays,
   streak,
+  rating,
 }: {
   displayName: string;
   avatar: AvatarOption | undefined;
@@ -19,6 +23,11 @@ export function HomeHeader({
    * streak in the app currently (see getChessMindStreak). Shown here as
    * the header's general streak per the Phase 10B brief; 0 hides it. */
   streak: number;
+  /** Real children.rating value — omit to hide the badge entirely (used on
+   * Profile, which already shows a bigger dedicated rating card of its
+   * own, so repeating it here would be redundant). Never a hardcoded
+   * fallback like 1200 — always the actual value or nothing. */
+  rating?: number;
 }) {
   const progressPercent = Math.min(100, Math.round((Math.min(currentDay - 1, totalDays) / totalDays) * 100));
 
@@ -42,6 +51,11 @@ export function HomeHeader({
             <span>{zone.name}</span>
           </p>
         </div>
+        {typeof rating === "number" && (
+          <Link href="/matchmaking" className="flex-none">
+            <RatingBadge rating={rating} size="sm" />
+          </Link>
+        )}
       </div>
 
       {streak > 0 && (
@@ -60,12 +74,7 @@ export function HomeHeader({
           </p>
           <p className="font-classic-body text-[11px] text-premium-ivory/60">{progressPercent}%</p>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-premium-goldMuted to-premium-gold"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
+        <ProgressBar percent={progressPercent} />
       </div>
     </div>
   );

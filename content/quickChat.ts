@@ -18,3 +18,13 @@ export const QUICK_CHAT_PHRASES: string[] = [
 ];
 
 export const EMOJI_REACTIONS: string[] = ["😊", "😲", "🎉", "😅", "👍", "🤔"];
+
+/**
+ * Draw offers ride the same host_reaction/guest_reaction Realtime channel
+ * as quick-chat/emoji (see sendReaction in lib/supabase/queries.ts) instead
+ * of a new column — a suffixed timestamp keeps every offer's value unique
+ * so a second offer after a declined one is recognized as new (see
+ * OnlineGamePage's dismissedDrawOfferRef). Available in every match type,
+ * unlike quick chat/emoji, which are hidden for stranger opponents.
+ */
+export const DRAW_OFFER_PREFIX = "__draw_offer__:";

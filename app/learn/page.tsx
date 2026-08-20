@@ -78,7 +78,7 @@ export default function LearnPage() {
           </p>
         </div>
 
-        <Link href="/kingdom-map#journey" className="w-full max-w-md block">
+        <Link href="/kingdom-map#journey" className="w-full max-w-md block active:scale-[0.98] transition-transform duration-100">
           <PrimaryCard className="flex items-center gap-4">
             <span className="text-3xl flex-none">🗺️</span>
             <div className="flex-1">
@@ -95,8 +95,8 @@ export default function LearnPage() {
           <div className="flex flex-col gap-1.5">
             {LEARN_CHESS.map((item) =>
               "soon" in item ? (
-                <ListItemRow key={item.id} className="opacity-50">
-                  <span className="text-2xl flex-none">{item.emoji}</span>
+                <ListItemRow key={item.id} className="opacity-50 min-h-[64px]">
+                  <span className="text-3xl flex-none">{item.emoji}</span>
                   <div className="flex-1">
                     <p className="font-classic-display text-base text-premium-ivory">{item.title}</p>
                     <p className={TEXT.caption}>{item.description}</p>
@@ -106,8 +106,8 @@ export default function LearnPage() {
                   </span>
                 </ListItemRow>
               ) : (
-                <ListItemRow key={item.id} href={item.href}>
-                  <span className="text-2xl flex-none">{item.emoji}</span>
+                <ListItemRow key={item.id} href={item.href} className="min-h-[64px]">
+                  <span className="text-3xl flex-none">{item.emoji}</span>
                   <div className="flex-1">
                     <p className="font-classic-display text-base text-premium-ivory">{item.title}</p>
                     <p className={TEXT.caption}>{item.description}</p>
@@ -124,8 +124,8 @@ export default function LearnPage() {
           <div className="flex flex-col gap-1.5">
             {trainCategories.map((cat) =>
               !cat.href ? (
-                <ListItemRow key={cat.id} className="opacity-50">
-                  <span className="text-2xl flex-none">{cat.emoji}</span>
+                <ListItemRow key={cat.id} className="opacity-50 min-h-[64px]">
+                  <span className="text-3xl flex-none">{cat.emoji}</span>
                   <div className="flex-1">
                     <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                     <p className={TEXT.caption}>{cat.description}</p>
@@ -135,8 +135,8 @@ export default function LearnPage() {
                   </span>
                 </ListItemRow>
               ) : (
-                <ListItemRow key={cat.id} href={cat.href}>
-                  <span className="text-2xl flex-none">{cat.emoji}</span>
+                <ListItemRow key={cat.id} href={cat.href} className="min-h-[64px]">
+                  <span className="text-3xl flex-none">{cat.emoji}</span>
                   <div className="flex-1">
                     <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                     <p className={TEXT.caption}>{cat.description}</p>

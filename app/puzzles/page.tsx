@@ -20,6 +20,8 @@ import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
+import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 import { TEXT } from "@/lib/designSystem";
 
 type Status = "playing" | "correct" | "incorrect";
@@ -197,13 +199,28 @@ function PuzzlesPageInner() {
   }
 
   if (!loaded) {
-    return <main className="min-h-screen" />;
+    // A real skeleton, not a blank screen — this page is a client component
+    // (needs the puzzle id from the URL before it knows what to render), so
+    // there's no server loading.tsx that can cover this gap; the tap needs
+    // to feel acknowledged immediately while the auth + active-child lookup
+    // that `load()` above kicks off resolves in the background.
+    return (
+      <>
+        <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
+          <div className="h-9 w-48 rounded bg-premium-navy/70 animate-pulse" />
+          <SkeletonBlock className="w-full max-w-md aspect-square" />
+          <SkeletonRow className="h-4 w-40" />
+        </main>
+        <PrimaryNav />
+      </>
+    );
   }
 
   const movesRemaining = puzzle.mateIn - moveCount;
 
   return (
-    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6 py-10">
+    <>
+    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6 pt-10 pb-24">
       <h1 className={`${TEXT.display} text-center`}>Puzzle Trainer</h1>
 
       {limitReached ? (
@@ -297,10 +314,12 @@ function PuzzlesPageInner() {
 
       <Link
         href="/kingdom-map"
-        className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+        className="font-body text-sm text-premium-ivory/40 underline underline-offset-2 min-h-[44px] flex items-center"
       >
         Back to Home
       </Link>
     </main>
+    <PrimaryNav />
+    </>
   );
 }

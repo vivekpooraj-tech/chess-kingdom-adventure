@@ -17,11 +17,19 @@ import { useArenaBoardSize } from "@/lib/hooks/useArenaBoardSize";
 // which doesn't perfectly cancel through Math.floor()).
 const FIXED_GAPS = 24;
 const ROUNDING_BUFFER = 8;
+// The `.arena-row` container's own gap-4 (1rem) between the board column
+// and the side panel below it, in stacked (portrait) layout only — a
+// separate gap from FIXED_GAPS' 3 internal gaps within the board column.
+const STACKED_SIDE_PANEL_GAP = 16;
 // Short landscape phones get noticeably tighter on vertical room than any
 // portrait breakpoint — shrinks the header's icon button and hides the
 // (purely decorative) title text to reclaim a few more px for the board,
 // per section 8's "shrink decorative elements before shrinking the board."
 const LANDSCAPE_QUERY = "(orientation: landscape) and (max-height: 500px)";
+// Matches Tailwind's `lg` breakpoint (same value useArenaBoardSize.ts uses
+// for its own desktop/side-panel-width branch) — both need to agree on
+// where the side panel moves from "stacked below" to "beside the board."
+const DESKTOP_BREAKPOINT_PX = 1024;
 
 /**
  * Board-first "Chess Arena" shell for actual gameplay (Free Play, Online
@@ -65,9 +73,11 @@ export function GameArenaLayout({
   const headerRef = useRef<HTMLDivElement | null>(null);
   const opponentRowRef = useRef<HTMLDivElement | null>(null);
   const playerRowRef = useRef<HTMLDivElement | null>(null);
+  const sidePanelRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
   const [isCompactLandscape, setIsCompactLandscape] = useState(false);
+  const [isDesktopWidth, setIsDesktopWidth] = useState(false);
   // Sane fallback for the very first paint before ResizeObserver's first
   // callback fires (effectively instant, but React still needs an initial
   // value) — not a guess used for real sizing, just a one-frame default.
@@ -82,6 +92,24 @@ export function GameArenaLayout({
   }, []);
 
   useLayoutEffect(() => {
+    const mql = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT_PX}px)`);
+    setIsDesktopWidth(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsDesktopWidth(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  useLayoutEffect(() => {
+    // Desktop (lg:flex-row) and short-landscape both put the side panel
+    // BESIDE the board — it costs no vertical space there. Everywhere else
+    // (portrait phones/tablets) it's flex-col and the side panel stacks
+    // BELOW the board, so it has to be subtracted from available height the
+    // same way the header/opponent/player rows are — omitting it here was a
+    // real bug: at tablet-portrait sizes (e.g. 768x1024) the board grew to
+    // fill height as if the side panel took zero space, and the side
+    // panel's real height then pushed the page into a scroll underneath it,
+    // which Phase 7/9's "no whole-page scrolling" requirement rules out.
+    const sidePanelStacksBelow = !isDesktopWidth && !isCompactLandscape;
     function measure() {
       const style = containerRef.current ? getComputedStyle(containerRef.current) : null;
       const paddingV = style
@@ -91,6 +119,7 @@ export function GameArenaLayout({
         (headerRef.current?.offsetHeight ?? 0) +
         (opponentRowRef.current?.offsetHeight ?? 0) +
         (playerRowRef.current?.offsetHeight ?? 0) +
+        (sidePanelStacksBelow ? (sidePanelRef.current?.offsetHeight ?? 0) + STACKED_SIDE_PANEL_GAP : 0) +
         FIXED_GAPS +
         paddingV +
         ROUNDING_BUFFER;
@@ -101,12 +130,13 @@ export function GameArenaLayout({
     if (headerRef.current) ro.observe(headerRef.current);
     if (opponentRowRef.current) ro.observe(opponentRowRef.current);
     if (playerRowRef.current) ro.observe(playerRowRef.current);
+    if (sidePanelStacksBelow && sidePanelRef.current) ro.observe(sidePanelRef.current);
     window.addEventListener("resize", measure);
     return () => {
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [isCompactLandscape]);
+  }, [isCompactLandscape, isDesktopWidth]);
 
   const boardSize = useArenaBoardSize(chromeHeight);
 
@@ -217,7 +247,7 @@ export function GameArenaLayout({
         {/* Side panel — desktop + short landscape: fixed-width right
             column; mobile/tablet portrait: stacks below the board. */}
         {sidePanel && (
-          <div className="arena-side-panel w-full lg:w-[320px] lg:flex-none flex flex-col gap-3">
+          <div ref={sidePanelRef} className="arena-side-panel w-full lg:w-[320px] lg:flex-none flex flex-col gap-3">
             {sidePanel}
           </div>
         )}

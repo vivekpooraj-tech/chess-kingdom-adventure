@@ -5,7 +5,7 @@ import { LESSONS } from "@/content/lessons";
 import { AVATARS } from "@/content/avatars";
 import { OPENINGS } from "@/content/openings";
 import { getZoneForDay } from "@/content/kingdomZones";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import {
   resolveActiveChild,
   getCompletedDays,
@@ -23,25 +23,15 @@ import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { AchievementBadges } from "@/components/achievements/AchievementBadges";
 import { ListItemRow } from "@/components/ui/Card";
+import { StatCard } from "@/components/ui/StatCard";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { getPieceSet } from "@/content/pieceSets";
 import { getBoardSkin } from "@/content/boardSkins";
 import { TEXT } from "@/lib/designSystem";
 
-function StatTile({ label, value, emoji }: { label: string; value: string; emoji: string }) {
-  return (
-    <div className="rounded-premiumCard bg-premium-navy shadow-premiumCard p-4 flex flex-col gap-1">
-      <span className="text-xl">{emoji}</span>
-      <p className="font-classic-display text-2xl text-premium-ivory">{value}</p>
-      <p className="font-classic-body text-[11px] text-premium-ivory/50">{label}</p>
-    </div>
-  );
-}
-
 export default async function ProfilePage() {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) redirect("/sign-in");
 
   const cookieChildId = cookies().get(ACTIVE_CHILD_COOKIE_NAME)?.value ?? null;
@@ -117,17 +107,17 @@ export default async function ProfilePage() {
         </div>
 
         <div className="w-full max-w-md flex flex-col gap-2">
-          <p className={`${TEXT.caption} uppercase tracking-wide`}>Customize</p>
-          <ListItemRow href="/kingdom-map/customize">
-            <span className="text-2xl flex-none">{pieceSet.emoji}</span>
+          <SectionHeader title="Customize" />
+          <ListItemRow href="/kingdom-map/customize" className="min-h-[64px]">
+            <span className="text-3xl flex-none">{pieceSet.emoji}</span>
             <div className="flex-1 min-w-0">
               <p className="font-classic-display text-sm text-premium-ivory">Change Pieces</p>
               <p className={`${TEXT.caption} normal-case`}>Currently {pieceSet.name}</p>
             </div>
             <span className="text-premium-gold text-lg flex-none">→</span>
           </ListItemRow>
-          <ListItemRow href="/kingdom-map/customize">
-            <span className="text-2xl flex-none">{boardSkin.emoji}</span>
+          <ListItemRow href="/kingdom-map/customize" className="min-h-[64px]">
+            <span className="text-3xl flex-none">{boardSkin.emoji}</span>
             <div className="flex-1 min-w-0">
               <p className="font-classic-display text-sm text-premium-ivory">Change Board</p>
               <p className={`${TEXT.caption} normal-case`}>Currently {boardSkin.name}</p>
@@ -136,13 +126,16 @@ export default async function ProfilePage() {
           </ListItemRow>
         </div>
 
-        <div className="w-full max-w-md grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <StatTile emoji="🗺️" value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Journey" />
-          <StatTile emoji="🏛️" value={`${completedAcademyIds.length}`} label="Academy Completed" />
-          <StatTile emoji="🧩" value={`${puzzleStats.puzzlesSolved}`} label="Puzzles Solved" />
-          <StatTile emoji="🧠" value={`${chessMindTotalSolved}`} label="Chess Mind Solved" />
-          <StatTile emoji="🧭" value={`${discovered.length}`} label="Openings Discovered" />
-          <StatTile emoji="🥇" value={`${onlineWins}`} label="Online Wins" />
+        <div className="w-full max-w-md flex flex-col gap-2">
+          <SectionHeader title="Your Stats" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <StatCard emoji="🗺️" value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Journey" />
+            <StatCard emoji="🏛️" value={`${completedAcademyIds.length}`} label="Academy Completed" />
+            <StatCard emoji="🧩" value={`${puzzleStats.puzzlesSolved}`} label="Puzzles Solved" />
+            <StatCard emoji="🧠" value={`${chessMindTotalSolved}`} label="Chess Mind Solved" />
+            <StatCard emoji="🧭" value={`${discovered.length}`} label="Openings Discovered" />
+            <StatCard emoji="🥇" value={`${onlineWins}`} label="Online Wins" />
+          </div>
         </div>
 
         <div className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex flex-col gap-4">

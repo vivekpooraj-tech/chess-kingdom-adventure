@@ -15,6 +15,7 @@ import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { PostGameAnalysis } from "@/components/game/analysis/PostGameAnalysis";
 import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 import { TEXT } from "@/lib/designSystem";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import type { Difficulty } from "@/lib/chess-engine/stockfishEngine";
@@ -215,7 +216,17 @@ export default function FreePlayPage() {
   }
 
   if (view.status === "loading") {
-    return <main className="min-h-screen bg-premium-midnight" />;
+    return (
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 py-12">
+        <div className="h-9 w-56 rounded bg-premium-navy/70 animate-pulse" />
+        <SkeletonRow className="h-4 w-72" />
+        <div className="w-full max-w-sm flex flex-col gap-3 mt-4">
+          <SkeletonBlock className="h-16" />
+          <SkeletonBlock className="h-16" />
+          <SkeletonBlock className="h-16" />
+        </div>
+      </main>
+    );
   }
 
   if (view.status === "picking-difficulty") {

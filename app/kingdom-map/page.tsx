@@ -7,6 +7,7 @@ import { AVATARS } from "@/content/avatars";
 import { ACHIEVEMENTS } from "@/content/achievements";
 import { getZoneForDay, isDayFree } from "@/content/kingdomZones";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/server";
 import {
   resolveActiveChild,
   getCompletedDays,
@@ -31,13 +32,13 @@ import { HeroJourneyCard } from "@/components/home/HeroJourneyCard";
 import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
 import { DestinationCard } from "@/components/home/DestinationCard";
 import { PlayIcon, AcademyIcon, DiscoverIcon } from "@/components/nav/icons";
+import { StatCardCompact } from "@/components/ui/StatCard";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TEXT } from "@/lib/designSystem";
 
 export default async function KingdomMapPage() {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
 
   if (!user) redirect("/sign-in");
 
@@ -125,8 +126,8 @@ export default async function KingdomMapPage() {
       >
       <main className="min-h-screen flex flex-col items-center gap-6 bg-premium-midnight px-6 pt-8 pb-24">
         <div className="text-center max-w-md">
-          <h1 className={TEXT.display}>Chess Kingdom</h1>
-          <p className={`${TEXT.body} mt-2`}>Your journey through chess.</p>
+          <h1 className={TEXT.display}>Chess Mind</h1>
+          <p className={`${TEXT.body} mt-2`}>What should we do today?</p>
         </div>
 
         <HomeHeader
@@ -136,16 +137,17 @@ export default async function KingdomMapPage() {
           currentDay={child.current_day}
           totalDays={LESSONS.length}
           streak={chessMindStreak}
+          rating={child.rating}
         />
 
-        <HeroJourneyCard recommendation={heroRecommendation} />
-
         <DailyChallengeCard />
+
+        <HeroJourneyCard recommendation={heroRecommendation} />
 
         {kingdomBonuses.length > 0 && (
           <Link
             href="/learn"
-            className="w-full max-w-md rounded-premiumCard bg-premium-gold/10 border border-premium-gold/30 p-4 flex items-center gap-3"
+            className="w-full max-w-md rounded-premiumCard bg-premium-gold/10 border border-premium-gold/30 p-4 flex items-center gap-3 active:scale-[0.98] transition-transform duration-100"
           >
             <span className="text-2xl">✨</span>
             <div className="flex-1">
@@ -159,46 +161,49 @@ export default async function KingdomMapPage() {
           </Link>
         )}
 
-        {/* Main destinations — Play / Learn / Discover (Phase 19: Academy
+        {/* Recommended activity — Play / Learn / Discover (Phase 19: Academy
             and Chess Mind are combined into Learn; Discover moved here from
             the primary nav — neither lost its route, see app/learn/page.tsx
             and app/discover/page.tsx, both still fully intact). One strong
             CTA per card, not a menu of sub-links (see DestinationCard). */}
-        <div className="w-full max-w-md grid grid-cols-2 gap-3">
-          <DestinationCard
-            href="/play"
-            title="Play"
-            description="Computer, worldwide, or a friend"
-            icon={PlayIcon}
-          />
-          <DestinationCard
-            href="/learn"
-            title="Learn"
-            description="Fundamentals, Origins, Openings, Chess Mind training"
-            icon={AcademyIcon}
-            accent="emerald"
-          />
-          <DestinationCard
-            href="/discover"
-            title="Discover"
-            description="The pieces and the history of chess"
-            icon={DiscoverIcon}
-            accent="emerald"
-          />
+        <div className="w-full max-w-md flex flex-col gap-2">
+          <SectionHeader title="Recommended" />
+          <div className="grid grid-cols-2 gap-3">
+            <DestinationCard
+              href="/play"
+              title="Play"
+              description="Computer, worldwide, or a friend"
+              icon={PlayIcon}
+            />
+            <DestinationCard
+              href="/learn"
+              title="Learn"
+              description="Fundamentals, Origins, Openings, Chess Mind training"
+              icon={AcademyIcon}
+              accent="emerald"
+            />
+            <DestinationCard
+              href="/discover"
+              title="Discover"
+              description="The pieces and the history of chess"
+              icon={DiscoverIcon}
+              accent="emerald"
+            />
+          </div>
         </div>
 
-        {/* Progress — compact, real numbers, links out to the full Profile
-            for anything that needs more than a glance. */}
-        <div className="w-full max-w-md">
-          <p className={`${TEXT.caption} uppercase tracking-wide mb-2`}>Progress</p>
+        {/* Stats — compact, real numbers, links out to the full Profile for
+            anything that needs more than a glance. */}
+        <div className="w-full max-w-md flex flex-col gap-2">
+          <SectionHeader title="Your Stats" />
           <Link
             href="/profile"
-            className="grid grid-cols-4 gap-2 rounded-premiumCard bg-premium-navy/70 border border-white/5 p-3 hover:border-premium-gold/20 transition-colors"
+            className="grid grid-cols-4 gap-2 rounded-premiumCard bg-premium-navy/70 border border-white/5 p-3 hover:border-premium-gold/20 active:scale-[0.98] transition-[border-color,transform] duration-100"
           >
-            <StatTile value={onlineWinsCount} label="Online Wins" />
-            <StatTile value={`${earnedKeys.length}/${ACHIEVEMENTS.length}`} label="Achievements" />
-            <StatTile value={openingEncounters.length} label="Openings" />
-            <StatTile value={chessMindTotalSolved} label="Chess Mind" />
+            <StatCardCompact value={onlineWinsCount} label="Online Wins" />
+            <StatCardCompact value={`${earnedKeys.length}/${ACHIEVEMENTS.length}`} label="Achievements" />
+            <StatCardCompact value={openingEncounters.length} label="Openings" />
+            <StatCardCompact value={chessMindTotalSolved} label="Chess Mind" />
           </Link>
         </div>
 
@@ -235,16 +240,5 @@ export default async function KingdomMapPage() {
       </ScreenTimeGate>
       <PrimaryNav />
     </>
-  );
-}
-
-function StatTile({ value, label }: { value: string | number; label: string }) {
-  return (
-    <div className="flex flex-col items-center text-center">
-      <p className="font-classic-display text-base text-premium-ivory">{value}</p>
-      <p className="font-classic-body text-[9px] text-premium-ivory/50 uppercase tracking-wide">
-        {label}
-      </p>
-    </div>
   );
 }

@@ -67,6 +67,37 @@ export function ProfileIcon({ className }: IconProps) {
   );
 }
 
+// --- Added for the mobile UI/UX redesign (bottom nav: Home/Puzzles/Play/
+// Learn/More) — same single-stroke family/weight as the set above.
+
+export function HomeIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <path d="M4 11 L12 4 L20 11" />
+      <path d="M6 9.5 V20 H18 V9.5" />
+      <path d="M10 20 V14 H14 V20" />
+    </svg>
+  );
+}
+
+export function PuzzlePieceIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <path d="M4 4 H9.5 C9.5 2.9 10.5 2 11.75 2 C13 2 14 2.9 14 4 H19.5 V9 C20.6 9 21.5 10 21.5 11.25 C21.5 12.5 20.6 13.5 19.5 13.5 V19 H14 C14 20.1 13 21 11.75 21 C10.5 21 9.5 20.1 9.5 19 H4 V13.5 C2.9 13.5 2 12.5 2 11.25 C2 10 2.9 9 4 9 Z" />
+    </svg>
+  );
+}
+
+export function MoreIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}>
+      <circle cx="5" cy="12" r="2.1" />
+      <circle cx="12" cy="12" r="2.1" />
+      <circle cx="19" cy="12" r="2.1" />
+    </svg>
+  );
+}
+
 // --- Extended set (Phase 10B) — same family, used across the redesign for
 // streaks, progress, and CTAs instead of reaching for emoji. Emoji stays
 // for deliberate personality touches (celebrations, buddy avatars), not
@@ -154,6 +185,39 @@ export function SoundOffIcon({ className }: IconProps) {
       <path d="M4 10 V14 H8 L13 18 V6 L8 10 Z" />
       <path d="M17 9 L21 15" />
       <path d="M21 9 L17 15" />
+    </svg>
+  );
+}
+
+// --- Added for the Play hub redesign (mobile UI/UX pass) — same family. ---
+
+export function ComputerIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <rect x="4" y="5" width="16" height="11" rx="1.5" />
+      <path d="M9 20 H15" />
+      <path d="M12 16 V20" />
+    </svg>
+  );
+}
+
+export function GlobeIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12 H20.5" />
+      <path d="M12 3.5 C14.5 6 15.5 9 15.5 12 C15.5 15 14.5 18 12 20.5 C9.5 18 8.5 15 8.5 12 C8.5 9 9.5 6 12 3.5 Z" />
+    </svg>
+  );
+}
+
+export function PersonAddIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <circle cx="10" cy="8" r="3.2" />
+      <path d="M4 20 C4 16.5 6.5 14.5 10 14.5 C11 14.5 11.9 14.65 12.7 14.95" />
+      <path d="M18 9 V15" />
+      <path d="M15 12 H21" />
     </svg>
   );
 }

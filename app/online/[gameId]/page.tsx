@@ -17,10 +17,10 @@ import {
   OnlineGame,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { QUICK_CHAT_PHRASES, EMOJI_REACTIONS } from "@/content/quickChat";
+import { QUICK_CHAT_PHRASES, EMOJI_REACTIONS, DRAW_OFFER_PREFIX } from "@/content/quickChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
-import { ChessClock } from "@/components/game/ChessClock";
+import { LiveChessClock } from "@/components/game/ChessClock";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
@@ -66,13 +66,11 @@ export default function OnlineGamePage() {
   const supabaseRef = useRef(createClient());
   const [joinBlocked, setJoinBlocked] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  // Locally-ticked DISPLAY ONLY values, re-derived from server-authoritative
-  // state (game.white_time_ms/black_time_ms/last_move_at/current_turn) on
-  // every render of the effect below — never the source of truth. The
-  // server enforces timing via submit_online_move/claim_timeout regardless
-  // of what these show.
-  const [displayWhiteMs, setDisplayWhiteMs] = useState<number | null>(null);
-  const [displayBlackMs, setDisplayBlackMs] = useState<number | null>(null);
+  const [resignConfirm, setResignConfirm] = useState(false);
+  // The specific draw-offer token (see DRAW_OFFER_PREFIX) the local player
+  // has already dismissed — each offer is uniquely timestamped, so a new
+  // offer after a declined one always compares as different and reappears.
+  const [dismissedDrawOffer, setDismissedDrawOffer] = useState<string | null>(null);
 
   // Load the current child + initial game state, then subscribe to live
   // updates (the opponent's moves and reactions arrive this way).
@@ -143,34 +141,6 @@ export default function OnlineGamePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, childId]);
-
-  // Local display countdown — re-anchored to the server's own numbers every
-  // time `game` changes (a fresh Realtime UPDATE resets the effect below),
-  // and ticked every 250ms in between purely for a smooth-looking clock.
-  // Refreshing/closing the browser just re-runs this from the DB's current
-  // state; nothing about actual remaining time lives in the client.
-  useEffect(() => {
-    if (game === "loading" || !game || !game.time_control) {
-      setDisplayWhiteMs(null);
-      setDisplayBlackMs(null);
-      return;
-    }
-    function tick() {
-      if (game === "loading" || !game) return;
-      const elapsed = game.last_move_at ? Date.now() - new Date(game.last_move_at).getTime() : 0;
-      let w = game.white_time_ms ?? 0;
-      let b = game.black_time_ms ?? 0;
-      if (game.status === "active") {
-        if (game.current_turn === "w") w = Math.max(0, w - elapsed);
-        else if (game.current_turn === "b") b = Math.max(0, b - elapsed);
-      }
-      setDisplayWhiteMs(w);
-      setDisplayBlackMs(b);
-    }
-    tick();
-    const id = setInterval(tick, 250);
-    return () => clearInterval(id);
-  }, [game]);
 
   // Enforces timeouts against opponents who stop responding — polls the
   // server, which independently re-derives whether time has genuinely run
@@ -395,18 +365,39 @@ export default function OnlineGamePage() {
   // --- Active game ---
   if (game.status === "active" && (isHost || isGuest)) {
     const myColor: Color = isHost ? game.host_color : game.host_color === "w" ? "b" : "w";
-    const myReaction = isHost ? game.host_reaction : game.guest_reaction;
-    const theirReaction = isHost ? game.guest_reaction : game.host_reaction;
+    const myReactionRaw = isHost ? game.host_reaction : game.guest_reaction;
+    const theirReactionRaw = isHost ? game.guest_reaction : game.host_reaction;
+    // A draw offer rides the same reaction column (see DRAW_OFFER_PREFIX's
+    // doc comment) but is an internal signal, not chat — never shown as a
+    // plain reaction bubble.
+    const myReaction = myReactionRaw && !myReactionRaw.startsWith(DRAW_OFFER_PREFIX) ? myReactionRaw : null;
+    const theirReaction = theirReactionRaw && !theirReactionRaw.startsWith(DRAW_OFFER_PREFIX) ? theirReactionRaw : null;
+    const pendingDrawOffer =
+      theirReactionRaw &&
+      theirReactionRaw.startsWith(DRAW_OFFER_PREFIX) &&
+      theirReactionRaw !== dismissedDrawOffer
+        ? theirReactionRaw
+        : null;
     // Random-match and tournament opponents are strangers, not people the
     // child already knows via an invite link — no chat/emoji there,
     // matching the app's no-open-contact-with-strangers policy (see
     // docs/01-PRD.md). Group Tournament opponents get the same treatment
-    // as Random Match for the same reason.
+    // as Random Match for the same reason. Resign/draw stay available to
+    // everyone regardless — those are game controls, not social contact.
     const showSocial = game.match_type !== "random" && game.match_type !== "tournament";
     const opponentColor: Color = myColor === "w" ? "b" : "w";
-    const myMs = myColor === "w" ? displayWhiteMs : displayBlackMs;
-    const opponentMs = opponentColor === "w" ? displayWhiteMs : displayBlackMs;
-    const hasClock = game.time_control !== null && myMs !== null && opponentMs !== null;
+    const hasClock = game.time_control !== null && game.white_time_ms !== null && game.black_time_ms !== null;
+
+    async function handleResign() {
+      await finishOnlineGame(supabaseRef.current, params.gameId, childId!, opponentColor);
+    }
+    async function handleOfferDraw() {
+      await sendReaction(supabaseRef.current, params.gameId, isHost, `${DRAW_OFFER_PREFIX}${Date.now()}`);
+    }
+    async function handleAcceptDraw() {
+      await finishOnlineGame(supabaseRef.current, params.gameId, childId!, "draw");
+    }
+
     const arenaTitle =
       game.match_type === "random"
         ? "Random Match"
@@ -431,7 +422,14 @@ export default function OnlineGamePage() {
                   {theirReaction}
                 </span>
               )}
-              {hasClock && <ChessClock ms={opponentMs!} active={game.current_turn === opponentColor} />}
+              {hasClock && (
+                <LiveChessClock
+                  baseMs={opponentColor === "w" ? game.white_time_ms! : game.black_time_ms!}
+                  lastSyncAt={game.last_move_at}
+                  isRunning={game.current_turn === opponentColor}
+                  gameActive={game.status === "active"}
+                />
+              )}
             </span>
           </div>
         }
@@ -441,7 +439,14 @@ export default function OnlineGamePage() {
               <span className="text-xl">♟️</span>
               You — {myColor === "w" ? "White" : "Black"}
             </span>
-            {hasClock && <ChessClock ms={myMs!} active={game.current_turn === myColor} />}
+            {hasClock && (
+              <LiveChessClock
+                baseMs={myColor === "w" ? game.white_time_ms! : game.black_time_ms!}
+                lastSyncAt={game.last_move_at}
+                isRunning={game.current_turn === myColor}
+                gameActive={game.status === "active"}
+              />
+            )}
           </div>
         }
         renderBoard={(boardSize) => (
@@ -458,6 +463,75 @@ export default function OnlineGamePage() {
         )}
         sidePanel={
           <>
+            {pendingDrawOffer && (
+              <div className="rounded-premiumCard bg-premium-gold/10 border border-premium-gold/30 p-3 flex flex-col gap-2">
+                <p className="font-classic-body text-sm text-premium-ivory">Your opponent offered a draw.</p>
+                <div className="flex gap-2">
+                  <Button tone="premium" size="md" className="flex-1" onClick={handleAcceptDraw}>
+                    Accept
+                  </Button>
+                  <Button
+                    tone="premium"
+                    variant="ghost"
+                    size="md"
+                    className="flex-1"
+                    onClick={() => setDismissedDrawOffer(pendingDrawOffer)}
+                  >
+                    Decline
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-premiumCard bg-premium-navy p-3 flex flex-col gap-2 shadow-premiumCard">
+              {resignConfirm ? (
+                <div className="flex flex-col gap-2">
+                  <p className="font-classic-body text-sm text-premium-ivory">Resign this game?</p>
+                  <div className="flex gap-2">
+                    <Button
+                      tone="premium"
+                      variant="danger"
+                      size="md"
+                      className="flex-1"
+                      onClick={handleResign}
+                    >
+                      Yes, Resign
+                    </Button>
+                    <Button
+                      tone="premium"
+                      variant="ghost"
+                      size="md"
+                      className="flex-1"
+                      onClick={() => setResignConfirm(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    tone="premium"
+                    variant="ghost"
+                    size="md"
+                    className="flex-1"
+                    onClick={handleOfferDraw}
+                  >
+                    Offer Draw
+                  </Button>
+                  <Button
+                    tone="premium"
+                    variant="danger"
+                    size="md"
+                    className="flex-1"
+                    onClick={() => setResignConfirm(true)}
+                  >
+                    Resign
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {openingMatch && (
               <OpeningBadge
                 match={openingMatch}
@@ -475,7 +549,7 @@ export default function OnlineGamePage() {
                     <button
                       key={e}
                       onClick={() => handleReaction(e)}
-                      className="text-xl bg-premium-navyLight border border-white/10 rounded-full w-9 h-9 flex items-center justify-center hover:border-premium-gold/30 transition-colors"
+                      className="text-xl bg-premium-navyLight border border-white/10 rounded-full w-9 h-9 flex items-center justify-center hover:border-premium-gold/30 active:scale-90 transition-[border-color,transform] duration-100"
                     >
                       {e}
                     </button>
@@ -486,7 +560,7 @@ export default function OnlineGamePage() {
                     <button
                       key={phrase}
                       onClick={() => handleReaction(phrase)}
-                      className="text-xs bg-premium-navyLight border border-white/10 text-premium-ivory/80 rounded-full px-3 py-1.5 font-classic-body hover:border-premium-gold/30 transition-colors"
+                      className="text-xs bg-premium-navyLight border border-white/10 text-premium-ivory/80 rounded-full px-3 py-1.5 font-classic-body hover:border-premium-gold/30 active:scale-95 transition-[border-color,transform] duration-100"
                     >
                       {phrase}
                     </button>

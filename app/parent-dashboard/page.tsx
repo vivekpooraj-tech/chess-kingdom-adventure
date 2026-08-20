@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import {
   getChildrenForParent,
   getCompletedDays,
@@ -27,9 +27,7 @@ import { ManageChildren } from "./ManageChildren";
 
 export default async function ParentDashboardPage() {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
 
   if (!user) redirect("/sign-in");
 

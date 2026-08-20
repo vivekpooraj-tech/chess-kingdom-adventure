@@ -62,24 +62,27 @@ export async function getOrCreateChild(
   return newChild as ChildProfile;
 }
 
+/**
+ * One round trip instead of two (parents lookup, then a dependent children
+ * lookup) — this runs on every single protected navigation via
+ * resolveActiveChild(), so the extra sequential round trip was real,
+ * measurable per-tap latency, not just a style nit. PostgREST resolves the
+ * embed via the existing children.parent_id FK, so this is the same data
+ * under the same RLS policies, just fetched as one request.
+ */
 export async function getChildrenForParent(
   supabase: SupabaseClient,
   authUserId: string
 ): Promise<ChildProfile[]> {
-  const { data: parent } = await supabase
+  const { data: parent, error } = await supabase
     .from("parents")
-    .select("id")
+    .select("children(*)")
     .eq("auth_user_id", authUserId)
-    .single();
-  if (!parent) return [];
-
-  const { data, error } = await supabase
-    .from("children")
-    .select("*")
-    .eq("parent_id", parent.id)
-    .order("created_at", { ascending: true });
+    .order("created_at", { referencedTable: "children", ascending: true })
+    .maybeSingle();
   if (error) throw error;
-  return (data ?? []) as ChildProfile[];
+  if (!parent) return [];
+  return ((parent as unknown as { children: ChildProfile[] }).children ?? []) as ChildProfile[];
 }
 
 export async function createChild(

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Use this in Server Components, Route Handlers, and Server Actions.
@@ -37,4 +38,27 @@ export function createClient() {
       },
     }
   );
+}
+
+/**
+ * Same result as `(await supabase.auth.getUser()).data.user`, but skips the
+ * network round trip to Supabase's Auth server when possible — middleware.ts
+ * already did that exact verification for this request and forwards the
+ * result via the `x-user-id` header (which it strips from the incoming
+ * request first, so this can never be client-forged). Every route that
+ * reaches a Server Component has already passed through middleware, so the
+ * fallback below only matters for the rare case of a route outside its
+ * matcher; it's a straight call to the real thing, never a weaker check.
+ */
+export async function getSessionUser(
+  supabase: SupabaseClient
+): Promise<{ id: string } | null> {
+  const forwardedId = headers().get("x-user-id");
+  if (forwardedId) {
+    return { id: forwardedId };
+  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
 }

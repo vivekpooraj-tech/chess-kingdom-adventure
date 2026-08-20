@@ -65,7 +65,7 @@ export function DailyChallengeCard() {
   return (
     <Link
       href={`/puzzles?id=${state.puzzleId}&daily=1`}
-      className="w-full max-w-md rounded-premiumCard bg-premium-ivory p-5 flex items-center gap-4 shadow-premiumCard border border-premium-gold/20"
+      className="w-full max-w-md rounded-premiumCard bg-premium-ivory p-5 flex items-center gap-4 shadow-premiumCard border border-premium-gold/20 active:scale-[0.98] transition-transform duration-100"
     >
       <div className="w-12 h-12 rounded-full bg-premium-midnight flex items-center justify-center text-xl flex-none">
         {solved ? "✓" : "♟️"}
