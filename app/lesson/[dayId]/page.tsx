@@ -319,6 +319,11 @@ export default function LessonPage() {
                 buddyEmoji={buddy.emoji}
                 buddyName={buddy.name}
                 greeting={buddy.greeting || "Great job so far! Got any questions for me?"}
+                lessonTitle={lesson.title}
+                dayNumber={lesson.dayNumber}
+                lessonTopic={lesson.crystal}
+                boardFen={lesson.puzzle.fen}
+                childId={childId}
                 onDone={next}
               />
             )}

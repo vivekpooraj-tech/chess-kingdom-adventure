@@ -1,70 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import { BRAND } from "@/lib/brand";
-
-const BUDDY_SYSTEM_PROMPT = `You are Ollie the Owl, an AI chess buddy for a child aged 5-12 inside
-"${BRAND.name}". Your personality: warm, patient, a little silly, loves
-gentle puns about chess pieces. You NEVER say a child is "wrong" -- you say things
-like "let's see what happens if..." and guide them to discover the answer.
-
-Hard rules:
-- Keep every reply under 3 short sentences. Simple words only (aim for a 7-year-old reading level).
-- Only discuss chess, the ${BRAND.name} story, or age-appropriate encouragement.
-- If asked about anything unrelated or inappropriate, gently redirect back to the chess adventure.
-- Never ask for the child's real name, address, school, or any personal identifying info.
-- End with an encouraging, curious tone -- never a lecture.`;
-
-// Mock responses so the app is fully demoable without an API key wired up yet.
-const MOCK_REPLIES = [
-  "Hoo-hoo! Great question! The rook loves marching in straight lines — up, down, left, or right, just like a knight in shining armor patrolling the castle walls!",
-  "Ooo, tricky one! Try looking at where your pawn can see — pawns capture on a diagonal, not straight ahead. Want to try it on the board?",
-  "That's exactly the kind of thinking a real chess champion uses! Let's see what happens if you try that move.",
-];
+import { createClient, getSessionUser } from "@/lib/supabase/server";
+import { buildOllieSystemPrompt } from "@/lib/ollie/systemPrompt";
+import { isRateLimited } from "@/lib/ollie/rateLimit";
+import { validateCoachRequest } from "@/lib/ollie/validate";
+import { generateOllieResponse } from "@/lib/ollie/aiProvider";
 
 export async function POST(req: NextRequest) {
-  const { message, boardFen } = await req.json();
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-    // Fallback for local/demo use before a real key is configured.
-    const reply = MOCK_REPLIES[Math.floor(Math.random() * MOCK_REPLIES.length)];
-    return NextResponse.json({ reply, mocked: true });
+  const supabase = createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) {
+    return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 200,
-        system: BUDDY_SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: `Board position (FEN): ${boardFen ?? "unknown"}\n\nChild says: ${message}`,
-          },
-        ],
-      }),
+  const rawBody = await req.json().catch(() => null);
+  const validated = validateCoachRequest(rawBody);
+  if (!validated.ok) {
+    return NextResponse.json({ error: validated.error }, { status: 400 });
+  }
+  const { message, history, boardFen, lessonTitle, dayNumber, lessonTopic, buddyName, childId } =
+    validated.data;
+
+  if (!childId) {
+    return NextResponse.json({ error: "childId is required" }, { status: 400 });
+  }
+  // RLS on `children` (supabase/migrations/0001_init.sql) already scopes
+  // select to rows whose parent_id maps back to this auth.uid() -- so this
+  // query IS the ownership check. A childId belonging to someone else's
+  // account, or that doesn't exist, simply returns no row.
+  const { data: child } = await supabase.from("children").select("id").eq("id", childId).maybeSingle();
+  if (!child) {
+    return NextResponse.json({ error: "Child not found" }, { status: 403 });
+  }
+
+  if (isRateLimited(user.id)) {
+    return NextResponse.json({
+      reply: "Hoo! You're asking fast -- give me just a moment to catch up, then try again.",
+      mocked: true,
+      error: "rate_limited",
     });
-
-    const data = await res.json();
-    const reply =
-      data?.content?.find((c: { type: string }) => c.type === "text")?.text ??
-      MOCK_REPLIES[0];
-
-    // TODO(Phase 2): pass this reply through the age-appropriate content filter
-    // and log a summary (not raw transcript) to ai_chat_logs per the DB schema.
-
-    return NextResponse.json({ reply, mocked: false });
-  } catch (err) {
-    return NextResponse.json(
-      { reply: MOCK_REPLIES[0], mocked: true, error: "ai_call_failed" },
-      { status: 200 }
-    );
   }
+
+  const systemPrompt = buildOllieSystemPrompt({ lessonTitle, dayNumber, lessonTopic, buddyName, boardFen });
+
+  // TODO(Phase 2): pass this reply through the age-appropriate content filter
+  // and log a summary (not raw transcript) to ai_chat_logs per the DB schema.
+  const result = await generateOllieResponse({ systemPrompt, message, history });
+
+  return NextResponse.json({ reply: result.text, mocked: result.usedFallback, provider: result.provider });
 }

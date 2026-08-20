@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BuddyAvatar } from "./BuddyAvatar";
 import { SpeechBubble } from "@/components/ui/SpeechBubble";
 import { Button } from "@/components/ui/Button";
@@ -11,38 +11,82 @@ interface BuddyChatProps {
   buddyName: string;
   greeting: string;
   boardFen?: string;
+  lessonTitle?: string;
+  dayNumber?: number;
+  lessonTopic?: string;
+  childId?: string | null;
   onDone?: () => void;
 }
 
-export function BuddyChat({ buddyEmoji, buddyName, greeting, boardFen, onDone }: BuddyChatProps) {
+const HONEST_FAILURE_MESSAGE = "Owl hoot! I couldn't think of an answer right now. Try asking me again.";
+
+export function BuddyChat({
+  buddyEmoji,
+  buddyName,
+  greeting,
+  boardFen,
+  lessonTitle,
+  dayNumber,
+  lessonTopic,
+  childId,
+  onDone,
+}: BuddyChatProps) {
   const [messages, setMessages] = useState<{ from: "buddy" | "child"; text: string }[]>([
     { from: "buddy", text: greeting },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  // React state updates aren't synchronous, so a `loading` state check alone
+  // can't stop two send() calls fired in the same tick (e.g. a rapid double
+  // tap on mobile) from both reading `loading` as still false. This ref is
+  // set/cleared synchronously so the second call always sees the lock.
+  const sendingRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
 
   async function send() {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || sendingRef.current) return;
+    sendingRef.current = true;
     const childMessage = input.trim();
+    const historyForRequest = messages;
     setMessages((m) => [...m, { from: "child", text: childMessage }]);
     setInput("");
     setLoading(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch("/api/ai/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: childMessage, boardFen }),
+        signal: controller.signal,
+        body: JSON.stringify({
+          message: childMessage,
+          boardFen,
+          history: historyForRequest,
+          lessonTitle,
+          dayNumber,
+          lessonTopic,
+          buddyName,
+          childId,
+        }),
       });
       const data = await res.json();
-      setMessages((m) => [...m, { from: "buddy", text: data.reply }]);
-    } catch {
-      setMessages((m) => [
-        ...m,
-        { from: "buddy", text: "Hoo! My wings got tangled — can you ask me again?" },
-      ]);
+      setMessages((m) => [...m, { from: "buddy", text: data?.reply || HONEST_FAILURE_MESSAGE }]);
+    } catch (err) {
+      // AbortError means the component unmounted (see the cleanup effect
+      // above) -- nothing left to show the message to, and updating state
+      // on an unmounted component would just log a React warning.
+      if ((err as { name?: string })?.name !== "AbortError") {
+        setMessages((m) => [...m, { from: "buddy", text: HONEST_FAILURE_MESSAGE }]);
+      }
     } finally {
       setLoading(false);
+      sendingRef.current = false;
     }
   }
 
@@ -66,7 +110,7 @@ export function BuddyChat({ buddyEmoji, buddyName, greeting, boardFen, onDone }:
             </div>
           )
         )}
-        {loading && <SpeechBubble>...</SpeechBubble>}
+        {loading && <SpeechBubble>Ollie is thinking...</SpeechBubble>}
       </div>
 
       <div className="flex gap-2">
