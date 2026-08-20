@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, localDateString } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { getDailyChallenge, DailyChallengeState } from "@/lib/supabase/dailyChallengeQueries";
@@ -23,15 +23,13 @@ export function DailyChallengeCard() {
     async function load() {
       try {
         const supabase = createClient();
-        // getSession() reads the already-verified session locally instead
-        // of getUser()'s network round trip to Supabase's Auth server —
-        // this card is purely supplementary display (see the catch below),
-        // not a security boundary; every real data read is still enforced
-        // by RLS regardless of what the client believes its identity is.
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const user = session?.user;
+        // getVerifiedUser() reads the already-verified session locally
+        // instead of getUser()'s network round trip to Supabase's Auth
+        // server, and retries once on a transient failure — this card is
+        // purely supplementary display (see the catch below), not a
+        // security boundary; every real data read is still enforced by RLS
+        // regardless of what the client believes its identity is.
+        const user = await getVerifiedUser(supabase);
         if (!user) {
           if (!cancelled) setState("unavailable");
           return;

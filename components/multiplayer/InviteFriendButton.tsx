@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, createInviteGame } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { Button } from "@/components/ui/Button";
@@ -48,9 +48,7 @@ export function InviteFriendButton() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

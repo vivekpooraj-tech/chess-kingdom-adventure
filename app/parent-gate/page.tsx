@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { Button } from "@/components/ui/Button";
@@ -59,9 +59,7 @@ function ParentGateInner() {
   async function proceedPastGate() {
     setChecking(true);
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getVerifiedUser(supabase);
 
     if (!user) {
       router.push("/sign-in");

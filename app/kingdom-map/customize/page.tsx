@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { PIECE_SETS } from "@/content/pieceSets";
 import { BOARD_SKINS } from "@/content/boardSkins";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildPieceSet, updateChildBoardSkin } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
@@ -36,9 +36,7 @@ export default function CustomizeChessboardPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

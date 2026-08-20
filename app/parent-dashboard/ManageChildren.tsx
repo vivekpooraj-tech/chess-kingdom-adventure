@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { createChild, ChildProfile } from "@/lib/supabase/queries";
 import { setActiveChildIdClient } from "@/lib/childSession";
 import { AVATARS } from "@/content/avatars";
@@ -26,9 +26,7 @@ export function ManageChildren({
     if (!newName.trim()) return;
     setAdding(true);
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getVerifiedUser(supabase);
     if (!user) {
       setAdding(false);
       return;

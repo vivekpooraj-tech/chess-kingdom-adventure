@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { isAuthRetryableFetchError, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Use this in Server Components, Route Handlers, and Server Actions.
@@ -57,8 +57,18 @@ export async function getSessionUser(
   if (forwardedId) {
     return { id: forwardedId };
   }
-  const {
+  let {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
+  // Same reasoning as middleware.ts's retry: a failed token refresh over a
+  // flaky connection isn't proof the session is invalid, just that this one
+  // attempt didn't land. One retry here catches the rare case this helper's
+  // fallback path (no forwarded header) is actually exercised.
+  if (!user && error && isAuthRetryableFetchError(error)) {
+    ({
+      data: { user },
+    } = await supabase.auth.getUser());
+  }
   return user;
 }

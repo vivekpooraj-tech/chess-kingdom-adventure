@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { HISTORY_OF_CHESS } from "@/content/academyVideos";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   getAcademyProgress,
@@ -62,9 +62,7 @@ export default function WelcomePage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

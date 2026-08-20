@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import {
@@ -53,9 +53,7 @@ export default function TournamentDetailPage() {
     let cancelled = false;
     async function load() {
       const supabase = supabaseRef.current;
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

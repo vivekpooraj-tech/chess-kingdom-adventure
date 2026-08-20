@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   getOnlineGame,
@@ -79,9 +79,7 @@ export default function OnlineGamePage() {
     let cancelled = false;
 
     async function load() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

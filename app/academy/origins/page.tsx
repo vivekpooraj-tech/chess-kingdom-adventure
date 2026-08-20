@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   getAcademyProgress,
@@ -42,9 +42,7 @@ export default function ChessOriginsPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;
@@ -97,9 +95,7 @@ export default function ChessOriginsPage() {
       const supabase = createClient();
       await completeAcademyContent(supabase, childId, content.id, correct).catch(() => {});
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       const completedDays = await getCompletedDays(supabase, childId);
       const completedAcademyIds = await getCompletedAcademyContentIds(supabase, childId);
       const { data: parent } = user

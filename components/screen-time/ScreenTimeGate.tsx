@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   addUsageMinutes,
   getScreenTimeLimits,
@@ -61,9 +61,7 @@ export function ScreenTimeGate({
     const supabase = createClient();
 
     async function init() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user || cancelled) return;
 
       const limits = await getScreenTimeLimits(supabase, user.id);

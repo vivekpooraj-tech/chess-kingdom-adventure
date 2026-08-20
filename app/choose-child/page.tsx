@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { getChildrenForParent, ChildProfile } from "@/lib/supabase/queries";
 import { setActiveChildIdClient } from "@/lib/childSession";
 import { AVATARS } from "@/content/avatars";
@@ -16,9 +16,7 @@ export default function ChooseChildPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

@@ -7,7 +7,7 @@ import { PATTERN_CHALLENGES } from "@/content/chessMindPatterns";
 import { generateMemoryQuestion, RevealQuestion } from "@/lib/chessMind/revealQuestions";
 import { RevealChallenge } from "@/components/chessMind/RevealChallenge";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 
@@ -34,9 +34,7 @@ export default function MemoryPage() {
     setRound(pickRound());
     async function loadChild() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) return;
       const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
       if (resolution.child) {

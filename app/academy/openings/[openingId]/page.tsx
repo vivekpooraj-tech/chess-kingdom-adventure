@@ -8,7 +8,7 @@ import { getOpening } from "@/content/openings";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { Button } from "@/components/ui/Button";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   markOpeningStudied,
@@ -56,9 +56,7 @@ export default function OpeningDetailPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStripe } from "@/lib/stripe/client";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -36,9 +36,7 @@ export default async function UpgradeSuccessPage({
   }
 
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
 
   if (!user) redirect("/sign-in");
 

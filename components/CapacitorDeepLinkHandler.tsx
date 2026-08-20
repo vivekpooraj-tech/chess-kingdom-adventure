@@ -15,9 +15,22 @@ import { createClient } from "@/lib/supabase/client";
  * directly as a native event and finishes the sign-in itself, mirroring
  * what app/auth/callback/route.ts does for the web flow.
  *
- * A no-op on web — appUrlOpen only ever fires on native platforms, and
- * isNativePlatform() short-circuits before anything Capacitor-specific
- * loads.
+ * Two delivery paths, both handled here — a real device test surfaced that
+ * only one was wired up:
+ *  - `appUrlOpen` fires when the app is already running (native's
+ *    `handleOnNewIntent`) — the app was backgrounded, user taps the email
+ *    link, Android routes it straight back in.
+ *  - `App.getLaunchUrl()` covers the app being launched FRESH by the tap
+ *    (not already running) — the far more common real case, since nobody
+ *    usually leaves a chess app open in the background while checking
+ *    email. `appUrlOpen` never fires for this; Capacitor delivers a cold
+ *    launch's URL only through getLaunchUrl(). Without this, tapping a
+ *    magic link with the app not already running silently did nothing —
+ *    the app would just open to its normal (signed-out) start screen,
+ *    which looks exactly like "the sign-in link didn't work."
+ *
+ * A no-op on web — neither path exists there, and isNativePlatform()
+ * short-circuits before anything Capacitor-specific loads.
  */
 export function CapacitorDeepLinkHandler() {
   const router = useRouter();
@@ -28,18 +41,35 @@ export function CapacitorDeepLinkHandler() {
     let removeListener: (() => void) | undefined;
     let cancelled = false;
 
+    async function handleUrl(rawUrl: string) {
+      const url = new URL(rawUrl);
+      const code = url.searchParams.get("code");
+      if (!code) {
+        router.push("/sign-in?error=auth_failed");
+        return;
+      }
+      const supabase = createClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      router.push(error ? "/sign-in?error=auth_failed" : "/parent-gate");
+    }
+
     (async () => {
       const { App } = await import("@capacitor/app");
-      const handle = await App.addListener("appUrlOpen", async (data) => {
-        const url = new URL(data.url);
-        const code = url.searchParams.get("code");
-        if (!code) {
-          router.push("/sign-in?error=auth_failed");
-          return;
-        }
-        const supabase = createClient();
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        router.push(error ? "/sign-in?error=auth_failed" : "/parent-gate");
+
+      // Cold-start case: the app was launched BY this deep-link tap. Only
+      // act if the launch URL actually uses our custom scheme — a normal
+      // icon tap resolves getLaunchUrl() to undefined (no data URI on a
+      // plain LAUNCHER intent), but check explicitly rather than relying
+      // on that alone, since a plain https launch URL (App Links) isn't
+      // this flow's concern either.
+      const launch = await App.getLaunchUrl();
+      if (!cancelled && launch?.url?.startsWith("chesskingdom://")) {
+        await handleUrl(launch.url);
+      }
+
+      // Warm case: the app was already running and received a new intent.
+      const handle = await App.addListener("appUrlOpen", (data) => {
+        handleUrl(data.url);
       });
       if (cancelled) {
         handle.remove();

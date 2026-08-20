@@ -23,7 +23,7 @@ import { TimedReaction } from "@/components/minigames/engines/TimedReaction";
 import { ConfettiBurst } from "@/components/rewards/ConfettiBurst";
 import { LessonHeader } from "@/components/lesson/LessonHeader";
 import { AchievementUnlockReveal } from "@/components/achievements/AchievementUnlockReveal";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   markLessonComplete,
@@ -73,9 +73,7 @@ export default function LessonPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

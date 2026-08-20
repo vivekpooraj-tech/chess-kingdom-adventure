@@ -7,7 +7,7 @@ import { ChessBoard } from "@/components/board/ChessBoard";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 
@@ -21,9 +21,7 @@ export default function FundamentalsPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) return;
       const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
       if (resolution.child) {

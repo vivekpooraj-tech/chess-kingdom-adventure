@@ -7,7 +7,7 @@ import { PATTERN_CHALLENGES, PatternChallenge } from "@/content/chessMindPattern
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Button } from "@/components/ui/Button";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { moveWasFork, moveWasHanging } from "@/lib/chessMind/patternVerification";
@@ -40,9 +40,7 @@ export default function PatternRecognitionPage() {
     setChallenge(pickChallenge());
     async function loadChild() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) return;
       const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
       if (resolution.child) {

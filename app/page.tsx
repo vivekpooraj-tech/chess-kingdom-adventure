@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/branding/Logo";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { TEXT } from "@/lib/designSystem";
 
 /**
@@ -25,6 +28,43 @@ const PARTICLES = [
 ];
 
 export default function SplashPage() {
+  const router = useRouter();
+  // "/" is deliberately public in middleware.ts (an unauthenticated visitor
+  // has to be able to see the marketing splash at all), which means it
+  // never redirects an ALREADY-signed-in visitor away from it either — and
+  // this is the app's actual launch URL on Android (Capacitor's
+  // server.url has no path, so it loads "/" on every open). Without this
+  // check, a genuinely still-authenticated user saw this "Start Your
+  // Journey" screen on every single app reopen, indistinguishable from
+  // being signed out — this was the dominant, on-every-launch cause of the
+  // reported "keeps asking me to sign in again," confirmed live on device.
+  // getVerifiedUser() reads the existing session (no forced network round
+  // trip unless the token actually needs refreshing) and redirects home;
+  // `checked` avoids ever flashing this sign-in-flavored splash at an
+  // already-authenticated user while that check is in flight.
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const user = await getVerifiedUser(supabase);
+      if (cancelled) return;
+      if (user) {
+        router.replace("/kingdom-map");
+        return;
+      }
+      setChecked(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  if (!checked) {
+    return <main className="min-h-screen bg-premium-midnight" />;
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center gap-8 px-6 py-12 text-center bg-premium-midnight">
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">

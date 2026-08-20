@@ -7,7 +7,7 @@ import { ListItemRow } from "@/components/ui/Card";
 import { CHESS_MIND_CATEGORIES, getChessMindCategory } from "@/content/chessMindCategories";
 import { getDailyChallengeCategoryId } from "@/lib/chessMind/dailyChallenge";
 import { getUnlockedKingdomBonuses, UnlockedBonus } from "@/lib/chessMind/kingdomUnlocks";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   getChessMindStatsByModule,
@@ -28,9 +28,7 @@ export default function ChessMindPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         setLoaded(true);
         return;

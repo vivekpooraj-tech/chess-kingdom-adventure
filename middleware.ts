@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCAL_TEST_MODE } from "@/lib/devTestMode";
 
@@ -44,9 +45,24 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
+  let {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+
+  // The access token expires roughly hourly; refreshing it requires a real
+  // network round trip to Supabase's Auth server. Any single failure of
+  // that round trip (a mobile radio still waking from sleep right as the
+  // app reopens, a momentary timeout — see AuthRetryableFetchError) used
+  // to be treated identically to "never signed in," bouncing a genuinely
+  // signed-in user to a fresh magic-link request. One retry here resolves
+  // the overwhelming majority of these — they're momentary, not sustained.
+  if (!user && userError && isAuthRetryableFetchError(userError)) {
+    ({
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser());
+  }
 
   const isPublic = PUBLIC_PATHS.some(
     (p) =>
@@ -75,6 +91,19 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!user && !isPublic) {
+    // Still couldn't verify after a retry — but a retryable-fetch error
+    // means this is an infrastructure hiccup, not evidence the session is
+    // invalid. Forcing a sign-in redirect here would throw away a
+    // perfectly good refresh token over what's very likely a momentary
+    // network blip. Let the request through on whatever cookies already
+    // exist; the page's own auth check (or the next request entirely)
+    // gets another chance once the network recovers. A genuinely expired
+    // or revoked session is still caught the moment verification actually
+    // succeeds — this only widens the window before that happens, it
+    // never disables the check.
+    if (userError && isAuthRetryableFetchError(userError)) {
+      return response;
+    }
     const redirectUrl = new URL("/sign-in", request.url);
     redirectUrl.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);

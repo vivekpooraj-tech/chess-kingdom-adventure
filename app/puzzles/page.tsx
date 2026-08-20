@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   getTodayPreviewCount,
@@ -91,18 +91,16 @@ function PuzzlesPageInner() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      // getSession() reads the already-verified session from local storage
-      // instead of getUser()'s network round trip to re-validate it against
-      // Supabase's Auth server — safe here because this is only deciding
-      // what to render for THIS client; every query below is still enforced
-      // by RLS server-side regardless of what the client believes its own
-      // identity is. This was the single biggest piece of a measured 1s+
-      // delay between the tap landing on /puzzles and real content
-      // appearing (4 sequential Supabase round trips, this being the first).
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const user = session?.user;
+      // getVerifiedUser() reads the already-verified session from local
+      // storage instead of getUser()'s network round trip to re-validate it
+      // against Supabase's Auth server — safe here because this is only
+      // deciding what to render for THIS client; every query below is still
+      // enforced by RLS server-side regardless of what the client believes
+      // its own identity is. It also retries once on a transient network
+      // failure, so a momentary blip refreshing an expired token (the
+      // common case right after reopening the app) doesn't bounce a
+      // genuinely signed-in user to a fresh magic-link request.
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

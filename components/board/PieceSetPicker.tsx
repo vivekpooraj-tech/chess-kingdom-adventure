@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { PIECE_SETS, DEFAULT_PIECE_SET_ID } from "@/content/pieceSets";
 import { Button } from "@/components/ui/Button";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildPieceSet } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { TEXT } from "@/lib/designSystem";
@@ -39,9 +39,7 @@ export function PieceSetPicker({
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

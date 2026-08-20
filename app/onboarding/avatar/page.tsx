@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { AVATARS } from "@/content/avatars";
 import { Button } from "@/components/ui/Button";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildAvatar } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 
@@ -18,9 +18,7 @@ export default function AvatarPickerPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;

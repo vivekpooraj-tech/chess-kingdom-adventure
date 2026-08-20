@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { BOARD_SKINS, DEFAULT_BOARD_SKIN_ID } from "@/content/boardSkins";
 import { Button } from "@/components/ui/Button";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildBoardSkin } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { TEXT } from "@/lib/designSystem";
@@ -37,9 +37,7 @@ export function BoardSkinPicker({
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getVerifiedUser(supabase);
       if (!user) {
         router.push("/sign-in");
         return;
