@@ -109,13 +109,13 @@ export default function ChessOriginsPage() {
             .eq("auth_user_id", user.id)
             .single()
         : { data: null };
-      const newlyEarned = await evaluateAndAwardAchievements(
+      const { newlyEarned } = await evaluateAndAwardAchievements(
         supabase,
         childId,
         completedDays,
         parent?.premium_status === "premium",
         completedAcademyIds
-      ).catch(() => [] as string[]);
+      ).catch(() => ({ newlyEarned: [] as string[], allEarned: [] as string[] }));
       if (newlyEarned.length > 0) {
         const def = getAchievement(newlyEarned[0]);
         if (def) setNewAchievement(def.title);

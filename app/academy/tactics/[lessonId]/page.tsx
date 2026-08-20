@@ -173,7 +173,7 @@ export default function TacticsLessonPage() {
           getChessMindTotalSolved(supabase, childId),
           getOnlineWinsCount(supabase, childId),
         ]);
-      const newlyEarned = await evaluateAndAwardAchievements(
+      const { newlyEarned } = await evaluateAndAwardAchievements(
         supabase,
         childId,
         completedDays,

@@ -23,9 +23,15 @@ export function DailyChallengeCard() {
     async function load() {
       try {
         const supabase = createClient();
+        // getSession() reads the already-verified session locally instead
+        // of getUser()'s network round trip to Supabase's Auth server —
+        // this card is purely supplementary display (see the catch below),
+        // not a security boundary; every real data read is still enforced
+        // by RLS regardless of what the client believes its identity is.
         const {
-          data: { user },
-        } = await supabase.auth.getUser();
+          data: { session },
+        } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) {
           if (!cancelled) setState("unavailable");
           return;

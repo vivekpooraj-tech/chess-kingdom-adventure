@@ -140,12 +140,12 @@ export default function LessonPage() {
       const supabase = createClient();
       await markLessonComplete(supabase, childId!, lesson!.dayNumber);
       const completedDays = await getCompletedDays(supabase, childId!);
-      const newlyEarned = await evaluateAndAwardAchievements(
+      const { newlyEarned } = await evaluateAndAwardAchievements(
         supabase,
         childId!,
         completedDays,
         isPremium
-      ).catch(() => [] as string[]);
+      ).catch(() => ({ newlyEarned: [] as string[], allEarned: [] as string[] }));
       const newAchievement = newlyEarned.length > 0 ? getAchievement(newlyEarned[0]) ?? null : null;
 
       const zone = getZoneForDay(lesson!.dayNumber);

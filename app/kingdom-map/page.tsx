@@ -12,7 +12,6 @@ import {
   resolveActiveChild,
   getCompletedDays,
   evaluateAndAwardAchievements,
-  getEarnedAchievementKeys,
   getCompletedAcademyContentIds,
   getOpeningEncounters,
   getChessMindTotalSolved,
@@ -86,7 +85,7 @@ export default async function KingdomMapPage() {
   // single place to catch newly-earned achievements. This writes new
   // achievement rows, and the read right after it needs to see those new
   // rows, so both stay sequential rather than joining the batch above.
-  const justEarnedKeys = await evaluateAndAwardAchievements(
+  const { newlyEarned: justEarnedKeys, allEarned: earnedKeys } = await evaluateAndAwardAchievements(
     supabase,
     child.id,
     completedDays,
@@ -96,7 +95,6 @@ export default async function KingdomMapPage() {
     chessMindTotalSolved,
     onlineWinsCount
   );
-  const earnedKeys = await getEarnedAchievementKeys(supabase, child.id);
 
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
   const currentZone = getZoneForDay(Math.min(child.current_day, LESSONS.length));

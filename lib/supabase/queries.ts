@@ -356,15 +356,24 @@ export async function getEarnedAchievementKeys(
   return (data ?? []).map((r) => r.achievement_key);
 }
 
+/** Return shape for evaluateAndAwardAchievements — see its own doc comment. */
+export interface AchievementEvaluationResult {
+  /** Achievement keys newly earned THIS call, so the UI can celebrate them. */
+  newlyEarned: string[];
+  /** Every key the child has now, already-earned plus this call's new ones —
+   * lets a caller that needs the full set (e.g. Kingdom Map's stats count
+   * and badge grid) skip a second getEarnedAchievementKeys() round trip,
+   * since this function already had to read that same set internally to
+   * know what NOT to re-award. */
+  allEarned: string[];
+}
+
 /**
  * Checks every achievement definition against the child's current real
  * state (completed days + premium status) and awards any newly-earned ones.
  * Safe to call repeatedly (e.g. on every lesson completion and every
  * Kingdom Map load) — already-earned achievements are skipped via the
  * unique(child_id, achievement_key) constraint, so this never double-awards.
- *
- * Returns the achievement keys newly earned THIS call, so the UI can
- * celebrate them if it wants to.
  */
 export async function evaluateAndAwardAchievements(
   supabase: SupabaseClient,
@@ -375,7 +384,7 @@ export async function evaluateAndAwardAchievements(
   openingEncounters: OpeningEncounterDetail[] = [],
   chessMindTotalSolved = 0,
   onlineWinsCount = 0
-): Promise<string[]> {
+): Promise<AchievementEvaluationResult> {
   // Imported here (not at module top) to avoid a circular import between
   // lib/supabase and content/ — this file is the only place that needs them.
   const { ACHIEVEMENTS } = await import("@/content/achievements");
@@ -430,7 +439,7 @@ export async function evaluateAndAwardAchievements(
     }
   }
 
-  return newlyEarned;
+  return { newlyEarned, allEarned: [...alreadyEarned, ...newlyEarned] };
 }
 
 // --- Daily free game limits (supabase/migrations/0019_daily_free_game_limits.sql) ---

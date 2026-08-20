@@ -91,9 +91,18 @@ function PuzzlesPageInner() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
+      // getSession() reads the already-verified session from local storage
+      // instead of getUser()'s network round trip to re-validate it against
+      // Supabase's Auth server — safe here because this is only deciding
+      // what to render for THIS client; every query below is still enforced
+      // by RLS server-side regardless of what the client believes its own
+      // identity is. This was the single biggest piece of a measured 1s+
+      // delay between the tap landing on /puzzles and real content
+      // appearing (4 sequential Supabase round trips, this being the first).
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) {
         router.push("/sign-in");
         return;
@@ -108,17 +117,16 @@ function PuzzlesPageInner() {
       setBoardSkinId(child.board_skin_id);
       setPieceSetId(child.piece_set_id);
 
-      const { data: parent } = await supabase
-        .from("parents")
-        .select("premium_status")
-        .eq("auth_user_id", user.id)
-        .single();
+      // Independent of each other (both only need user/child ids already in
+      // hand) — run together instead of one after the other.
+      const [{ data: parent }, previewCount] = await Promise.all([
+        supabase.from("parents").select("premium_status").eq("auth_user_id", user.id).single(),
+        getTodayPreviewCount(supabase, child.id, localDateString()),
+      ]);
       const premium = parent?.premium_status === "premium";
       setIsPremium(premium);
-
       if (!premium) {
-        const count = await getTodayPreviewCount(supabase, child.id, localDateString());
-        setTodayCount(count);
+        setTodayCount(previewCount);
       }
       setLoaded(true);
     }

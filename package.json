@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "node scripts/copy-stockfish.js"
+    "postinstall": "node scripts/copy-stockfish.js",
+    "cap:sync": "cap sync android",
+    "cap:sync:dev": "node scripts/cap-sync-dev.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
