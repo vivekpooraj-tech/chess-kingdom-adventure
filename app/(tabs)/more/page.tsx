@@ -58,7 +58,7 @@ export default async function MorePage() {
           <span className="text-premium-gold text-lg flex-none">→</span>
         </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 tablet:grid-cols-3 gap-6">
         <section className="w-full flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>Your Chess Mind</p>
           <div className="flex flex-col gap-1.5">

@@ -17,11 +17,11 @@ export function TabPageShell({
   return (
     <main
       className={clsx(
-        "min-h-screen bg-premium-midnight px-4 sm:px-6 md:px-8 pt-6 md:pt-8 pb-24 md:pb-8",
+        "min-h-screen bg-premium-midnight px-4 sm:px-6 tablet:px-8 pt-6 tablet:pt-8 pb-24 tablet:pb-8",
         className
       )}
     >
-      <div className={clsx("mx-auto w-full max-w-7xl flex flex-col gap-6 md:gap-8", contentClassName)}>
+      <div className={clsx("mx-auto w-full max-w-7xl flex flex-col gap-6 tablet:gap-8", contentClassName)}>
         {children}
       </div>
     </main>

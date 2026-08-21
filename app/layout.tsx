@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Baloo_2, Nunito, Fraunces, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { CapacitorDeepLinkHandler } from "@/components/CapacitorDeepLinkHandler";
 import { MotionProvider } from "@/components/MotionProvider";
 import { DevTestModeBar } from "@/components/dev/DevTestModeBar";
+import { NativeLayoutProvider } from "@/components/nav/NativeLayoutProvider";
+import { LayoutBootstrapScript } from "@/components/nav/LayoutBootstrapScript";
 import { BRAND } from "@/lib/brand";
 
 // Adventure Mode faces. These were referenced in tailwind.config.ts as bare
@@ -56,6 +58,12 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -63,15 +71,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${baloo2.variable} ${nunito.variable} ${fraunces.variable} ${sourceSans.variable}`}
     >
       <body className="min-h-screen">
-        <CapacitorDeepLinkHandler />
-        {/* Every framer-motion animation in the app (lesson transitions,
-            achievement unlocks, board taps, confetti) automatically respects
-            the OS-level prefers-reduced-motion setting via this one wrapper,
-            rather than each animated component needing its own check. */}
-        <MotionProvider>{children}</MotionProvider>
-        {/* Renders nothing unless LOCAL_TEST_MODE is on (lib/devTestMode.ts) —
-            see that file for why a production build can't activate it. */}
-        <DevTestModeBar />
+        <LayoutBootstrapScript />
+        <NativeLayoutProvider>
+          <CapacitorDeepLinkHandler />
+          {/* Every framer-motion animation in the app (lesson transitions,
+              achievement unlocks, board taps, confetti) automatically respects
+              the OS-level prefers-reduced-motion setting via this one wrapper,
+              rather than each animated component needing its own check. */}
+          <MotionProvider>{children}</MotionProvider>
+          {/* Renders nothing unless LOCAL_TEST_MODE is on (lib/devTestMode.ts) —
+              see that file for why a production build can't activate it. */}
+          <DevTestModeBar />
+        </NativeLayoutProvider>
       </body>
     </html>
   );

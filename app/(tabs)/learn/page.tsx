@@ -89,7 +89,7 @@ export default function LearnPage() {
         </PrimaryCard>
       </Link>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 tablet:grid-cols-2 gap-8">
         <section className="w-full flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>Learn Chess</p>
           <div className="flex flex-col gap-1.5">

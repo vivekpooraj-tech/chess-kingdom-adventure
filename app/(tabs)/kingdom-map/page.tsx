@@ -124,12 +124,12 @@ export default async function KingdomMapPage() {
         initialUsedMinutes={screenTimeStatus.usedMinutes}
       >
       <TabPageShell>
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div className="flex flex-col tablet:flex-row tablet:items-end tablet:justify-between gap-4">
           <div className="text-left">
             <h1 className={TEXT.display}>Chess Mind</h1>
             <p className={`${TEXT.body} mt-2`}>What should we do today?</p>
           </div>
-          <div className="w-full lg:max-w-sm flex-none">
+          <div className="w-full tablet:max-w-sm flex-none">
             <HomeHeader
               displayName={child.display_name}
               avatar={avatar}
@@ -142,9 +142,9 @@ export default async function KingdomMapPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 tablet:grid-cols-3 gap-4">
           <DailyChallengeCard childId={child.id} />
-          <div className="lg:col-span-2">
+          <div className="tablet:col-span-2">
             <HeroJourneyCard recommendation={heroRecommendation} />
           </div>
         </div>
@@ -168,7 +168,7 @@ export default async function KingdomMapPage() {
 
         <section className="w-full flex flex-col gap-2">
           <SectionHeader title="Recommended" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 tablet:grid-cols-3 gap-3">
             <DestinationCard
               href="/play"
               title="Play"
@@ -214,7 +214,7 @@ export default async function KingdomMapPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-10">
+        <div className="grid grid-cols-1 tablet:grid-cols-2 gap-8 tablet:gap-10">
           <section className="min-w-0">
             <h2 id="journey" className={`${TEXT.heading} scroll-mt-8 mb-4`}>
               Your Kingdom Journey {currentZone.emoji}

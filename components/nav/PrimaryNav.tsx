@@ -100,7 +100,7 @@ export function PrimaryNav() {
       {/* Tablet/desktop — chess.com-style left sidebar */}
       <nav
         aria-label="Primary"
-        className="hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-56 flex-col border-r border-premium-gold/15 bg-premium-midnightDeep/98 backdrop-blur-md"
+        className="hidden tablet:flex fixed left-0 top-0 bottom-0 z-40 w-56 flex-col border-r border-premium-gold/15 bg-premium-midnightDeep/98 backdrop-blur-md"
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div className="px-4 py-5 border-b border-premium-gold/10">
@@ -122,7 +122,7 @@ export function PrimaryNav() {
       {/* Phone — bottom tab bar */}
       <nav
         aria-label="Primary"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
+        className="tablet:hidden fixed bottom-0 inset-x-0 z-40 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="mx-auto max-w-lg flex items-stretch justify-between px-1">
