@@ -32,7 +32,7 @@ export function HomeHeader({
   const progressPercent = Math.min(100, Math.round((Math.min(currentDay - 1, totalDays) / totalDays) * 100));
 
   return (
-    <div className="w-full max-w-md rounded-premiumCard bg-premium-midnight text-premium-ivory p-5 flex flex-col gap-4 shadow-premiumCard">
+    <div className="w-full h-full rounded-premiumCard bg-premium-midnight text-premium-ivory p-5 flex flex-col gap-4 shadow-premiumCard">
       <div className="flex items-center gap-3">
         <div
           className="w-14 h-14 rounded-full flex items-center justify-center text-2xl flex-none"

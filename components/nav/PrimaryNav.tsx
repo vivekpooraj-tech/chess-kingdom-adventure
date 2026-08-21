@@ -8,21 +8,9 @@ type NavItem = {
   label: string;
   href: string;
   icon: (props: { className?: string }) => JSX.Element;
-  /** Matches this item as active for any path under these prefixes too
-   * (defaults to just `href`) — for destinations reached from this tab
-   * that live at their own top-level route rather than as a /href/* child. */
   match?: string[];
 };
 
-// Five primary destinations (mobile UI/UX redesign) — Home/Puzzles/Play/
-// Learn/More, matching what a chess app's own users expect to find as
-// dedicated tabs rather than reaching Puzzles through Play or reaching
-// Profile/settings-adjacent screens with no tab of their own. "Home" keeps
-// the existing /kingdom-map URL (no redirect-site changes needed anywhere
-// else in the app) — it's the same route, restructured as a dashboard, not
-// a new page — and Chess Kingdom's deeper journey content still lives
-// there too, immediately below the dashboard section, so nothing about
-// "Chess Kingdom" actually moved or lost a route.
 const NAV_ITEMS: NavItem[] = [
   {
     label: "Home",
@@ -60,39 +48,94 @@ function isNavItemActive(pathname: string, item: NavItem): boolean {
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
+function NavLink({
+  item,
+  isActive,
+  layout,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  layout: "bottom" | "side";
+}) {
+  const Icon = item.icon;
+
+  if (layout === "side") {
+    return (
+      <Link
+        href={item.href}
+        aria-current={isActive ? "page" : undefined}
+        className={`flex items-center gap-3 rounded-premiumBtn px-3 py-2.5 transition-colors active:scale-[0.98] duration-100 ${
+          isActive
+            ? "bg-premium-gold/15 text-premium-gold border border-premium-gold/25"
+            : "text-premium-ivory/70 hover:text-premium-ivory hover:bg-white/5 border border-transparent"
+        }`}
+      >
+        <Icon className="w-5 h-5 flex-none" />
+        <span className={`font-classic-body text-sm ${isActive ? "font-semibold" : ""}`}>{item.label}</span>
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={isActive ? "page" : undefined}
+      className={`flex-1 min-h-[52px] flex flex-col items-center justify-center gap-1 py-2 transition-colors active:scale-95 duration-100 ${
+        isActive ? "text-premium-gold" : "text-premium-ivory/55 hover:text-premium-ivory"
+      }`}
+    >
+      <Icon className="w-6 h-6" />
+      <span className={`font-classic-body text-[10px] tracking-wide ${isActive ? "font-semibold" : ""}`}>
+        {item.label}
+      </span>
+    </Link>
+  );
+}
+
 export function PrimaryNav() {
   const pathname = usePathname();
 
   return (
-    <nav
-      aria-label="Primary"
-      className="fixed bottom-0 inset-x-0 z-40 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-    >
-      <div className="mx-auto max-w-md flex items-stretch justify-between px-1">
-        {NAV_ITEMS.map((item) => {
-          const isActive = isNavItemActive(pathname, item);
-          const Icon = item.icon;
-
-          return (
-            <Link
+    <>
+      {/* Tablet/desktop — chess.com-style left sidebar */}
+      <nav
+        aria-label="Primary"
+        className="hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-56 flex-col border-r border-premium-gold/15 bg-premium-midnightDeep/98 backdrop-blur-md"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
+        <div className="px-4 py-5 border-b border-premium-gold/10">
+          <p className="font-classic-display text-lg text-premium-ivory leading-tight">Chess Mind</p>
+          <p className="font-classic-body text-[11px] text-premium-ivory/45 mt-1">Think. Learn. Master.</p>
+        </div>
+        <div className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
               key={item.label}
-              href={item.href}
-              aria-current={isActive ? "page" : undefined}
-              // min-h-[48px] total tap target (icon + label + padding),
-              // flex-1 so all five share the bar evenly on any phone width.
-              className={`flex-1 min-h-[52px] flex flex-col items-center justify-center gap-1 py-2 transition-colors active:scale-95 duration-100 ${
-                isActive ? "text-premium-gold" : "text-premium-ivory/55 hover:text-premium-ivory"
-              }`}
-            >
-              <Icon className={isActive ? "w-6 h-6" : "w-6 h-6"} />
-              <span className={`font-classic-body text-[10px] tracking-wide ${isActive ? "font-semibold" : ""}`}>
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+              item={item}
+              isActive={isNavItemActive(pathname, item)}
+              layout="side"
+            />
+          ))}
+        </div>
+      </nav>
+
+      {/* Phone — bottom tab bar */}
+      <nav
+        aria-label="Primary"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="mx-auto max-w-lg flex items-stretch justify-between px-1">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.label}
+              item={item}
+              isActive={isNavItemActive(pathname, item)}
+              layout="bottom"
+            />
+          ))}
+        </div>
+      </nav>
+    </>
   );
 }

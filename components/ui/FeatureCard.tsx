@@ -28,7 +28,7 @@ export function FeatureCard({
   return (
     <Link
       href={href}
-      className={`w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center gap-4 border border-white/5 hover:border-premium-gold/30 active:scale-[0.98] transition-all duration-100 min-h-[76px] ${className ?? ""}`}
+      className={`w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center gap-4 border border-white/5 hover:border-premium-gold/30 active:scale-[0.98] transition-all duration-100 min-h-[76px] ${className ?? ""}`}
     >
       {Icon && (
         <div
