@@ -7,7 +7,6 @@ import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { createTournament, TournamentCategory } from "@/lib/supabase/tournamentQueries";
 import { getTimeControlsByCategory } from "@/content/timeControls";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 
@@ -186,7 +185,6 @@ export default function CreateTournamentPage() {
           </Button>
         </div>
       </main>
-      <PrimaryNav />
     </>
   );
 }

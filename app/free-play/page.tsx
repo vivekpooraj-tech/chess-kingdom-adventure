@@ -320,7 +320,7 @@ export default function FreePlayPage() {
               opponent="stockfish"
               difficulty={view.difficulty}
               size={boardSize}
-              arenaMode
+              focusMode
               boardSkinId={boardSkinId}
               pieceSetId={pieceSetId}
               displayFen={reviewFen}

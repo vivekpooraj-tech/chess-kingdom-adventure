@@ -46,36 +46,30 @@ body {
   border: 1px solid rgba(15, 22, 41, 0.08);
 }
 
-html.is-tablet .layout-sidebar-nav {
-  display: flex;
-}
-
 html.is-tablet .layout-bottom-nav {
-  display: none;
-}
-
-html.is-tablet .layout-shell-offset {
-  padding-left: 14rem;
-}
-
-html.is-tablet .layout-shell-main {
-  padding-bottom: 2rem;
-}
-
-html.is-phone .layout-sidebar-nav {
-  display: none;
+  display: flex;
 }
 
 html.is-phone .layout-bottom-nav {
   display: flex;
 }
 
-html.is-phone .layout-shell-offset {
-  padding-left: 0;
-}
-
+html.is-tablet .layout-shell-main,
 html.is-phone .layout-shell-main {
   padding-bottom: 6rem;
+}
+
+html.chess-focus-active .layout-bottom-nav {
+  display: none !important;
+}
+
+html.chess-focus-active .layout-shell-main {
+  padding-bottom: 0 !important;
+}
+
+html.chess-focus-active,
+html.chess-focus-active body {
+  overflow: hidden;
 }
 
 .text-gold-sheen {

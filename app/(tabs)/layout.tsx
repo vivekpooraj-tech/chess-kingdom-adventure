@@ -13,8 +13,8 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-premium-midnight">
       <TabShellNav />
-      {/* Offset main content beside the tablet sidebar; phones use bottom nav instead */}
-      <div className="layout-shell-offset tablet:pl-56">{children}</div>
+      {/* Offset main content above the bottom tab bar on all screen sizes */}
+      <div>{children}</div>
     </div>
   );
 }

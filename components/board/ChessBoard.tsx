@@ -141,6 +141,11 @@ export interface ChessBoardProps {
    * site, not a change to the default.
    */
   arenaMode?: boolean;
+  /**
+   * Chess Focus Mode — parent (ChessFocusLayout) owns sizing entirely.
+   * No vh caps or padding breakout; board is exactly min(size, 100%).
+   */
+  focusMode?: boolean;
 }
 
 /**
@@ -193,6 +198,7 @@ export function ChessBoard({
   readOnly = false,
   displayFen,
   arenaMode = false,
+  focusMode = false,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
   // `game` always remains the live game. A separate instance is only used
@@ -403,27 +409,24 @@ export function ChessBoard({
       */}
       <style jsx>{`
         .board-outer {
-          /* A separate max-width + max-height (previous attempt) doesn't
-             work here: width was an EXPLICIT pixel value, and CSS only
-             lets aspect-ratio derive the AUTO dimension (height) from an
-             explicit one, not the other way around — so max-height
-             clamped height alone, leaving width at its full explicit
-             value and breaking the square into a short, wide rectangle.
-             Since the interactive grid inside is positioned by percentage
-             against this box, a non-square parent scattered pieces
-             outside the visible board in landscape. Folding every
-             constraint into width itself (via min()) keeps width as the
-             single source of truth, so aspect-ratio always derives a
-             matching, correct height from it — guaranteed square. */
-          width: min(${size}px, 100%, ${arenaMode ? "90vh" : "75vh"});
+          width: ${focusMode ? `min(${size}px, 100%)` : `min(${size}px, 100%, ${arenaMode ? "96dvh" : "85dvh"})`};
         }
-        @media (max-width: 639px) {
+        ${focusMode
+          ? ""
+          : `@media (max-width: 1023px) {
           .board-outer {
-            width: min(calc(100% + 3rem), ${arenaMode ? "90vh" : "75vh"});
+            width: min(calc(100% + 3rem), ${arenaMode ? "96dvh" : "88dvh"});
             margin-left: -1.5rem;
             margin-right: -1.5rem;
           }
         }
+        @media (orientation: landscape) and (min-width: 600px) {
+          .board-outer {
+            width: min(${size}px, 100%, 98dvh);
+            margin-left: 0;
+            margin-right: 0;
+          }
+        }`}
       `}</style>
       <div
         className="board-outer relative rounded-card overflow-hidden shadow-premiumCard ring-1 ring-premium-gold/10 select-none mx-auto"

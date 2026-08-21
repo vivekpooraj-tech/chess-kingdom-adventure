@@ -452,7 +452,7 @@ export default function OnlineGamePage() {
             fen={game.fen}
             playableColor={myColor}
             size={boardSize}
-            arenaMode
+            focusMode
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}
             onMove={(opts) => handleMove(opts.fen, opts.san)}

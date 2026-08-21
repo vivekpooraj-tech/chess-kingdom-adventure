@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getCachedActiveChild, setCachedActiveChild } from "./activeChildCache";
 
 export interface ChildProfile {
   id: string;
@@ -147,6 +148,27 @@ export async function resolveActiveChild(
   }
 
   return { child: null, needsSelection: true, allChildren };
+}
+
+/**
+ * Same result as resolveActiveChild(), backed by a short-lived shared cache
+ * (see lib/supabase/activeChildCache.ts for the full safety reasoning --
+ * keyed by real auth user id + the cookie value, TTL'd, invalidated on
+ * child switch). Use this at page/component call sites instead of calling
+ * resolveActiveChild() directly; reach for the uncached version only where
+ * a guaranteed-fresh read matters more than avoiding a duplicate query.
+ */
+export async function resolveActiveChildCached(
+  supabase: SupabaseClient,
+  authUserId: string,
+  activeChildIdFromCookie: string | null
+): Promise<ActiveChildResolution> {
+  const cached = getCachedActiveChild(authUserId, activeChildIdFromCookie);
+  if (cached) return cached;
+
+  const resolution = await resolveActiveChild(supabase, authUserId, activeChildIdFromCookie);
+  setCachedActiveChild(authUserId, activeChildIdFromCookie, resolution);
+  return resolution;
 }
 
 export async function updateChildAvatar(

@@ -17,7 +17,7 @@ export function TabPageShell({
   return (
     <main
       className={clsx(
-        "layout-shell-main min-h-screen bg-premium-midnight px-4 sm:px-6 tablet:px-8 pt-6 tablet:pt-8 pb-24 tablet:pb-8",
+        "layout-shell-main min-h-screen bg-premium-midnight px-4 sm:px-6 tablet:px-8 pt-6 tablet:pt-8 pb-24",
         className
       )}
     >

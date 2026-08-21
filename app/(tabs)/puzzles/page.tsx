@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
-  resolveActiveChild,
+  resolveActiveChildCached,
   getTodayPreviewCount,
   incrementPreviewCount,
   localDateString,
@@ -16,11 +16,11 @@ import { PUZZLES } from "@/content/puzzles";
 import { isSoundMateInNFirstMove } from "@/lib/chess-engine/puzzleValidation";
 import { recordDailyChallengeResult } from "@/lib/supabase/dailyChallengeQueries";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { ChessFocusLayout } from "@/components/chess/ChessFocusLayout";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
-import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
+import { SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 import { TEXT } from "@/lib/designSystem";
 
@@ -105,7 +105,7 @@ function PuzzlesPageInner() {
         router.push("/sign-in");
         return;
       }
-      const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
+      const resolution = await resolveActiveChildCached(supabase, user.id, getActiveChildIdClient());
       if (resolution.needsSelection) {
         router.push("/choose-child");
         return;
@@ -211,113 +211,111 @@ function PuzzlesPageInner() {
     // to feel acknowledged immediately while the auth + active-child lookup
     // that `load()` above kicks off resolves in the background.
     return (
-      <>
-        <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-          <div className="h-9 w-48 rounded bg-premium-navy/70 animate-pulse" />
-          <SkeletonBlock className="w-full max-w-md aspect-square" />
-          <SkeletonRow className="h-4 w-40" />
-        </main>
-        <PrimaryNav />
-      </>
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
+        <div className="h-9 w-48 rounded bg-premium-navy/70 animate-pulse" />
+        <SkeletonBlock className="w-full max-w-md aspect-square" />
+        <SkeletonRow className="h-4 w-40" />
+      </main>
     );
   }
 
   const movesRemaining = puzzle.mateIn - moveCount;
 
-  return (
-    <>
-    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6 pt-10 pb-24">
-      <h1 className={`${TEXT.display} text-center`}>Puzzle Trainer</h1>
-
-      {limitReached ? (
-        <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
-          <span className="text-5xl">🔒</span>
-          <h2 className={TEXT.heading}>Today's free puzzles are used up</h2>
-          <p className={TEXT.body}>
-            Free accounts get {DAILY_PREVIEW_LIMIT} puzzles a day — come back tomorrow for more,
-            or unlock unlimited puzzles right now.
-          </p>
-          <UpgradeButton tone="premium" />
-        </SecondaryCard>
-      ) : (
-        <PrimaryCard className="flex flex-col items-center gap-4 max-w-2xl w-full">
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <span className="font-classic-body text-sm bg-premium-emerald/25 text-emerald-300 rounded-full px-3 py-1 font-semibold">
-              ♟ Checkmate in {puzzle.mateIn}
-            </span>
-            <span className="font-classic-body text-sm bg-premium-gold/15 text-premium-gold rounded-full px-3 py-1">
-              {puzzle.theme}
-            </span>
-            <SideToMoveIndicator color={puzzle.sideToMove} tone="premium" />
-          </div>
-
-          {status === "playing" && moveCount === 0 && (
-            <p className={`${TEXT.caption} normal-case`}>{OBJECTIVE_TEXT[puzzle.mateIn]}</p>
-          )}
-
+  if (!limitReached) {
+    return (
+      <ChessFocusLayout
+        title="Puzzle Trainer"
+        onExit={() => router.push("/kingdom-map")}
+        renderBoard={(boardSize) => (
           <ChessBoard
             key={boardKey}
             fen={puzzle.fen}
             playableColor={puzzle.sideToMove}
             opponent={puzzle.mateIn > 1 ? "stockfish" : undefined}
             difficulty="easy"
-            size={520}
+            size={boardSize}
+            focusMode
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}
             onMove={handleMove}
             onPositionChange={handlePositionChange}
           />
+        )}
+        sidePanel={
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-classic-body text-xs bg-premium-emerald/25 text-emerald-300 rounded-full px-3 py-1 font-semibold">
+                Checkmate in {puzzle.mateIn}
+              </span>
+              <span className="font-classic-body text-xs bg-premium-gold/15 text-premium-gold rounded-full px-3 py-1">
+                {puzzle.theme}
+              </span>
+              <SideToMoveIndicator color={puzzle.sideToMove} tone="premium" />
+            </div>
 
-          {status === "correct" && isDaily && (
-            <div className="flex flex-col items-center gap-2 text-center">
-              <p className="font-classic-display text-lg text-premium-gold">Daily Challenge Complete ✓</p>
-              <p className={`${TEXT.caption} normal-case`}>
-                Today's challenge: Checkmate in {puzzle.mateIn} · Accuracy: {Math.round(100 / (dailyAttempts + 1))}%
-              </p>
+            {status === "playing" && moveCount === 0 && (
+              <p className={`${TEXT.caption} normal-case`}>{OBJECTIVE_TEXT[puzzle.mateIn]}</p>
+            )}
+
+            {status === "correct" && isDaily && (
+              <div className="flex flex-col gap-2">
+                <p className="font-classic-display text-base text-premium-gold">Daily Challenge Complete ✓</p>
+                <p className={`${TEXT.caption} normal-case`}>
+                  Today&apos;s challenge: Checkmate in {puzzle.mateIn} · Accuracy:{" "}
+                  {Math.round(100 / (dailyAttempts + 1))}%
+                </p>
+                <Link href="/kingdom-map">
+                  <Button tone="premium" className="w-full">Back to the Kingdom →</Button>
+                </Link>
+              </div>
+            )}
+            {status === "correct" && !isDaily && (
+              <div className="flex flex-col gap-2">
+                <p className="font-classic-display text-base text-premium-gold">Checkmate — you found it.</p>
+                <Button tone="premium" onClick={nextPuzzle} className="w-full">
+                  Next Puzzle →
+                </Button>
+              </div>
+            )}
+            {status === "incorrect" && (
+              <div className="flex flex-col gap-2">
+                <p className="font-classic-display text-base text-red-300">Not quite — take another look.</p>
+                <Button tone="premium" variant="ghost" onClick={resetPuzzle} className="w-full">
+                  Try Again
+                </Button>
+              </div>
+            )}
+            {status === "playing" && moveCount > 0 && (
               <p className={`${TEXT.caption} normal-case italic`}>
-                {dailyAttempts === 0
-                  ? "Tomorrow's challenge will be a little harder."
-                  : dailyAttempts >= 2
-                  ? "Keep practicing — tomorrow's challenge will adapt to your progress."
-                  : "Nice work — see you tomorrow for the next one."}
+                {movesRemaining === 1
+                  ? "Good move! Now find the checkmate."
+                  : `Good move! ${movesRemaining} moves to go.`}
               </p>
-              <Link href="/kingdom-map" className="mt-1">
-                <Button tone="premium">Back to the Kingdom →</Button>
-              </Link>
-            </div>
-          )}
-          {status === "correct" && !isDaily && (
-            <div className="flex flex-col items-center gap-3">
-              <p className="font-classic-display text-lg text-premium-gold">Checkmate — you found it.</p>
-              <Button tone="premium" onClick={nextPuzzle}>Next Puzzle →</Button>
-            </div>
-          )}
-          {status === "incorrect" && (
-            <div className="flex flex-col items-center gap-3">
-              <p className="font-classic-display text-lg text-red-300">
-                Not quite — take another look.
-              </p>
-              <Button tone="premium" variant="ghost" onClick={resetPuzzle}>
-                Try Again
-              </Button>
-            </div>
-          )}
-          {status === "playing" && moveCount > 0 && (
-            <p className={`${TEXT.caption} normal-case italic`}>
-              {movesRemaining === 1
-                ? "Good move! Now find the checkmate."
-                : `Good move! ${movesRemaining} moves to go.`}
+            )}
+
+            <p className={`${TEXT.caption} mt-auto pt-2 border-t border-white/5`}>
+              {isPremium
+                ? `Solved this session: ${solvedCount}`
+                : `${Math.max(0, DAILY_PREVIEW_LIMIT - todayCount)} of ${DAILY_PREVIEW_LIMIT} free puzzles left today`}
             </p>
-          )}
-        </PrimaryCard>
-      )}
+          </div>
+        }
+      />
+    );
+  }
 
-      <p className={TEXT.caption}>
-        {isPremium
-          ? `Solved this session: ${solvedCount}`
-          : `${Math.max(0, DAILY_PREVIEW_LIMIT - todayCount)} of ${DAILY_PREVIEW_LIMIT} free puzzles left today`}
-      </p>
-
+  return (
+    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-4 sm:px-6 pt-8 pb-28">
+      <h1 className={`${TEXT.display} text-center`}>Puzzle Trainer</h1>
+      <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
+        <span className="text-5xl">🔒</span>
+        <h2 className={TEXT.heading}>Today&apos;s free puzzles are used up</h2>
+        <p className={TEXT.body}>
+          Free accounts get {DAILY_PREVIEW_LIMIT} puzzles a day — come back tomorrow for more, or unlock
+          unlimited puzzles right now.
+        </p>
+        <UpgradeButton tone="premium" />
+      </SecondaryCard>
       <Link
         href="/kingdom-map"
         className="font-body text-sm text-premium-ivory/40 underline underline-offset-2 min-h-[44px] flex items-center"
@@ -325,7 +323,5 @@ function PuzzlesPageInner() {
         Back to Home
       </Link>
     </main>
-    <PrimaryNav />
-    </>
   );
 }

@@ -11,7 +11,6 @@ import {
   Tournament,
 } from "@/lib/supabase/tournamentQueries";
 import { getTimeControl } from "@/content/timeControls";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { ListItemRow } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
@@ -118,7 +117,6 @@ export default async function TournamentsHubPage() {
           )}
         </section>
       </main>
-      <PrimaryNav />
     </>
   );
 }

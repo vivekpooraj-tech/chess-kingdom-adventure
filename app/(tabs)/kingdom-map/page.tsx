@@ -142,9 +142,9 @@ export default async function KingdomMapPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 tablet:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <DailyChallengeCard childId={child.id} />
-          <div className="tablet:col-span-2">
+          <div className="xl:col-span-2">
             <HeroJourneyCard recommendation={heroRecommendation} />
           </div>
         </div>

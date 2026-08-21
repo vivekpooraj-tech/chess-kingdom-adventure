@@ -1,9 +1,9 @@
 import { BoardSkinOption } from "@/lib/types";
 
-// Flat color-pair board skins. "Classic Forest" reproduces the board's
-// original hardcoded colors (kingdom-leaf/30, kingdom-forest/70) exactly, so
-// existing children (who all get this as their DB default) see no visual
-// change.
+// Flat color-pair board skins. Any existing child whose saved
+// board_skin_id no longer matches an entry here (e.g. a removed skin)
+// falls back to DEFAULT_BOARD_SKIN_ID via getBoardSkin() below, rather
+// than erroring.
 export const BOARD_SKINS: BoardSkinOption[] = [
   {
     id: "walnut-ivory",
@@ -13,13 +13,6 @@ export const BOARD_SKINS: BoardSkinOption[] = [
     darkSquare: "#6B4528",
     frameColor: "#3A2417",
     coordinateColor: "#F4E7C5",
-  },
-  {
-    id: "classic-forest",
-    name: "Classic Forest",
-    emoji: "🌲",
-    lightSquare: "rgba(74, 222, 128, 0.3)", // kingdom-leaf/30
-    darkSquare: "rgba(22, 128, 60, 0.7)", // kingdom-forest/70
   },
   {
     id: "sunset-desert",
@@ -34,13 +27,6 @@ export const BOARD_SKINS: BoardSkinOption[] = [
     emoji: "🧊",
     lightSquare: "rgba(56, 189, 248, 0.3)", // kingdom-sky/30
     darkSquare: "rgba(36, 30, 78, 0.75)", // kingdom-night/75
-  },
-  {
-    id: "candy-castle",
-    name: "Candy Castle",
-    emoji: "🍬",
-    lightSquare: "rgba(255, 107, 107, 0.3)", // kingdom-coral/30
-    darkSquare: "rgba(109, 90, 230, 0.65)", // kingdom-royal/65
   },
   {
     id: "wood-classic",

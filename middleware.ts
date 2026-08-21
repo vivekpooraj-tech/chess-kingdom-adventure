@@ -45,23 +45,39 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // getClaims() (not getUser()) is the load-bearing perf change here. This
+  // project signs JWTs with an asymmetric key (confirmed: ES256, not the
+  // legacy shared HS256 secret -- see the project's JWT header), so
+  // getClaims() verifies the token's signature, issuer, audience, and
+  // expiry LOCALLY via WebCrypto against the project's public JWKS
+  // (fetched once, cached by the SDK) instead of making a live network
+  // call to Supabase's Auth server on every single request. This is
+  // Supabase's own documented replacement for getUser() specifically for
+  // asymmetric-key projects -- not a bypass or a weaker check: an invalid
+  // signature, a tampered payload, or an expired token all still fail
+  // verification exactly as before. If the access token is close to
+  // expiring, the SDK transparently refreshes the session first (via the
+  // same cookie handlers configured above) before validating, so refresh
+  // behavior is unchanged. The one real trade-off: a session explicitly
+  // revoked server-side (e.g. "sign out everywhere", an admin action)
+  // before its own natural expiry won't be caught until that token
+  // expires naturally -- bounded by the access token's lifetime (curently
+  // ~1 hour), the same bound every JWT-based auth system accepts by
+  // design. If the project ever moves back to symmetric (HS256) signing,
+  // getClaims() itself falls back to a getUser()-equivalent network call
+  // automatically, so this stays correct either way.
   let {
-    data: { user },
+    data,
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getClaims();
+  let user = data?.claims ? { id: data.claims.sub } : null;
 
-  // The access token expires roughly hourly; refreshing it requires a real
-  // network round trip to Supabase's Auth server. Any single failure of
-  // that round trip (a mobile radio still waking from sleep right as the
-  // app reopens, a momentary timeout — see AuthRetryableFetchError) used
-  // to be treated identically to "never signed in," bouncing a genuinely
-  // signed-in user to a fresh magic-link request. One retry here resolves
-  // the overwhelming majority of these — they're momentary, not sustained.
+  // Same reasoning as the old getUser() retry: a single transient network
+  // failure (JWKS fetch on a cold cache, or a refresh round trip) isn't
+  // evidence the session is invalid.
   if (!user && userError && isAuthRetryableFetchError(userError)) {
-    ({
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser());
+    ({ data, error: userError } = await supabase.auth.getClaims());
+    user = data?.claims ? { id: data.claims.sub } : null;
   }
 
   const isPublic = PUBLIC_PATHS.some(
@@ -120,7 +136,7 @@ export async function middleware(request: NextRequest) {
     const headers = new Headers(request.headers);
     headers.set("x-user-id", user.id);
     const finalResponse = NextResponse.next({ request: { headers } });
-    // Carry forward any Set-Cookie written during getUser()'s token refresh.
+    // Carry forward any Set-Cookie written during getClaims()'s token refresh.
     response.cookies.getAll().forEach((cookie) => finalResponse.cookies.set(cookie));
     return finalResponse;
   }

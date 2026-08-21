@@ -22,7 +22,7 @@ export function GameChrome({
   hint?: string | null;
 }) {
   return (
-    <div className="w-full max-w-[480px] rounded-premiumCard bg-premium-navy p-4 flex flex-col gap-3 shadow-premiumCard">
+    <div className="w-full rounded-premiumCard bg-premium-navy p-3 sm:p-4 flex flex-col gap-3 shadow-premiumCard">
       <div className="flex items-start justify-between gap-3">
         <CapturedPieces capturedByWhite={capturedByWhite} capturedByBlack={capturedByBlack} />
         {statusText && (

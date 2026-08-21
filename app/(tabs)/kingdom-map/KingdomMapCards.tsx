@@ -40,7 +40,7 @@ export function KingdomMapCards({
   }
 
   return (
-    <div className="w-full grid grid-cols-1 tablet:grid-cols-2 gap-6">
+    <div className="w-full flex flex-col gap-6">
       {KINGDOM_ZONES.map((zone) => {
         const zoneLessons = lessons.filter(
           (l) => l.dayNumber >= zone.dayStart && l.dayNumber <= zone.dayEnd
@@ -71,7 +71,7 @@ export function KingdomMapCards({
               )}
             </div>
 
-            <div className="grid grid-cols-1 tablet:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
               {zoneLessons.map((lesson) => {
                 const reachedByProgress = isLessonReached(lesson.dayNumber);
                 const needsPremium = !isDayFree(lesson.dayNumber) && !isPremium;

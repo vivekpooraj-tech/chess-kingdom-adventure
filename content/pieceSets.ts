@@ -10,13 +10,6 @@ export const PIECE_SETS: PieceSetOption[] = [
     intrinsicSize: { width: 200, height: 300 },
   },
   {
-    id: "aurelia",
-    name: "Aurelia",
-    emoji: "👑",
-    folder: "aurelia",
-    intrinsicSize: { width: 1024, height: 1024 },
-  },
-  {
     id: "neostaunton-hand",
     name: "NeoStaunton",
     emoji: "♞",

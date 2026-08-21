@@ -7,6 +7,8 @@
 // Client Components (via document.cookie) need to read it, which a
 // server-only httpOnly cookie couldn't support without extra API routes.
 
+import { clearAllActiveChildCache } from "./supabase/activeChildCache";
+
 const COOKIE_NAME = "cka_active_child";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -21,6 +23,10 @@ export function setActiveChildIdClient(childId: string) {
   document.cookie = `${COOKIE_NAME}=${encodeURIComponent(
     childId
   )}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
+  // Immediate, not just eventually-consistent via the TTL -- see the
+  // comment on clearAllActiveChildCache() for why this is defense-in-depth
+  // rather than a correctness requirement.
+  clearAllActiveChildCache();
 }
 
 export const ACTIVE_CHILD_COOKIE_NAME = COOKIE_NAME;

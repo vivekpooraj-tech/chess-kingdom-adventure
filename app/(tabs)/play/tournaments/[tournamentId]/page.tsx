@@ -19,7 +19,6 @@ import {
   TournamentPairing,
 } from "@/lib/supabase/tournamentQueries";
 import { getTimeControl } from "@/content/timeControls";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
@@ -164,7 +163,6 @@ export default function TournamentDetailPage() {
             </Link>
           </SecondaryCard>
         </main>
-        <PrimaryNav />
       </>
     );
   }
@@ -349,7 +347,6 @@ export default function TournamentDetailPage() {
           </div>
         )}
       </main>
-      <PrimaryNav />
     </>
   );
 }

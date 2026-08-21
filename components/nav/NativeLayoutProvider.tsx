@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 
-const LAYOUT_VERSION = "3";
+const LAYOUT_VERSION = "5";
 
 /**
  * Classify tablet vs phone from physical screen size — Android WebViews often
