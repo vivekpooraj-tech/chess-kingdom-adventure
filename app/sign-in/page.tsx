@@ -1,78 +1,88 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Capacitor } from "@capacitor/core";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
+type Mode = "signin" | "signup";
+
+function formatAuthError(message: string | undefined, fallback: string) {
+  const rawMessage = message?.trim();
+  const isUsableMessage = rawMessage && /[a-zA-Z]/.test(rawMessage);
+  return isUsableMessage ? rawMessage : fallback;
+}
+
 /**
- * Email magic-link only for this slice. Google/Apple OAuth are wired the
- * same way (supabase.auth.signInWithOAuth({ provider: 'google' | 'apple' }))
- * but need a registered OAuth app + redirect URLs configured in the Supabase
- * dashboard first — that's an account-setup task, not a code task, so it's
- * left as a documented next step in the README rather than half-wired here.
+ * Email + password sign-in for parents. Supabase must have the Email provider
+ * enabled with password auth in the project dashboard (not magic link only).
  */
 export default function SignInPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<Mode>("signin");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [nextPath, setNextPath] = useState<string | null>(null);
 
-  // Read via window.location instead of useSearchParams() — this page is
-  // prerendered statically, and useSearchParams() would force it dynamic
-  // (and needs a Suspense boundary). /auth/callback lands here with
-  // ?error=auth_failed when a magic-link code was missing, expired, or
-  // already used, so the user isn't just silently bounced back with no
-  // explanation.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    if (next?.startsWith("/")) {
+      setNextPath(next);
+    }
+
     if (params.get("error") === "auth_failed") {
-      setError("That sign-in link expired or was already used — please request a new one.");
+      setError("Sign-in failed — please try again.");
+      window.history.replaceState({}, "", "/sign-in");
+    }
+
+    const devSeedError = params.get("devSeedError");
+    if (devSeedError) {
+      setError(decodeURIComponent(devSeedError));
       window.history.replaceState({}, "", "/sign-in");
     }
   }, []);
 
-  async function sendMagicLink() {
+  async function submit() {
     setLoading(true);
     setError(null);
+    setInfo(null);
+
     const supabase = createClient();
-    // Redirecting straight to a chesskingdom:// custom scheme from
-    // Supabase's server-side verification step turned out to get silently
-    // blocked by Chrome — the email link already goes through 2-3
-    // automatic redirects (Gmail's link-safety wrapper, the email
-    // provider's click-tracking, then Supabase itself) before reaching
-    // this, and Chrome restricts handing off to an external app after
-    // that many hops with no direct user gesture. Landing on our own
-    // https page first is reliable (confirmed in testing), so the native
-    // case is flagged via ?platform=native and the handoff to the app
-    // happens from there instead — see app/auth/callback/route.ts.
-    const base = `${window.location.origin}/auth/callback`;
-    const redirectTo = Capacitor.isNativePlatform() ? `${base}?platform=native` : base;
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: redirectTo,
-      },
-    });
-    setLoading(false);
-    if (error) {
-      // error.message isn't always a usable string — some Supabase error
-      // shapes (e.g. a raw 500 from the mail sender) don't populate it the
-      // way supabase-js expects. Confirmed in testing: it comes back as
-      // the literal 2-character string "{}" for this specific failure, not
-      // empty/undefined — a plain truthy check let it straight through, so
-      // this checks for actual letters instead of just non-emptiness.
-      const rawMessage = error.message?.trim();
-      const isUsableMessage = rawMessage && /[a-zA-Z]/.test(rawMessage);
-      setError(
-        isUsableMessage
-          ? rawMessage
-          : "Something went wrong sending that email — please try again in a moment."
-      );
-    } else {
-      setSent(true);
+    const destination = nextPath ? `/parent-gate?next=${encodeURIComponent(nextPath)}` : "/parent-gate";
+
+    if (mode === "signin") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+
+      if (error) {
+        setError(formatAuthError(error.message, "Invalid email or password — please try again."));
+        return;
+      }
+
+      router.push(destination);
+      return;
     }
+
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    setLoading(false);
+
+    if (error) {
+      setError(formatAuthError(error.message, "Could not create that account — please try again."));
+      return;
+    }
+
+    if (data.session) {
+      router.push(destination);
+      return;
+    }
+
+    setInfo("Account created. If email confirmation is enabled in Supabase, check your inbox, then sign in here.");
+    setMode("signin");
   }
 
   return (
@@ -81,29 +91,52 @@ export default function SignInPage() {
         <span className="text-5xl">🔑</span>
         <h1 className="font-display text-2xl text-kingdom-night">Parent Sign-In</h1>
         <p className="font-body text-kingdom-night/70 text-sm">
-          We'll email you a magic link — no password to remember.
+          {mode === "signin"
+            ? "Sign in with your email and password."
+            : "Create a parent account with email and password."}
         </p>
 
-        {sent ? (
-          <p className="font-body text-kingdom-forest">
-            Check your inbox! Tap the link we sent to {email}.
-          </p>
-        ) : (
-          <>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              aria-label="Email address"
-              className="w-full rounded-btn px-4 py-3 border-2 border-kingdom-night/10 font-body text-lg"
-            />
-            {error && <p className="font-body text-sm text-kingdom-coral">{error}</p>}
-            <Button size="md" onClick={sendMagicLink} disabled={!email || loading}>
-              {loading ? "Sending..." : "Send Magic Link"}
-            </Button>
-          </>
-        )}
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          autoComplete="email"
+          aria-label="Email address"
+          className="w-full rounded-btn px-4 py-3 border-2 border-kingdom-night/10 font-body text-lg"
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          autoComplete={mode === "signin" ? "current-password" : "new-password"}
+          aria-label="Password"
+          className="w-full rounded-btn px-4 py-3 border-2 border-kingdom-night/10 font-body text-lg"
+        />
+
+        {error && <p className="font-body text-sm text-kingdom-coral">{error}</p>}
+        {info && <p className="font-body text-sm text-kingdom-forest">{info}</p>}
+
+        <Button
+          size="md"
+          onClick={submit}
+          disabled={!email || password.length < 6 || loading}
+        >
+          {loading ? "Please wait..." : mode === "signin" ? "Sign In" : "Create Account"}
+        </Button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMode(mode === "signin" ? "signup" : "signin");
+            setError(null);
+            setInfo(null);
+          }}
+          className="font-body text-sm text-kingdom-royal underline underline-offset-2"
+        >
+          {mode === "signin" ? "Need an account? Create one" : "Already have an account? Sign in"}
+        </button>
       </Card>
     </main>
   );
