@@ -46,6 +46,38 @@ body {
   border: 1px solid rgba(15, 22, 41, 0.08);
 }
 
+html.is-tablet .layout-sidebar-nav {
+  display: flex;
+}
+
+html.is-tablet .layout-bottom-nav {
+  display: none;
+}
+
+html.is-tablet .layout-shell-offset {
+  padding-left: 14rem;
+}
+
+html.is-tablet .layout-shell-main {
+  padding-bottom: 2rem;
+}
+
+html.is-phone .layout-sidebar-nav {
+  display: none;
+}
+
+html.is-phone .layout-bottom-nav {
+  display: flex;
+}
+
+html.is-phone .layout-shell-offset {
+  padding-left: 0;
+}
+
+html.is-phone .layout-shell-main {
+  padding-bottom: 6rem;
+}
+
 .text-gold-sheen {
   background: linear-gradient(135deg, #F3D98B 0%, #D4AF37 45%, #B8944A 100%);
   -webkit-background-clip: text;

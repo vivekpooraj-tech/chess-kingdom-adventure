@@ -3,29 +3,26 @@
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 
-const LAYOUT_VERSION = "2";
+const LAYOUT_VERSION = "3";
 
 /**
- * Android WebViews often report a CSS width below Tailwind's `md` (768px),
- * especially in portrait on 10" tablets — so media queries alone miss the
- * tablet layout. This sets `data-layout` + `is-phone` / `is-tablet` on
- * <html> from the real innerWidth, which our Tailwind variants read.
+ * Classify tablet vs phone from physical screen size — Android WebViews often
+ * report a narrow innerWidth (phone-like) even on 10" tablets, which is why
+ * media queries and innerWidth checks kept showing the mobile layout.
  */
-function resolveLayout(width: number, height: number) {
-  const shortEdge = Math.min(width, height);
-  const longEdge = Math.max(width, height);
+function resolveLayout() {
+  const screenShort = Math.min(window.screen.width, window.screen.height);
+  const screenLong = Math.max(window.screen.width, window.screen.height);
+  const viewWidth = window.innerWidth;
 
-  // 10" tablets in portrait can land around 600–750 CSS px wide.
-  if (shortEdge >= 600 || longEdge >= 900) {
-    return width >= 1024 ? "desktop" : "tablet";
+  if (screenShort >= 600 || screenLong >= 900) {
+    return viewWidth >= 1024 ? "desktop" : "tablet";
   }
   return "phone";
 }
 
 function applyLayout() {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const layout = resolveLayout(width, height);
+  const layout = resolveLayout();
   const root = document.documentElement;
 
   root.dataset.layout = layout;
@@ -38,7 +35,6 @@ export function NativeLayoutProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     applyLayout();
 
-    // One-time reload after a layout deploy so stale WebView HTML/JS isn't stuck.
     if (Capacitor.isNativePlatform()) {
       const key = "chessmind-layout-version";
       const previous = localStorage.getItem(key);

@@ -2,12 +2,13 @@
 export function LayoutBootstrapScript() {
   const script = `
 (function () {
-  var w = window.innerWidth;
-  var h = window.innerHeight;
-  var shortEdge = Math.min(w, h);
-  var longEdge = Math.max(w, h);
+  var sw = window.screen.width;
+  var sh = window.screen.height;
+  var shortEdge = Math.min(sw, sh);
+  var longEdge = Math.max(sw, sh);
+  var vw = window.innerWidth;
   var layout = (shortEdge >= 600 || longEdge >= 900)
-    ? (w >= 1024 ? "desktop" : "tablet")
+    ? (vw >= 1024 ? "desktop" : "tablet")
     : "phone";
   var root = document.documentElement;
   root.dataset.layout = layout;
