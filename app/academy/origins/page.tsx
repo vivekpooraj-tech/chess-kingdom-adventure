@@ -136,14 +136,20 @@ export default function ChessOriginsPage() {
           <p className={`${TEXT.body} mt-2`}>{content.subtitle}</p>
         </div>
 
-        {/* Video hero — real player when a video exists, honest placeholder otherwise. */}
-        <div className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard overflow-hidden">
+        {/* Video hero — real player when a video exists, honest placeholder
+            otherwise. Width scales with the device: ~full-width on phones
+            (capped at max-w-md), wider on large phones (sm:) and on the
+            tablet/desktop layout (tablet:). The frame is always a 16:9
+            aspect-ratio box; `object-contain` letterboxes any non-16:9
+            source against the black background rather than cropping it. */}
+        <div className="w-full max-w-md sm:max-w-xl tablet:max-w-3xl rounded-premiumCard bg-premium-navy shadow-premiumCard overflow-hidden">
           {content.videoUrl ? (
             <video
               ref={videoRef}
               src={content.videoUrl}
               controls
-              className="w-full aspect-video bg-black"
+              playsInline
+              className="w-full aspect-video bg-black object-contain"
               onLoadedMetadata={handleVideoLoadedMetadata}
               onTimeUpdate={handleTimeUpdate}
             >
