@@ -14,6 +14,8 @@ import {
 } from "@/lib/chessMind/mathQuestions";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
+import { TEXT } from "@/lib/designSystem";
 import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
@@ -155,9 +157,9 @@ export default function ChessMathematicsPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
-          <h1 className="font-classic-display text-3xl text-premium-ivory">Chess Mathematics</h1>
+      <Screen maxWidth="compact">
+        <div className="mx-auto max-w-xl text-center">
+          <h1 className={TEXT.display}>Chess Mathematics</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">
             Real positions, real counting — every answer here comes straight from the rules of
             chess.
@@ -171,7 +173,7 @@ export default function ChessMathematicsPage() {
           <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
         </div>
 
-        <div className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-5">
+        <div className="mx-auto w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-5">
           {round.fen && (
             <ChessBoard
               fen={round.fen}
@@ -224,7 +226,7 @@ export default function ChessMathematicsPage() {
         >
           Back to Chess Mind
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

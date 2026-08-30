@@ -11,6 +11,8 @@ import {
 } from "@/content/chessMindCalculation";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
+import { TEXT } from "@/lib/designSystem";
 import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
@@ -159,9 +161,9 @@ export default function CalculationPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
-          <h1 className="font-classic-display text-3xl text-premium-ivory">Calculation</h1>
+      <Screen maxWidth="compact">
+        <div className="mx-auto max-w-xl text-center">
+          <h1 className={TEXT.display}>Calculation</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">
             Find the best move, then look further ahead.
           </p>
@@ -192,7 +194,7 @@ export default function CalculationPage() {
           <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
         </div>
 
-        <div className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
+        <div className="mx-auto w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
           <p className="font-classic-display text-base text-premium-ivory text-center">{challenge.prompt}</p>
 
           <ChessBoard
@@ -265,7 +267,7 @@ export default function CalculationPage() {
         <Link href="/chess-mind" className="font-body text-sm text-premium-ivory/40 underline underline-offset-2">
           Back to Chess Mind
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

@@ -7,6 +7,8 @@ import { PATTERN_CHALLENGES } from "@/content/chessMindPatterns";
 import { generateVisualizationQuestion, RevealQuestion } from "@/lib/chessMind/revealQuestions";
 import { RevealChallenge } from "@/components/chessMind/RevealChallenge";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
+import { TEXT } from "@/lib/designSystem";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
@@ -61,9 +63,9 @@ export default function VisualizationPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
-          <h1 className="font-classic-display text-3xl text-premium-ivory">Visualization</h1>
+      <Screen maxWidth="compact">
+        <div className="mx-auto max-w-xl text-center">
+          <h1 className={TEXT.display}>Visualization</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">
             See the position, then picture where a piece can go.
           </p>
@@ -90,7 +92,7 @@ export default function VisualizationPage() {
         >
           Back to Chess Mind
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

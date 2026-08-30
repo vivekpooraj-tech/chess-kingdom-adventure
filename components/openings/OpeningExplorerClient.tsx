@@ -62,7 +62,7 @@ export function OpeningExplorerClient({
   );
 
   return (
-    <div className="w-full max-w-md flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <div className="text-center">
         <p className={`${TEXT.meta} text-premium-gold`}>Chess Openings</p>
         <h1 className={`${TEXT.display} mt-1`}>Explore Chess Openings</h1>

@@ -1,3 +1,4 @@
+import { Screen } from "@/components/layout/Screen";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -72,21 +73,21 @@ export default async function TournamentsHubPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
+      <Screen maxWidth="medium">
+        <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Group Tournament</h1>
           <p className={`${TEXT.body} mt-2`}>
             Swiss-style — everyone plays every round, ranked by tournament points.
           </p>
         </div>
 
-        <Link href="/play/tournaments/create" className="w-full max-w-md">
+        <Link href="/play/tournaments/create" className="w-full">
           <Button tone="premium" className="w-full">
             Create Tournament
           </Button>
         </Link>
 
-        <section className="w-full max-w-md flex flex-col gap-2">
+        <section className="w-full flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>Open Tournaments</p>
           {openTournaments.length === 0 ? (
             <p className={TEXT.body}>No open tournaments right now — start one!</p>
@@ -99,7 +100,7 @@ export default async function TournamentsHubPage() {
           )}
         </section>
 
-        <section className="w-full max-w-md flex flex-col gap-2">
+        <section className="w-full flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>My Tournaments</p>
           {myTournaments.length === 0 ? (
             <p className={TEXT.body}>You haven&apos;t joined a tournament yet.</p>
@@ -116,7 +117,7 @@ export default async function TournamentsHubPage() {
             </div>
           )}
         </section>
-      </main>
+      </Screen>
     </>
   );
 }

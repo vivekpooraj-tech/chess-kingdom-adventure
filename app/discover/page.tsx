@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
 import { TEXT } from "@/lib/designSystem";
 
 type DiscoverSection =
@@ -49,20 +50,20 @@ const SECTIONS: DiscoverSection[] = [
 export default function DiscoverPage() {
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
+      <Screen maxWidth="medium">
+        <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Discover</h1>
           <p className={`${TEXT.body} mt-2`}>
             Where chess came from, and the stories behind the pieces.
           </p>
         </div>
 
-        <div className="w-full max-w-md flex flex-col gap-3">
+        <div className="flex w-full flex-col gap-3">
           {SECTIONS.map((section) =>
             "soon" in section ? (
               <div
                 key={section.id}
-                className="flex items-center gap-4 rounded-premiumCard bg-premium-navy/40 border border-white/5 p-5 opacity-60"
+                className="list-row flex items-center gap-4 rounded-premiumCard bg-premium-navy/40 border border-white/5 p-5 opacity-60"
               >
                 <span className="text-3xl flex-none">{section.emoji}</span>
                 <div className="flex-1">
@@ -77,7 +78,7 @@ export default function DiscoverPage() {
               <Link
                 key={section.id}
                 href={section.href}
-                className="flex items-center gap-4 rounded-premiumCard bg-premium-navy shadow-premiumCard border border-white/5 hover:border-premium-gold/30 transition-colors p-5"
+                className="list-row flex items-center gap-4 rounded-premiumCard bg-premium-navy shadow-premiumCard border border-white/5 hover:border-premium-gold/30 transition-colors p-5"
               >
                 <span className="text-3xl flex-none">{section.emoji}</span>
                 <div className="flex-1">
@@ -96,7 +97,7 @@ export default function DiscoverPage() {
         >
           Back to Home
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

@@ -2,6 +2,7 @@
 
 import { Logo } from "@/components/branding/Logo";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
+import { ModalOverlay } from "@/components/ui/ModalOverlay";
 import { TEXT } from "@/lib/designSystem";
 
 const CHECKLIST = [
@@ -27,13 +28,7 @@ export function GameLimitPaywall({
   onDismiss: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 bg-premium-midnightDeep/80 backdrop-blur-sm flex items-center justify-center px-6"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Unlock unlimited play"
-    >
-      <div className="max-w-sm w-full bg-premium-navy rounded-premiumCard shadow-premiumGlow border border-premium-gold/20 p-6 flex flex-col items-center gap-4 text-center">
+    <ModalOverlay ariaLabel="Unlock unlimited play">
         <Logo variant="compact" size={48} />
         <p className={`${TEXT.meta} text-premium-gold`}>♟ Unlimited Play</p>
         <p className={TEXT.body}>
@@ -54,11 +49,10 @@ export function GameLimitPaywall({
         <button
           type="button"
           onClick={onDismiss}
-          className="font-classic-body text-sm text-premium-ivory/50 underline underline-offset-2"
+          className="min-h-[44px] font-classic-body text-sm text-premium-ivory/50 underline underline-offset-2"
         >
           Maybe Later
         </button>
-      </div>
-    </div>
+    </ModalOverlay>
   );
 }

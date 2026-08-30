@@ -34,7 +34,7 @@ export function PrimaryCard({ className, children, ...props }: HTMLAttributes<HT
     <div
       className={clsx(
         "rounded-premiumCard bg-gradient-to-br from-premium-navyLight via-premium-navy to-premium-midnight",
-        "border border-premium-gold/25 shadow-premiumGlow p-6 sm:p-8",
+        "border border-premium-gold/25 shadow-premiumGlow p-[clamp(1.25rem,3.5vw,2rem)]",
         className
       )}
       {...props}
@@ -48,7 +48,7 @@ export function SecondaryCard({ className, children, ...props }: HTMLAttributes<
   return (
     <div
       className={clsx(
-        "rounded-premiumCard bg-premium-navy shadow-premiumCard p-5",
+        "rounded-premiumCard bg-premium-navy shadow-premiumCard p-[clamp(1rem,3vw,1.5rem)]",
         className
       )}
       {...props}
@@ -86,7 +86,12 @@ interface ListItemRowProps extends HTMLAttributes<HTMLDivElement> {
  * otherwise a plain row. */
 export function ListItemRow({ href, onClick, className, children, ...props }: ListItemRowProps) {
   const rowClass = clsx(
-    "flex items-center gap-3 rounded-premiumBtn bg-premium-navy/60 hover:bg-premium-navy active:bg-premium-navy active:scale-[0.98] px-4 py-3 transition-[background-color,transform] duration-100",
+    // `list-row` (see globals.css) forces `min-width: 0` on every direct
+    // child so the text column can shrink and WRAP instead of forcing the
+    // row wider than its container — which is what made headings overlap
+    // the next card in narrow / multi-column layouts. Icons stay put
+    // because they're `flex-none`.
+    "list-row flex min-h-[3rem] items-center gap-3 rounded-premiumBtn bg-premium-navy/60 hover:bg-premium-navy active:bg-premium-navy active:scale-[0.98] px-4 py-3 transition-[background-color,transform] duration-100",
     className
   );
   if (href) {

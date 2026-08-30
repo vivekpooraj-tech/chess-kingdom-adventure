@@ -22,6 +22,127 @@ body {
   }
 }
 
+/* ===================================================================
+   RESPONSIVE PRIMITIVES (Phase 2)
+   The layout system is CSS-driven. These are the shared building blocks
+   the <Screen> shell and pages compose — no page should re-derive a
+   horizontal gutter, a nav-clearance padding, or a column count by hand,
+   and no JS class (is-phone / is-tablet) gates any of them.
+   =================================================================== */
+
+:root {
+  /* PrimaryNav's content height (its items are min-h-[56px]). Single
+     source of truth for how much space a fixed bottom bar occupies. */
+  --bottom-nav-h: 3.5rem;
+  /* Device chrome insets — 0 on the web, real values in a native WebView
+     with viewport-fit=cover (see app/layout.tsx). */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  /* One fluid horizontal page gutter: tight on phones, generous on
+     desktop, never a hard jump. */
+  --screen-gutter: clamp(1rem, 4vw, 2.5rem);
+}
+
+/* Horizontal page padding — use instead of ad-hoc px-4 / px-6 / tablet:px-8. */
+.screen-x {
+  padding-left: var(--screen-gutter);
+  padding-right: var(--screen-gutter);
+}
+
+/* Top padding that clears the status-bar inset on notched devices. */
+.pt-safe {
+  padding-top: calc(1.5rem + var(--safe-top));
+}
+@media (min-width: 640px) {
+  .pt-safe {
+    padding-top: calc(2rem + var(--safe-top));
+  }
+}
+
+/* Bottom padding that ALWAYS clears the fixed PrimaryNav + the device's
+   bottom inset (gesture bar or 3-button nav) + a breathing gap. Replaces
+   the hardcoded pb-24 duplicated across ~30 pages. */
+.pb-nav-safe {
+  padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 1.5rem);
+}
+/* Chess-focus mode hides the bottom nav, so pages inside it reclaim the space. */
+html.chess-focus-active .pb-nav-safe {
+  padding-bottom: 0;
+}
+
+/* Safety net for premium screens NOT yet migrated to <Screen> that still
+   hardcode `pb-24` under the fixed PrimaryNav — swap it for safe-area-aware
+   clearance so content is never trapped behind the nav on a 3-button-nav
+   device. Scoped to the literal `pb-24` class so game/lesson screens that
+   have no bottom nav (they set py-8 / py-12 / justify-center instead) are
+   untouched. Migrated pages use .pb-nav-safe directly. */
+main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
+  padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 1.5rem);
+}
+html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
+  padding-bottom: 0;
+}
+
+/* Content-aware grid. A new column appears ONLY when there is room for a
+   full --grid-min-wide column; below that it collapses to a single
+   full-width column (the min(100%, …) guard prevents overflow on very
+   narrow screens). Set --grid-min per context:
+     list rows / nav tiles   → 16rem
+     feature / destination    → 20rem
+     large dashboard sections → 22rem                                     */
+.auto-grid {
+  display: grid;
+  gap: var(--grid-gap, clamp(0.75rem, 2.5vw, 1.5rem));
+  /* Single column by default (every phone). `minmax(0, 1fr)` — not a bare
+     `1fr` — so the column can shrink below the widest child's min-content
+     and let that child WRAP, instead of the child forcing the grid (and a
+     fixed-position nav that keys off it) past the viewport. Multi-column
+     kicks in via the container query below — measured against the nearest
+     .cq ancestor (the <Screen> content column), NOT the viewport, so a
+     grid inside a narrow region stays honest. --grid-min is the smallest a
+     card may get before the row drops a column; keep it <= ~24rem. */
+  grid-template-columns: minmax(0, 1fr);
+}
+.auto-grid > * {
+  min-width: 0;
+}
+@container (min-width: 40rem) {
+  .auto-grid {
+    grid-template-columns: repeat(auto-fit, minmax(var(--grid-min, 18rem), 1fr));
+  }
+}
+/* Fallback for engines without container-query support (very old WebViews):
+   fall back to a viewport media query so multi-column still happens. */
+@supports not (container-type: inline-size) {
+  @media (min-width: 48rem) {
+    .auto-grid {
+      grid-template-columns: repeat(auto-fit, minmax(var(--grid-min, 18rem), 1fr));
+    }
+  }
+}
+
+/* Opt-in container context so a nested .auto-grid (or @container rule)
+   measures the wrapper it sits in rather than the whole viewport. */
+.cq {
+  container-type: inline-size;
+}
+
+/* The vertical rhythm between a <Screen>'s top-level sections — one fluid
+   value so every page breathes consistently (no per-page gap-6/gap-8). */
+.screen-stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.25rem, 1rem + 1.2vw, 2rem);
+}
+
+/* Shared list row (components/ui/Card.tsx → ListItemRow). Every direct
+   child becomes shrinkable so the text column wraps within the row rather
+   than pushing the row past its container and overlapping neighbours;
+   flex-none icons/affordances keep their size regardless. */
+.list-row > * {
+  min-width: 0;
+}
+
 /* ---- Premium / Classic Mode surface language -----------------------
    Glass + gradient treatments used by premium chrome (Academy, upgrade
    screens, achievement cards). Kept as plain CSS rather than Tailwind
@@ -105,25 +226,16 @@ body {
   border: 1px solid rgba(15, 22, 41, 0.08);
 }
 
-html.is-tablet .layout-bottom-nav {
+.layout-bottom-nav {
   display: flex;
 }
 
-html.is-phone .layout-bottom-nav {
-  display: flex;
-}
-
-html.is-tablet .layout-shell-main,
-html.is-phone .layout-shell-main {
-  padding-bottom: 6rem;
-}
+/* Bottom-nav clearance now lives in the shared .pb-nav-safe utility above
+   (safe-area aware), applied by <Screen> / TabPageShell — no per-layout or
+   per-page padding rules needed. */
 
 html.chess-focus-active .layout-bottom-nav {
   display: none !important;
-}
-
-html.chess-focus-active .layout-shell-main {
-  padding-bottom: 0 !important;
 }
 
 html.chess-focus-active,

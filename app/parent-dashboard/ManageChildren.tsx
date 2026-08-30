@@ -43,7 +43,7 @@ export function ManageChildren({
   }
 
   return (
-    <SecondaryCard className="w-full max-w-lg flex flex-col gap-4">
+    <SecondaryCard className="w-full flex flex-col gap-4">
       <h2 className={TEXT.heading}>Children</h2>
 
       <ul className="flex flex-col gap-2">

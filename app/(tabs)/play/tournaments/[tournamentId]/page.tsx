@@ -1,5 +1,6 @@
 "use client";
 
+import { Screen } from "@/components/layout/Screen";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -217,8 +218,8 @@ export default function TournamentDetailPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
+      <Screen maxWidth="medium">
+        <div className="mx-auto max-w-xl text-center">
           <p className={`${TEXT.meta} text-premium-gold`}>
             {tc.label} {tournament.category}
           </p>
@@ -232,7 +233,7 @@ export default function TournamentDetailPage() {
 
         {/* --- Waiting / starting: lobby --- */}
         {(tournament.status === "waiting" || tournament.status === "starting") && (
-          <SecondaryCard className="w-full max-w-md text-center flex flex-col items-center gap-3">
+          <SecondaryCard className="w-full text-center mx-auto max-w-lg flex flex-col items-center gap-3">
             <p className={TEXT.body}>{STATUS_LABEL[tournament.status]}</p>
             {isFull && !isParticipant && (
               <p className="font-classic-display text-lg text-premium-gold">Tournament Full</p>
@@ -256,7 +257,7 @@ export default function TournamentDetailPage() {
         {/* --- Active: my pairing + round status --- */}
         {tournament.status === "active" && (
           <>
-            <div className="w-full max-w-md text-center">
+            <div className="w-full text-center mx-auto max-w-lg">
               <p className={`${TEXT.caption} uppercase tracking-wide`}>
                 Round {tournament.current_round} / {tournament.rounds_total}
               </p>
@@ -264,13 +265,13 @@ export default function TournamentDetailPage() {
 
             {myPairing ? (
               myPairing.is_bye ? (
-                <PrimaryCard className="w-full max-w-md text-center flex flex-col items-center gap-2">
+                <PrimaryCard className="w-full text-center mx-auto max-w-lg flex flex-col items-center gap-2">
                   <span className="text-3xl">😴</span>
                   <p className={TEXT.heading}>BYE — +1 point</p>
                   <p className={`${TEXT.caption} normal-case`}>No game this round — you get a free point.</p>
                 </PrimaryCard>
               ) : (
-                <PrimaryCard className="w-full max-w-md flex flex-col items-center gap-3">
+                <PrimaryCard className="w-full flex flex-col items-center gap-3">
                   <p className={`${TEXT.caption} uppercase tracking-wide`}>Your Pairing</p>
                   <div className="flex items-center gap-3 text-center">
                     <div>
@@ -298,7 +299,7 @@ export default function TournamentDetailPage() {
                 </PrimaryCard>
               )
             ) : (
-              <SecondaryCard className="w-full max-w-md text-center">
+              <SecondaryCard className="w-full text-center mx-auto max-w-lg">
                 <p className={TEXT.body}>No pairing found for you this round.</p>
               </SecondaryCard>
             )}
@@ -309,7 +310,7 @@ export default function TournamentDetailPage() {
 
         {/* --- Completed: final standings --- */}
         {tournament.status === "completed" && (
-          <PrimaryCard className="w-full max-w-md text-center flex flex-col items-center gap-3">
+          <PrimaryCard className="w-full text-center mx-auto max-w-lg flex flex-col items-center gap-3">
             <span className="text-4xl">🏆</span>
             <p className={TEXT.heading}>Tournament Complete</p>
             {myRank && (
@@ -322,7 +323,7 @@ export default function TournamentDetailPage() {
 
         {/* --- Standings (shown once the tournament has actually started) --- */}
         {standings.length > 0 && (
-          <div className="w-full max-w-md flex flex-col gap-2">
+          <div className="w-full flex flex-col gap-2">
             <p className={`${TEXT.caption} uppercase tracking-wide`}>Standings</p>
             <div className="flex flex-col gap-1.5">
               {standings.map((s) => (
@@ -346,7 +347,7 @@ export default function TournamentDetailPage() {
             </div>
           </div>
         )}
-      </main>
+      </Screen>
     </>
   );
 }

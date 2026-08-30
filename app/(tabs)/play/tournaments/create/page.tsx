@@ -1,5 +1,6 @@
 "use client";
 
+import { Screen } from "@/components/layout/Screen";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -109,13 +110,13 @@ export default function CreateTournamentPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
+      <Screen maxWidth="compact">
+        <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Create Tournament</h1>
           <p className={`${TEXT.body} mt-2`}>Set it up, then invite players to join before you start it.</p>
         </div>
 
-        <div className="w-full max-w-md flex flex-col gap-5">
+        <div className="w-full flex flex-col gap-5">
           <label className="flex flex-col gap-1.5">
             <span className={`${TEXT.caption} uppercase tracking-wide`}>Tournament Name</span>
             <input
@@ -184,7 +185,7 @@ export default function CreateTournamentPage() {
             {loading ? "Creating..." : "Create Tournament"}
           </Button>
         </div>
-      </main>
+      </Screen>
     </>
   );
 }

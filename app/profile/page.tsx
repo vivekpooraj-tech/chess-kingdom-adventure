@@ -20,6 +20,7 @@ import {
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { AchievementBadges } from "@/components/achievements/AchievementBadges";
 import { ListItemRow } from "@/components/ui/Card";
@@ -84,7 +85,7 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-8 pb-24">
+      <Screen maxWidth="medium">
         <HomeHeader
           displayName={child.display_name}
           avatar={avatar}
@@ -94,7 +95,7 @@ export default async function ProfilePage() {
           streak={chessMindStreak}
         />
 
-        <div className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center justify-between">
+        <div className="w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center justify-between">
           <div>
             <p className={`${TEXT.caption} uppercase tracking-wide`}>Chess Rating</p>
             <p className="font-classic-display text-3xl text-premium-gold">{child.rating.toLocaleString()}</p>
@@ -106,7 +107,7 @@ export default async function ProfilePage() {
           )}
         </div>
 
-        <div className="w-full max-w-md flex flex-col gap-2">
+        <div className="w-full flex flex-col gap-2">
           <SectionHeader title="Customize" />
           <ListItemRow href="/kingdom-map/customize" className="min-h-[64px]">
             <span className="text-3xl flex-none">{pieceSet.emoji}</span>
@@ -126,7 +127,7 @@ export default async function ProfilePage() {
           </ListItemRow>
         </div>
 
-        <div className="w-full max-w-md flex flex-col gap-2">
+        <div className="w-full flex flex-col gap-2">
           <SectionHeader title="Your Stats" />
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <StatCard emoji="🗺️" value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Journey" />
@@ -138,7 +139,7 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        <div className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex flex-col gap-4">
+        <div className="w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="font-classic-display text-base text-premium-ivory">Openings Discovered</p>
             <Link href="/academy/openings" className="font-classic-body text-xs text-premium-gold underline underline-offset-2">
@@ -187,7 +188,7 @@ export default async function ProfilePage() {
         </div>
 
         <AchievementBadges earnedKeys={earnedKeys} />
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

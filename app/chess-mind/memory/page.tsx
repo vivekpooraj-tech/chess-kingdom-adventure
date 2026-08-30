@@ -7,6 +7,8 @@ import { PATTERN_CHALLENGES } from "@/content/chessMindPatterns";
 import { generateMemoryQuestion, RevealQuestion } from "@/lib/chessMind/revealQuestions";
 import { RevealChallenge } from "@/components/chessMind/RevealChallenge";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
+import { TEXT } from "@/lib/designSystem";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
@@ -52,9 +54,9 @@ export default function MemoryPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
-          <h1 className="font-classic-display text-3xl text-premium-ivory">Memory</h1>
+      <Screen maxWidth="compact">
+        <div className="mx-auto max-w-xl text-center">
+          <h1 className={TEXT.display}>Memory</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">
             Look closely, then remember what you saw.
           </p>
@@ -81,7 +83,7 @@ export default function MemoryPage() {
         >
           Back to Chess Mind
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

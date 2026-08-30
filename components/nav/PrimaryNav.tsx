@@ -48,16 +48,23 @@ function isNavItemActive(pathname: string, item: NavItem): boolean {
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
+/**
+ * Bottom navigation, on every device. The bar spans the full width and is
+ * safe-area aware (--bottom-nav-h + env(safe-area-inset-bottom)); the tap
+ * targets sit in a centred, width-capped group so on a wide desktop they
+ * read as an intentional bar rather than five icons stretched across
+ * 1900px. No is-phone / is-tablet gating — sizing is viewport-driven.
+ */
 export function PrimaryNav() {
   const pathname = usePathname();
 
   return (
     <nav
       aria-label="Primary"
-      className="layout-bottom-nav fixed bottom-0 inset-x-0 z-40 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
+      className="layout-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <div className="mx-auto w-full max-w-3xl tablet:max-w-none flex items-stretch justify-between px-1 sm:px-2">
+      <div className="mx-auto flex w-full max-w-lg items-stretch justify-between px-1 sm:px-2">
         {NAV_ITEMS.map((item) => {
           const isActive = isNavItemActive(pathname, item);
           const Icon = item.icon;
@@ -67,13 +74,13 @@ export function PrimaryNav() {
               key={item.label}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`flex-1 min-h-[56px] tablet:min-h-[64px] flex flex-col items-center justify-center gap-1 py-2 transition-colors active:scale-95 duration-100 ${
+              className={`flex min-h-[var(--bottom-nav-h)] flex-1 flex-col items-center justify-center gap-1 py-2 transition-colors duration-100 active:scale-95 ${
                 isActive ? "text-premium-gold" : "text-premium-ivory/55 hover:text-premium-ivory"
               }`}
             >
-              <Icon className="w-6 h-6 tablet:w-7 tablet:h-7" />
+              <Icon className="h-6 w-6" />
               <span
-                className={`font-classic-body text-[10px] tablet:text-xs tracking-wide ${
+                className={`font-classic-body text-[11px] tracking-wide ${
                   isActive ? "font-semibold" : ""
                 }`}
               >

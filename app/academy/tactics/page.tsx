@@ -5,6 +5,7 @@ import { resolveActiveChild, getAcademyProgressForIds } from "@/lib/supabase/que
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { TACTICS_LESSONS } from "@/content/tacticsLessons";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
 import { TacticsCourseClient } from "@/components/academy/TacticsCourseClient";
 
 export default async function TacticsCoursePage() {
@@ -34,9 +35,9 @@ export default async function TacticsCoursePage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
+      <Screen maxWidth="compact">
         <TacticsCourseClient isPremium={isPremium} progressByLessonId={progressByLessonId} />
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

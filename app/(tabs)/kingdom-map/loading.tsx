@@ -1,3 +1,4 @@
+import { Screen } from "@/components/layout/Screen";
 import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 
 /**
@@ -13,21 +14,21 @@ import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
  */
 export default function HomeLoading() {
   return (
-    <main className="min-h-screen flex flex-col items-center gap-6 bg-premium-midnight px-6 pt-8 pb-24">
+    <Screen maxWidth="full">
       <div className="h-9 w-40 rounded bg-premium-navy/70 animate-pulse" />
-      <SkeletonBlock className="w-full max-w-md h-28" />
-      <SkeletonBlock className="w-full max-w-md h-32" />
-      <SkeletonBlock className="w-full max-w-md h-20" />
-      <div className="w-full max-w-md grid grid-cols-2 gap-3">
+      <SkeletonBlock className="w-full h-28" />
+      <SkeletonBlock className="w-full h-32" />
+      <SkeletonBlock className="w-full h-20" />
+      <div className="w-full grid grid-cols-2 gap-3">
         <SkeletonBlock className="h-24" />
         <SkeletonBlock className="h-24" />
       </div>
-      <SkeletonRow className="w-full max-w-md h-16" />
-      <div className="w-full max-w-md flex flex-col gap-2">
+      <SkeletonRow className="w-full h-16" />
+      <div className="w-full flex flex-col gap-2">
         <SkeletonRow className="h-16" />
         <SkeletonRow className="h-16" />
         <SkeletonRow className="h-16" />
       </div>
-    </main>
+    </Screen>
   );
 }

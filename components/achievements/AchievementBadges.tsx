@@ -26,7 +26,7 @@ export function AchievementBadges({
   const justEarnedSet = new Set(justEarnedKeys);
 
   return (
-    <div className="w-full max-w-lg rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex flex-col gap-5">
+    <div className="flex w-full flex-col gap-5 rounded-premiumCard bg-premium-navy p-5 shadow-premiumCard">
       <h2 className={TEXT.heading}>
         Achievements <span className="text-premium-ivory/40 text-base">({earnedKeys.length}/{ACHIEVEMENTS.length})</span>
       </h2>
@@ -38,7 +38,13 @@ export function AchievementBadges({
         return (
           <div key={category} className="flex flex-col gap-2">
             <p className={TEXT.meta}>{CATEGORY_LABELS[category]}</p>
-            <div className="grid grid-cols-5 sm:grid-cols-6 gap-3">
+            {/* Content-aware: a cell is never narrower than a badge + label
+                room, so the row picks 4 / 5 / 6 / 8+ columns from the space
+                it actually has — no fixed count that can crush the badges. */}
+            <div
+              className="grid gap-2.5"
+              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 3.5rem), 1fr))" }}
+            >
               {inCategory.map((a) => {
                 const earned = earnedSet.has(a.key);
                 const justEarned = earned && justEarnedSet.has(a.key);
@@ -46,13 +52,13 @@ export function AchievementBadges({
                   <div
                     key={a.key}
                     title={earned ? a.description : "Not earned yet"}
-                    className="flex flex-col items-center gap-1 text-center"
+                    className="flex min-w-0 flex-col items-center gap-1 text-center"
                   >
                     <motion.div
                       initial={justEarned ? { scale: 0.4, opacity: 0 } : false}
                       animate={justEarned ? { scale: 1, opacity: 1 } : undefined}
                       transition={{ type: "spring", stiffness: 260, damping: 14 }}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center text-xl border ${
+                      className={`flex h-12 w-12 flex-none items-center justify-center rounded-full border text-xl ${
                         earned
                           ? justEarned
                             ? "bg-premium-gold/25 border-premium-gold shadow-premiumGlow"
@@ -62,7 +68,7 @@ export function AchievementBadges({
                     >
                       {earned ? a.emoji : "🔒"}
                     </motion.div>
-                    <span className="font-classic-body text-[9px] text-premium-ivory/50 leading-tight">
+                    <span className="w-full break-words font-classic-body text-[10px] leading-tight text-premium-ivory/50">
                       {a.title}
                     </span>
                   </div>

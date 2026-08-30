@@ -32,14 +32,14 @@ export default async function MorePage() {
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
 
   return (
-    <TabPageShell>
+    <TabPageShell maxWidth="medium">
       <div>
         <h1 className={TEXT.display}>More</h1>
       </div>
 
       <Link
         href="/profile"
-        className="w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center gap-4 border border-white/5 hover:border-premium-gold/30 active:scale-[0.98] transition-[border-color,transform] duration-100"
+        className="list-row w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center gap-4 border border-white/5 hover:border-premium-gold/30 active:scale-[0.98] transition-[border-color,transform] duration-100"
       >
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center text-2xl flex-none"
@@ -58,7 +58,7 @@ export default async function MorePage() {
           <span className="text-premium-gold text-lg flex-none">→</span>
         </Link>
 
-      <div className="grid grid-cols-1 tablet:grid-cols-3 gap-6">
+      <div className="flex flex-col gap-6">
         <section className="w-full flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>Your Chess Mind</p>
           <div className="flex flex-col gap-1.5">

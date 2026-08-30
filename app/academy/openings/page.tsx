@@ -5,6 +5,7 @@ import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { resolveActiveChild, getOpeningEncounters } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
 import { OpeningExplorerClient } from "@/components/openings/OpeningExplorerClient";
 
 export default async function OpeningExplorerPage() {
@@ -23,7 +24,7 @@ export default async function OpeningExplorerPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
+      <Screen maxWidth="compact">
         <OpeningExplorerClient encounters={encounters} />
         <Link
           href="/academy"
@@ -31,7 +32,7 @@ export default async function OpeningExplorerPage() {
         >
           Back to the Academy
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

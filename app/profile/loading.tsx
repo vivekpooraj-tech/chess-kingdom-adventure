@@ -1,3 +1,4 @@
+import { Screen } from "@/components/layout/Screen";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 
 /**
@@ -20,25 +21,25 @@ import { PrimaryNav } from "@/components/nav/PrimaryNav";
 export default function ProfileLoading() {
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-8 pb-24">
-        <div className="w-full max-w-md h-24 rounded-premiumCard bg-premium-navy animate-pulse" />
+      <Screen maxWidth="medium">
+        <div className="w-full h-24 rounded-premiumCard bg-premium-navy animate-pulse" />
 
-        <div className="w-full max-w-md flex flex-col gap-2">
+        <div className="w-full flex flex-col gap-2">
           <div className="h-3 w-20 rounded bg-premium-navy/70 animate-pulse" />
           <div className="h-14 rounded-premiumBtn bg-premium-navy/60 animate-pulse" />
           <div className="h-14 rounded-premiumBtn bg-premium-navy/60 animate-pulse" />
         </div>
 
-        <div className="w-full max-w-md grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="w-full grid grid-cols-2 sm:grid-cols-3 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-20 rounded-premiumCard bg-premium-navy animate-pulse" />
           ))}
         </div>
 
-        <div className="w-full max-w-md h-36 rounded-premiumCard bg-premium-navy animate-pulse" />
+        <div className="w-full h-36 rounded-premiumCard bg-premium-navy animate-pulse" />
 
-        <div className="w-full max-w-md h-16 rounded-premiumCard bg-premium-navy/70 animate-pulse" />
-      </main>
+        <div className="w-full h-16 rounded-premiumCard bg-premium-navy/70 animate-pulse" />
+      </Screen>
       <PrimaryNav />
     </>
   );

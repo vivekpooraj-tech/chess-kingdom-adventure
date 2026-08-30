@@ -10,13 +10,16 @@ import { TEXT } from "@/lib/designSystem";
 
 export default function PlayPage() {
   return (
-    <TabPageShell>
+    <TabPageShell maxWidth="wide">
       <div>
         <h1 className={TEXT.display}>Play</h1>
         <p className={`${TEXT.body} mt-2`}>Pick your opponent. The board does the rest.</p>
       </div>
 
-      <div className="grid grid-cols-1 tablet:grid-cols-2 gap-4">
+      <div
+        className="auto-grid mx-auto w-full max-w-3xl"
+        style={{ "--grid-min": "16rem" } as React.CSSProperties}
+      >
         <FeatureCard
           href="/free-play"
           title="Play Computer"
@@ -63,11 +66,14 @@ export default function PlayPage() {
 
       <section className="w-full flex flex-col gap-2">
         <SectionHeader title="Today" />
-        <div className="grid grid-cols-1 tablet:grid-cols-2 gap-4 items-start">
+        <div
+          className="auto-grid items-start"
+          style={{ "--grid-min": "20rem" } as React.CSSProperties}
+        >
           <DailyChallengeCard />
           <Link
             href="/puzzles"
-            className="font-body text-sm text-premium-ivory/40 underline underline-offset-2 min-h-[44px] flex items-center lg:justify-center"
+            className="font-body text-sm text-premium-ivory/40 underline underline-offset-2 min-h-[44px] flex items-center"
           >
             Practice more puzzles
           </Link>

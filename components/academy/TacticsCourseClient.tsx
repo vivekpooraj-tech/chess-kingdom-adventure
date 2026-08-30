@@ -53,7 +53,7 @@ export function TacticsCourseClient({
   }
 
   return (
-    <div className="w-full max-w-md flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <div className="text-center">
         <p className={`${TEXT.meta} text-premium-gold`}>Chess Mind Academy</p>
         <h1 className={`${TEXT.display} mt-1`}>Tactics</h1>

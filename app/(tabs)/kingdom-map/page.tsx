@@ -124,12 +124,12 @@ export default async function KingdomMapPage() {
         initialUsedMinutes={screenTimeStatus.usedMinutes}
       >
       <TabPageShell>
-        <div className="flex flex-col tablet:flex-row tablet:items-end tablet:justify-between gap-4">
-          <div className="text-left">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 text-left">
             <h1 className={TEXT.display}>Chess Mind</h1>
             <p className={`${TEXT.body} mt-2`}>What should we do today?</p>
           </div>
-          <div className="w-full tablet:max-w-sm flex-none">
+          <div className="w-full min-w-0 lg:w-80 lg:shrink-0">
             <HomeHeader
               displayName={child.display_name}
               avatar={avatar}
@@ -168,7 +168,10 @@ export default async function KingdomMapPage() {
 
         <section className="w-full flex flex-col gap-2">
           <SectionHeader title="Recommended" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 tablet:grid-cols-3 gap-3">
+          <div
+            className="auto-grid"
+            style={{ "--grid-min": "13.5rem", "--grid-gap": "0.75rem" } as React.CSSProperties}
+          >
             <DestinationCard
               href="/play"
               title="Play"
@@ -214,7 +217,10 @@ export default async function KingdomMapPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 tablet:grid-cols-2 gap-8 tablet:gap-10">
+        <div
+          className="auto-grid items-start"
+          style={{ "--grid-min": "22rem", "--grid-gap": "clamp(1.5rem, 4vw, 2.5rem)" } as React.CSSProperties}
+        >
           <section className="min-w-0">
             <h2 id="journey" className={`${TEXT.heading} scroll-mt-8 mb-4`}>
               Your Kingdom Journey {currentZone.emoji}

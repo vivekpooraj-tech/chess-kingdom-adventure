@@ -10,6 +10,7 @@ import { getPieceSet } from "@/content/pieceSets";
 import { PIECE_LIBRARY } from "@/content/pieceLibrary";
 import { SecondaryCard } from "@/components/ui/Card";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
 import { TEXT } from "@/lib/designSystem";
 
 export default function PieceLibraryPage() {
@@ -45,15 +46,15 @@ export default function PieceLibraryPage() {
 
   return (
     <>
-    <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-8 px-6 pt-12 pb-24">
-      <div className="text-center">
+    <Screen maxWidth="wide">
+      <div className="mx-auto max-w-xl text-center">
         <h1 className={TEXT.display}>The Piece Library</h1>
         <p className={`${TEXT.body} mt-2`}>
           Meet the six chess pieces — how they move, and their role & power.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-3xl w-full">
+      <div className="auto-grid" style={{ "--grid-min": "19rem" } as React.CSSProperties}>
         {PIECE_LIBRARY.map((entry) => (
           <SecondaryCard key={entry.piece} className="flex flex-col gap-3">
             <div className="flex items-center gap-4">
@@ -106,7 +107,7 @@ export default function PieceLibraryPage() {
       >
         Back to Discover
       </Link>
-    </main>
+    </Screen>
     <PrimaryNav />
     </>
   );

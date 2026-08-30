@@ -1,3 +1,4 @@
+import { Screen } from "@/components/layout/Screen";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
@@ -80,14 +81,14 @@ export default async function ParentDashboardPage() {
   const openingsStudied = openingEncounters.filter((e) => e.studied_at).length;
 
   return (
-    <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-8 px-6 py-12">
+    <Screen maxWidth="compact">
       <h1 className={TEXT.display}>Parent Dashboard</h1>
 
       <ManageChildren initialChildren={allChildren} activeChildId={child?.id ?? ""} />
 
       {child && (
         <>
-          <SecondaryCard className="w-full max-w-lg flex items-center gap-4">
+          <SecondaryCard className="w-full flex items-center gap-4">
             <span className="text-5xl">{avatar?.emoji ?? "🧒"}</span>
             <div>
               <p className={TEXT.subheading}>{child.display_name}</p>
@@ -101,14 +102,14 @@ export default async function ParentDashboardPage() {
           {/* Overview — the "quickly understand" summary strip the brief
               asks for: learning, Academy, Chess Mind, openings, time spent
               all in one glance, with detail below for anyone who wants more. */}
-          <div className="w-full max-w-lg grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatTile value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Journey" />
             <StatTile value={chessMindTotal} label="Chess Mind Solved" />
             <StatTile value={openingsDiscovered} label="Openings Discovered" />
             <StatTile value={`${recentMinutes}m`} label="Screen Time (7d)" />
           </div>
 
-          <SecondaryCard className="w-full max-w-lg flex flex-col gap-4">
+          <SecondaryCard className="w-full flex flex-col gap-4">
             <h2 className={TEXT.heading}>Learning Progress</h2>
             {progressRows && progressRows.length > 0 ? (
               <ul className="flex flex-col gap-2">
@@ -145,7 +146,7 @@ export default async function ParentDashboardPage() {
             </p>
           </SecondaryCard>
 
-          <SecondaryCard className="w-full max-w-lg flex flex-col gap-2">
+          <SecondaryCard className="w-full flex flex-col gap-2">
             <h2 className={TEXT.heading}>Academy Progress</h2>
             <div className="flex items-center justify-between bg-premium-midnightDeep rounded-premiumBtn px-4 py-3">
               <span className="font-classic-body text-sm text-premium-ivory">History of Chess</span>
@@ -158,7 +159,7 @@ export default async function ParentDashboardPage() {
             </p>
           </SecondaryCard>
 
-          <SecondaryCard className="w-full max-w-lg flex flex-col gap-3">
+          <SecondaryCard className="w-full flex flex-col gap-3">
             <h2 className={TEXT.heading}>Chess Mind Activity</h2>
             {chessMindTotal > 0 ? (
               <div className="grid grid-cols-2 gap-2">
@@ -179,7 +180,7 @@ export default async function ParentDashboardPage() {
             )}
           </SecondaryCard>
 
-          <SecondaryCard className="w-full max-w-lg flex flex-col gap-2">
+          <SecondaryCard className="w-full flex flex-col gap-2">
             <h2 className={TEXT.heading}>Opening Knowledge</h2>
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-premium-midnightDeep rounded-premiumBtn px-3 py-2">
@@ -193,7 +194,7 @@ export default async function ParentDashboardPage() {
             </div>
           </SecondaryCard>
 
-          <SecondaryCard className="w-full max-w-lg flex flex-col gap-2">
+          <SecondaryCard className="w-full flex flex-col gap-2">
             <h2 className={TEXT.heading}>Puzzle Accuracy</h2>
             {puzzleStats && puzzleStats.totalAttempts > 0 ? (
               <>
@@ -217,7 +218,7 @@ export default async function ParentDashboardPage() {
             </p>
           </SecondaryCard>
 
-          <SecondaryCard className="w-full max-w-lg flex flex-col gap-4">
+          <SecondaryCard className="w-full flex flex-col gap-4">
             <h2 className={TEXT.heading}>Achievements</h2>
             {achievementRows && achievementRows.length > 0 ? (
               <ul className="flex flex-col gap-2">
@@ -256,7 +257,7 @@ export default async function ParentDashboardPage() {
         initialWeekend={parent.screen_time_weekend_minutes}
       />
 
-      <SecondaryCard className="w-full max-w-lg flex flex-col items-center gap-3">
+      <SecondaryCard className="w-full flex flex-col items-center gap-3">
         <h2 className={`${TEXT.heading} self-start`}>Plan</h2>
         <p className={`${TEXT.body} self-start`}>
           {parent.premium_status === "premium"
@@ -267,7 +268,7 @@ export default async function ParentDashboardPage() {
         </p>
         {parent.premium_status !== "premium" && <UpgradeButton tone="premium" />}
       </SecondaryCard>
-    </main>
+    </Screen>
   );
 }
 

@@ -3,22 +3,26 @@
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 
-const LAYOUT_VERSION = "5";
+// Bump when the layout classification rules change so installed WebViews
+// re-run them once on next launch instead of waiting for a manual relaunch.
+const LAYOUT_VERSION = "6";
 
-/**
- * Classify tablet vs phone from physical screen size — Android WebViews often
- * report a narrow innerWidth (phone-like) even on 10" tablets, which is why
- * media queries and innerWidth checks kept showing the mobile layout.
- */
-function resolveLayout() {
-  const screenShort = Math.min(window.screen.width, window.screen.height);
-  const screenLong = Math.max(window.screen.width, window.screen.height);
-  const viewWidth = window.innerWidth;
+// A device is a tablet only when its SHORT physical edge is tablet-sized —
+// Android's own `sw600dp` convention. The previous rule also flagged any
+// device whose LONG edge was >= 900, which swept in essentially every modern
+// tall phone (Pixel/Galaxy/Motorola 20:9 screens, iPhone Pro Max) and applied
+// the tablet layout inside a ~400px viewport. Short-edge only: a phone is
+// never >= ~430px on its short edge, a real 7"+ tablet always is.
+const TABLET_MIN_SHORT_EDGE = 600;
+// Desktop split is viewport-driven (a resizable window), not device-driven.
+const DESKTOP_MIN_WIDTH = 1024;
 
-  if (screenShort >= 600 || screenLong >= 900) {
-    return viewWidth >= 1024 ? "desktop" : "tablet";
-  }
-  return "phone";
+type Layout = "phone" | "tablet" | "desktop";
+
+function resolveLayout(): Layout {
+  const shortEdge = Math.min(window.screen.width, window.screen.height);
+  if (shortEdge < TABLET_MIN_SHORT_EDGE) return "phone";
+  return window.innerWidth >= DESKTOP_MIN_WIDTH ? "desktop" : "tablet";
 }
 
 function applyLayout() {
@@ -27,8 +31,12 @@ function applyLayout() {
 
   root.dataset.layout = layout;
   root.dataset.native = Capacitor.isNativePlatform() ? "true" : "false";
+  // is-phone / is-tablet are kept ONLY for: native board-sizing math
+  // (lib/viewport.ts) and a few navigation cosmetics. They must NOT gate
+  // grid columns or content width — CSS (container/auto-fit grids, clamp)
+  // owns layout responsiveness now.
   root.classList.toggle("is-phone", layout === "phone");
-  root.classList.toggle("is-tablet", layout === "tablet" || layout === "desktop");
+  root.classList.toggle("is-tablet", layout !== "phone");
 }
 
 export function NativeLayoutProvider({ children }: { children: React.ReactNode }) {
@@ -62,12 +70,15 @@ export function NativeLayoutProvider({ children }: { children: React.ReactNode }
       }
     }
 
-    window.addEventListener("resize", applyLayout);
-    window.addEventListener("orientationchange", applyLayout);
-    return () => {
-      window.removeEventListener("resize", applyLayout);
-      window.removeEventListener("orientationchange", applyLayout);
-    };
+    // The phone/tablet decision is screen-based and never changes for a
+    // device, so it doesn't need a listener. Only the tablet<->desktop
+    // split can change at runtime (a resized window), and only when the
+    // 1024px threshold is actually crossed — a matchMedia listener fires
+    // exactly then, instead of doing work on every resize frame.
+    const mq = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`);
+    const onChange = () => applyLayout();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
   return children;

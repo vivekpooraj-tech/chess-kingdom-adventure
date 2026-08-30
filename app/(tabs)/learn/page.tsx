@@ -69,7 +69,7 @@ export default function LearnPage() {
   const trainCategories = CHESS_MIND_CATEGORIES;
 
   return (
-    <TabPageShell contentClassName="gap-8">
+    <TabPageShell maxWidth="wide">
       <div>
         <h1 className={TEXT.display}>Learn</h1>
         <p className={`${TEXT.body} mt-2`}>
@@ -89,7 +89,10 @@ export default function LearnPage() {
         </PrimaryCard>
       </Link>
 
-      <div className="grid grid-cols-1 tablet:grid-cols-2 gap-8">
+      <div
+        className="auto-grid items-start"
+        style={{ "--grid-min": "20rem", "--grid-gap": "clamp(1.25rem, 3vw, 2rem)" } as React.CSSProperties}
+      >
         <section className="w-full flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>Learn Chess</p>
           <div className="flex flex-col gap-1.5">

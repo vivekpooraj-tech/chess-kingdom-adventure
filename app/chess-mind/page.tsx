@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
 import { ListItemRow } from "@/components/ui/Card";
 import { CHESS_MIND_CATEGORIES, getChessMindCategory } from "@/content/chessMindCategories";
 import { getDailyChallengeCategoryId } from "@/lib/chessMind/dailyChallenge";
@@ -67,8 +68,8 @@ export default function ChessMindPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
+      <Screen maxWidth="medium">
+        <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Chess Mind</h1>
           <p className={`${TEXT.body} mt-2`}>Train the way you think about chess.</p>
           <p className={`${TEXT.caption} normal-case mt-2`}>
@@ -89,7 +90,7 @@ export default function ChessMindPage() {
         {dailyCategory?.href && (
           <Link
             href={dailyCategory.href}
-            className="w-full max-w-md rounded-premiumCard bg-gradient-to-br from-premium-gold/20 to-premium-navy border border-premium-gold/40 shadow-premiumCard p-5 flex items-center gap-4"
+            className="list-row w-full rounded-premiumCard bg-gradient-to-br from-premium-gold/20 to-premium-navy border border-premium-gold/40 shadow-premiumCard p-5 flex items-center gap-4"
           >
             <span className="text-4xl">{dailyCategory.emoji}</span>
             <div className="flex-1">
@@ -107,7 +108,7 @@ export default function ChessMindPage() {
         {continueCategory?.href && (
           <Link
             href={continueCategory.href}
-            className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-4 flex items-center gap-4"
+            className="list-row w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-4 flex items-center gap-4"
           >
             <span className="text-2xl">{continueCategory.emoji}</span>
             <div className="flex-1">
@@ -123,7 +124,7 @@ export default function ChessMindPage() {
         )}
 
         {bonuses.length > 0 && (
-          <div className="w-full max-w-md rounded-premiumCard bg-premium-gold/10 border border-premium-gold/30 p-4 flex flex-col gap-2">
+          <div className="w-full rounded-premiumCard bg-premium-gold/10 border border-premium-gold/30 p-4 flex flex-col gap-2">
             <p className="font-classic-body text-xs font-semibold text-premium-gold uppercase tracking-wide">
               Kingdom Bonuses Unlocked
             </p>
@@ -146,7 +147,7 @@ export default function ChessMindPage() {
             Challenge, Continue Training, Kingdom Bonuses) stay full cards —
             they're genuinely different, higher-priority content, not list
             entries. */}
-        <div className="w-full max-w-md flex flex-col gap-1.5">
+        <div className="flex w-full flex-col gap-1.5">
           {CHESS_MIND_CATEGORIES.map((cat) => {
             const score = stats[cat.id] ?? 0;
             if (!cat.href) {
@@ -187,7 +188,7 @@ export default function ChessMindPage() {
         >
           Back to the Kingdom Map
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
 import { ListItemRow } from "@/components/ui/Card";
 import { BRAND } from "@/lib/brand";
 import { TEXT } from "@/lib/designSystem";
@@ -63,8 +64,8 @@ const CATEGORIES: AcademyCategory[] = [
 export default function AcademyPage() {
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
+      <Screen maxWidth="medium">
+        <div className="mx-auto max-w-xl text-center">
           <p className={`${TEXT.meta} text-premium-gold`}>{BRAND.academyName}</p>
           <h1 className={`${TEXT.display} mt-1`}>{BRAND.academyTagline}</h1>
           <p className={`${TEXT.body} mt-2`}>
@@ -73,10 +74,9 @@ export default function AcademyPage() {
           </p>
         </div>
 
-        {/* A flat list of rows, not a stack of 7 individually-shadowed
-            cards — ListItemRow (design system, components/ui/Card.tsx)
-            keeps the same content but reads as one coherent list. */}
-        <div className="w-full max-w-md flex flex-col gap-1.5">
+        {/* A flat list of rows, not a stack of individually-shadowed cards —
+            ListItemRow keeps the same content as one coherent list. */}
+        <div className="flex w-full flex-col gap-1.5">
           {CATEGORIES.map((cat) =>
             "soon" in cat ? (
               <ListItemRow key={cat.id} className="opacity-50">
@@ -108,7 +108,7 @@ export default function AcademyPage() {
         >
           Back to Home
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

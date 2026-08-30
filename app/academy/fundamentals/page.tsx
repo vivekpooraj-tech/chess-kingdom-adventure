@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FUNDAMENTALS_TOPICS } from "@/content/academyFundamentals";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
 import { SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -34,15 +35,15 @@ export default function FundamentalsPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
+      <Screen maxWidth="compact">
+        <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Chess Fundamentals</h1>
           <p className={`${TEXT.body} mt-2`}>
             The board, the pieces, and the rules that hold it all together.
           </p>
         </div>
 
-        <div className="w-full max-w-md flex flex-col gap-4">
+        <div className="flex w-full flex-col gap-4">
           {FUNDAMENTALS_TOPICS.map((topic, i) => (
             <SecondaryCard key={topic.id} className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
@@ -78,7 +79,7 @@ export default function FundamentalsPage() {
         >
           Back to the Academy
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );

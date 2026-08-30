@@ -18,6 +18,7 @@ import { getActiveChildIdClient } from "@/lib/childSession";
 import { HISTORY_OF_CHESS } from "@/content/academyVideos";
 import { getAchievement } from "@/content/achievements";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
+import { Screen } from "@/components/layout/Screen";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 
@@ -125,8 +126,8 @@ export default function ChessOriginsPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="text-center max-w-md">
+      <Screen maxWidth="compact">
+        <div className="mx-auto max-w-xl text-center">
           {alreadyCompleted && (
             <span className="inline-block font-classic-body text-[10px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-2 py-1 mb-3">
               ✓ COMPLETED
@@ -150,7 +151,7 @@ export default function ChessOriginsPage() {
           className={`relative overflow-hidden rounded-premiumCard bg-premium-navy shadow-premiumCard ${
             content.orientation === "portrait"
               ? "w-full max-w-[300px] sm:max-w-[340px] aspect-[9/16] lg:max-w-3xl lg:aspect-video"
-              : "w-full max-w-md sm:max-w-xl tablet:max-w-3xl aspect-video"
+              : "w-full max-w-md sm:max-w-xl lg:max-w-3xl aspect-video"
           }`}
         >
           {content.videoUrl ? (
@@ -188,7 +189,7 @@ export default function ChessOriginsPage() {
         </div>
 
         {/* Timeline — the real content, available today regardless of the video. */}
-        <div className="w-full max-w-md flex flex-col gap-3">
+        <div className="flex w-full flex-col gap-3">
           {content.timeline.map((entry) => (
             <div
               key={entry.era}
@@ -212,14 +213,14 @@ export default function ChessOriginsPage() {
         )}
 
         {stage === "watching" && readTimeline && (
-          <div className="w-full max-w-md flex flex-col items-center gap-3 text-center">
+          <div className="mx-auto flex w-full max-w-md flex-col items-center gap-3 text-center">
             <p className="font-classic-display text-lg text-premium-ivory">What did you learn?</p>
             <Button tone="premium" onClick={() => setStage("quiz")}>Start the Quiz →</Button>
           </div>
         )}
 
         {stage === "quiz" && (
-          <div className="w-full max-w-md flex flex-col gap-4">
+          <div className="flex w-full flex-col gap-4">
             {content.quiz.map((q, qi) => (
               <div key={q.id} className="rounded-premiumCard bg-premium-navy p-4 flex flex-col gap-2">
                 <p className="font-classic-body text-sm text-premium-ivory">
@@ -253,7 +254,7 @@ export default function ChessOriginsPage() {
         )}
 
         {stage === "done" && (
-          <div className="w-full max-w-md flex flex-col items-center gap-4 text-center rounded-premiumCard bg-premium-navy shadow-premiumCard p-6">
+          <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 text-center rounded-premiumCard bg-premium-navy shadow-premiumCard p-6">
             <span className="text-5xl">🏛️</span>
             <p className="font-classic-display text-xl text-premium-ivory">
               You got {score} of {content.quiz.length} right!
@@ -278,7 +279,7 @@ export default function ChessOriginsPage() {
         >
           Back to the Academy
         </Link>
-      </main>
+      </Screen>
       <PrimaryNav />
     </>
   );
