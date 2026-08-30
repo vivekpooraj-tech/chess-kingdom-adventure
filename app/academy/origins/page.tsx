@@ -137,36 +137,48 @@ export default function ChessOriginsPage() {
         </div>
 
         {/* Video hero — real player when a video exists, honest placeholder
-            otherwise. The frame's aspect box follows the source orientation
-            (this one is portrait 9:16), and its width is capped so a tall
-            portrait clip stays a sensible height on every device: a little
-            inset on phones, slightly wider on large phones / tablet /
-            desktop. A landscape source instead scales up to the reading
-            column. `object-cover` fills the matching box exactly — no
-            letterboxing — and the poster shows before playback. */}
+            otherwise. The source here is portrait (9:16):
+              - phones / narrow windows: the frame matches the clip and it
+                fills edge to edge (object-cover, aspects already agree).
+              - lg+ (desktop): the frame turns landscape 16:9 so it doesn't
+                tower over the reading column. The clip sits centred at full
+                height (object-contain) over a blurred, dimmed copy of its
+                poster, so the sides read as a cinematic letterbox rather
+                than dead black bars.
+            A landscape source skips all that and just scales to the column. */}
         <div
-          className={`${
+          className={`relative overflow-hidden rounded-premiumCard bg-premium-navy shadow-premiumCard ${
             content.orientation === "portrait"
-              ? "w-full max-w-[300px] sm:max-w-[340px] aspect-[9/16]"
+              ? "w-full max-w-[300px] sm:max-w-[340px] aspect-[9/16] lg:max-w-3xl lg:aspect-video"
               : "w-full max-w-md sm:max-w-xl tablet:max-w-3xl aspect-video"
-          } rounded-premiumCard bg-premium-navy shadow-premiumCard overflow-hidden`}
+          }`}
         >
           {content.videoUrl ? (
-            <video
-              ref={videoRef}
-              src={content.videoUrl}
-              poster={content.posterUrl ?? undefined}
-              controls
-              playsInline
-              preload="metadata"
-              className="h-full w-full bg-black object-cover"
-              onLoadedMetadata={handleVideoLoadedMetadata}
-              onTimeUpdate={handleTimeUpdate}
-            >
-              {content.captionsUrl && (
-                <track kind="captions" src={content.captionsUrl} srcLang="en" label="English" default />
+            <>
+              {content.orientation === "portrait" && content.posterUrl && (
+                <img
+                  src={content.posterUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-60 blur-xl lg:block"
+                />
               )}
-            </video>
+              <video
+                ref={videoRef}
+                src={content.videoUrl}
+                poster={content.posterUrl ?? undefined}
+                controls
+                playsInline
+                preload="metadata"
+                className="relative z-10 mx-auto h-full w-full bg-black object-cover lg:w-auto lg:bg-transparent lg:object-contain lg:shadow-premiumCard"
+                onLoadedMetadata={handleVideoLoadedMetadata}
+                onTimeUpdate={handleTimeUpdate}
+              >
+                {content.captionsUrl && (
+                  <track kind="captions" src={content.captionsUrl} srcLang="en" label="English" default />
+                )}
+              </video>
+            </>
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-premium-navyLight to-premium-midnight">
               <span className="text-4xl">🏛️</span>
