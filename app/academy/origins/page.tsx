@@ -137,19 +137,29 @@ export default function ChessOriginsPage() {
         </div>
 
         {/* Video hero — real player when a video exists, honest placeholder
-            otherwise. Width scales with the device: ~full-width on phones
-            (capped at max-w-md), wider on large phones (sm:) and on the
-            tablet/desktop layout (tablet:). The frame is always a 16:9
-            aspect-ratio box; `object-contain` letterboxes any non-16:9
-            source against the black background rather than cropping it. */}
-        <div className="w-full max-w-md sm:max-w-xl tablet:max-w-3xl rounded-premiumCard bg-premium-navy shadow-premiumCard overflow-hidden">
+            otherwise. The frame's aspect box follows the source orientation
+            (this one is portrait 9:16), and its width is capped so a tall
+            portrait clip stays a sensible height on every device: a little
+            inset on phones, slightly wider on large phones / tablet /
+            desktop. A landscape source instead scales up to the reading
+            column. `object-cover` fills the matching box exactly — no
+            letterboxing — and the poster shows before playback. */}
+        <div
+          className={`${
+            content.orientation === "portrait"
+              ? "w-full max-w-[300px] sm:max-w-[340px] aspect-[9/16]"
+              : "w-full max-w-md sm:max-w-xl tablet:max-w-3xl aspect-video"
+          } rounded-premiumCard bg-premium-navy shadow-premiumCard overflow-hidden`}
+        >
           {content.videoUrl ? (
             <video
               ref={videoRef}
               src={content.videoUrl}
+              poster={content.posterUrl ?? undefined}
               controls
               playsInline
-              className="w-full aspect-video bg-black object-contain"
+              preload="metadata"
+              className="h-full w-full bg-black object-cover"
               onLoadedMetadata={handleVideoLoadedMetadata}
               onTimeUpdate={handleTimeUpdate}
             >
@@ -158,7 +168,7 @@ export default function ChessOriginsPage() {
               )}
             </video>
           ) : (
-            <div className="w-full aspect-video flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-premium-navyLight to-premium-midnight">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-premium-navyLight to-premium-midnight">
               <span className="text-4xl">🏛️</span>
               <p className="font-classic-body text-xs text-premium-ivory/40">Video coming soon</p>
             </div>

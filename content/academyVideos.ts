@@ -16,14 +16,20 @@ export interface VideoLesson {
   title: string;
   subtitle: string;
   /**
-   * No video exists yet — it'll be produced externally and dropped in
-   * later (see PRD). Kept as a real, typed field rather than hardcoded
-   * into the UI so wiring in the real asset is a one-line content change,
-   * not a code change. The page must render an honest "coming soon" state
-   * when this is null, not a broken player.
+   * The hero video. Produced externally and hosted in Supabase Storage
+   * (public `academy-media` bucket). Kept as a real, typed field rather
+   * than hardcoded into the UI so swapping the asset is a one-line content
+   * change, not a code change. The page renders an honest "coming soon"
+   * state when this is null, not a broken player.
+   *
+   * This source is portrait (9:16) — the player frame follows suit.
    */
   videoUrl: string | null;
   captionsUrl: string | null;
+  /** Poster frame shown before playback; null falls back to a plain frame. */
+  posterUrl: string | null;
+  /** "portrait" (9:16) or "landscape" (16:9) — drives the player's aspect box. */
+  orientation: "portrait" | "landscape";
   timeline: TimelineEntry[];
   quiz: QuizQuestion[];
 }
@@ -32,8 +38,12 @@ export const HISTORY_OF_CHESS: VideoLesson = {
   id: "history-of-chess",
   title: "The History of Chess",
   subtitle: "From ancient India to the game on your board today.",
-  videoUrl: null,
+  videoUrl:
+    "https://fyanjpjuttjzpikhfztk.supabase.co/storage/v1/object/public/academy-media/history-of-chess/hero.mp4",
   captionsUrl: null,
+  posterUrl:
+    "https://fyanjpjuttjzpikhfztk.supabase.co/storage/v1/object/public/academy-media/history-of-chess/hero-poster.jpg",
+  orientation: "portrait",
   timeline: [
     {
       era: "Ancient India",
