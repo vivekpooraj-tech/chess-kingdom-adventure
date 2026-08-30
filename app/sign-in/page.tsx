@@ -16,8 +16,9 @@ type Mode = "signin" | "signup";
 const FIELD =
   "w-full rounded-premiumBtn bg-premium-midnightDeep/50 border border-premium-ivory/15 px-4 py-3 " +
   "font-classic-body text-[15px] text-premium-ivory placeholder:text-premium-ivory/25 transition-colors " +
-  "focus:outline-none focus:border-premium-gold/60 focus:ring-2 focus:ring-premium-gold/20 " +
-  "autofill:[box-shadow:inset_0_0_0px_1000px_#131B33] autofill:[-webkit-text-fill-color:#F7F3E8]";
+  "focus:outline-none focus:border-premium-gold/60 focus:ring-2 focus:ring-premium-gold/20";
+// Autofill background masking is handled globally in app/globals.css
+// (`.bg-premium-midnight input:-webkit-autofill …`) so it survives focus/hover.
 
 const LABEL = "font-classic-body text-[13px] font-medium text-premium-ivory/75";
 const LINK =

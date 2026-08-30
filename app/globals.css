@@ -32,6 +32,65 @@ body {
   background: radial-gradient(120% 140% at 15% 0%, #1B2440 0%, #0F1629 45%, #080C18 100%);
 }
 
+/* ---- Autofill masking for dark (premium) form fields --------------------
+   Chrome/WebKit paint autofilled inputs with their own opaque light
+   background via an internal UA rule that ordinary CSS `background` cannot
+   override. The only working override is to flood the field with a large
+   inset box-shadow and freeze the ~200ms autofill colour transition.
+
+   This lived in the input class lists as Tailwind `autofill:[box-shadow:…]`
+   utilities, but those are emitted BEFORE `focus:ring-*` in the stylesheet
+   and carry the same specificity, so the focus ring's own `box-shadow`
+   overrode the mask the instant an autofilled field was focused or hovered —
+   re-exposing the light UA background as a pale block on the right of the
+   field (worst where Chrome also draws its autofill key icon). Chrome's
+   `:-webkit-autofill:hover / :focus / :active` sub-states were never covered
+   at all.
+
+   Doing it here — scoped to premium (dark) surfaces, every autofill
+   sub-state, `!important`, with the gold focus ring folded back into the
+   same shadow list — keeps one consistent background across type / paste /
+   saved-credential autofill / focus / blur / reload, on /sign-in,
+   /forgot-password and /reset-password at once. `#10172A` is the opaque
+   equivalent of the field's normal `bg-premium-midnightDeep/50` composited
+   over the auth card. Kept as two selector blocks (`-webkit-autofill` and
+   the standard `autofill`) so an engine that knows only one still applies
+   it. The rounded corners come for free — an inset box-shadow follows the
+   element's own border-radius. */
+.bg-premium-midnight input:-webkit-autofill,
+.bg-premium-midnight input:-webkit-autofill:hover,
+.bg-premium-midnight input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #10172A inset !important;
+  box-shadow: 0 0 0 1000px #10172A inset !important;
+  -webkit-text-fill-color: #F7F3E8 !important;
+  caret-color: #F7F3E8;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
+.bg-premium-midnight input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2), 0 0 0 1000px #10172A inset !important;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2), 0 0 0 1000px #10172A inset !important;
+  -webkit-text-fill-color: #F7F3E8 !important;
+  caret-color: #F7F3E8;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
+.bg-premium-midnight input:autofill,
+.bg-premium-midnight input:autofill:hover,
+.bg-premium-midnight input:autofill:active {
+  box-shadow: 0 0 0 1000px #10172A inset !important;
+  -webkit-text-fill-color: #F7F3E8 !important;
+  caret-color: #F7F3E8;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
+.bg-premium-midnight input:autofill:focus {
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2), 0 0 0 1000px #10172A inset !important;
+  -webkit-text-fill-color: #F7F3E8 !important;
+  caret-color: #F7F3E8;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
 .glass-panel {
   background: rgba(27, 36, 64, 0.55);
   backdrop-filter: blur(16px);

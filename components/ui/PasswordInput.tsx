@@ -24,7 +24,8 @@ export function PasswordInput({
           "pl-4 pr-11 py-3 font-classic-body text-[15px] text-premium-ivory",
           "placeholder:text-premium-ivory/25",
           "transition-colors focus:outline-none focus:border-premium-gold/60 focus:ring-2 focus:ring-premium-gold/20",
-          "autofill:[box-shadow:inset_0_0_0px_1000px_#131B33] autofill:[-webkit-text-fill-color:#F7F3E8]",
+          // Autofill background masking is handled globally in app/globals.css
+          // (`.bg-premium-midnight input:-webkit-autofill …`) so it survives focus/hover.
           className
         )}
       />
