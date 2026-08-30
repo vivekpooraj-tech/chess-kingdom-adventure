@@ -13,7 +13,7 @@ export function MoveList({ history }: { history: string[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-0.5 max-h-32 overflow-y-auto font-classic-body text-xs">
+    <div className="flex min-h-[4rem] flex-1 flex-col gap-0.5 overflow-y-auto font-classic-body text-xs [max-height:min(46vh,22rem)]">
       {pairs.map(([white, black], i) => (
         <div key={i} className="flex gap-2 text-premium-ivory/70">
           <span className="w-5 text-premium-ivory/30 tabular-nums">{i + 1}.</span>

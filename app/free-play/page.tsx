@@ -14,6 +14,7 @@ import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { PostGameAnalysis } from "@/components/game/analysis/PostGameAnalysis";
 import { PrimaryCard } from "@/components/ui/Card";
+import { Screen } from "@/components/layout/Screen";
 import { Button } from "@/components/ui/Button";
 import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -215,44 +216,48 @@ export default function FreePlayPage() {
 
   if (view.status === "loading") {
     return (
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 py-12">
-        <div className="h-9 w-56 rounded bg-premium-navy/70 animate-pulse" />
-        <SkeletonRow className="h-4 w-72" />
-        <div className="w-full max-w-sm flex flex-col gap-3 mt-4">
-          <SkeletonBlock className="h-16" />
-          <SkeletonBlock className="h-16" />
-          <SkeletonBlock className="h-16" />
+      <Screen maxWidth="medium" align="center">
+        <div className="mx-auto h-9 w-56 rounded bg-premium-navy/70 animate-pulse" />
+        <div className="auto-grid mx-auto w-full max-w-2xl" style={{ "--grid-min": "18rem" } as React.CSSProperties}>
+          <SkeletonBlock className="h-[4.5rem]" />
+          <SkeletonBlock className="h-[4.5rem]" />
+          <SkeletonBlock className="h-[4.5rem]" />
+          <SkeletonBlock className="h-[4.5rem]" />
         </div>
-      </main>
+      </Screen>
     );
   }
 
   if (view.status === "picking-difficulty") {
     const exhausted = gameStatus && !gameStatus.isPremium && gameStatus.aiRemaining === 0;
     return (
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-8 px-6 py-12">
-        <h1 className={`${TEXT.display} text-center`}>Free Play Arena</h1>
-        <p className={`${TEXT.body} text-center max-w-sm`}>
-          Choose your opponent's strength and play a full game, start to finish!
-        </p>
-        {gameStatus && !gameStatus.isPremium && (
-          <div className="flex flex-col items-center gap-0.5">
-            <p className={TEXT.caption}>AI Games</p>
-            <p className={TEXT.body}>{gameStatus.aiRemaining} of 2 free games remaining today</p>
-          </div>
-        )}
-        <div className="grid grid-cols-1 gap-4 max-w-sm w-full">
+      <Screen maxWidth="medium" align="center">
+        <div className="text-center">
+          <h1 className={TEXT.display}>Free Play Arena</h1>
+          <p className={`${TEXT.body} mx-auto mt-2 max-w-sm`}>
+            Choose your opponent's strength and play a full game, start to finish!
+          </p>
+          {gameStatus && !gameStatus.isPremium && (
+            <p className={`${TEXT.caption} mt-3`}>
+              {gameStatus.aiRemaining} of 2 free AI games remaining today
+            </p>
+          )}
+        </div>
+        <div
+          className="auto-grid mx-auto w-full max-w-2xl"
+          style={{ "--grid-min": "18rem" } as React.CSSProperties}
+        >
           {DIFFICULTY_INFO.map((d) => (
             <button
               key={d.key}
               onClick={() => (exhausted ? setShowPaywall(true) : startGame(d.key))}
               disabled={startingGame}
-              className={`flex items-center gap-4 rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 text-left ${
+              className={`flex min-h-[4.5rem] items-center gap-4 rounded-premiumCard bg-premium-navy p-5 text-left shadow-premiumCard transition-transform duration-100 active:scale-[0.98] hover:border-premium-gold/30 border border-white/5 ${
                 exhausted ? "opacity-50" : ""
               }`}
             >
-              <span className="text-4xl">{d.emoji}</span>
-              <div>
+              <span className="flex-none text-4xl">{d.emoji}</span>
+              <div className="min-w-0">
                 <p className="font-classic-display text-lg text-premium-ivory">{d.label}</p>
                 <p className="font-classic-body text-sm text-premium-ivory/50">{d.blurb}</p>
               </div>
@@ -261,12 +266,12 @@ export default function FreePlayPage() {
         </div>
         <Link
           href="/kingdom-map"
-          className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          className="mx-auto font-body text-sm text-premium-ivory/40 underline underline-offset-2"
         >
           Back to the Kingdom Map
         </Link>
         {showPaywall && <GameLimitPaywall gameType="ai" onDismiss={() => setShowPaywall(false)} />}
-      </main>
+      </Screen>
     );
   }
 

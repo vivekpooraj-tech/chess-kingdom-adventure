@@ -250,51 +250,57 @@ export default function TacticsLessonPage() {
       )}
 
       {stage === "see" && (
-        <div className="flex flex-col items-center gap-4 max-w-xl w-full">
-          <ChessBoard readOnly fen={lesson.examples[0].fen} size={360} boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
-          <p className={`${TEXT.body} text-center`}>{lesson.examples[0].caption}</p>
-          <Button tone="premium" onClick={() => setStage("practice")}>
-            Try It Yourself →
-          </Button>
+        /* Board-first: full-width board on phones; on wide screens the
+           board sits beside its caption so you read and see at once. */
+        <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-4 lg:max-w-4xl lg:flex-row lg:items-center lg:gap-8">
+          <ChessBoard readOnly fen={lesson.examples[0].fen} size={400} boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
+          <div className="flex flex-col items-center gap-4 lg:items-start">
+            <p className={`${TEXT.body} text-center lg:text-left`}>{lesson.examples[0].caption}</p>
+            <Button tone="premium" onClick={() => setStage("practice")}>
+              Try It Yourself →
+            </Button>
+          </div>
         </div>
       )}
 
       {stage === "practice" && (
-        <div className="flex flex-col items-center gap-4 max-w-xl w-full">
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {isMultiExercise && (
-              <span className="font-classic-body text-sm bg-premium-navy/70 text-premium-ivory/70 rounded-full px-3 py-1">
-                Position {exerciseIndex + 1} of {lesson.exercises.length}
-              </span>
-            )}
-            <SideToMoveIndicator color={exercise.sideToMove} tone="premium" />
-          </div>
-          <p className={`${TEXT.body} text-center`}>{exercise.prompt}</p>
+        <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-4 lg:max-w-5xl lg:flex-row lg:items-start lg:gap-8">
           <ChessBoard
             key={boardKey}
             fen={exercise.fen}
             playableColor={exercise.sideToMove}
-            size={420}
+            size={460}
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}
             onMove={handlePracticeMove}
           />
-          {practiceStatus === "correct" && (
-            <div className="flex flex-col items-center gap-3">
-              <p className="font-classic-display text-lg text-premium-gold">{exercise.successMessage}</p>
-              <Button tone="premium" onClick={nextExerciseOrQuiz}>
-                {isLastExercise ? "Continue →" : "Next Position →"}
-              </Button>
+          <div className="flex flex-col items-center gap-3 lg:items-start lg:pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+              {isMultiExercise && (
+                <span className="font-classic-body text-sm bg-premium-navy/70 text-premium-ivory/70 rounded-full px-3 py-1">
+                  Position {exerciseIndex + 1} of {lesson.exercises.length}
+                </span>
+              )}
+              <SideToMoveIndicator color={exercise.sideToMove} tone="premium" />
             </div>
-          )}
-          {practiceStatus === "incorrect" && (
-            <div className="flex flex-col items-center gap-3">
-              <p className="font-classic-display text-lg text-red-300">{exercise.failureMessage}</p>
-              <Button tone="premium" variant="ghost" onClick={resetExercise}>
-                Try Again
-              </Button>
-            </div>
-          )}
+            <p className={`${TEXT.body} text-center lg:text-left`}>{exercise.prompt}</p>
+            {practiceStatus === "correct" && (
+              <div className="flex flex-col items-center gap-3 lg:items-start">
+                <p className="font-classic-display text-lg text-premium-gold">{exercise.successMessage}</p>
+                <Button tone="premium" onClick={nextExerciseOrQuiz}>
+                  {isLastExercise ? "Continue →" : "Next Position →"}
+                </Button>
+              </div>
+            )}
+            {practiceStatus === "incorrect" && (
+              <div className="flex flex-col items-center gap-3 lg:items-start">
+                <p className="font-classic-display text-lg text-red-300">{exercise.failureMessage}</p>
+                <Button tone="premium" variant="ghost" onClick={resetExercise}>
+                  Try Again
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

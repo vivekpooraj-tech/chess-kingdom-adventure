@@ -98,7 +98,7 @@ export default function OpeningDetailPage() {
   return (
     <>
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
-        <div className="w-full max-w-4xl flex flex-col gap-6">
+        <div className="w-full max-w-6xl flex flex-col gap-6">
           {/* Header */}
           <div className="text-center lg:text-left">
             <div className="flex items-center gap-2 justify-center lg:justify-start flex-wrap">
@@ -125,14 +125,14 @@ export default function OpeningDetailPage() {
           </div>
 
           {/* Board + info: stacked on mobile, side-by-side from lg up */}
-          <div className="flex flex-col lg:flex-row gap-6 items-start">
-            <div className="w-full lg:w-auto lg:flex-none flex flex-col items-center gap-4">
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            <div className="flex w-full flex-none flex-col items-center gap-4 lg:w-[440px]">
               {mode === "study" && (
                 <>
                   <ChessBoard
                     key={`study-${opening.id}`}
                     fen={fens[step]}
-                    size={360}
+                    size={440}
                     readOnly
                     boardSkinId={boardSkinId}
                     pieceSetId={pieceSetId}

@@ -272,7 +272,7 @@ export default function LessonPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3 }}
-            className="w-full max-w-lg flex flex-col items-center gap-6"
+            className="w-full max-w-2xl flex flex-col items-center gap-6"
           >
             {step!.type === "story" && (
               <StoryStep
