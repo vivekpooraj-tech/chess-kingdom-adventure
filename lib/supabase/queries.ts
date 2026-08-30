@@ -128,7 +128,18 @@ export async function resolveActiveChild(
   authUserId: string,
   activeChildIdFromCookie: string | null
 ): Promise<ActiveChildResolution> {
-  const allChildren = await getChildrenForParent(supabase, authUserId);
+  // Child-profile resolution is SEPARATE from parent authentication: a
+  // transient failure here (Supabase hiccup, cold radio) must never cascade
+  // into signing the parent out. No caller maps a thrown error from this to
+  // signOut() — but one retry keeps a momentary blip from error-paging a
+  // parent whose session is perfectly valid.
+  let allChildren: ChildProfile[];
+  try {
+    allChildren = await getChildrenForParent(supabase, authUserId);
+  } catch {
+    await new Promise((r) => setTimeout(r, 400));
+    allChildren = await getChildrenForParent(supabase, authUserId);
+  }
 
   if (allChildren.length === 0) {
     const created = await getOrCreateChild(supabase, authUserId);

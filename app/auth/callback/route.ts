@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 import { BRAND } from "@/lib/brand";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -54,49 +54,102 @@ function messagePage(message: string, fallbackUrl: string) {
 </html>`;
 }
 
+/**
+ * OAuth / PKCE callback.
+ *
+ *  - Web (Google, and any future provider): the browser lands here with
+ *    `?code=`. We exchange it for a session server-side and persist the
+ *    session cookies ON THIS redirect response (see the bound cookie
+ *    handlers below — `cookies().set()` from a route handler is not
+ *    reliably attached to a NextResponse you build yourself, which is the
+ *    classic "logged in but the session vanishes on the next request" bug).
+ *
+ *  - Native Android: sign-in requests `redirectTo: chesskingdom://auth/callback`
+ *    directly (see app/sign-in/page.tsx), so the OS routes the result to the
+ *    app and CapacitorDeepLinkHandler finishes the exchange in the WebView
+ *    that started it. This route's `?platform=native` branch below is only a
+ *    defensive fallback for a redirect that somehow arrives on https instead.
+ */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const oauthError = requestUrl.searchParams.get("error");
   const isNative = requestUrl.searchParams.get("platform") === "native";
   const signInUrl = new URL("/sign-in", requestUrl.origin).toString();
+
+  // Where to land after a successful exchange. Strict allowlist pattern — a
+  // leading "/" then only path-safe characters. This blocks every open-
+  // redirect vector: protocol-relative ("//host"), full URLs ("https://…"),
+  // the backslash trick ("/\host" — the WHATWG URL parser rewrites "\" to
+  // "/" for http(s), turning it into a network-path reference), embedded
+  // control chars, "@", "..", and query strings. Anything else falls back to
+  // the parent gate (the normal post-sign-in destination). The password-
+  // reset flow passes `?next=/reset-password`; a failed exchange for that
+  // flow returns to the reset page (so it can show "link expired") rather
+  // than the sign-in error state.
+  const nextParam = requestUrl.searchParams.get("next");
+  const safeNext =
+    nextParam && /^\/[A-Za-z0-9\-_/]+$/.test(nextParam) ? nextParam : "/parent-gate";
+  const isRecovery = safeNext === "/reset-password";
+  const failureUrl = isRecovery ? "/reset-password?error=expired" : "/sign-in?error=auth_failed";
+
+  if (oauthError) {
+    // Provider denied / user cancelled / misconfig — never proceed as if
+    // signed in.
+    return NextResponse.redirect(new URL(failureUrl, request.url));
+  }
 
   if (isNative) {
     if (!code) {
       return new NextResponse(
         messagePage(
-          "That sign-in link is missing its code — it may have already been used. Please request a new one.",
+          "That sign-in link is missing its code — it may have already been used. Please try again.",
           signInUrl
         ),
         { headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }
-
-    // Reached in an external (or in-app, e.g. Gmail's) browser, not the
-    // app's own WebView — the PKCE code's matching verifier lives in the
-    // app's local storage, not this browser's, so the exchange has to
-    // happen back in the app, not here (see CapacitorDeepLinkHandler).
-    // "Continue in browser" deliberately goes back to /sign-in rather than
-    // trying to consume this code here — this browser has no matching
-    // verifier, so exchanging it here would just fail.
+    // The PKCE verifier lives in the app WebView's storage, not this
+    // browser's, so the exchange has to happen back in the app.
     const userAgent = request.headers.get("user-agent") ?? "";
     const deepLink = /Android/i.test(userAgent)
       ? androidIntentUrl(code, signInUrl)
       : customSchemeUrl(code);
-
     return new NextResponse(openingAppPage(deepLink, signInUrl), {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   }
 
   if (code) {
-    const supabase = createClient();
+    const response = NextResponse.redirect(new URL(safeNext, request.url));
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            response.cookies.set({ name, value, ...options });
+          },
+          remove(name: string, options: any) {
+            response.cookies.set({ name, value: "", ...options });
+          },
+        },
+      }
+    );
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
-      return NextResponse.redirect(new URL("/sign-in?error=auth_failed", request.url));
+      console.log("[auth] OAuth callback completed: exchange failed");
+      return NextResponse.redirect(new URL(failureUrl, request.url));
     }
+    console.log("[auth] OAuth callback completed: session established");
+    return response;
   }
 
-  // Parent gate always comes right after auth, before any child-facing
-  // screen — see app flow in docs/04-user-flows.md.
-  return NextResponse.redirect(new URL("/parent-gate", request.url));
+  // No code and no error — nothing to do here; send them on to `next`
+  // (defaults to the gate), which bounces to /sign-in if there's genuinely
+  // no session.
+  return NextResponse.redirect(new URL(safeNext, request.url));
 }

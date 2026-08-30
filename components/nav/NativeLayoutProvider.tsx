@@ -36,12 +36,29 @@ export function NativeLayoutProvider({ children }: { children: React.ReactNode }
     applyLayout();
 
     if (Capacitor.isNativePlatform()) {
-      const key = "chessmind-layout-version";
-      const previous = localStorage.getItem(key);
-      if (previous !== LAYOUT_VERSION) {
-        localStorage.setItem(key, LAYOUT_VERSION);
-        window.location.reload();
-        return;
+      // One-time reload after an app update bumps LAYOUT_VERSION, so the new
+      // layout rules take effect without the user relaunching. Guarded hard
+      // against a reload loop: if localStorage doesn't actually persist in
+      // this WebView (some devices drop it on force-stop), an unguarded
+      // check would reload on every single launch — and every reload is
+      // another full cold-start auth round trip. sessionStorage survives a
+      // reload but not an app restart, so this reloads at most once per
+      // launch, and only if we can confirm the write stuck.
+      try {
+        const versionKey = "chessmind-layout-version";
+        const reloadGuardKey = "chessmind-layout-reloaded";
+        const previous = localStorage.getItem(versionKey);
+        if (previous !== LAYOUT_VERSION && !sessionStorage.getItem(reloadGuardKey)) {
+          localStorage.setItem(versionKey, LAYOUT_VERSION);
+          sessionStorage.setItem(reloadGuardKey, "1");
+          if (localStorage.getItem(versionKey) === LAYOUT_VERSION) {
+            window.location.reload();
+            return;
+          }
+        }
+      } catch {
+        // localStorage/sessionStorage unavailable — skip the reload
+        // entirely rather than risk a loop.
       }
     }
 

@@ -11,7 +11,17 @@ import { LOCAL_TEST_MODE } from "@/lib/devTestMode";
 // the one route ALLOWED to be reached with no session, because it's the
 // thing that establishes one — see app/api/dev/auto-signin/route.ts, which
 // refuses to actually sign anyone in unless LOCAL_TEST_MODE is true.
-const PUBLIC_PATHS = ["/", "/sign-in", "/auth/callback", "/api/stripe/webhook", "/api/dev/auto-signin"];
+// /forgot-password and /reset-password are pre-auth by nature (the user has
+// lost access); /reset-password gates itself on a valid recovery link.
+const PUBLIC_PATHS = [
+  "/",
+  "/sign-in",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/callback",
+  "/api/stripe/webhook",
+  "/api/dev/auto-signin",
+];
 const DEV_AUTO_SIGNIN_PATH = "/api/dev/auto-signin";
 
 export async function middleware(request: NextRequest) {
@@ -66,18 +76,34 @@ export async function middleware(request: NextRequest) {
   // design. If the project ever moves back to symmetric (HS256) signing,
   // getClaims() itself falls back to a getUser()-equivalent network call
   // automatically, so this stays correct either way.
-  let {
-    data,
-    error: userError,
-  } = await supabase.auth.getClaims();
-  let user = data?.claims ? { id: data.claims.sub } : null;
+  // getClaims() can also throw outright (not just return an error) — e.g. the
+  // one-time JWKS fetch for this ES256 project failing with a raw network
+  // TypeError on a cold instance. An unguarded throw here 500s the
+  // navigation, which on the Android WebView looks exactly like the app
+  // breaking. A thrown fetch failure is the same signal as a returned
+  // retryable error: infrastructure, not an invalid session.
+  async function readClaims(): Promise<{
+    user: { id: string } | null;
+    retryableError: boolean;
+  }> {
+    try {
+      const { data, error } = await supabase.auth.getClaims();
+      return {
+        user: data?.claims ? { id: data.claims.sub as string } : null,
+        retryableError: !!error && isAuthRetryableFetchError(error),
+      };
+    } catch {
+      return { user: null, retryableError: true };
+    }
+  }
+
+  let { user, retryableError } = await readClaims();
 
   // Same reasoning as the old getUser() retry: a single transient network
   // failure (JWKS fetch on a cold cache, or a refresh round trip) isn't
   // evidence the session is invalid.
-  if (!user && userError && isAuthRetryableFetchError(userError)) {
-    ({ data, error: userError } = await supabase.auth.getClaims());
-    user = data?.claims ? { id: data.claims.sub } : null;
+  if (!user && retryableError) {
+    ({ user, retryableError } = await readClaims());
   }
 
   const isPublic = PUBLIC_PATHS.some(
@@ -117,7 +143,7 @@ export async function middleware(request: NextRequest) {
     // or revoked session is still caught the moment verification actually
     // succeeds — this only widens the window before that happens, it
     // never disables the check.
-    if (userError && isAuthRetryableFetchError(userError)) {
+    if (retryableError) {
       return response;
     }
     const redirectUrl = new URL("/sign-in", request.url);

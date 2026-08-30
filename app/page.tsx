@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/branding/Logo";
-import { createClient, getVerifiedUser } from "@/lib/supabase/client";
+import { createClient, getAuthState } from "@/lib/supabase/client";
 import { TEXT } from "@/lib/designSystem";
 
 /**
@@ -27,6 +27,12 @@ const PARTICLES = [
   { left: "50%", top: "10%", size: 2.5, duration: 7, delay: 1.2 },
 ];
 
+// After this many consecutive "network-error" checks, stop holding the blank
+// neutral screen and fall through to the splash (an escape hatch, and the
+// right screen if the user really is signed out). Background polling
+// continues regardless — this is never treated as a logout.
+const MAX_NETWORK_ERROR_ATTEMPTS = 3;
+
 export default function SplashPage() {
   const router = useRouter();
   // "/" is deliberately public in middleware.ts (an unauthenticated visitor
@@ -38,30 +44,60 @@ export default function SplashPage() {
   // Journey" screen on every single app reopen, indistinguishable from
   // being signed out — this was the dominant, on-every-launch cause of the
   // reported "keeps asking me to sign in again," confirmed live on device.
-  // getVerifiedUser() reads the existing session (no forced network round
-  // trip unless the token actually needs refreshing) and redirects home;
-  // `checked` avoids ever flashing this sign-in-flavored splash at an
-  // already-authenticated user while that check is in flight.
-  const [checked, setChecked] = useState(false);
+  // getAuthState() distinguishes three cases (see lib/supabase/client.ts):
+  //  - "authed"          -> redirect home
+  //  - "unauthenticated" -> show this splash (the genuine signed-out screen)
+  //  - "network-error"   -> DON'T show the splash. A still-signed-in user
+  //                         whose token just needs a refresh, on a radio
+  //                         that's still waking up, must never see a
+  //                         sign-in-flavored screen. Hold, then retry.
+  // `phase` stays "checking" (blank premium background, indistinguishable
+  // from the native splash) until we actually know.
+  const [phase, setPhase] = useState<"checking" | "signed-out">("checking");
+  const attemptsRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    async function check() {
       const supabase = createClient();
-      const user = await getVerifiedUser(supabase);
+      const state = await getAuthState(supabase);
       if (cancelled) return;
-      if (user) {
+
+      if (state.status === "authed") {
+        attemptsRef.current = 0;
         router.replace("/kingdom-map");
         return;
       }
-      setChecked(true);
-    })();
+      if (state.status === "unauthenticated") {
+        attemptsRef.current = 0;
+        setPhase("signed-out");
+        return;
+      }
+      // network-error: keep waiting on the neutral screen, retry shortly,
+      // and again when the OS tells us connectivity is back. After a few
+      // failed cycles, fall through to the splash so the user isn't stuck
+      // on a blank screen — but KEEP polling below: this is never a logout,
+      // and the next successful check redirects an authed user home.
+      attemptsRef.current += 1;
+      if (attemptsRef.current >= MAX_NETWORK_ERROR_ATTEMPTS) {
+        setPhase("signed-out");
+      }
+      timer = setTimeout(check, 4000);
+    }
+
+    check();
+    const onOnline = () => check();
+    window.addEventListener("online", onOnline);
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("online", onOnline);
     };
   }, [router]);
 
-  if (!checked) {
+  if (phase === "checking") {
     return <main className="min-h-screen bg-premium-midnight" />;
   }
 

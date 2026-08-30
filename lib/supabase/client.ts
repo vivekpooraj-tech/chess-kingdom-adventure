@@ -13,32 +13,73 @@ export function createClient() {
   );
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
- * The client-side counterpart to getSessionUser() in lib/supabase/server.ts
- * — every "use client" page that gates itself on "is someone signed in"
- * should call this instead of supabase.auth.getUser()/getSession() directly.
+ * Three outcomes, kept deliberately distinct — the whole "keeps asking me to
+ * sign in" class of bugs came from collapsing the third into the second:
  *
- * getSession() first: it reads the already-verified session from storage
- * with no network call when the access token hasn't expired yet — the
- * common case for an already-open app. Only when the token HAS expired
- * (typically after the app sat backgrounded for over an hour — exactly the
- * "reopened the app" moment) does the SDK attempt a real network refresh,
- * and that's the single point of failure that was logging genuinely
- * signed-in users out: a mobile radio still waking from sleep, or any
- * other momentary network blip, made the refresh fail once, which this
- * app's pages then treated identically to "never signed in" and bounced
- * to a fresh magic-link request. One retry here resolves the overwhelming
- * majority of those — they're momentary, not sustained outages.
+ *  - "authed"        a valid session (fresh, or refreshed just now)
+ *  - "unauthenticated" no session and none recoverable — a real sign-in is needed
+ *  - "network-error"  couldn't reach Supabase to confirm either way. This is
+ *                     NOT "signed out". The caller must keep whatever it was
+ *                     showing (or a neutral "reconnecting" state) and try
+ *                     again — never redirect to /sign-in on this.
+ *
+ * The common cold-start failure is a device radio still waking from sleep
+ * right as the app tries to refresh an access token that expired while it
+ * was backgrounded. One immediate retry never covered that; this backs off
+ * over ~3s before giving up, which resolves the overwhelming majority.
+ */
+export type AuthState =
+  | { status: "authed"; user: { id: string; email?: string } }
+  | { status: "unauthenticated"; user: null }
+  | { status: "network-error"; user: null };
+
+const RETRY_DELAYS_MS = [250, 600, 1200];
+
+export async function getAuthState(supabase: SupabaseClient): Promise<AuthState> {
+  let lastRetryable = false;
+
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (data.session?.user) {
+      return { status: "authed", user: data.session.user };
+    }
+
+    // A clean "no session" with no error is a genuine signed-out state —
+    // stop here, don't burn retries on it.
+    if (!error) {
+      return { status: "unauthenticated", user: null };
+    }
+
+    lastRetryable = isAuthRetryableFetchError(error);
+    if (!lastRetryable) {
+      // e.g. refresh_token_not_found / already-used — the session is really
+      // gone and cannot be refreshed. This is the only non-explicit path
+      // that should ever land someone back on sign-in.
+      return { status: "unauthenticated", user: null };
+    }
+
+    if (attempt < RETRY_DELAYS_MS.length) {
+      await sleep(RETRY_DELAYS_MS[attempt]);
+    }
+  }
+
+  return lastRetryable
+    ? { status: "network-error", user: null }
+    : { status: "unauthenticated", user: null };
+}
+
+/**
+ * Back-compat wrapper for the ~30 pages that just need "who's signed in, or
+ * null". It now benefits from the same backoff as getAuthState(). It still
+ * returns null on a network error — callers that must tell "signed out" from
+ * "offline" apart (the app's launch screen, the parent gate) should use
+ * getAuthState() directly and NOT bounce to /sign-in on "network-error".
  */
 export async function getVerifiedUser(supabase: SupabaseClient) {
-  let {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
-  if (!session && error && isAuthRetryableFetchError(error)) {
-    ({
-      data: { session },
-    } = await supabase.auth.getSession());
-  }
-  return session?.user ?? null;
+  const state = await getAuthState(supabase);
+  return state.user;
 }

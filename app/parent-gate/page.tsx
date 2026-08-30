@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient, getVerifiedUser } from "@/lib/supabase/client";
+import { createClient, getAuthState } from "@/lib/supabase/client";
 import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { Button } from "@/components/ui/Button";
@@ -58,13 +58,22 @@ function ParentGateInner() {
   // version of "what happens after the gate."
   async function proceedPastGate() {
     setChecking(true);
+    setError(null);
     const supabase = createClient();
-    const user = await getVerifiedUser(supabase);
+    const authState = await getAuthState(supabase);
 
-    if (!user) {
+    if (authState.status === "network-error") {
+      // Valid session that just couldn't be confirmed offline — never
+      // treat this as "signed out". Let them retry.
+      setChecking(false);
+      setError("Couldn't reach the server. Check your connection and try again.");
+      return;
+    }
+    if (authState.status === "unauthenticated") {
       router.push("/sign-in");
       return;
     }
+    const user = authState.user;
 
     // If we were sent here to reach a specific destination (e.g. the parent
     // dashboard), go straight there once the check passes.
@@ -73,25 +82,32 @@ function ParentGateInner() {
       return;
     }
 
-    const resolution = await resolveActiveChild(
-      supabase,
-      user.id,
-      getActiveChildIdClient()
-    );
-    setChecking(false);
+    try {
+      const resolution = await resolveActiveChild(
+        supabase,
+        user.id,
+        getActiveChildIdClient()
+      );
+      setChecking(false);
 
-    if (resolution.needsSelection) {
-      router.push("/choose-child");
-      return;
-    }
+      if (resolution.needsSelection) {
+        router.push("/choose-child");
+        return;
+      }
 
-    const child = resolution.child!;
-    setActiveChildIdClient(child.id);
-    // Skip onboarding if this child already picked an avatar/buddy before.
-    if (child.avatar_id && child.buddy_id) {
-      router.push("/kingdom-map");
-    } else {
-      router.push("/onboarding/avatar");
+      const child = resolution.child!;
+      setActiveChildIdClient(child.id);
+      // Skip onboarding if this child already picked an avatar/buddy before.
+      if (child.avatar_id && child.buddy_id) {
+        router.push("/kingdom-map");
+      } else {
+        router.push("/onboarding/avatar");
+      }
+    } catch {
+      // Child-profile resolution failed even after its own retry — a valid
+      // parent session must never be left stuck on "Checking…". Let them retry.
+      setChecking(false);
+      setError("Couldn't load your profile. Check your connection and try again.");
     }
   }
 
