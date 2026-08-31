@@ -225,6 +225,11 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
    <video> is then sized to fit INSIDE that padded box, so its own control
    bar can't reach the system nav. */
 .history-video[data-fullscreen="true"] .history-video__stage {
+  /* Anchor the clip to the bottom of the padded box: its control bar then
+     sits exactly --bottom-nav-h above the screen edge — clear of the nav,
+     without a big dead band — and any letterbox slack goes to the top
+     where the close button lives. */
+  align-items: flex-end;
   padding-top: calc(var(--safe-top) + 1rem);
   padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom));
   padding-left: max(env(safe-area-inset-left, 0px), 0.5rem);
