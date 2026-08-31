@@ -195,12 +195,20 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
 
 /* History of Chess player — custom (web) fullscreen. `requestFullscreen()`
    is called on the .history-video WRAPPER, not the <video>, so the whole
-   surface — clip, poster, control bar, our own fullscreen toggle — stays
-   inside the device safe-area insets and never lands under the system
-   navigation bar the way the native <video> fullscreen view did. Covers
-   the standard `:fullscreen` and the WebKit-prefixed pseudo. */
-.history-video:fullscreen,
-.history-video:-webkit-full-screen {
+   surface — clip, control bar, our own toggle — stays inside a padded box
+   and never lands under the system navigation bar the way the native
+   <video> fullscreen view did.
+
+   Driven by the `data-fullscreen` attribute (set from the fullscreenchange
+   listener), NOT the `:fullscreen` pseudo — that pseudo behaves
+   inconsistently across WebView builds, and a bad `:-webkit-full-screen`
+   in a selector list silently drops the whole rule. `:fullscreen` is kept
+   as a separate belt-and-suspenders block below so the very first frame is
+   already styled. */
+.history-video[data-fullscreen="true"] {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
   width: 100%;
   height: 100%;
   max-width: none;
@@ -209,33 +217,37 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* The <video>'s own control bar renders at the bottom edge of the video
+  /* The <video>'s own control bar sits at the bottom edge of the video
      ELEMENT, so the element (not just the painted frame) has to clear the
      system chrome. This Android WebView reports env(safe-area-inset-*) as 0
-     inside fullscreen even though the status/navigation bars are still
-     drawn, so add the app's own bar-height token on top of whatever inset
-     IS reported (gesture bar / notch on other devices). */
-  padding-top: calc(var(--safe-top) + 1.75rem);
-  padding-bottom: calc(var(--safe-bottom) + var(--bottom-nav-h));
+     in fullscreen even though the status + navigation bars are still drawn,
+     so use the same token stack the rest of the app clears its bottom bar
+     with (--bottom-nav-h + inset + a breathing gap), and a status-bar
+     allowance up top. */
+  padding-top: calc(var(--safe-top) + 2rem);
+  padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 1.5rem);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
-.history-video:fullscreen .history-video__el,
-.history-video:-webkit-full-screen .history-video__el {
+.history-video[data-fullscreen="true"] .history-video__el {
   width: 100%;
   height: 100%;
   margin: 0;
   background: transparent;
   object-fit: contain;
+  object-position: center;
 }
-.history-video:fullscreen .history-video__poster,
-.history-video:-webkit-full-screen .history-video__poster {
+.history-video[data-fullscreen="true"] .history-video__poster {
   display: none;
 }
-.history-video:fullscreen .history-video__fs,
-.history-video:-webkit-full-screen .history-video__fs {
-  top: max(0.5rem, env(safe-area-inset-top, 0px));
-  right: max(0.5rem, env(safe-area-inset-right, 0px));
+.history-video[data-fullscreen="true"] .history-video__fs {
+  top: max(0.75rem, calc(var(--safe-top) + 0.5rem));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+}
+
+/* First-frame styling before the fullscreenchange listener flips the attr. */
+.history-video:fullscreen {
+  background: #000;
 }
 
 /* ---- Premium / Classic Mode surface language -----------------------

@@ -85,8 +85,8 @@ export function HistoryVideo({
         "history-video relative overflow-hidden bg-premium-navy",
         !isFullscreen &&
           (orientation === "portrait"
-            ? "w-full max-w-[340px] rounded-premiumCard shadow-premiumCard aspect-[9/16] sm:max-w-[380px] lg:max-w-3xl lg:aspect-video"
-            : "w-full max-w-md rounded-premiumCard shadow-premiumCard aspect-video sm:max-w-xl lg:max-w-3xl")
+            ? "mx-auto w-full max-w-[340px] rounded-premiumCard shadow-premiumCard aspect-[9/16] sm:max-w-[380px] lg:max-w-3xl lg:aspect-video"
+            : "mx-auto w-full max-w-md rounded-premiumCard shadow-premiumCard aspect-video sm:max-w-xl lg:max-w-3xl")
       )}
     >
       {/* Blurred poster letterbox behind the clip on the wide (lg) inline
