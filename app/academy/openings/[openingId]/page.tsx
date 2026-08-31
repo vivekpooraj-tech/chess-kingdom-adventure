@@ -7,6 +7,7 @@ import { Chess } from "chess.js";
 import { getOpening } from "@/content/openings";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { Button } from "@/components/ui/Button";
+import { MoveFeedback } from "@/components/game/MoveFeedback";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
@@ -137,13 +138,56 @@ export default function OpeningDetailPage() {
                     boardSkinId={boardSkinId}
                     pieceSetId={pieceSetId}
                   />
-                  <p className="font-classic-body text-sm text-premium-ivory/70 min-h-[20px]">
-                    {step === 0
-                      ? "Starting position"
-                      : movePairs(opening.moves.slice(0, step))
-                          .map(([w, b], i) => `${i + 1}.${w}${b ? ` ${b}` : ""}`)
-                          .join(" ")}
-                  </p>
+                  {/* Clickable move ladder — jump straight to any point in
+                      the line, not just step forward/back one ply at a time. */}
+                  <div className="flex min-h-[24px] flex-wrap items-center justify-center gap-x-1.5 gap-y-1 font-classic-body text-sm">
+                    <button
+                      onClick={() => {
+                        setPlaying(false);
+                        setStep(0);
+                      }}
+                      className={`rounded px-1.5 py-0.5 transition-colors ${
+                        step === 0
+                          ? "bg-premium-gold/20 font-semibold text-premium-gold"
+                          : "text-premium-ivory/55 hover:text-premium-ivory"
+                      }`}
+                    >
+                      Start
+                    </button>
+                    {movePairs(opening.moves).map(([w, b], i) => (
+                      <span key={i} className="flex items-center gap-1">
+                        <span className="tabular-nums text-premium-ivory/30">{i + 1}.</span>
+                        <button
+                          onClick={() => {
+                            setPlaying(false);
+                            setStep(i * 2 + 1);
+                          }}
+                          className={`rounded px-1.5 py-0.5 transition-colors ${
+                            step === i * 2 + 1
+                              ? "bg-premium-gold/20 font-semibold text-premium-gold"
+                              : "text-premium-ivory/70 hover:text-premium-ivory"
+                          }`}
+                        >
+                          {w}
+                        </button>
+                        {b && (
+                          <button
+                            onClick={() => {
+                              setPlaying(false);
+                              setStep(i * 2 + 2);
+                            }}
+                            className={`rounded px-1.5 py-0.5 transition-colors ${
+                              step === i * 2 + 2
+                                ? "bg-premium-gold/20 font-semibold text-premium-gold"
+                                : "text-premium-ivory/70 hover:text-premium-ivory"
+                            }`}
+                          >
+                            {b}
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
@@ -325,10 +369,9 @@ function PracticePanel({
         onPositionChange={(pos) => setHistory(pos.history)}
         onGameOver={handleGameOver}
       />
-      <p
-        className={`font-classic-body text-sm text-center min-h-[20px] ${
-          stillInBook ? "text-premium-gold" : "text-premium-ivory/60"
-        }`}
+      <MoveFeedback
+        tone={history.length > 0 && (completedLine || stillInBook) ? "correct" : "neutral"}
+        className="w-full text-center"
       >
         {history.length === 0
           ? `Play the ${opening.name} — starting position.`
@@ -337,7 +380,7 @@ function PracticePanel({
           : stillInBook
           ? `Great! You're following the ${opening.name}.`
           : "You've left the main line — that's OK, keep playing!"}
-      </p>
+      </MoveFeedback>
       <Button
         tone="premium"
         variant="ghost"

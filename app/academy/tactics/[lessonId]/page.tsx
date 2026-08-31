@@ -20,6 +20,7 @@ import { ChessBoard } from "@/components/board/ChessBoard";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { MoveFeedback } from "@/components/game/MoveFeedback";
 import { TEXT } from "@/lib/designSystem";
 import { TacticsPaywall } from "@/components/upgrade/TacticsPaywall";
 
@@ -265,15 +266,20 @@ export default function TacticsLessonPage() {
 
       {stage === "practice" && (
         <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-4 lg:max-w-5xl lg:flex-row lg:items-start lg:gap-8">
-          <ChessBoard
-            key={boardKey}
-            fen={exercise.fen}
-            playableColor={exercise.sideToMove}
-            size={460}
-            boardSkinId={boardSkinId}
-            pieceSetId={pieceSetId}
-            onMove={handlePracticeMove}
-          />
+          <div
+            className="board-feedback flex w-full items-center justify-center lg:w-[460px] lg:flex-none"
+            data-feedback={practiceStatus}
+          >
+            <ChessBoard
+              key={boardKey}
+              fen={exercise.fen}
+              playableColor={exercise.sideToMove}
+              size={460}
+              boardSkinId={boardSkinId}
+              pieceSetId={pieceSetId}
+              onMove={handlePracticeMove}
+            />
+          </div>
           <div className="flex flex-col items-center gap-3 lg:items-start lg:pt-4">
             <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
               {isMultiExercise && (
@@ -285,16 +291,20 @@ export default function TacticsLessonPage() {
             </div>
             <p className={`${TEXT.body} text-center lg:text-left`}>{exercise.prompt}</p>
             {practiceStatus === "correct" && (
-              <div className="flex flex-col items-center gap-3 lg:items-start">
-                <p className="font-classic-display text-lg text-premium-gold">{exercise.successMessage}</p>
+              <div className="flex w-full flex-col items-center gap-3 lg:items-start">
+                <MoveFeedback tone="correct" className="w-full text-center lg:text-left">
+                  {exercise.successMessage}
+                </MoveFeedback>
                 <Button tone="premium" onClick={nextExerciseOrQuiz}>
                   {isLastExercise ? "Continue →" : "Next Position →"}
                 </Button>
               </div>
             )}
             {practiceStatus === "incorrect" && (
-              <div className="flex flex-col items-center gap-3 lg:items-start">
-                <p className="font-classic-display text-lg text-red-300">{exercise.failureMessage}</p>
+              <div className="flex w-full flex-col items-center gap-3 lg:items-start">
+                <MoveFeedback tone="incorrect" className="w-full text-center lg:text-left">
+                  {exercise.failureMessage}
+                </MoveFeedback>
                 <Button tone="premium" variant="ghost" onClick={resetExercise}>
                   Try Again
                 </Button>

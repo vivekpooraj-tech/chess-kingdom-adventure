@@ -24,6 +24,7 @@ import { LiveChessClock } from "@/components/game/ChessClock";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
+import { MoveList } from "@/components/game/MoveList";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
 import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
@@ -539,6 +540,13 @@ export default function OnlineGamePage() {
                 }}
               />
             )}
+
+            <div className="flex min-h-0 flex-1 flex-col gap-1.5 rounded-premiumCard bg-premium-navy p-3 shadow-premiumCard">
+              <p className="font-classic-body text-[10px] uppercase tracking-wide text-premium-ivory/40">
+                Moves
+              </p>
+              <MoveList history={game.moves} />
+            </div>
 
             {showSocial && (
               <div className="rounded-premiumCard bg-premium-navy p-3 flex flex-col gap-2 shadow-premiumCard">

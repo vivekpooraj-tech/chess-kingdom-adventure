@@ -18,6 +18,7 @@ import { recordDailyChallengeResult } from "@/lib/supabase/dailyChallengeQueries
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { ChessFocusLayout } from "@/components/chess/ChessFocusLayout";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
+import { MoveFeedback } from "@/components/game/MoveFeedback";
 import { SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
@@ -227,19 +228,21 @@ function PuzzlesPageInner() {
         title="Puzzle Trainer"
         onExit={() => router.push("/kingdom-map")}
         renderBoard={(boardSize) => (
-          <ChessBoard
-            key={boardKey}
-            fen={puzzle.fen}
-            playableColor={puzzle.sideToMove}
-            opponent={puzzle.mateIn > 1 ? "stockfish" : undefined}
-            difficulty="easy"
-            size={boardSize}
-            focusMode
-            boardSkinId={boardSkinId}
-            pieceSetId={pieceSetId}
-            onMove={handleMove}
-            onPositionChange={handlePositionChange}
-          />
+          <div className="board-feedback flex w-full items-center justify-center" data-feedback={status}>
+            <ChessBoard
+              key={boardKey}
+              fen={puzzle.fen}
+              playableColor={puzzle.sideToMove}
+              opponent={puzzle.mateIn > 1 ? "stockfish" : undefined}
+              difficulty="easy"
+              size={boardSize}
+              focusMode
+              boardSkinId={boardSkinId}
+              pieceSetId={pieceSetId}
+              onMove={handleMove}
+              onPositionChange={handlePositionChange}
+            />
+          </div>
         )}
         sidePanel={
           <div className="flex flex-col gap-3">
@@ -259,11 +262,10 @@ function PuzzlesPageInner() {
 
             {status === "correct" && isDaily && (
               <div className="flex flex-col gap-2">
-                <p className="font-classic-display text-base text-premium-gold">Daily Challenge Complete ✓</p>
-                <p className={`${TEXT.caption} normal-case`}>
-                  Today&apos;s challenge: Checkmate in {puzzle.mateIn} · Accuracy:{" "}
+                <MoveFeedback tone="correct">
+                  Daily Challenge complete ✓ — Checkmate in {puzzle.mateIn} · Accuracy{" "}
                   {Math.round(100 / (dailyAttempts + 1))}%
-                </p>
+                </MoveFeedback>
                 <Link href="/kingdom-map">
                   <Button tone="premium" className="w-full">Back to the Kingdom →</Button>
                 </Link>
@@ -271,7 +273,7 @@ function PuzzlesPageInner() {
             )}
             {status === "correct" && !isDaily && (
               <div className="flex flex-col gap-2">
-                <p className="font-classic-display text-base text-premium-gold">Checkmate — you found it.</p>
+                <MoveFeedback tone="correct">Checkmate — you found it.</MoveFeedback>
                 <Button tone="premium" onClick={nextPuzzle} className="w-full">
                   Next Puzzle →
                 </Button>
@@ -279,18 +281,18 @@ function PuzzlesPageInner() {
             )}
             {status === "incorrect" && (
               <div className="flex flex-col gap-2">
-                <p className="font-classic-display text-base text-red-300">Not quite — take another look.</p>
+                <MoveFeedback tone="incorrect">Not quite — that isn&apos;t mate. Take another look.</MoveFeedback>
                 <Button tone="premium" variant="ghost" onClick={resetPuzzle} className="w-full">
                   Try Again
                 </Button>
               </div>
             )}
             {status === "playing" && moveCount > 0 && (
-              <p className={`${TEXT.caption} normal-case italic`}>
+              <MoveFeedback tone="neutral">
                 {movesRemaining === 1
-                  ? "Good move! Now find the checkmate."
-                  : `Good move! ${movesRemaining} moves to go.`}
-              </p>
+                  ? "Good move — now find the checkmate."
+                  : `Good move — ${movesRemaining} to go.`}
+              </MoveFeedback>
             )}
 
             <p className={`${TEXT.caption} mt-auto pt-2 border-t border-white/5`}>

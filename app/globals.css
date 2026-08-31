@@ -143,6 +143,43 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
   min-width: 0;
 }
 
+/* One quiet pulse on the board frame when a move lands — makes "accepted"
+   and "rejected" register on the board itself, not only in the panel text.
+   The selector goes from not-matching to matching on each state change so
+   the animation replays every time. Reduced-motion is handled globally
+   (the * animation-duration override above collapses it to ~0). */
+.board-feedback {
+  border-radius: 16px;
+}
+@keyframes board-pulse-correct {
+  0% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+  }
+  35% {
+    box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+  }
+}
+@keyframes board-pulse-incorrect {
+  0% {
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+  }
+  35% {
+    box-shadow: 0 0 0 5px rgba(248, 113, 113, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+  }
+}
+.board-feedback[data-feedback="correct"] {
+  animation: board-pulse-correct 620ms ease-out;
+}
+.board-feedback[data-feedback="incorrect"] {
+  animation: board-pulse-incorrect 620ms ease-out;
+}
+
 /* ---- Premium / Classic Mode surface language -----------------------
    Glass + gradient treatments used by premium chrome (Academy, upgrade
    screens, achievement cards). Kept as plain CSS rather than Tailwind

@@ -22,6 +22,7 @@ import { MemoryFlip } from "@/components/minigames/engines/MemoryFlip";
 import { TimedReaction } from "@/components/minigames/engines/TimedReaction";
 import { ConfettiBurst } from "@/components/rewards/ConfettiBurst";
 import { LessonHeader } from "@/components/lesson/LessonHeader";
+import { MoveFeedback } from "@/components/game/MoveFeedback";
 import { AchievementUnlockReveal } from "@/components/achievements/AchievementUnlockReveal";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
@@ -124,6 +125,10 @@ export default function LessonPage() {
   }, [router, params.dayId]);
 
   const step = lesson?.steps[stepIndex];
+  // Board-heavy steps get a slightly roomier column so the board can breathe
+  // on tablet/desktop; narrative steps stay at a comfortable reading width.
+  const isBoardStep =
+    step?.type === "piece_intro" || step?.type === "puzzle" || step?.type === "mini_match";
 
   // The moment the Reward step is reached, the lesson is genuinely
   // complete — this is where markLessonComplete fires (not on "Continue",
@@ -217,17 +222,19 @@ export default function LessonPage() {
             Free Preview — Day {lesson.dayNumber}
           </span>
           {!previewDone ? (
-            <PuzzleStep
-              fen={lesson.puzzle.fen}
-              prompt={lesson.puzzle.prompt}
-              acceptedPieceTypes={lesson.puzzle.acceptedPieceTypes}
-              crystal={lesson.crystal}
-              dayNumber={lesson.dayNumber}
-              childId={childId}
-              boardSkinId={boardSkinId}
-              pieceSetId={pieceSetId}
-              onNext={() => setPreviewDone(true)}
-            />
+            <div className="w-full max-w-xl">
+              <PuzzleStep
+                fen={lesson.puzzle.fen}
+                prompt={lesson.puzzle.prompt}
+                acceptedPieceTypes={lesson.puzzle.acceptedPieceTypes}
+                crystal={lesson.crystal}
+                dayNumber={lesson.dayNumber}
+                childId={childId}
+                boardSkinId={boardSkinId}
+                pieceSetId={pieceSetId}
+                onNext={() => setPreviewDone(true)}
+              />
+            </div>
           ) : (
             <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
               <span className="text-5xl">✨</span>
@@ -272,7 +279,9 @@ export default function LessonPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3 }}
-            className="w-full max-w-2xl flex flex-col items-center gap-6"
+            className={`w-full flex flex-col items-center gap-6 ${
+              isBoardStep ? "max-w-xl" : "max-w-2xl"
+            }`}
           >
             {step!.type === "story" && (
               <StoryStep
@@ -424,10 +433,10 @@ function PieceIntroStep({
   onNext: () => void;
 }) {
   return (
-    <SecondaryCard className="flex flex-col items-center gap-5 text-center">
+    <SecondaryCard className="flex w-full flex-col items-center gap-5 text-center">
       <p className={`${TEXT.meta} text-premium-gold`}>See it on the board</p>
       <h2 className={TEXT.heading}>{title}</h2>
-      <ChessBoard fen={fen} size={320} readOnly boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
+      <ChessBoard fen={fen} size={420} readOnly boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
       <p className={TEXT.body}>
         Here's where the {crystal} starts. Let's see how it moves.
       </p>
@@ -557,7 +566,7 @@ function PuzzleStep({
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={360}
+        size={440}
         boardSkinId={boardSkinId}
         pieceSetId={pieceSetId}
         onMove={(opts) => handleMove(opts.piece)}
@@ -568,20 +577,20 @@ function PuzzleStep({
         }}
       />
       {checkmated && (
-        <p className="font-classic-display text-lg text-premium-gold text-center">
+        <MoveFeedback tone="correct" className="w-full text-center">
           Checkmate — incredible.
-        </p>
+        </MoveFeedback>
       )}
       {!checkmated && moved && wasCorrect && (
-        <p className="font-classic-display text-lg text-emerald-400 text-center">
-          Excellent. That's how the {crystal} does it.
-        </p>
+        <MoveFeedback tone="correct" className="w-full text-center">
+          Excellent. That&apos;s how the {crystal} does it.
+        </MoveFeedback>
       )}
       {!checkmated && moved && !wasCorrect && (
-        <div className="flex flex-col items-center gap-2">
-          <p className="font-classic-body text-sm text-red-300 text-center">
-            Not quite — look for a move with the {crystal} from today's lesson.
-          </p>
+        <div className="flex w-full flex-col items-center gap-2">
+          <MoveFeedback tone="incorrect" className="w-full text-center">
+            Not quite — look for a move with the {crystal} from today&apos;s lesson.
+          </MoveFeedback>
           <Button tone="premium" variant="ghost" size="md" onClick={tryAgain}>
             Try Again
           </Button>
@@ -637,7 +646,7 @@ function MiniMatchStep({
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={360}
+        size={440}
         boardSkinId={boardSkinId}
         pieceSetId={pieceSetId}
         onMove={() => setMoveCount((c) => c + 1)}
@@ -648,11 +657,13 @@ function MiniMatchStep({
         }}
       />
       {checkmated ? (
-        <p className="font-classic-display text-lg text-premium-gold">Checkmate — incredible.</p>
+        <MoveFeedback tone="correct" className="w-full text-center">
+          Checkmate — incredible.
+        </MoveFeedback>
       ) : complete ? (
-        <p className="font-classic-display text-base text-emerald-400">
+        <MoveFeedback tone="correct" className="w-full text-center">
           Nice work. You put the {crystal} into practice.
-        </p>
+        </MoveFeedback>
       ) : (
         <p className={TEXT.caption}>
           {Math.min(moveCount, movesRequired)}/{movesRequired} moves
