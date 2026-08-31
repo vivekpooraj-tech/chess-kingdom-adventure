@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { stockfish, Difficulty } from "@/lib/chess-engine/stockfishEngine";
 import { getBoardSkin } from "@/content/boardSkins";
 import { getPieceSet } from "@/content/pieceSets";
+import { PieceImage } from "@/components/board/PieceImage";
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
@@ -16,38 +17,6 @@ const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
 // square canvas. Every image-backed skin must use this same proportion so
 // the transparent interactive grid lines up with the image's drawn squares.
 const BOARD_IMAGE_FRAME_FRACTION = 36 / 792;
-
-// Maps chess.js's piece/color codes to the uploaded character asset pack's
-// file names — public/pieces/{light,dark}/{name}.svg.
-const PIECE_FILE_NAME: Record<PieceSymbol, string> = {
-  p: "pawn",
-  n: "knight",
-  b: "bishop",
-  r: "rook",
-  q: "queen",
-  k: "king",
-};
-
-// Bounding box each piece renders within, as a % of its square (Phase 13,
-// tuned again after Phase 14 feedback, retuned once more in Phase 15 to
-// fit that phase's explicit visual target ranges — king 90-95%, queen
-// 90-93%, bishop/knight 88-93%, rook 86-91%, pawn 78-84%, pawn always the
-// smallest). Every set's SVG viewBox is cropped tight to its own ink, but
-// a tight bounding box isn't the same as visually "full" — the pawn is a
-// solid, chunky silhouette that fills almost all of its own box, while the
-// king/queen/bishop/knight/rook shapes are thinner (a cross-topped stem,
-// crenellations, a narrow profile) with real empty space inside their own
-// bbox. At equal box percentages those five read as smaller than the pawn
-// even though their bounding boxes aren't. Boxed larger here to compensate,
-// not because their bounding boxes are bigger.
-const PIECE_BOX_PCT: Record<PieceSymbol, number> = {
-  k: 93,
-  q: 92,
-  b: 91,
-  n: 91,
-  r: 89,
-  p: 82,
-};
 
 export interface ChessBoardProps {
   /** Starting position; defaults to the standard game start. */
@@ -385,7 +354,6 @@ export function ChessBoard({
   // renders at, not just the literal `size` prop.
   const framePercent = skin.boardImageUrl ? BOARD_IMAGE_FRAME_FRACTION * 100 : 0;
   const gridPercent = 100 - framePercent * 2;
-  const pieceFolder = pieceSet.folder ? `${pieceSet.folder}/` : "";
 
   // Flip the board for Black so that player's own pieces render at the
   // bottom, matching how a real chess board looks from either side — this
@@ -549,30 +517,12 @@ export function ChessBoard({
                       initial={{ scale: 0.6, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.6, opacity: 0 }}
-                      className="flex items-center justify-center drop-shadow-sm"
-                      style={{
-                        width: `${PIECE_BOX_PCT[piece.type]}%`,
-                        height: `${PIECE_BOX_PCT[piece.type]}%`,
-                      }}
+                      // Fills the whole square; PieceImage sizes the piece
+                      // itself by height (pieceSet.opticalScale) and centres
+                      // it, so every set shares one optical scale.
+                      className="flex h-full w-full items-center justify-center drop-shadow-sm"
                     >
-                      <img
-                        src={`/pieces/${pieceFolder}${piece.color === "w" ? "light" : "dark"}/${
-                          PIECE_FILE_NAME[piece.type]
-                        }.svg`}
-                        alt={`${piece.color === "w" ? "light" : "dark"} ${piece.type}`}
-                        // width/height are the SVG's real intrinsic
-                        // dimensions (HTML attributes, not CSS) — piece sets
-                        // aren't all square (e.g. wood-classic is 200x300).
-                        // object-fit: contain (not max-width/height + auto,
-                        // which rendered the square "classic" set wildly
-                        // oversized in testing) fills this fixed box and
-                        // scales the image to fit within it, preserving
-                        // aspect ratio, for every piece set uniformly.
-                        width={pieceSet.intrinsicSize.width}
-                        height={pieceSet.intrinsicSize.height}
-                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                        draggable={false}
-                      />
+                      <PieceImage set={pieceSet} piece={piece.type} color={piece.color} />
                     </motion.div>
                   )}
                 </AnimatePresence>

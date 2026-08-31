@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { getPieceSet } from "@/content/pieceSets";
+import { getPieceSet, PIECE_SYMBOL_BY_NAME } from "@/content/pieceSets";
 import { PIECE_LIBRARY } from "@/content/pieceLibrary";
+import { PieceImage } from "@/components/board/PieceImage";
 import { SecondaryCard } from "@/components/ui/Card";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
@@ -42,7 +43,6 @@ export default function PieceLibraryPage() {
   }
 
   const pieceSet = getPieceSet(pieceSetId);
-  const folder = pieceSet.folder ? `${pieceSet.folder}/` : "";
 
   return (
     <>
@@ -59,22 +59,12 @@ export default function PieceLibraryPage() {
           <SecondaryCard key={entry.piece} className="flex flex-col gap-3">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1 bg-premium-midnightDeep rounded-premiumBtn p-2">
-                <img
-                  src={`/pieces/${folder}light/${entry.piece}.svg`}
-                  alt={`Light ${entry.name}`}
-                  width={pieceSet.intrinsicSize.width}
-                  height={pieceSet.intrinsicSize.height}
-                  style={{ width: 44, height: 44, objectFit: "contain" }}
-                  draggable={false}
-                />
-                <img
-                  src={`/pieces/${folder}dark/${entry.piece}.svg`}
-                  alt={`Dark ${entry.name}`}
-                  width={pieceSet.intrinsicSize.width}
-                  height={pieceSet.intrinsicSize.height}
-                  style={{ width: 44, height: 44, objectFit: "contain" }}
-                  draggable={false}
-                />
+                <span className="flex h-11 w-11 items-center justify-center">
+                  <PieceImage set={pieceSet} piece={PIECE_SYMBOL_BY_NAME[entry.piece]} color="w" fill />
+                </span>
+                <span className="flex h-11 w-11 items-center justify-center">
+                  <PieceImage set={pieceSet} piece={PIECE_SYMBOL_BY_NAME[entry.piece]} color="b" fill />
+                </span>
               </div>
               <div className="flex-1">
                 <h2 className={TEXT.subheading}>{entry.name}</h2>

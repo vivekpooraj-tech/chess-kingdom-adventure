@@ -69,6 +69,19 @@ export interface PieceSetOption {
    * max-width/max-height still does the actual visual constraining.
    */
   intrinsicSize: { width: number; height: number };
+  /**
+   * Rendered HEIGHT of each piece as a fraction of one board square — the
+   * single optical coordinate system every piece in the set shares. Without
+   * this each piece was fitted to its own bounding box, so a short wide
+   * silhouette (the rook) rendered visually larger than a tall narrow one
+   * (the king). These values mirror the real height relationships of a
+   * Staunton set — king tallest, then queen, bishop, knight, rook, and the
+   * pawn always smallest — derived from each set's own cropped SVG viewBox
+   * heights and eased into a comfortable on-square range. Light and dark
+   * share one folder, so they are identical by construction. The
+   * interactive square underneath is never resized by this.
+   */
+  opticalScale: Record<PieceSymbol, number>;
 }
 
 export interface ChessPuzzle {

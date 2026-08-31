@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { PIECE_SETS } from "@/content/pieceSets";
+import { PieceImage } from "@/components/board/PieceImage";
+import { PIECE_SETS, PIECE_SYMBOL_BY_NAME } from "@/content/pieceSets";
 import { BOARD_SKINS } from "@/content/boardSkins";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildPieceSet, updateChildBoardSkin } from "@/lib/supabase/queries";
@@ -102,7 +103,6 @@ export default function CustomizeChessboardPage() {
           <h2 className={`${TEXT.heading} mb-4`}>Pieces</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {PIECE_SETS.map((set) => {
-              const folder = set.folder ? `${set.folder}/` : "";
               const isSelected = pieceSetId === set.id;
               return (
                 <SecondaryCard key={set.id} className="!p-0 overflow-hidden">
@@ -120,14 +120,7 @@ export default function CustomizeChessboardPage() {
                     <div className="grid grid-cols-3 gap-1 w-full">
                       {PREVIEW_PIECE_ORDER.map((piece) => (
                         <div key={piece} className="aspect-square flex items-center justify-center">
-                          <img
-                            src={`/pieces/${folder}light/${piece}.svg`}
-                            alt=""
-                            width={set.intrinsicSize.width}
-                            height={set.intrinsicSize.height}
-                            style={{ width: "88%", height: "88%", objectFit: "contain" }}
-                            draggable={false}
-                          />
+                          <PieceImage set={set} piece={PIECE_SYMBOL_BY_NAME[piece]} color="w" />
                         </div>
                       ))}
                     </div>

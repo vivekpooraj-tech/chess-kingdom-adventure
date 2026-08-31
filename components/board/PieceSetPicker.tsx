@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { PIECE_SETS, DEFAULT_PIECE_SET_ID } from "@/content/pieceSets";
+import { PieceImage } from "@/components/board/PieceImage";
 import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildPieceSet } from "@/lib/supabase/queries";
@@ -86,7 +87,6 @@ export function PieceSetPicker({
 
       <div className="grid grid-cols-2 gap-5 max-w-md w-full">
         {PIECE_SETS.map((set) => {
-          const folder = set.folder ? `${set.folder}/` : "";
           const isSelected = selected === set.id;
           return (
             <motion.button
@@ -105,26 +105,12 @@ export function PieceSetPicker({
               }
             >
               <div className="flex items-center justify-center gap-3 w-full aspect-[2/1]">
-                {/* width/height are the SVG's real intrinsic dimensions (HTML
-                    attributes, not CSS) — object-fit: contain (see the
-                    matching comment in ChessBoard.tsx) then scales each into
-                    its fixed box preserving aspect ratio. */}
-                <img
-                  src={`/pieces/${folder}light/king.svg`}
-                  alt=""
-                  width={set.intrinsicSize.width}
-                  height={set.intrinsicSize.height}
-                  style={{ width: "45%", height: "100%", objectFit: "contain" }}
-                  draggable={false}
-                />
-                <img
-                  src={`/pieces/${folder}dark/king.svg`}
-                  alt=""
-                  width={set.intrinsicSize.width}
-                  height={set.intrinsicSize.height}
-                  style={{ width: "45%", height: "100%", objectFit: "contain" }}
-                  draggable={false}
-                />
+                <span className="flex h-full w-[45%] items-center justify-center">
+                  <PieceImage set={set} piece="k" color="w" fill />
+                </span>
+                <span className="flex h-full w-[45%] items-center justify-center">
+                  <PieceImage set={set} piece="k" color="b" fill />
+                </span>
               </div>
               <span
                 className={

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -13,6 +13,7 @@ import {
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { DAILY_PREVIEW_LIMIT } from "@/content/lessons";
 import { PUZZLES } from "@/content/puzzles";
+import { pickRandomPuzzle, rememberPuzzleShown } from "@/lib/puzzles/selection";
 import { isSoundMateInNFirstMove } from "@/lib/chess-engine/puzzleValidation";
 import { recordDailyChallengeResult } from "@/lib/supabase/dailyChallengeQueries";
 import { ChessBoard } from "@/components/board/ChessBoard";
@@ -46,13 +47,17 @@ function PuzzlesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // A puzzle id in the URL (e.g. from the Daily Challenge card, which links
-  // here with &daily=1) opens that specific puzzle. A bare /puzzles visit
-  // (free practice, not tied to any specific day) just opens the first
-  // puzzle in the pool — the actual Daily Challenge is only ever reached
-  // via the DailyChallengeCard link now, never a fixed local rotation.
+  // A puzzle id in the URL (the Daily Challenge card links here with
+  // ?id=<puzzle>&daily=1) opens that exact puzzle — that path is untouched.
+  // A bare /puzzles visit is free practice: it opens a RANDOM puzzle,
+  // skipping the ones shown most recently on this device, so signing in
+  // and opening Puzzles never lands you on the same position every time.
   const requestedId = searchParams.get("id");
   const isDaily = searchParams.get("daily") === "1";
+  // Deterministic first value (requested puzzle, or a placeholder) so the
+  // server and client render the same first paint; the real random pick
+  // for a bare visit happens client-side in the effect below, before the
+  // board is ever shown (it waits on `selectionReady`).
   const initialIndex = (() => {
     if (requestedId) {
       const i = PUZZLES.findIndex((p) => p.id === requestedId);
@@ -69,6 +74,25 @@ function PuzzlesPageInner() {
   const [todayCount, setTodayCount] = useState(0);
 
   const [index, setIndex] = useState(initialIndex);
+  const [selectionReady, setSelectionReady] = useState(false);
+  const selectionSettledRef = useRef(false);
+
+  // Client-only: settle which puzzle to open. Runs once, synchronously
+  // after mount and before `loaded` flips, so no placeholder puzzle is
+  // ever painted and there's no hydration mismatch from Math.random().
+  useEffect(() => {
+    if (selectionSettledRef.current) return;
+    selectionSettledRef.current = true;
+    if (requestedId && PUZZLES.some((p) => p.id === requestedId)) {
+      rememberPuzzleShown(requestedId);
+    } else {
+      const picked = pickRandomPuzzle();
+      rememberPuzzleShown(picked.id);
+      setIndex(PUZZLES.findIndex((p) => p.id === picked.id));
+    }
+    setSelectionReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [boardKey, setBoardKey] = useState(0);
   const [moveCount, setMoveCount] = useState(0);
   const [status, setStatus] = useState<Status>("playing");
@@ -140,7 +164,9 @@ function PuzzlesPageInner() {
   }
 
   function nextPuzzle() {
-    setIndex((i) => (i + 1) % PUZZLES.length);
+    const picked = pickRandomPuzzle([puzzle.id]);
+    rememberPuzzleShown(picked.id);
+    setIndex(PUZZLES.findIndex((p) => p.id === picked.id));
     setBoardKey((k) => k + 1);
     setMoveCount(0);
     setStatus("playing");
@@ -205,12 +231,14 @@ function PuzzlesPageInner() {
     }
   }
 
-  if (!loaded) {
+  if (!loaded || !selectionReady) {
     // A real skeleton, not a blank screen — this page is a client component
     // (needs the puzzle id from the URL before it knows what to render), so
     // there's no server loading.tsx that can cover this gap; the tap needs
     // to feel acknowledged immediately while the auth + active-child lookup
     // that `load()` above kicks off resolves in the background.
+    // `selectionReady` also guards the one-tick window before the random
+    // free-practice puzzle is chosen, so the placeholder is never shown.
     return (
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
         <div className="h-9 w-48 rounded bg-premium-navy/70 animate-pulse" />
