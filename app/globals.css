@@ -224,6 +224,17 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
     max-width: 48rem;
   }
 }
+/* Short landscape phone: the reading column also carries the page title and
+   sits above the fixed bottom nav, so tighten the height cap further here
+   (tall portrait phones never hit this) so the whole clip — controls
+   included — stays above the nav. The clip is small at this size; the
+   fullscreen button is right there for a proper view. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .history-video--inline[data-orientation="portrait"] {
+    max-width: 200px;
+    max-width: min(200px, 32svh);
+  }
+}
 .history-video--inline[data-orientation="landscape"] {
   aspect-ratio: 16 / 9;
   max-width: 28rem;
