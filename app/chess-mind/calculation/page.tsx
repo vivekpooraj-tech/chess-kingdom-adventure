@@ -12,6 +12,7 @@ import {
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
+import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
 import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -151,7 +152,12 @@ export default function CalculationPage() {
   }
 
   if (!challenge) {
-    return <main className="min-h-screen bg-premium-midnight" />;
+    return (
+      <>
+        <ScreenSkeleton maxWidth="compact" />
+        <PrimaryNav />
+      </>
+    );
   }
 
   const levelInfo = CALCULATION_LEVELS.find((l) => l.level === level)!;

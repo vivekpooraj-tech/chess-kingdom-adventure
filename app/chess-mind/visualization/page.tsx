@@ -8,6 +8,7 @@ import { generateVisualizationQuestion, RevealQuestion } from "@/lib/chessMind/r
 import { RevealChallenge } from "@/components/chessMind/RevealChallenge";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
+import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
@@ -58,7 +59,12 @@ export default function VisualizationPage() {
   }, []);
 
   if (!round) {
-    return <main className="min-h-screen bg-premium-midnight" />;
+    return (
+      <>
+        <ScreenSkeleton maxWidth="compact" />
+        <PrimaryNav />
+      </>
+    );
   }
 
   return (

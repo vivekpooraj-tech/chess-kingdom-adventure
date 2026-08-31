@@ -21,6 +21,7 @@ import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { Button } from "@/components/ui/Button";
 import { HistoryVideo } from "@/components/academy/HistoryVideo";
+import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
 
 type Stage = "loading" | "watching" | "quiz" | "done";
@@ -122,7 +123,12 @@ export default function ChessOriginsPage() {
   }
 
   if (stage === "loading") {
-    return <main className="min-h-screen bg-premium-midnight" />;
+    return (
+      <>
+        <ScreenSkeleton maxWidth="compact" />
+        <PrimaryNav />
+      </>
+    );
   }
 
   return (

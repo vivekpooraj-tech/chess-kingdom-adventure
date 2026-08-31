@@ -1,6 +1,7 @@
 "use client";
 
 import { Screen } from "@/components/layout/Screen";
+import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -149,7 +150,7 @@ export default function TournamentDetailPage() {
   }, [childId, params.tournamentId]);
 
   if (tournament === "loading" || !childId) {
-    return <main className="min-h-screen bg-premium-midnight" />;
+    return <ScreenSkeleton maxWidth="medium" />;
   }
 
   if (!tournament) {

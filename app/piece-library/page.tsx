@@ -12,6 +12,7 @@ import { PieceImage } from "@/components/board/PieceImage";
 import { SecondaryCard } from "@/components/ui/Card";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
+import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
 
 export default function PieceLibraryPage() {
@@ -39,7 +40,12 @@ export default function PieceLibraryPage() {
   }, [router]);
 
   if (!loaded) {
-    return <main className="min-h-screen" />;
+    return (
+      <>
+        <ScreenSkeleton maxWidth="wide" />
+        <PrimaryNav />
+      </>
+    );
   }
 
   const pieceSet = getPieceSet(pieceSetId);

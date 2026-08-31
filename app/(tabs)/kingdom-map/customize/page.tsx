@@ -11,6 +11,7 @@ import { resolveActiveChild, updateChildPieceSet, updateChildBoardSkin } from "@
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
+import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { Button } from "@/components/ui/Button";
 import { CheckIcon } from "@/components/nav/icons";
 import { TEXT } from "@/lib/designSystem";
@@ -75,7 +76,7 @@ export default function CustomizeChessboardPage() {
   }
 
   if (!childId || !pieceSetId || !boardSkinId) {
-    return <main className="min-h-screen bg-premium-midnight" />;
+    return <ScreenSkeleton maxWidth="wide" />;
   }
 
   return (
