@@ -38,7 +38,6 @@ export default function ChessOriginsPage() {
   const [score, setScore] = useState(0);
   const [newAchievement, setNewAchievement] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const resumeSecondsRef = useRef(0);
 
   useEffect(() => {
     async function load() {
@@ -58,7 +57,9 @@ export default function ChessOriginsPage() {
 
       const progress = await getAcademyProgress(supabase, child.id, content.id);
       if (progress) {
-        resumeSecondsRef.current = progress.progressSeconds;
+        // Only the completion flag is used — the video always starts from
+        // the beginning on every visit (no resume-from-last-position), so
+        // progress.progressSeconds is deliberately ignored here.
         setAlreadyCompleted(progress.status === "completed");
       }
       setStage("watching");
@@ -67,9 +68,12 @@ export default function ChessOriginsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
+  // Every visit starts the video from the beginning. Forcing currentTime to
+  // 0 here (rather than just relying on the default) also defeats the
+  // WebView/bfcache restoring a previous playback position on back-nav.
   function handleVideoLoadedMetadata() {
-    if (videoRef.current && resumeSecondsRef.current > 0) {
-      videoRef.current.currentTime = resumeSecondsRef.current;
+    if (videoRef.current && videoRef.current.currentTime > 0) {
+      videoRef.current.currentTime = 0;
     }
   }
 
@@ -150,7 +154,7 @@ export default function ChessOriginsPage() {
         <div
           className={`relative overflow-hidden rounded-premiumCard bg-premium-navy shadow-premiumCard ${
             content.orientation === "portrait"
-              ? "w-full max-w-[300px] sm:max-w-[340px] aspect-[9/16] lg:max-w-3xl lg:aspect-video"
+              ? "w-full max-w-[340px] sm:max-w-[380px] aspect-[9/16] lg:max-w-3xl lg:aspect-video"
               : "w-full max-w-md sm:max-w-xl lg:max-w-3xl aspect-video"
           }`}
         >
@@ -169,9 +173,16 @@ export default function ChessOriginsPage() {
                 src={content.videoUrl}
                 poster={content.posterUrl ?? undefined}
                 controls
+                // Keep playback inline. Android's native fullscreen video
+                // view draws its own control bar flush with the system nav
+                // bar (outside our safe-area CSS), so the scrubber/volume
+                // controls collide with the phone's back/home buttons. A
+                // portrait 9:16 clip is comfortable inline anyway.
+                controlsList="nofullscreen noremoteplayback nodownload"
+                disablePictureInPicture
                 playsInline
                 preload="metadata"
-                className="relative z-10 mx-auto h-full w-full bg-black object-cover lg:w-auto lg:bg-transparent lg:object-contain lg:shadow-premiumCard"
+                className="video-inline relative z-10 mx-auto h-full w-full bg-black object-cover lg:w-auto lg:bg-transparent lg:object-contain lg:shadow-premiumCard"
                 onLoadedMetadata={handleVideoLoadedMetadata}
                 onTimeUpdate={handleTimeUpdate}
               >

@@ -180,6 +180,19 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
   animation: board-pulse-incorrect 620ms ease-out;
 }
 
+/* Inline-only video player (Academy hero clips). Android's native
+   fullscreen video view renders its own control bar flush against the
+   system navigation bar — outside every safe-area inset we control — so
+   the scrubber and volume controls end up overlapping the phone's
+   back/home buttons. `controlsList="nofullscreen"` is the standards way to
+   drop the button but isn't honoured by every Chromium/WebView build, so
+   we also hard-hide the shadow-DOM control here. Picture-in-picture is
+   removed for the same reason (its window escapes the app entirely). */
+.video-inline::-webkit-media-controls-fullscreen-button,
+.video-inline::-webkit-media-controls-picture-in-picture-button {
+  display: none !important;
+}
+
 /* ---- Premium / Classic Mode surface language -----------------------
    Glass + gradient treatments used by premium chrome (Academy, upgrade
    screens, achievement cards). Kept as plain CSS rather than Tailwind
