@@ -4,6 +4,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { FullscreenIcon, CloseIcon } from "@/components/nav/icons";
 
+// Prefixed Fullscreen API members some Android WebViews still only expose.
+type FsDocument = Document & {
+  webkitFullscreenEnabled?: boolean;
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+};
+type FsElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+};
+
+function ignore(result: Promise<void> | void) {
+  if (result && typeof (result as Promise<void>).then === "function") {
+    (result as Promise<void>).catch(() => {});
+  }
+}
+
 /**
  * The Discover → History of Chess player.
  *
@@ -43,25 +59,43 @@ export function HistoryVideo({
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+    const d = document as FsDocument;
+    const proto = HTMLElement.prototype as FsElement;
+
     setFullscreenSupported(
-      typeof document !== "undefined" &&
-        document.fullscreenEnabled === true &&
-        typeof HTMLElement.prototype.requestFullscreen === "function"
+      (d.fullscreenEnabled === true || d.webkitFullscreenEnabled === true) &&
+        (typeof proto.requestFullscreen === "function" ||
+          typeof proto.webkitRequestFullscreen === "function")
     );
 
+    // Android WebViews are inconsistent about which of these two events
+    // fires — listen for both, and read whichever fullscreen-element
+    // property the runtime exposes.
     function syncFullscreen() {
-      setIsFullscreen(document.fullscreenElement === wrapperRef.current);
+      const fsEl = d.fullscreenElement ?? d.webkitFullscreenElement ?? null;
+      setIsFullscreen(fsEl === wrapperRef.current);
     }
     document.addEventListener("fullscreenchange", syncFullscreen);
-    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+    document.addEventListener("webkitfullscreenchange", syncFullscreen);
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreen);
+      document.removeEventListener("webkitfullscreenchange", syncFullscreen);
+    };
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen?.();
-    } else {
-      wrapperRef.current?.requestFullscreen?.().catch(() => {});
+    const d = document as FsDocument;
+    const fsEl = d.fullscreenElement ?? d.webkitFullscreenElement ?? null;
+    if (fsEl) {
+      const exit = d.exitFullscreen ?? d.webkitExitFullscreen;
+      if (exit) ignore(exit.call(document));
+      return;
     }
+    const el = wrapperRef.current as FsElement | null;
+    if (!el) return;
+    const request = el.requestFullscreen ?? el.webkitRequestFullscreen;
+    if (request) ignore(request.call(el));
   }, []);
 
   // Start from the beginning on every visit. Forcing currentTime to 0 here
@@ -89,35 +123,41 @@ export function HistoryVideo({
             : "mx-auto w-full max-w-md rounded-premiumCard shadow-premiumCard aspect-video sm:max-w-xl lg:max-w-3xl")
       )}
     >
-      {/* Blurred poster letterbox behind the clip on the wide (lg) inline
-          frame only — a cinematic edge rather than dead black bars. */}
-      {poster && orientation === "portrait" && (
-        <img
-          src={poster}
-          alt=""
-          aria-hidden="true"
-          className="history-video__poster pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-60 blur-xl lg:block"
-        />
-      )}
-
-      <video
-        ref={videoRef}
-        src={src}
-        poster={poster}
-        controls
-        // Inline only — see the component doc comment.
-        controlsList="nofullscreen noremoteplayback nodownload"
-        disablePictureInPicture
-        playsInline
-        preload="metadata"
-        className="video-inline history-video__el relative z-10 mx-auto h-full w-full bg-black object-cover lg:w-auto lg:bg-transparent lg:object-contain lg:shadow-premiumCard"
-        onLoadedMetadata={handleLoadedMetadata}
-        onTimeUpdate={handleTimeUpdate}
-      >
-        {captionsUrl && (
-          <track kind="captions" src={captionsUrl} srcLang="en" label="English" default />
+      {/* The stage is a plain descendant, so in fullscreen it can be padded
+          to keep the <video> (and its native control bar) clear of the
+          system bars — the fullscreened wrapper itself is locked edge-to-
+          edge by the browser's UA rules. */}
+      <div className="history-video__stage absolute inset-0 flex items-center justify-center">
+        {/* Blurred poster letterbox behind the clip on the wide (lg) inline
+            frame only — a cinematic edge rather than dead black bars. */}
+        {poster && orientation === "portrait" && (
+          <img
+            src={poster}
+            alt=""
+            aria-hidden="true"
+            className="history-video__poster pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-60 blur-xl lg:block"
+          />
         )}
-      </video>
+
+        <video
+          ref={videoRef}
+          src={src}
+          poster={poster}
+          controls
+          // Inline only — see the component doc comment.
+          controlsList="nofullscreen noremoteplayback nodownload"
+          disablePictureInPicture
+          playsInline
+          preload="metadata"
+          className="video-inline history-video__el relative z-10 mx-auto h-full w-full bg-black object-cover lg:w-auto lg:bg-transparent lg:object-contain lg:shadow-premiumCard"
+          onLoadedMetadata={handleLoadedMetadata}
+          onTimeUpdate={handleTimeUpdate}
+        >
+          {captionsUrl && (
+            <track kind="captions" src={captionsUrl} srcLang="en" label="English" default />
+          )}
+        </video>
+      </div>
 
       {fullscreenSupported && (
         <button
