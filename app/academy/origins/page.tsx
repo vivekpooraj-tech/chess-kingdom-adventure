@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -20,6 +20,7 @@ import { getAchievement } from "@/content/achievements";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { Button } from "@/components/ui/Button";
+import { HistoryVideo } from "@/components/academy/HistoryVideo";
 import { TEXT } from "@/lib/designSystem";
 
 type Stage = "loading" | "watching" | "quiz" | "done";
@@ -37,7 +38,6 @@ export default function ChessOriginsPage() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [score, setScore] = useState(0);
   const [newAchievement, setNewAchievement] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -68,18 +68,12 @@ export default function ChessOriginsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  // Every visit starts the video from the beginning. Forcing currentTime to
-  // 0 here (rather than just relying on the default) also defeats the
-  // WebView/bfcache restoring a previous playback position on back-nav.
-  function handleVideoLoadedMetadata() {
-    if (videoRef.current && videoRef.current.currentTime > 0) {
-      videoRef.current.currentTime = 0;
-    }
-  }
-
-  function handleTimeUpdate() {
-    if (!childId || !videoRef.current) return;
-    const t = Math.floor(videoRef.current.currentTime);
+  // Best-effort "this child has seen the origins content" tracking (the
+  // first-time cinematic in app/welcome keys off any row existing). Only
+  // the flag matters — playback always restarts at 0:00 (HistoryVideo).
+  function handleVideoProgress(currentTime: number) {
+    if (!childId) return;
+    const t = Math.floor(currentTime);
     if (t > 0 && t % 5 === 0) {
       const supabase = createClient();
       saveAcademyVideoProgress(supabase, childId, content.id, t).catch(() => {});
@@ -141,63 +135,30 @@ export default function ChessOriginsPage() {
           <p className={`${TEXT.body} mt-2`}>{content.subtitle}</p>
         </div>
 
-        {/* Video hero — real player when a video exists, honest placeholder
-            otherwise. The source here is portrait (9:16):
-              - phones / narrow windows: the frame matches the clip and it
-                fills edge to edge (object-cover, aspects already agree).
-              - lg+ (desktop): the frame turns landscape 16:9 so it doesn't
-                tower over the reading column. The clip sits centred at full
-                height (object-contain) over a blurred, dimmed copy of its
-                poster, so the sides read as a cinematic letterbox rather
-                than dead black bars.
-            A landscape source skips all that and just scales to the column. */}
-        <div
-          className={`relative overflow-hidden rounded-premiumCard bg-premium-navy shadow-premiumCard ${
-            content.orientation === "portrait"
-              ? "w-full max-w-[340px] sm:max-w-[380px] aspect-[9/16] lg:max-w-3xl lg:aspect-video"
-              : "w-full max-w-md sm:max-w-xl lg:max-w-3xl aspect-video"
-          }`}
-        >
-          {content.videoUrl ? (
-            <>
-              {content.orientation === "portrait" && content.posterUrl && (
-                <img
-                  src={content.posterUrl}
-                  alt=""
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-60 blur-xl lg:block"
-                />
-              )}
-              <video
-                ref={videoRef}
-                src={content.videoUrl}
-                poster={content.posterUrl ?? undefined}
-                controls
-                // Keep playback inline. Android's native fullscreen video
-                // view draws its own control bar flush with the system nav
-                // bar (outside our safe-area CSS), so the scrubber/volume
-                // controls collide with the phone's back/home buttons. A
-                // portrait 9:16 clip is comfortable inline anyway.
-                controlsList="nofullscreen noremoteplayback nodownload"
-                disablePictureInPicture
-                playsInline
-                preload="metadata"
-                className="video-inline relative z-10 mx-auto h-full w-full bg-black object-cover lg:w-auto lg:bg-transparent lg:object-contain lg:shadow-premiumCard"
-                onLoadedMetadata={handleVideoLoadedMetadata}
-                onTimeUpdate={handleTimeUpdate}
-              >
-                {content.captionsUrl && (
-                  <track kind="captions" src={content.captionsUrl} srcLang="en" label="English" default />
-                )}
-              </video>
-            </>
-          ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-premium-navyLight to-premium-midnight">
-              <span className="text-4xl">🏛️</span>
-              <p className="font-classic-body text-xs text-premium-ivory/40">Video coming soon</p>
-            </div>
-          )}
-        </div>
+        {/* Video hero. Portrait 9:16 source: on phones the frame matches the
+            clip; from lg up it becomes a 16:9 letterbox so it doesn't tower
+            over the reading column. Playback is inline; a custom (web)
+            fullscreen button lives on the player — see HistoryVideo. */}
+        {content.videoUrl ? (
+          <HistoryVideo
+            src={content.videoUrl}
+            poster={content.posterUrl ?? undefined}
+            orientation={content.orientation}
+            captionsUrl={content.captionsUrl}
+            onProgress={handleVideoProgress}
+          />
+        ) : (
+          <div
+            className={`relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-midnight shadow-premiumCard ${
+              content.orientation === "portrait"
+                ? "w-full max-w-[340px] sm:max-w-[380px] aspect-[9/16] lg:max-w-3xl lg:aspect-video"
+                : "w-full max-w-md sm:max-w-xl lg:max-w-3xl aspect-video"
+            }`}
+          >
+            <span className="text-4xl">🏛️</span>
+            <p className="font-classic-body text-xs text-premium-ivory/40">Video coming soon</p>
+          </div>
+        )}
 
         {/* Timeline — the real content, available today regardless of the video. */}
         <div className="flex w-full flex-col gap-3">
