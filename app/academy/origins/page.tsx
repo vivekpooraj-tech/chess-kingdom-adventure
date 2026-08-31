@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -38,6 +38,9 @@ export default function ChessOriginsPage() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [score, setScore] = useState(0);
   const [newAchievement, setNewAchievement] = useState<string | null>(null);
+  // The last whole-second we wrote a progress row for — timeupdate fires
+  // ~4x/sec, so without this the same second was upserted several times.
+  const lastSavedSecondRef = useRef(0);
 
   useEffect(() => {
     async function load() {
@@ -74,9 +77,9 @@ export default function ChessOriginsPage() {
   function handleVideoProgress(currentTime: number) {
     if (!childId) return;
     const t = Math.floor(currentTime);
-    if (t > 0 && t % 5 === 0) {
-      const supabase = createClient();
-      saveAcademyVideoProgress(supabase, childId, content.id, t).catch(() => {});
+    if (t > 0 && t % 5 === 0 && t !== lastSavedSecondRef.current) {
+      lastSavedSecondRef.current = t;
+      saveAcademyVideoProgress(createClient(), childId, content.id, t).catch(() => {});
     }
   }
 
@@ -149,11 +152,8 @@ export default function ChessOriginsPage() {
           />
         ) : (
           <div
-            className={`relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-midnight shadow-premiumCard ${
-              content.orientation === "portrait"
-                ? "w-full max-w-[340px] sm:max-w-[380px] aspect-[9/16] lg:max-w-3xl lg:aspect-video"
-                : "w-full max-w-md sm:max-w-xl lg:max-w-3xl aspect-video"
-            }`}
+            data-orientation={content.orientation}
+            className="history-video--inline relative mx-auto flex w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-midnight shadow-premiumCard"
           >
             <span className="text-4xl">🏛️</span>
             <p className="font-classic-body text-xs text-premium-ivory/40">Video coming soon</p>

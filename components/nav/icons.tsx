@@ -232,3 +232,16 @@ export function FullscreenIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+// The exact inverse of FullscreenIcon — inward-pointing corners — so the
+// two read as one "enter / exit fullscreen" pair.
+export function ExitFullscreenIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <path d="M4 9 H9 V4" />
+      <path d="M20 9 H15 V4" />
+      <path d="M4 15 H9 V20" />
+      <path d="M20 15 H15 V20" />
+    </svg>
+  );
+}

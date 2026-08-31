@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { FullscreenIcon, CloseIcon } from "@/components/nav/icons";
+import { FullscreenIcon, ExitFullscreenIcon } from "@/components/nav/icons";
 
 // Prefixed Fullscreen API members some Android WebViews still only expose.
 type FsDocument = Document & {
@@ -29,15 +29,15 @@ function ignore(result: Promise<void> | void) {
  * Android's native fullscreen view drew its control bar flush against the
  * system navigation bar.
  *
- * Fullscreen instead uses the Web Fullscreen API on THIS wrapper element,
- * so the whole thing stays inside our own `env(safe-area-inset-*)` padding
- * (see `.history-video:fullscreen` in globals.css) and can't collide with
- * the system nav. Feature-detected — if the API is unavailable the button
- * simply isn't rendered and inline playback is unchanged.
+ * Fullscreen instead uses the Web Fullscreen API on THIS wrapper element
+ * (standard + WebKit-prefixed), so the whole surface stays inside a padded
+ * inner stage — `.history-video[data-fullscreen]` in globals.css — and can't
+ * collide with the system nav. Feature-detected: no button if unsupported.
  *
- * Every mount starts at 0:00 — no resume-from-last-position. Entering /
- * exiting fullscreen never remounts the <video>, so it keeps playing from
- * wherever it was.
+ * Sizing is CSS-driven (`.history-video--inline[data-orientation]`), not JS,
+ * so device rotation never touches React state or remounts the <video>.
+ * Every mount starts at 0:00; entering / exiting fullscreen and rotating
+ * never reset playback.
  */
 export function HistoryVideo({
   src,
@@ -57,6 +57,7 @@ export function HistoryVideo({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -114,13 +115,11 @@ export function HistoryVideo({
   return (
     <div
       ref={wrapperRef}
+      data-orientation={orientation}
       data-fullscreen={isFullscreen ? "true" : undefined}
       className={clsx(
         "history-video relative overflow-hidden bg-premium-navy",
-        !isFullscreen &&
-          (orientation === "portrait"
-            ? "mx-auto w-full max-w-[340px] rounded-premiumCard shadow-premiumCard aspect-[9/16] sm:max-w-[380px] lg:max-w-3xl lg:aspect-video"
-            : "mx-auto w-full max-w-md rounded-premiumCard shadow-premiumCard aspect-video sm:max-w-xl lg:max-w-3xl")
+        !isFullscreen && "history-video--inline mx-auto w-full rounded-premiumCard shadow-premiumCard"
       )}
     >
       {/* The stage is a plain descendant, so in fullscreen it can be padded
@@ -152,6 +151,7 @@ export function HistoryVideo({
           className="video-inline history-video__el relative z-10 mx-auto h-full w-full bg-black object-cover lg:w-auto lg:bg-transparent lg:object-contain lg:shadow-premiumCard"
           onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
+          onError={() => setFailed(true)}
         >
           {captionsUrl && (
             <track kind="captions" src={captionsUrl} srcLang="en" label="English" default />
@@ -159,7 +159,21 @@ export function HistoryVideo({
         </video>
       </div>
 
-      {fullscreenSupported && (
+      {failed && (
+        <div
+          role="status"
+          className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-2 bg-premium-midnightDeep/85 px-6 text-center backdrop-blur-sm"
+        >
+          <span className="text-3xl" aria-hidden="true">
+            🏛️
+          </span>
+          <p className="font-classic-body text-sm text-premium-ivory/80">
+            The video couldn&apos;t load right now — the timeline below still has the whole story.
+          </p>
+        </div>
+      )}
+
+      {fullscreenSupported && !failed && (
         <button
           type="button"
           onClick={toggleFullscreen}
@@ -168,7 +182,7 @@ export function HistoryVideo({
           className="history-video__fs absolute right-2 top-2 z-20 flex h-11 w-11 items-center justify-center rounded-premiumBtn border border-white/15 bg-black/55 text-premium-ivory backdrop-blur-sm transition-colors hover:bg-black/75 hover:text-white active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/70"
         >
           {isFullscreen ? (
-            <CloseIcon className="h-5 w-5" />
+            <ExitFullscreenIcon className="h-5 w-5" />
           ) : (
             <FullscreenIcon className="h-5 w-5" />
           )}

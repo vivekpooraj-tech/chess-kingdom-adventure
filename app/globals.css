@@ -193,6 +193,52 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
   display: none !important;
 }
 
+/* Inline History-of-Chess player. A portrait 9:16 hero sized so it never
+   dominates the page or forces a long scroll: the width follows the reading
+   column up to a per-breakpoint ceiling, and is ALSO capped against the
+   small-viewport height (44svh -> the 9:16 box tops out at ~78svh) so a
+   short landscape viewport still shows the whole clip. Each rule carries a
+   plain-px fallback first for engines without `svh`. Desktop keeps the
+   deliberately-horizontal 16:9 letterbox introduced in Phase 5 — the
+   portrait clip sits centred over a blurred copy of its poster. */
+.history-video--inline[data-orientation="portrait"] {
+  aspect-ratio: 9 / 16;
+  max-width: 340px;
+  max-width: min(340px, 44svh);
+}
+@media (min-width: 640px) {
+  .history-video--inline[data-orientation="portrait"] {
+    max-width: 420px;
+    max-width: min(420px, 44svh);
+  }
+}
+@media (min-width: 768px) {
+  .history-video--inline[data-orientation="portrait"] {
+    max-width: 460px;
+    max-width: min(460px, 44svh);
+  }
+}
+@media (min-width: 1024px) {
+  .history-video--inline[data-orientation="portrait"] {
+    aspect-ratio: 16 / 9;
+    max-width: 48rem;
+  }
+}
+.history-video--inline[data-orientation="landscape"] {
+  aspect-ratio: 16 / 9;
+  max-width: 28rem;
+}
+@media (min-width: 640px) {
+  .history-video--inline[data-orientation="landscape"] {
+    max-width: 36rem;
+  }
+}
+@media (min-width: 1024px) {
+  .history-video--inline[data-orientation="landscape"] {
+    max-width: 48rem;
+  }
+}
+
 /* History of Chess player — custom (web) fullscreen. `requestFullscreen()`
    is called on the .history-video WRAPPER, not the <video>, so the whole
    surface — clip, control bar, our own toggle — stays inside a padded box
