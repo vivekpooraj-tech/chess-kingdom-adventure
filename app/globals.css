@@ -209,8 +209,16 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
-    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  /* The <video>'s own control bar renders at the bottom edge of the video
+     ELEMENT, so the element (not just the painted frame) has to clear the
+     system chrome. This Android WebView reports env(safe-area-inset-*) as 0
+     inside fullscreen even though the status/navigation bars are still
+     drawn, so add the app's own bar-height token on top of whatever inset
+     IS reported (gesture bar / notch on other devices). */
+  padding-top: calc(var(--safe-top) + 1.75rem);
+  padding-bottom: calc(var(--safe-bottom) + var(--bottom-nav-h));
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 .history-video:fullscreen .history-video__el,
 .history-video:-webkit-full-screen .history-video__el {
