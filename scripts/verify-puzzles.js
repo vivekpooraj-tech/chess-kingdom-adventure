@@ -1,18 +1,39 @@
 // Verifies chess puzzle soundness before it's added to content/puzzles.ts.
-// Usage: node scripts/verify-puzzles.js <path-to-candidates.json>
 //
-// Each candidate: { id, fen, sideToMove, mateIn: 1|2|3, theme, firstMove? }
-// firstMove (SAN) is required for mateIn:2/3 candidates — it's how the
-// author declares their intended first move, and this script confirms it's
-// actually sound: it must force a mate one move shorter against EVERY
-// legal reply, not just one hand-picked line, before it ships to kids. It
-// also confirms the position doesn't have an EASIER mate than advertised
-// (e.g. a "mate in 3" that's secretly a mate in 1). firstMove is
-// verification-only — content/puzzles.ts has no stored solution field,
-// validation at runtime is algorithmic (see
-// lib/chess-engine/puzzleValidation.ts, which this duplicates in plain JS
-// so this script has no dependency on a TS runner).
+//   node scripts/verify-puzzles.js <path-to-candidates.json>
+//       validate a batch of NEW candidates (see scripts/puzzle-candidates.example.json)
+//   node scripts/verify-puzzles.js --pool
+//       re-validate the complete shipped pool in content/puzzles.ts
+//
+// A candidate is a JSON object with these fields:
+//   id         string   — kebab-case, unique across the batch AND the shipped pool.
+//                          Convention: "m<mateIn>-<theme-slug>[-<variant>]".
+//   fen        string    — full FEN. Must be a LEGAL position: one king per
+//                          side, kings not adjacent, and the side NOT to move
+//                          not already in check.
+//   sideToMove "w" | "b" — must match the FEN's own side-to-move field.
+//   mateIn     1 | 2 | 3 — declared forced-mate depth; must equal the position's
+//                          TRUE fastest forced mate (no hidden faster mate).
+//   theme      string    — short human tactic label shown on the board
+//                          (e.g. "Back-Rank Mate", "Smothered Mate").
+//   firstMove  string    — SAN of the intended key move. REQUIRED for mateIn 2/3
+//                          (the script proves it forces mate one move shorter
+//                          against EVERY legal reply, not one hand-picked line);
+//                          optional/ignored for mateIn 1.
+//
+// `level` is NOT a candidate field — it's computed later by
+// scripts/compute-puzzle-levels.js and hand-added when the puzzle is pasted
+// into content/puzzles.ts. firstMove is verification-only: content/puzzles.ts
+// stores no solution, runtime validation is algorithmic (see
+// lib/chess-engine/puzzleValidation.ts, which this file duplicates in plain JS
+// so the script needs no TS runner).
 const { Chess } = require("chess.js");
+
+// The identity of a position for duplicate detection: placement + side to
+// move + castling + en passant, ignoring the half/full-move clocks.
+function positionKey(fen) {
+  return String(fen).trim().split(/\s+/).slice(0, 4).join(" ");
+}
 
 function isSoundMateInNFirstMove(fen, sanMove, n) {
   if (n < 1) return false;
@@ -153,13 +174,24 @@ function loadShippedPool() {
 }
 
 function verifyShipped(p) {
-  const errors = [...legalityErrors(p.fen)];
+  const errors = [];
+
+  // Metadata shape — cheap, and a bad mateIn would make the mate search
+  // below loop over a nonsense depth.
+  if (typeof p.id !== "string" || p.id.trim() === "") errors.push("id is missing or empty");
+  if (typeof p.theme !== "string" || p.theme.trim() === "") errors.push("theme is missing or empty");
+  if (![1, 2, 3].includes(p.mateIn)) errors.push(`mateIn must be 1, 2 or 3 (got ${JSON.stringify(p.mateIn)})`);
+  if (p.sideToMove !== "w" && p.sideToMove !== "b") errors.push(`sideToMove must be "w" or "b" (got ${JSON.stringify(p.sideToMove)})`);
+  if (!Number.isInteger(p.level) || p.level < 1 || p.level > 6) errors.push(`level must be an integer 1-6 (got ${JSON.stringify(p.level)})`);
+
+  errors.push(...legalityErrors(p.fen));
   let game;
   try {
     game = new Chess(p.fen);
   } catch {
     return errors;
   }
+  if (![1, 2, 3].includes(p.mateIn)) return errors; // don't run the mate search on a bad depth
   if (game.turn() !== p.sideToMove) errors.push(`side-to-move ${game.turn()} != declared ${p.sideToMove}`);
   if (game.isGameOver()) errors.push("position is already game-over");
   const depth = exactMateDepth(p.fen, p.mateIn);
@@ -175,15 +207,29 @@ if (require.main === module) {
     let failures = 0;
     const pool = loadShippedPool();
 
-    // No two puzzles may share a FEN — a duplicate position shows up as
-    // "the same puzzle twice" under random selection even with distinct ids.
-    const seen = new Map();
+    // Ids must be unique — the runtime looks puzzles up by id.
+    const idSeen = new Map();
     for (const p of pool) {
-      if (seen.has(p.fen)) {
+      if (idSeen.has(p.id)) {
         failures++;
-        console.log(`FAIL ${p.id}: duplicate FEN, same position as ${seen.get(p.fen)}`);
+        console.log(`FAIL ${p.id}: duplicate puzzle id`);
       } else {
-        seen.set(p.fen, p.id);
+        idSeen.set(p.id, true);
+      }
+    }
+
+    // No two puzzles may be the same position — a duplicate shows up as
+    // "the same puzzle twice" under random selection even with distinct ids.
+    // Compare only the meaningful FEN fields (placement / side / castling /
+    // en passant), not the move clocks.
+    const posSeen = new Map();
+    for (const p of pool) {
+      const key = positionKey(p.fen);
+      if (posSeen.has(key)) {
+        failures++;
+        console.log(`FAIL ${p.id}: duplicate position, same as ${posSeen.get(key)}`);
+      } else {
+        posSeen.set(key, p.id);
       }
     }
 
@@ -206,9 +252,35 @@ if (require.main === module) {
     process.exit(2);
   }
   const puzzles = JSON.parse(require("fs").readFileSync(path, "utf8"));
+
+  // Cross-check every candidate against the rest of its batch AND the
+  // already-shipped pool, so an expansion can't quietly re-introduce a
+  // position or id that already exists.
+  const shipped = loadShippedPool();
+  const shippedIds = new Set(shipped.map((p) => p.id));
+  const shippedPositions = new Map(shipped.map((p) => [positionKey(p.fen), p.id]));
+  const batchIds = new Map();
+  const batchPositions = new Map();
+
   let failures = 0;
   for (const p of puzzles) {
     const errors = verify(p);
+
+    if (typeof p.theme !== "string" || p.theme.trim() === "") errors.push("theme is missing or empty");
+
+    if (typeof p.id === "string") {
+      if (shippedIds.has(p.id)) errors.push(`id "${p.id}" already exists in content/puzzles.ts`);
+      if (batchIds.has(p.id)) errors.push(`duplicate id within this batch`);
+      else batchIds.set(p.id, true);
+    }
+
+    if (p.fen) {
+      const key = positionKey(p.fen);
+      if (shippedPositions.has(key)) errors.push(`same position as shipped puzzle "${shippedPositions.get(key)}"`);
+      if (batchPositions.has(key)) errors.push(`same position as "${batchPositions.get(key)}" earlier in this batch`);
+      else batchPositions.set(key, p.id);
+    }
+
     if (errors.length) {
       failures++;
       console.log(`FAIL ${p.id}:`);

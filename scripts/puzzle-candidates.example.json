@@ -1,0 +1,17 @@
+[
+  {
+    "id": "m1-corner-backrank-example",
+    "fen": "7k/5ppp/8/8/8/8/8/R6K w - - 0 1",
+    "sideToMove": "w",
+    "mateIn": 1,
+    "theme": "Back-Rank Mate"
+  },
+  {
+    "id": "m2-knight-rook-net-example",
+    "fen": "7k/8/5N1K/8/8/8/8/5R2 w - - 0 1",
+    "sideToMove": "w",
+    "mateIn": 2,
+    "theme": "Knight & Rook Mate",
+    "firstMove": "Nd7"
+  }
+]

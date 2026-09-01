@@ -8,3 +8,20 @@ public/stockfish
 tsconfig.tsbuildinfo
 .claude/settings.local.json
 supabase/.temp
+
+# Local puzzle-import working files (Phase 10D) — not committed
+scripts/lichess-mate-sample.csv
+scripts/lichess_db_puzzle.csv
+scripts/puzzle-candidates.imported.json
+scripts/puzzle-candidates.review.md
+scripts/puzzle-launch-candidates.json
+scripts/puzzle-launch-review.md
+scripts/prefiltered.csv
+scripts/puzzle-launch-validated-pool.json
+scripts/puzzle-launch-final.json
+scripts/puzzle-launch-final-review.md
+scripts/puzzle-launch-content-block.txt
+scripts/puzzle-content.proposed.txt
+scripts/puzzle-launch-validated-pool.json
+scripts/puzzle-launch-human-review.md
+scripts/puzzle-launch-12c-decisions.json
