@@ -44,8 +44,58 @@ function exactMateDepth(fen, maxDepth) {
   return null;
 }
 
+/**
+ * chess.js loads plenty of chess-ILLEGAL FENs without complaint. The one
+ * that bit us: the side NOT to move already in check (e.g. a rook aimed
+ * straight down the a-file at a cornered enemy king while it's the
+ * rook-owner's turn) — that position can't arise in a real game, and it's
+ * confusing on the board. chess.js's own isCheck()/isGameOver() only look
+ * at the side TO move, so this has to be checked explicitly.
+ */
+function legalityErrors(fen) {
+  const errs = [];
+  const board = fen.split(" ")[0];
+  const wk = (board.match(/K/g) || []).length;
+  const bk = (board.match(/k/g) || []).length;
+  if (wk !== 1) errs.push(`must have exactly one white king (found ${wk})`);
+  if (bk !== 1) errs.push(`must have exactly one black king (found ${bk})`);
+
+  let game;
+  try {
+    game = new Chess(fen);
+  } catch (e) {
+    errs.push(`chess.js rejected FEN: ${e.message}`);
+    return errs;
+  }
+
+  // The side NOT to move must not be in check.
+  const opp = game.turn() === "w" ? "b" : "w";
+  const flipped = fen.replace(/ [wb] /, ` ${opp} `);
+  try {
+    if (new Chess(flipped).isCheck()) {
+      errs.push(`ILLEGAL: side not to move (${opp}) is already in check`);
+    }
+  } catch {
+    /* the flip itself being unloadable is caught above */
+  }
+
+  // Kings can never stand on adjacent squares.
+  const kings = {};
+  game.board().forEach((row, r) =>
+    row.forEach((cell, f) => {
+      if (cell && cell.type === "k") kings[cell.color] = [f, 8 - r];
+    })
+  );
+  if (kings.w && kings.b) {
+    const dx = Math.abs(kings.w[0] - kings.b[0]);
+    const dy = Math.abs(kings.w[1] - kings.b[1]);
+    if (dx <= 1 && dy <= 1) errs.push(`ILLEGAL: kings on adjacent squares`);
+  }
+  return errs;
+}
+
 function verify(p) {
-  const errors = [];
+  const errors = [...legalityErrors(p.fen)];
   let game;
   try {
     game = new Chess(p.fen);
@@ -83,10 +133,76 @@ function verify(p) {
   return errors;
 }
 
+/**
+ * Pull the live PUZZLES array out of content/puzzles.ts (the same
+ * eval-the-literal trick compute-puzzle-levels.js uses) so the shipped
+ * pool can be re-verified, not just new candidates. mateIn:2/3 entries
+ * have no stored firstMove, so those are checked for legality + "a forced
+ * mate exists at exactly the declared depth" via exactMateDepth rather
+ * than firstMove soundness.
+ */
+function loadShippedPool() {
+  const src = require("fs").readFileSync(
+    require("path").join(__dirname, "..", "content", "puzzles.ts"),
+    "utf8"
+  );
+  const match = src.match(/export const PUZZLES: ChessPuzzle\[\] = (\[[\s\S]*?\n\]);/);
+  if (!match) throw new Error("Could not locate PUZZLES array in content/puzzles.ts");
+  // eslint-disable-next-line no-eval
+  return eval(match[1]);
+}
+
+function verifyShipped(p) {
+  const errors = [...legalityErrors(p.fen)];
+  let game;
+  try {
+    game = new Chess(p.fen);
+  } catch {
+    return errors;
+  }
+  if (game.turn() !== p.sideToMove) errors.push(`side-to-move ${game.turn()} != declared ${p.sideToMove}`);
+  if (game.isGameOver()) errors.push("position is already game-over");
+  const depth = exactMateDepth(p.fen, p.mateIn);
+  if (depth === null) errors.push(`no forced mate within ${p.mateIn}`);
+  else if (depth < p.mateIn) errors.push(`faster mate-in-${depth} available (labeled mate-in-${p.mateIn})`);
+  return errors;
+}
+
 if (require.main === module) {
   const path = process.argv[2];
+
+  if (path === "--pool") {
+    let failures = 0;
+    const pool = loadShippedPool();
+
+    // No two puzzles may share a FEN — a duplicate position shows up as
+    // "the same puzzle twice" under random selection even with distinct ids.
+    const seen = new Map();
+    for (const p of pool) {
+      if (seen.has(p.fen)) {
+        failures++;
+        console.log(`FAIL ${p.id}: duplicate FEN, same position as ${seen.get(p.fen)}`);
+      } else {
+        seen.set(p.fen, p.id);
+      }
+    }
+
+    for (const p of pool) {
+      const errors = verifyShipped(p);
+      if (errors.length) {
+        failures++;
+        console.log(`FAIL ${p.id}:`);
+        errors.forEach((e) => console.log("  - " + e));
+      } else {
+        console.log(`OK   ${p.id} (mate-in-${p.mateIn}, ${p.theme})`);
+      }
+    }
+    console.log(`\n${pool.length - failures}/${pool.length} valid`);
+    process.exit(failures ? 1 : 0);
+  }
+
   if (!path) {
-    console.error("Usage: node scripts/verify-puzzles.js <candidates.json>");
+    console.error("Usage: node scripts/verify-puzzles.js <candidates.json>   (or --pool to re-verify content/puzzles.ts)");
     process.exit(2);
   }
   const puzzles = JSON.parse(require("fs").readFileSync(path, "utf8"));
