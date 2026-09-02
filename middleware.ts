@@ -38,18 +38,32 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: any) {
-          request.cookies.set({ name, value, ...options });
+        // A token refresh rewrites the session as SEVERAL cookies in one go:
+        // this project's session payload (the Google-OAuth identity blob
+        // pushes it past ~3.6 KB) is over the 4 KB single-cookie limit, so
+        // @supabase/ssr splits it into `sb-<ref>-auth-token.0` + `.1`
+        // chunks. Every chunk has to be written onto the SAME response.
+        //
+        // The old per-cookie `set()`/`remove()` handlers rebuilt
+        // `NextResponse.next()` on every call, so after a refresh only the
+        // LAST chunk (`.1`) carried a Set-Cookie back — the browser kept a
+        // stale `.0` beside the fresh `.1`. @supabase/ssr detects the
+        // mismatched pair as corrupt and treats the whole session as
+        // absent: a silent logout on the first cold start after the access
+        // token had expired (i.e. force-close the app, reopen it an hour
+        // later, land on the sign-in screen). `setAll` gets the entire
+        // batch in one call and writes it to one response object.
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
           response = NextResponse.next({ request: { headers: request.headers } });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          request.cookies.set({ name, value: "", ...options });
-          response = NextResponse.next({ request: { headers: request.headers } });
-          response.cookies.set({ name, value: "", ...options });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
         },
       },
     }
