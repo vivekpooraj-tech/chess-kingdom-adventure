@@ -868,6 +868,56 @@ export async function getPuzzleAccuracyStats(
   };
 }
 
+// --- Puzzle library solve history (Phase 14C) ---------------------------
+// Cross-surface record of which content/puzzles.ts puzzles a child has
+// solved (Puzzle Trainer + Daily Challenge). One row per (child, puzzle);
+// see supabase/migrations/0029_puzzle_library_solves.sql.
+
+/**
+ * Records that a child solved a library puzzle. Idempotent via
+ * unique(child_id, puzzle_id): if the puzzle was already solved (through
+ * either surface) this is a no-op — the original solved_at / first_try /
+ * attempts stay as first recorded, rather than being overwritten with a
+ * later re-solve's data. `attempts` / `firstTry` describe THIS solving
+ * session and are only ever persisted for the very first solve, so they're
+ * real numbers, not fabricated running totals.
+ */
+export async function recordPuzzleLibrarySolve(
+  supabase: SupabaseClient,
+  childId: string,
+  puzzleId: string,
+  source: "trainer" | "daily",
+  firstTry: boolean,
+  attempts: number
+): Promise<void> {
+  const { error } = await supabase.from("puzzle_library_solves").upsert(
+    {
+      child_id: childId,
+      puzzle_id: puzzleId,
+      source,
+      first_try: firstTry,
+      attempts: Math.max(1, attempts),
+    },
+    { onConflict: "child_id,puzzle_id", ignoreDuplicates: true }
+  );
+  if (error) throw error;
+}
+
+/** All puzzle ids this child has already solved — one indexed query, ids
+ * only (short text, ≤ the 1,000-puzzle library), fetched once per Puzzle
+ * Trainer page load for no-repeat selection. */
+export async function getSolvedPuzzleIds(
+  supabase: SupabaseClient,
+  childId: string
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("puzzle_library_solves")
+    .select("puzzle_id")
+    .eq("child_id", childId);
+  if (error) throw error;
+  return (data ?? []).map((r) => r.puzzle_id as string);
+}
+
 // --- Puzzle previews (free-tier daily sample of locked-day content) -----
 
 export async function getTodayPreviewCount(

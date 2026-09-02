@@ -33,19 +33,25 @@ export async function getWeeklyActivitySnapshot(
 ): Promise<WeeklyActivitySnapshot> {
   const since = daysAgoIso(7);
 
-  const [lessonsRes, dailyPuzzlesRes, lessonPuzzlesRes, gamesRes, minutes] = await Promise.all([
+  const [lessonsRes, libraryPuzzlesRes, lessonPuzzlesRes, gamesRes, minutes] = await Promise.all([
     supabase
       .from("child_lesson_progress")
       .select("day_number", { count: "exact", head: true })
       .eq("child_id", childId)
       .eq("status", "completed")
       .gte("completed_at", since),
+    // Puzzle Trainer + Daily Challenge solves, deduped: puzzle_library_solves
+    // has one row per (child, puzzle) regardless of which surface solved it
+    // (Phase 14C), so a puzzle solved through both is counted once. This
+    // supersedes the old daily_challenge_history-only count, which missed
+    // every Puzzle Trainer solve.
     supabase
-      .from("daily_challenge_history")
-      .select("puzzle_id", { count: "exact", head: true })
+      .from("puzzle_library_solves")
+      .select("id", { count: "exact", head: true })
       .eq("child_id", childId)
-      .eq("result", "solved")
-      .gte("challenge_date", since.slice(0, 10)),
+      .gte("solved_at", since),
+    // Academy lesson-day puzzles — a separate id space (day_number), counted
+    // as before.
     supabase
       .from("puzzle_attempts")
       .select("id", { count: "exact", head: true })
@@ -68,7 +74,7 @@ export async function getWeeklyActivitySnapshot(
 
   return {
     lessonsCompleted: lessonsRes.count ?? 0,
-    puzzlesSolved: (dailyPuzzlesRes.count ?? 0) + (lessonPuzzlesRes.count ?? 0),
+    puzzlesSolved: (libraryPuzzlesRes.count ?? 0) + (lessonPuzzlesRes.count ?? 0),
     gamesPlayed: gamesRes.count ?? 0,
     learningMinutes,
   };

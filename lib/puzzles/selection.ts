@@ -51,19 +51,37 @@ export function rememberPuzzleShown(id: string): void {
 }
 
 /**
- * A random puzzle from the pool, avoiding the recently-shown ones and
- * anything in `exclude` (e.g. the current puzzle). Degrades gracefully:
- * if the filters would leave nothing, it drops the recent filter, then
- * the exclude filter, rather than returning nothing.
+ * A random puzzle from the pool, avoiding the recently-shown ones, anything
+ * in `exclude` (e.g. the current puzzle), and — when the caller supplies it
+ * — puzzles the child has already solved (`solved`, from
+ * puzzle_library_solves; see lib/supabase/queries.ts getSolvedPuzzleIds).
+ *
+ * Degrades gracefully, widening the pool one filter at a time rather than
+ * ever returning nothing: unsolved-and-fresh -> unsolved -> fresh ->
+ * not-excluded -> the whole library. With an empty `solved` set this is
+ * exactly the previous recent-then-exclude behavior.
  */
-export function pickRandomPuzzle(exclude: readonly string[] = []): ChessPuzzle {
+export function pickRandomPuzzle(
+  exclude: readonly string[] = [],
+  solved: ReadonlySet<string> = new Set()
+): ChessPuzzle {
   const recent = new Set(readRecent());
   const excludeSet = new Set(exclude);
+  const allowed = PUZZLES.filter((p) => !excludeSet.has(p.id));
 
-  const withoutRecent = PUZZLES.filter((p) => !recent.has(p.id) && !excludeSet.has(p.id));
-  const withoutExclude = PUZZLES.filter((p) => !excludeSet.has(p.id));
+  const unsolvedFresh = allowed.filter((p) => !recent.has(p.id) && !solved.has(p.id));
+  const unsolved = allowed.filter((p) => !solved.has(p.id));
+  const fresh = allowed.filter((p) => !recent.has(p.id));
   const pool =
-    withoutRecent.length > 0 ? withoutRecent : withoutExclude.length > 0 ? withoutExclude : PUZZLES;
+    unsolvedFresh.length > 0
+      ? unsolvedFresh
+      : unsolved.length > 0
+        ? unsolved
+        : fresh.length > 0
+          ? fresh
+          : allowed.length > 0
+            ? allowed
+            : PUZZLES;
 
   return pool[Math.floor(Math.random() * pool.length)];
 }

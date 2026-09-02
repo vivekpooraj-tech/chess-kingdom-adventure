@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -8,6 +8,8 @@ import {
   resolveActiveChildCached,
   getTodayPreviewCount,
   incrementPreviewCount,
+  getSolvedPuzzleIds,
+  recordPuzzleLibrarySolve,
   localDateString,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
@@ -75,24 +77,7 @@ function PuzzlesPageInner() {
 
   const [index, setIndex] = useState(initialIndex);
   const [selectionReady, setSelectionReady] = useState(false);
-  const selectionSettledRef = useRef(false);
-
-  // Client-only: settle which puzzle to open. Runs once, synchronously
-  // after mount and before `loaded` flips, so no placeholder puzzle is
-  // ever painted and there's no hydration mismatch from Math.random().
-  useEffect(() => {
-    if (selectionSettledRef.current) return;
-    selectionSettledRef.current = true;
-    if (requestedId && PUZZLES.some((p) => p.id === requestedId)) {
-      rememberPuzzleShown(requestedId);
-    } else {
-      const picked = pickRandomPuzzle();
-      rememberPuzzleShown(picked.id);
-      setIndex(PUZZLES.findIndex((p) => p.id === picked.id));
-    }
-    setSelectionReady(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [boardKey, setBoardKey] = useState(0);
   const [moveCount, setMoveCount] = useState(0);
   const [status, setStatus] = useState<Status>("playing");
@@ -100,7 +85,11 @@ function PuzzlesPageInner() {
   const [dailyAttempts, setDailyAttempts] = useState(0);
 
   const puzzle = PUZZLES[index];
-  const limitReached = !isPremium && todayCount >= DAILY_PREVIEW_LIMIT;
+  // The Daily Challenge is a separate free daily activity — it never counts
+  // against the 3/day Puzzle Trainer allowance and is always playable, even
+  // once that allowance is spent. Only bare (free-practice) /puzzles visits
+  // hit the limit.
+  const limitReached = !isPremium && !isDaily && todayCount >= DAILY_PREVIEW_LIMIT;
 
   // The FEN the player's NEXT move should be validated from — the puzzle's
   // own starting position at first, then whatever position the auto-
@@ -140,21 +129,40 @@ function PuzzlesPageInner() {
       setBoardSkinId(child.board_skin_id);
       setPieceSetId(child.piece_set_id);
 
-      // Independent of each other (both only need user/child ids already in
+      // Independent of each other (all only need user/child ids already in
       // hand) — run together instead of one after the other.
-      const [{ data: parent }, previewCount] = await Promise.all([
+      const [{ data: parent }, previewCount, solved] = await Promise.all([
         supabase.from("parents").select("premium_status").eq("auth_user_id", user.id).single(),
         getTodayPreviewCount(supabase, child.id, localDateString()),
+        getSolvedPuzzleIds(supabase, child.id).catch(() => [] as string[]),
       ]);
       const premium = parent?.premium_status === "premium";
       setIsPremium(premium);
       if (!premium) {
         setTodayCount(previewCount);
       }
+
+      const solvedSet = new Set(solved);
+      setSolvedIds(solvedSet);
+
+      // Settle which puzzle to open now that the child's solve history is in
+      // hand — a `?id=` link (Daily Challenge, or a deep link) opens that
+      // exact puzzle; a bare visit opens a random puzzle the child hasn't
+      // solved yet, skipping the ones shown most recently on this device.
+      // The board stays behind the skeleton until `selectionReady` flips, so
+      // no placeholder puzzle is ever painted.
+      if (requestedId && PUZZLES.some((p) => p.id === requestedId)) {
+        rememberPuzzleShown(requestedId);
+      } else {
+        const picked = pickRandomPuzzle([], solvedSet);
+        rememberPuzzleShown(picked.id);
+        setIndex(PUZZLES.findIndex((p) => p.id === picked.id));
+      }
+      setSelectionReady(true);
       setLoaded(true);
     }
     load();
-  }, [router]);
+  }, [router, requestedId]);
 
   function resetPuzzle() {
     setBoardKey((k) => k + 1);
@@ -164,7 +172,7 @@ function PuzzlesPageInner() {
   }
 
   function nextPuzzle() {
-    const picked = pickRandomPuzzle([puzzle.id]);
+    const picked = pickRandomPuzzle([puzzle.id], solvedIds);
     rememberPuzzleShown(picked.id);
     setIndex(PUZZLES.findIndex((p) => p.id === picked.id));
     setBoardKey((k) => k + 1);
@@ -176,7 +184,17 @@ function PuzzlesPageInner() {
   function markSolved() {
     setStatus("correct");
     setSolvedCount((n) => n + 1);
-    if (!isPremium && childId) {
+
+    // Attempts / first-try for THIS solving session (dailyAttempts counts
+    // wrong tries on the current puzzle, reset on nextPuzzle) — real numbers,
+    // only ever persisted for the very first solve of a puzzle.
+    const attemptNumber = dailyAttempts + 1;
+    const firstTry = dailyAttempts === 0;
+
+    // Free Puzzle Trainer quota: a bare free-practice solve spends one of the
+    // 3/day preview credits. The Daily Challenge is a separate free activity
+    // and never does — hence the !isDaily guard.
+    if (!isPremium && !isDaily && childId) {
       const supabase = createClient();
       incrementPreviewCount(supabase, childId, localDateString())
         .then(setTodayCount)
@@ -187,9 +205,32 @@ function PuzzlesPageInner() {
     // DailyChallengeCard) — the RPC itself is idempotent (a duplicate or
     // retried call can't double-count), matching the same client-reports-
     // the-chess-outcome trust model as finish_online_game_by_result.
+    // daily_challenge_history stays authoritative for daily status/result.
     if (isDaily && childId) {
       const supabase = createClient();
       recordDailyChallengeResult(supabase, childId, localDateString(), true).catch(() => {});
+    }
+
+    // Cross-library solve history (Phase 14C): one row per (child, puzzle),
+    // written once (unique(child_id, puzzle_id) — a re-solve is a no-op).
+    // Powers no-repeat selection and the Parent Dashboard "Puzzles" count;
+    // a puzzle solved through both Daily and Trainer is still one row.
+    if (childId) {
+      const supabase = createClient();
+      recordPuzzleLibrarySolve(
+        supabase,
+        childId,
+        puzzle.id,
+        isDaily ? "daily" : "trainer",
+        firstTry,
+        attemptNumber
+      ).catch(() => {});
+      setSolvedIds((prev) => {
+        if (prev.has(puzzle.id)) return prev;
+        const next = new Set(prev);
+        next.add(puzzle.id);
+        return next;
+      });
     }
   }
 
@@ -323,11 +364,13 @@ function PuzzlesPageInner() {
               </MoveFeedback>
             )}
 
-            <p className={`${TEXT.caption} mt-auto pt-2 border-t border-white/5`}>
-              {isPremium
-                ? `Solved this session: ${solvedCount}`
-                : `${Math.max(0, DAILY_PREVIEW_LIMIT - todayCount)} of ${DAILY_PREVIEW_LIMIT} free puzzles left today`}
-            </p>
+            {!isDaily && (
+              <p className={`${TEXT.caption} mt-auto pt-2 border-t border-white/5`}>
+                {isPremium
+                  ? `Solved this session: ${solvedCount}`
+                  : `${Math.max(0, DAILY_PREVIEW_LIMIT - todayCount)} of ${DAILY_PREVIEW_LIMIT} free puzzles left today`}
+              </p>
+            )}
           </div>
         }
       />
