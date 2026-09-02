@@ -2,19 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe/client";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type Stripe from "stripe";
+import { PREMIUM_ENTITLEMENT_YEARS } from "@/lib/premium/entitlement";
 
 /**
- * The reliable counterpart to app/upgrade/success/page.tsx's client-side
- * verification. That page gives instant UI feedback right after checkout,
- * but only runs if the browser tab stays open long enough to load it — if
- * someone closes the tab the moment they finish paying, that page never
- * runs and they'd stay on the free plan despite paying. Stripe calls this
- * route directly, server-to-server, regardless of what the browser does,
- * so it's the actual source of truth. Both paths write the same field, so
- * there's no conflict if both fire — the second write is just a no-op.
+ * The durable source of truth for granting Premium. Stripe calls this
+ * server-to-server regardless of what the browser does after checkout (the
+ * success page — app/upgrade/success/page.tsx — is the instant-feedback
+ * counterpart, and calls the exact same RPC).
  *
- * No user session exists here (Stripe has no cookies for this app), so this
- * uses the service-role admin client instead of the normal cookie-based one.
+ * No user session exists here (Stripe sends no cookies), so this uses the
+ * service-role admin client. grant_premium_entitlement() /
+ * revoke_premium_entitlement() (migration 0031) are the only entitlement
+ * write path and are idempotent — Stripe delivers events at least once, and
+ * both this route and the success page may fire for the same session, so
+ * every write below must be safe to repeat.
  */
 export async function POST(request: NextRequest) {
   const stripe = getStripe();
@@ -27,8 +28,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Must be the raw, unparsed body — Stripe's signature is computed over the
-  // exact bytes it sent, so calling request.json() first (which consumes and
-  // reformats the body) would break verification.
+  // exact bytes it sent, so calling request.json() first would break it.
   const rawBody = await request.text();
 
   let event: Stripe.Event;
@@ -39,41 +39,52 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const parentId = session.metadata?.parent_id;
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const parentId = session.metadata?.parent_id;
 
-    if (parentId && session.payment_status === "paid") {
-      // getSupabaseAdmin() throws (missing env config) rather than returning
-      // an error value, unlike the .update() call below — caught here so a
-      // misconfigured deploy logs and still returns 200 below, same as a
-      // failed .update(), instead of an uncaught 500 that makes Stripe retry
-      // forever against an error retries can't fix.
-      try {
-        const supabaseAdmin = getSupabaseAdmin();
-        const { error } = await supabaseAdmin
-          .from("parents")
-          .update({ premium_status: "premium" })
-          .eq("id", parentId);
-
+      if (parentId && session.payment_status === "paid") {
+        const admin = getSupabaseAdmin();
+        const { error } = await admin.rpc("grant_premium_entitlement", {
+          p_parent_id: parentId,
+          p_checkout_session_id: session.id,
+          p_payment_intent_id:
+            typeof session.payment_intent === "string" ? session.payment_intent : null,
+          p_amount_minor: session.amount_total ?? null,
+          p_currency: session.currency ?? null,
+          p_provider: "stripe",
+          p_duration: `${PREMIUM_ENTITLEMENT_YEARS} years`,
+        });
         if (error) {
-          console.error("Stripe webhook: failed to upgrade parent", parentId, error);
-          // Still return 200 below — a 4xx/5xx here makes Stripe retry, which
-          // won't help if the problem is our own DB config rather than a
-          // transient blip. The error is logged for manual follow-up either way.
+          console.error("Stripe webhook: grant_premium_entitlement failed", parentId, error);
+          // Still 200 below — a 5xx makes Stripe retry, which won't fix a DB
+          // config problem. Logged for manual follow-up.
         }
-      } catch (err) {
-        console.error("Stripe webhook: could not reach Supabase to upgrade parent", parentId, err);
+      } else {
+        console.warn("Stripe webhook: checkout.session.completed missing parent_id or not paid.", {
+          parentId,
+          paymentStatus: session.payment_status,
+        });
       }
-    } else {
-      console.warn(
-        "Stripe webhook: checkout.session.completed with no parent_id metadata or unpaid status.",
-        { parentId, paymentStatus: session.payment_status }
-      );
+    } else if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      const paymentIntentId =
+        typeof charge.payment_intent === "string" ? charge.payment_intent : null;
+      if (paymentIntentId) {
+        const admin = getSupabaseAdmin();
+        const { error } = await admin.rpc("revoke_premium_entitlement", {
+          p_payment_intent_id: paymentIntentId,
+        });
+        if (error) {
+          console.error("Stripe webhook: revoke_premium_entitlement failed", paymentIntentId, error);
+        }
+      }
     }
+  } catch (err) {
+    console.error("Stripe webhook: handler error (still ack'ing 200)", event.type, err);
   }
 
-  // Acknowledge receipt regardless of event type — Stripe expects a 200 for
-  // any event it sends, not just the ones this app cares about.
+  // Acknowledge every event Stripe sends, handled or not.
   return NextResponse.json({ received: true });
 }

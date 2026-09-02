@@ -5,9 +5,12 @@ import Link from "next/link";
 import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { TacticsPaywall } from "@/components/upgrade/TacticsPaywall";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
+import { PremiumCta } from "@/components/premium/PremiumCta";
+import { PremiumFeatureModal } from "@/components/premium/PremiumGate";
+import { SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
 
-type Overlay = "game-limit" | "tactics" | null;
+type Overlay = "game-limit" | "tactics" | "feature" | null;
 
 /**
  * Each button below opens the exact real component a free user would hit
@@ -62,6 +65,27 @@ export function PremiumPreviewClient() {
           <span className="text-premium-gold text-lg flex-none">→</span>
         </button>
 
+        <button
+          type="button"
+          onClick={() => setOverlay("feature")}
+          className="rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center justify-between border border-white/5 hover:border-premium-gold/30 transition-colors text-left"
+        >
+          <div>
+            <p className="font-classic-display text-lg text-premium-ivory">Premium Feature Modal</p>
+            <p className="font-classic-body text-sm text-premium-ivory/60 mt-0.5">
+              Generic PremiumGate / PremiumFeatureModal for any locked feature.
+            </p>
+          </div>
+          <span className="text-premium-gold text-lg flex-none">→</span>
+        </button>
+
+        <SecondaryCard className="flex flex-col gap-3">
+          <p className="font-classic-display text-lg text-premium-ivory self-start">
+            Premium CTA (inline block)
+          </p>
+          <PremiumCta />
+        </SecondaryCard>
+
         <div className="rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex flex-col items-center gap-3">
           <p className="font-classic-display text-lg text-premium-ivory self-start">
             Upgrade Button (pricing + discount code)
@@ -81,6 +105,12 @@ export function PremiumPreviewClient() {
         <GameLimitPaywall gameType="ai" onDismiss={() => setOverlay(null)} />
       )}
       {overlay === "tactics" && <TacticsPaywall onDismiss={() => setOverlay(null)} />}
+      {overlay === "feature" && (
+        <PremiumFeatureModal
+          onDismiss={() => setOverlay(null)}
+          intro="This feature is part of Chess Mind Premium."
+        />
+      )}
     </main>
   );
 }

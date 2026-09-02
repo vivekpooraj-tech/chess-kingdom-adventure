@@ -14,7 +14,6 @@ import {
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { LESSONS } from "@/content/lessons";
-import { getFreeDayNumbers } from "@/content/kingdomZones";
 import { BUDDIES } from "@/content/buddies";
 import { AVATARS } from "@/content/avatars";
 import { getAchievement } from "@/content/achievements";
@@ -23,7 +22,8 @@ import { CHESS_MIND_CATEGORIES } from "@/content/chessMindCategories";
 import { SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
 import { ScreenTimeSettings } from "./ScreenTimeSettings";
-import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
+import { PremiumStatusCard } from "@/components/premium/PremiumStatusCard";
+import { resolvePremiumState } from "@/lib/premium/entitlement";
 import {
   getWeeklyActivitySnapshot,
   getParentNextStep,
@@ -45,6 +45,19 @@ export default async function ParentDashboardPage() {
     .single();
 
   if (!parent) redirect("/sign-in");
+
+  // Expiry column read separately + best-effort so the dashboard still loads
+  // in the window before migration 0031 is applied (no premium_expires_at
+  // column yet -> treated as "no expiry", the current prod behaviour).
+  const { data: expiryRow } = await supabase
+    .from("parents")
+    .select("premium_expires_at")
+    .eq("id", parent.id)
+    .maybeSingle();
+  const premiumState = resolvePremiumState({
+    premium_status: parent.premium_status,
+    premium_expires_at: expiryRow?.premium_expires_at ?? null,
+  });
 
   const allChildren = await getChildrenForParent(supabase, user.id);
   const cookieChildId = cookies().get(ACTIVE_CHILD_COOKIE_NAME)?.value ?? null;
@@ -330,17 +343,7 @@ export default async function ParentDashboardPage() {
         initialWeekend={parent.screen_time_weekend_minutes}
       />
 
-      <SecondaryCard className="w-full flex flex-col items-center gap-3">
-        <h2 className={`${TEXT.heading} self-start`}>Plan</h2>
-        <p className={`${TEXT.body} self-start`}>
-          {parent.premium_status === "premium"
-            ? "Premium — all available content unlocked."
-            : `Free plan — the first lessons of every Kingdom zone are available (${
-                getFreeDayNumbers().length
-              } lessons total).`}
-        </p>
-        {parent.premium_status !== "premium" && <UpgradeButton tone="premium" />}
-      </SecondaryCard>
+      <PremiumStatusCard initial={premiumState} />
     </Screen>
   );
 }

@@ -6,11 +6,15 @@ import { BRAND } from "@/lib/brand";
 import { getCountryFromRequest } from "@/lib/pricing/country";
 import { getRegionalPrice } from "@/lib/pricing/regions";
 import { validatePromoCode } from "@/lib/pricing/promo";
+import { PREMIUM_ENTITLEMENT_YEARS } from "@/lib/premium/entitlement";
 
-// One-time purchase — matches the PRD's business model ("no subscriptions,
-// unlock everything forever"). Preserved unchanged for every region; only
-// the currency/amount vary (lib/pricing/regions.ts), never the billing
-// model itself.
+// One-time purchase (Stripe mode: "payment", never a subscription) — a
+// single payment that unlocks Premium for a fixed term (see
+// PREMIUM_ENTITLEMENT_YEARS). Only the currency/amount vary by region
+// (lib/pricing/regions.ts); the billing model never does. The entitlement
+// itself (term, expiry) is granted server-side from the verified webhook /
+// success-page call to grant_premium_entitlement() — nothing here is
+// trusted for that.
 export async function POST(request: NextRequest) {
   const supabase = createClient();
   const {
@@ -80,8 +84,8 @@ export async function POST(request: NextRequest) {
             currency: regionalPrice.currency,
             unit_amount: regionalPrice.amountMinor,
             product_data: {
-              name: `${BRAND.name} — Premium`,
-              description: "Unlock every day of the adventure, forever. No subscription.",
+              name: `${BRAND.name} — Premium (${PREMIUM_ENTITLEMENT_YEARS} years)`,
+              description: `Unlimited puzzles, deeper analysis, full AI Coach, detailed progress and no ads for ${PREMIUM_ENTITLEMENT_YEARS} years. One payment — no recurring subscription.`,
             },
           },
           quantity: 1,
@@ -101,6 +105,7 @@ export async function POST(request: NextRequest) {
         parent_id: parent.id,
         country,
         currency: regionalPrice.currency,
+        entitlement_years: String(PREMIUM_ENTITLEMENT_YEARS),
       },
       success_url: `${origin}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/kingdom-map`,

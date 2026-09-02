@@ -20,6 +20,7 @@ import {
   getScreenTimeStatus,
 } from "@/lib/supabase/queries";
 import { getUnlockedKingdomBonuses } from "@/lib/chessMind/kingdomUnlocks";
+import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { KingdomMapCards } from "./KingdomMapCards";
 import { KingdomMapAchievements } from "./KingdomMapAchievements";
@@ -73,7 +74,7 @@ export default async function KingdomMapPage() {
     screenTimeStatus,
   ] = await Promise.all([
     getCompletedDays(supabase, child.id),
-    supabase.from("parents").select("premium_status").eq("auth_user_id", user.id).single(),
+    supabase.from("parents").select(PARENT_PREMIUM_COLUMNS).eq("auth_user_id", user.id).single(),
     getCompletedAcademyContentIds(supabase, child.id),
     getOpeningEncounters(supabase, child.id),
     getChessMindTotalSolved(supabase, child.id),
@@ -82,7 +83,7 @@ export default async function KingdomMapPage() {
     getChessMindStreak(supabase, child.id).catch(() => 0),
     getScreenTimeStatus(supabase, user.id, child.id),
   ]);
-  const isPremium = parent?.premium_status === "premium";
+  const isPremium = resolvePremiumState(parent).isPremium;
   const kingdomBonuses = getUnlockedKingdomBonuses(chessMindStatsByModule);
 
   // Achievement evaluation (a write, then a dependent read -- the most

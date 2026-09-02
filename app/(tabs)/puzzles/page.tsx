@@ -13,6 +13,7 @@ import {
   localDateString,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { DAILY_PREVIEW_LIMIT } from "@/content/lessons";
 import { PUZZLES } from "@/content/puzzles";
 import { pickRandomPuzzle, rememberPuzzleShown } from "@/lib/puzzles/selection";
@@ -132,11 +133,11 @@ function PuzzlesPageInner() {
       // Independent of each other (all only need user/child ids already in
       // hand) — run together instead of one after the other.
       const [{ data: parent }, previewCount, solved] = await Promise.all([
-        supabase.from("parents").select("premium_status").eq("auth_user_id", user.id).single(),
+        supabase.from("parents").select(PARENT_PREMIUM_COLUMNS).eq("auth_user_id", user.id).single(),
         getTodayPreviewCount(supabase, child.id, localDateString()),
         getSolvedPuzzleIds(supabase, child.id).catch(() => [] as string[]),
       ]);
-      const premium = parent?.premium_status === "premium";
+      const premium = resolvePremiumState(parent).isPremium;
       setIsPremium(premium);
       if (!premium) {
         setTodayCount(previewCount);

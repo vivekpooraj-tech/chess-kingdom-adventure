@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { RegionalPrice } from "@/lib/pricing/regions";
+import { PREMIUM_DURATION_LABEL } from "@/lib/premium/entitlement";
 
 interface PromoPreview {
   code: string;
@@ -118,6 +119,9 @@ export function UpgradeButton({
       <Button tone={tone} onClick={startCheckout} disabled={loading}>
         {loading ? "Starting checkout..." : buttonLabel}
       </Button>
+      <p className={mutedTextClass}>
+        {PREMIUM_DURATION_LABEL} · one-time payment · no subscription
+      </p>
       {error && <p className={errorTextClass}>{error}</p>}
 
       <div className="flex flex-col items-center gap-2 mt-1">

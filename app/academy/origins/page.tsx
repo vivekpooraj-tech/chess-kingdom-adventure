@@ -15,6 +15,7 @@ import {
   getCompletedAcademyContentIds,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { HISTORY_OF_CHESS } from "@/content/academyVideos";
 import { getAchievement } from "@/content/achievements";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
@@ -104,7 +105,7 @@ export default function ChessOriginsPage() {
       const { data: parent } = user
         ? await supabase
             .from("parents")
-            .select("premium_status")
+            .select(PARENT_PREMIUM_COLUMNS)
             .eq("auth_user_id", user.id)
             .single()
         : { data: null };
@@ -112,7 +113,7 @@ export default function ChessOriginsPage() {
         supabase,
         childId,
         completedDays,
-        parent?.premium_status === "premium",
+        resolvePremiumState(parent).isPremium,
         completedAcademyIds
       ).catch(() => ({ newlyEarned: [] as string[], allEarned: [] as string[] }));
       if (newlyEarned.length > 0) {

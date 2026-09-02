@@ -36,6 +36,7 @@ import {
   evaluateAndAwardAchievements,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
 import { getAcademyRecommendation } from "@/lib/chessMind/academyRecommendations";
@@ -99,11 +100,11 @@ export default function LessonPage() {
 
       const { data: parent } = await supabase
         .from("parents")
-        .select("premium_status")
+        .select(PARENT_PREMIUM_COLUMNS)
         .eq("auth_user_id", user.id)
         .single();
 
-      if (parent?.premium_status === "premium") {
+      if (resolvePremiumState(parent).isPremium) {
         setIsPremium(true);
         setMode("full");
         return;

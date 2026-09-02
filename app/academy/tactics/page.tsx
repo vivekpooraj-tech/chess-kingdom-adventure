@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { resolveActiveChild, getAcademyProgressForIds } from "@/lib/supabase/queries";
+import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { TACTICS_LESSONS } from "@/content/tacticsLessons";
 import { PrimaryNav } from "@/components/nav/PrimaryNav";
@@ -22,10 +23,10 @@ export default async function TacticsCoursePage() {
 
   const { data: parent } = await supabase
     .from("parents")
-    .select("premium_status")
+    .select(PARENT_PREMIUM_COLUMNS)
     .eq("auth_user_id", user.id)
     .single();
-  const isPremium = parent?.premium_status === "premium";
+  const isPremium = resolvePremiumState(parent).isPremium;
 
   const progressByLessonId = await getAcademyProgressForIds(
     supabase,

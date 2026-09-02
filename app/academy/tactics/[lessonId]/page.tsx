@@ -15,6 +15,7 @@ import {
   evaluateAndAwardAchievements,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { getTacticsLesson, getTacticsLessonIndex, TACTICS_LESSONS } from "@/content/tacticsLessons";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
@@ -72,10 +73,10 @@ export default function TacticsLessonPage() {
 
       const { data: parent } = await supabase
         .from("parents")
-        .select("premium_status")
+        .select(PARENT_PREMIUM_COLUMNS)
         .eq("auth_user_id", user.id)
         .single();
-      const premium = parent?.premium_status === "premium";
+      const premium = resolvePremiumState(parent).isPremium;
       setIsPremium(premium);
 
       if (lesson.free) {
