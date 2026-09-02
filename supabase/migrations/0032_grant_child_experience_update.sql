@@ -1,0 +1,30 @@
+-- Phase 16A hotfix: onboarding is stuck for every new user.
+--
+-- 0022_fix_update_grants_table_level_override.sql replaced the broad
+-- table-level UPDATE grant on public.children with a column-level grant for
+-- exactly the columns client code writes directly:
+--
+--   grant update (avatar_id, buddy_id, board_skin_id, piece_set_id)
+--     on public.children to authenticated;
+--
+-- Phase 13 (0027_child_experience_level.sql) then added
+-- children.experience_level / age_band and shipped the onboarding step
+-- app/onboarding/experience/page.tsx, which calls
+-- updateChildExperienceProfile() -> supabase.from("children")
+-- .update({ experience_level, age_band }). Those two columns were never
+-- added to the 0022 grant, so the write fails with
+--   42501  permission denied for table children
+-- The parent gate routes every child with a NULL experience_level to
+-- /onboarding/experience, "Continue" throws, and the user cannot leave that
+-- screen -> a hard onboarding blocker for every new account (and every
+-- pre-Phase-13 child).
+--
+-- Fix: the one missing column-level grant, matching the 0022 pattern
+-- exactly. RLS ("parent can manage own children", 0001) still restricts the
+-- write to the caller's own child; the CHECK constraints from 0027 still
+-- restrict the values. Nothing else about children's grants changes.
+--
+-- Additive and idempotent (re-running GRANT is a no-op). 0027 is a
+-- protected migration and is not touched.
+
+grant update (experience_level, age_band) on public.children to authenticated;

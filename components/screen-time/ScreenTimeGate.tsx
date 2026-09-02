@@ -77,10 +77,14 @@ export function ScreenTimeGate({
       setStatus(alreadyOver ? "locked" : "ok");
     }
 
-    // The initial state already came from the server render — no need to
-    // re-derive it with a redundant round trip before the interval takes
-    // over ongoing enforcement.
-    if (!hasInitial) init();
+    // The OK state from the server render is trusted as-is (no flash from a
+    // redundant round trip). But a LOCKED state is re-verified client-side
+    // first: getScreenTimeStatus computes "today" with the server's own
+    // (UTC) clock, so for a user whose local date has already rolled past
+    // midnight it reads yesterday's usage total and wrongly locks the Home
+    // screen until UTC midnight (a ~5.5h nightly window in IST). init()
+    // re-checks with the device-local date/weekday before the lock sticks.
+    if (!hasInitial || initiallyLocked) init();
 
     const interval = setInterval(async () => {
       if (cancelled || lockedRef.current) return;
