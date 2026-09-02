@@ -30,7 +30,9 @@ export default function ChooseChildPage() {
 
   function choose(child: ChildProfile) {
     setActiveChildIdClient(child.id);
-    if (child.avatar_id && child.buddy_id) {
+    if (!child.experience_level) {
+      router.push("/onboarding/experience");
+    } else if (child.avatar_id && child.buddy_id) {
       router.push("/kingdom-map");
     } else {
       router.push("/onboarding/avatar");
@@ -44,7 +46,7 @@ export default function ChooseChildPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6 py-12">
       <h1 className="font-display text-3xl text-kingdom-night text-center">
-        Who's playing today? 🧑‍🤝‍🧑
+        Who&apos;s playing today?
       </h1>
 
       <div className="grid grid-cols-2 gap-5 max-w-md w-full">

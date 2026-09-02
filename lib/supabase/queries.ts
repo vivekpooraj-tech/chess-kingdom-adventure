@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedActiveChild, setCachedActiveChild } from "./activeChildCache";
+import type { AgeBand, ExperienceLevel } from "@/lib/learner/experienceLevel";
 
 export interface ChildProfile {
   id: string;
@@ -10,6 +11,8 @@ export interface ChildProfile {
   piece_set_id: string;
   rating: number;
   current_day: number;
+  experience_level: ExperienceLevel | null;
+  age_band: AgeBand | null;
 }
 
 /**
@@ -202,6 +205,19 @@ export async function updateChildBuddy(
   const { error } = await supabase
     .from("children")
     .update({ buddy_id: buddyId })
+    .eq("id", childId);
+  if (error) throw error;
+}
+
+export async function updateChildExperienceProfile(
+  supabase: SupabaseClient,
+  childId: string,
+  experienceLevel: ExperienceLevel,
+  ageBand: AgeBand | null
+) {
+  const { error } = await supabase
+    .from("children")
+    .update({ experience_level: experienceLevel, age_band: ageBand })
     .eq("id", childId);
   if (error) throw error;
 }

@@ -48,7 +48,7 @@ export default function AvatarPickerPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6 py-12">
       <h1 className="font-display text-3xl text-kingdom-night text-center">
-        Choose your hero! 🌟
+        Choose your character
       </h1>
 
       <div className="grid grid-cols-2 gap-5 max-w-md w-full">

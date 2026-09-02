@@ -81,9 +81,9 @@ export default function LearnPage() {
         <PrimaryCard className="flex items-center gap-4">
           <span className="text-3xl flex-none">🗺️</span>
           <div className="flex-1">
-            <p className={`${TEXT.meta} text-premium-gold`}>Continue Your Journey</p>
+            <p className={`${TEXT.meta} text-premium-gold`}>Kingdom Journey</p>
             <p className="font-classic-display text-lg text-premium-ivory mt-1">
-              Pick up where you left off in the Kingdom
+              Story-based lessons and guided chess basics
             </p>
           </div>
         </PrimaryCard>

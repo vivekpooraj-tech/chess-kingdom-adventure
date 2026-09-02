@@ -48,7 +48,7 @@ export default function BuddyPickerPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6 py-12">
       <h1 className="font-display text-3xl text-kingdom-night text-center">
-        Pick your Kingdom Buddy! 🐾
+        Choose your guide
       </h1>
 
       <div className="grid grid-cols-3 gap-4 max-w-lg w-full">

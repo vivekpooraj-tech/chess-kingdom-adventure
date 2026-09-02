@@ -12,6 +12,7 @@ import {
   completeAcademyContent,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { shouldSkipWelcome } from "@/lib/learner/experienceLevel";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 import { Button, IconButton } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
@@ -74,6 +75,11 @@ export default function WelcomePage() {
       }
       const child = resolution.child!;
       setChildId(child.id);
+
+      if (shouldSkipWelcome(child.experience_level)) {
+        router.replace("/kingdom-map");
+        return;
+      }
 
       // Any existing row for this content — regardless of status — means
       // this child has already been shown it. Never auto-display twice.

@@ -6,8 +6,8 @@ import { createClient, getAuthState } from "@/lib/supabase/client";
 import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { LOCAL_TEST_MODE } from "@/lib/devTestMode";
+import { TEXT } from "@/lib/designSystem";
 
 /**
  * Per docs/04-user-flows.md: a lightweight "is an adult here" check before
@@ -97,8 +97,9 @@ function ParentGateInner() {
 
       const child = resolution.child!;
       setActiveChildIdClient(child.id);
-      // Skip onboarding if this child already picked an avatar/buddy before.
-      if (child.avatar_id && child.buddy_id) {
+      if (!child.experience_level) {
+        router.push("/onboarding/experience");
+      } else if (child.avatar_id && child.buddy_id) {
         router.push("/kingdom-map");
       } else {
         router.push("/onboarding/avatar");
@@ -126,14 +127,16 @@ function ParentGateInner() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-6">
-      <Card className="max-w-sm w-full flex flex-col items-center gap-5 text-center">
-        <span className="text-5xl">🧮</span>
-        <h1 className="font-display text-xl text-kingdom-night">
-          Quick check — grown-ups only!
+    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-6">
+      <div className="max-w-sm w-full flex flex-col items-center gap-5 text-center rounded-card border border-premium-gold/15 bg-premium-navy/40 px-6 py-8 shadow-premiumCard">
+        <h1 className={`${TEXT.heading} text-premium-ivory`}>
+          One quick check for a grown-up
         </h1>
-        <p className="font-body text-lg text-kingdom-night/80">
-          What is {challenge.a} + {challenge.b}?
+        <p className={`${TEXT.body} text-premium-ivory/70`}>
+          Please solve this to continue setup.
+        </p>
+        <p className="font-classic-display text-2xl text-premium-ivory">
+          {challenge.a} + {challenge.b} = ?
         </p>
         <input
           type="number"
@@ -141,13 +144,13 @@ function ParentGateInner() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           aria-label={`What is ${challenge.a} + ${challenge.b}?`}
-          className="w-32 text-center rounded-btn px-4 py-3 border-2 border-kingdom-night/10 font-body text-xl"
+          className="w-32 text-center rounded-premiumBtn px-4 py-3 border border-premium-ivory/15 bg-premium-midnightDeep/50 font-classic-body text-xl text-premium-ivory focus:outline-none focus:border-premium-gold/60 focus:ring-2 focus:ring-premium-gold/20"
         />
-        {error && <p className="font-body text-sm text-kingdom-coral">{error}</p>}
-        <Button size="md" onClick={handleSubmit} disabled={!input || checking}>
+        {error && <p className="font-classic-body text-sm text-semantic-retry">{error}</p>}
+        <Button tone="premium" size="md" onClick={handleSubmit} disabled={!input || checking}>
           {checking ? "Checking..." : "Continue"}
         </Button>
-      </Card>
+      </div>
     </main>
   );
 }

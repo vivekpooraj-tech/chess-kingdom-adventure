@@ -24,6 +24,12 @@ import { SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
 import { ScreenTimeSettings } from "./ScreenTimeSettings";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
+import {
+  getWeeklyActivitySnapshot,
+  getParentNextStep,
+  getSkillSnapshot,
+} from "@/lib/parent/parentInsights";
+import Link from "next/link";
 import { ManageChildren } from "./ManageChildren";
 
 export default async function ParentDashboardPage() {
@@ -55,7 +61,39 @@ export default async function ParentDashboardPage() {
     : {};
   const chessMindTotal = child ? await getChessMindTotalSolved(supabase, child.id) : 0;
   const openingEncounters = child ? await getOpeningEncounters(supabase, child.id) : [];
+  const openingsStudied = openingEncounters.filter((e) => e.studied_at).length;
   const recentMinutes = child ? await getRecentUsageMinutes(supabase, child.id, 7).catch(() => 0) : 0;
+  const weeklySnapshot = child
+    ? await getWeeklyActivitySnapshot(supabase, child.id).catch(() => ({
+        lessonsCompleted: 0,
+        puzzlesSolved: 0,
+        gamesPlayed: 0,
+        learningMinutes: 0,
+      }))
+    : null;
+  const nextStep = child
+    ? getParentNextStep({
+        experienceLevel: child.experience_level ?? null,
+        currentDay: child.current_day,
+        completedDaysCount: completedDays.length,
+        chessMindStats,
+        puzzleFirstTryRate:
+          puzzleStats && puzzleStats.totalAttempts > 0
+            ? puzzleStats.firstTryCorrect / puzzleStats.totalAttempts
+            : null,
+      })
+    : null;
+  const skillSnapshot = child
+    ? getSkillSnapshot({
+        chessMindStats,
+        openingsStudied,
+        puzzleFirstTryRate:
+          puzzleStats && puzzleStats.totalAttempts > 0
+            ? puzzleStats.firstTryCorrect / puzzleStats.totalAttempts
+            : null,
+        lessonsCompleted: completedDays.length,
+      })
+    : null;
 
   const { data: progressRows } = child
     ? await supabase
@@ -78,7 +116,6 @@ export default async function ParentDashboardPage() {
   const buddy = child ? BUDDIES.find((b) => b.id === child.buddy_id) : undefined;
   const historyCompleted = completedAcademyIds.includes(HISTORY_OF_CHESS.id);
   const openingsDiscovered = openingEncounters.filter((e) => e.first_seen_at).length;
-  const openingsStudied = openingEncounters.filter((e) => e.studied_at).length;
 
   return (
     <Screen maxWidth="compact">
@@ -93,11 +130,47 @@ export default async function ParentDashboardPage() {
             <div>
               <p className={TEXT.subheading}>{child.display_name}</p>
               <p className={`${TEXT.caption} normal-case`}>
-                Learning with {buddy?.name ?? "a Kingdom Buddy"} · Currently on Day{" "}
+                Learning with {buddy?.name ?? "their guide"} · Currently on Day{" "}
                 {child.current_day} of {LESSONS.length}
               </p>
             </div>
           </SecondaryCard>
+
+          {weeklySnapshot && (
+            <SecondaryCard className="w-full flex flex-col gap-3">
+              <h2 className={TEXT.heading}>This Week</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatTile value={weeklySnapshot.lessonsCompleted} label="Lessons" />
+                <StatTile value={weeklySnapshot.puzzlesSolved} label="Puzzles" />
+                <StatTile value={weeklySnapshot.gamesPlayed} label="Games" />
+                <StatTile value={`${weeklySnapshot.learningMinutes}m`} label="Learning time" />
+              </div>
+            </SecondaryCard>
+          )}
+
+          {nextStep && (
+            <SecondaryCard className="w-full flex flex-col gap-3">
+              <h2 className={TEXT.heading}>Suggested Next Step</h2>
+              <p className="font-classic-display text-base text-premium-ivory">{nextStep.title}</p>
+              <p className={TEXT.body}>{nextStep.description}</p>
+              <p className={TEXT.caption}>{nextStep.durationLabel}</p>
+              <Link
+                href={nextStep.href}
+                className="inline-flex items-center justify-center rounded-premiumBtn bg-premium-gold/15 border border-premium-gold/30 px-4 py-2 text-sm font-classic-body text-premium-gold hover:bg-premium-gold/25 transition-colors w-fit"
+              >
+                Open for {child.display_name} →
+              </Link>
+            </SecondaryCard>
+          )}
+
+          {skillSnapshot && (
+            <SecondaryCard className="w-full flex flex-col gap-4">
+              <h2 className={TEXT.heading}>Skills Snapshot</h2>
+              <SkillColumn title="Strong" items={skillSnapshot.strong} tone="strong" />
+              <SkillColumn title="Developing" items={skillSnapshot.developing} tone="developing" />
+              <SkillColumn title="Needs practice" items={skillSnapshot.needsPractice} tone="needs" />
+            </SecondaryCard>
+          )}
 
           {/* Overview — the "quickly understand" summary strip the brief
               asks for: learning, Academy, Chess Mind, openings, time spent
@@ -277,6 +350,43 @@ function StatTile({ value, label }: { value: string | number; label: string }) {
     <div className="rounded-premiumCard bg-premium-navy shadow-premiumCard p-4 flex flex-col gap-1">
       <p className="font-classic-display text-xl text-premium-ivory">{value}</p>
       <p className={TEXT.caption}>{label}</p>
+    </div>
+  );
+}
+
+function SkillColumn({
+  title,
+  items,
+  tone,
+}: {
+  title: string;
+  items: string[];
+  tone: "strong" | "developing" | "needs";
+}) {
+  const toneClass =
+    tone === "strong"
+      ? "text-emerald-400"
+      : tone === "developing"
+        ? "text-premium-gold"
+        : "text-semantic-retry";
+
+  return (
+    <div>
+      <p className={`${TEXT.caption} uppercase tracking-wide mb-2 ${toneClass}`}>{title}</p>
+      {items.length > 0 ? (
+        <ul className="flex flex-wrap gap-2">
+          {items.map((item) => (
+            <li
+              key={item}
+              className="rounded-premiumBtn bg-premium-midnightDeep px-3 py-1.5 text-sm font-classic-body text-premium-ivory"
+            >
+              {item}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className={TEXT.body}>—</p>
+      )}
     </div>
   );
 }

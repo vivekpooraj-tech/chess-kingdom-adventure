@@ -24,11 +24,13 @@ export function PieceSetPicker({
   heading,
   confirmLabel,
   redirectTo,
+  resolveRedirectTo,
   tone = "adventure",
 }: {
   heading: string;
   confirmLabel: string;
-  redirectTo: string;
+  redirectTo?: string;
+  resolveRedirectTo?: () => string | Promise<string>;
   tone?: "adventure" | "premium";
 }) {
   const router = useRouter();
@@ -65,7 +67,9 @@ export function PieceSetPicker({
     try {
       const supabase = createClient();
       await updateChildPieceSet(supabase, childId, selected);
-      router.push(redirectTo);
+      const destination = resolveRedirectTo ? await resolveRedirectTo() : redirectTo;
+      if (!destination) throw new Error("Missing redirect destination");
+      router.push(destination);
     } catch (err) {
       console.error("Failed to save piece set", err);
       setError("Couldn't save that — please try again.");

@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { LESSONS } from "@/content/lessons";
 import { BUDDIES } from "@/content/buddies";
 import { AVATARS } from "@/content/avatars";
-import { getZoneForDay, isDayFree } from "@/content/kingdomZones";
+import { getZoneForDay } from "@/content/kingdomZones";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/supabase/server";
 import {
@@ -35,6 +35,10 @@ import { StatCardCompact } from "@/components/ui/StatCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
+import { getHomeLeadRecommendation } from "@/lib/home/getHomeLead";
+import {
+  prefersNeutralHomeTone,
+} from "@/lib/learner/experienceLevel";
 
 export default async function KingdomMapPage() {
   const supabase = createClient();
@@ -47,6 +51,7 @@ export default async function KingdomMapPage() {
   if (resolution.needsSelection) redirect("/choose-child");
 
   const child = resolution.child!;
+  if (!child.experience_level) redirect("/onboarding/experience");
   if (!child.avatar_id || !child.buddy_id) redirect("/onboarding/avatar");
 
   const buddy = BUDDIES.find((b) => b.id === child.buddy_id) ?? BUDDIES[0];
@@ -100,21 +105,14 @@ export default async function KingdomMapPage() {
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
   const currentZone = getZoneForDay(Math.min(child.current_day, LESSONS.length));
 
-  // The home screen's single top recommendation: the next lesson in the
-  // Kingdom Journey while there's one left, otherwise nudge back into
-  // practice (puzzles) — a real, deterministic "what should I do next"
-  // rather than a canned message.
-  const nextLesson = LESSONS.find((l) => l.dayNumber === child.current_day);
-  const heroRecommendation = nextLesson
-    ? ({
-        kind: "lesson" as const,
-        dayNumber: nextLesson.dayNumber,
-        title: nextLesson.title,
-        storyBeat: nextLesson.storyBeat,
-        zoneEmoji: currentZone.emoji,
-        locked: !isDayFree(nextLesson.dayNumber) && !isPremium,
-      } as const)
-    : ({ kind: "practice" as const } as const);
+  const heroRecommendation = getHomeLeadRecommendation({
+    experienceLevel: child.experience_level,
+    currentDay: child.current_day,
+    isPremium,
+    zoneEmoji: currentZone.emoji,
+  });
+
+  const neutralTone = prefersNeutralHomeTone(child.experience_level, child.age_band);
 
   return (
     <>
@@ -127,7 +125,9 @@ export default async function KingdomMapPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 text-left">
             <h1 className={TEXT.display}>Chess Mind</h1>
-            <p className={`${TEXT.body} mt-2`}>What should we do today?</p>
+            <p className={`${TEXT.body} mt-2`}>
+              {neutralTone ? "Ready to improve?" : "What should we do today?"}
+            </p>
           </div>
           <div className="w-full min-w-0 lg:w-80 lg:shrink-0">
             <HomeHeader
@@ -210,12 +210,14 @@ export default async function KingdomMapPage() {
           </Link>
         </section>
 
-        <div className="flex items-center gap-3 w-full rounded-premiumCard bg-premium-navy/40 border border-white/5 px-4 py-3">
-          <span className="text-3xl">{buddy.emoji}</span>
-          <p className="font-body text-premium-ivory/60 text-sm">
-            {buddy.name} is exploring the Kingdom with you!
-          </p>
-        </div>
+        {!neutralTone && (
+          <div className="flex items-center gap-3 w-full rounded-premiumCard bg-premium-navy/40 border border-white/5 px-4 py-3">
+            <span className="text-3xl">{buddy.emoji}</span>
+            <p className="font-body text-premium-ivory/60 text-sm">
+              {buddy.name} is exploring the Kingdom with you!
+            </p>
+          </div>
+        )}
 
         <div
           className="auto-grid items-start"

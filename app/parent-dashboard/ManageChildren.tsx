@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { createChild, ChildProfile } from "@/lib/supabase/queries";
 import { setActiveChildIdClient } from "@/lib/childSession";
+import { clearAllActiveChildCache } from "@/lib/supabase/activeChildCache";
 import { AVATARS } from "@/content/avatars";
 import { SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -42,6 +43,12 @@ export function ManageChildren({
     router.push("/kingdom-map");
   }
 
+  function viewAs(childId: string) {
+    setActiveChildIdClient(childId);
+    clearAllActiveChildCache();
+    router.refresh();
+  }
+
   return (
     <SecondaryCard className="w-full flex flex-col gap-4">
       <h2 className={TEXT.heading}>Children</h2>
@@ -67,9 +74,16 @@ export function ManageChildren({
                   </p>
                 </div>
               </div>
-              <Button tone="premium" size="md" variant="ghost" onClick={() => playAs(child.id)}>
-                Play →
-              </Button>
+              <div className="flex items-center gap-2">
+                {!isActive && (
+                  <Button tone="premium" size="md" variant="ghost" onClick={() => viewAs(child.id)}>
+                    View
+                  </Button>
+                )}
+                <Button tone="premium" size="md" variant="ghost" onClick={() => playAs(child.id)}>
+                  Play →
+                </Button>
+              </div>
             </li>
           );
         })}
