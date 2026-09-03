@@ -517,10 +517,7 @@ export function ChessBoard({
                       initial={{ scale: 0.6, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.6, opacity: 0 }}
-                      // Fills the whole square; PieceImage sizes the piece
-                      // itself by height (pieceSet.opticalScale) and centres
-                      // it, so every set shares one optical scale.
-                      className="flex h-full w-full items-center justify-center drop-shadow-sm"
+                      className="absolute inset-0 drop-shadow-sm"
                     >
                       <PieceImage set={pieceSet} piece={piece.type} color={piece.color} />
                     </motion.div>

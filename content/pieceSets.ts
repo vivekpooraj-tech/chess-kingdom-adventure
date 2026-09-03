@@ -29,9 +29,9 @@ export const PIECE_SETS: PieceSetOption[] = [
     emoji: "🪵",
     folder: "wood-classic",
     intrinsicSize: { width: 200, height: 300 },
-    // viewBox heights k243 q239 b229 r213 p192 n187 — a turned-wood set,
-    // so the pieces sit close in height (the queen is nearly the king).
-    opticalScale: { k: 0.92, q: 0.91, b: 0.87, r: 0.82, n: 0.75, p: 0.76 },
+    // On-board height as a fraction of one square — tuned for ~88–94% king,
+    // ~86–92% minors, ~80–88% pawn after each SVG's viewBox padding.
+    opticalScale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.88, p: 0.86 },
   },
   {
     id: "neostaunton-hand",
@@ -39,9 +39,9 @@ export const PIECE_SETS: PieceSetOption[] = [
     emoji: "♞",
     folder: "neostaunton-hand",
     intrinsicSize: { width: 257, height: 545 },
-    // viewBox heights k552 q496 b462 n439 r383 p340 — a full Staunton
-    // spread, so the descending scale is pronounced.
-    opticalScale: { k: 0.92, q: 0.84, b: 0.79, n: 0.76, r: 0.70, p: 0.62 },
+    // viewBox heights k552 q496 b462 n439 r383 p340 — Staunton hierarchy with
+    // extra headroom on tall pieces to offset viewBox padding above crowns.
+    opticalScale: { k: 1.0, q: 0.95, b: 0.91, n: 0.90, r: 0.89, p: 0.86 },
   },
   {
     id: "kingdom-characters",
@@ -52,7 +52,7 @@ export const PIECE_SETS: PieceSetOption[] = [
     // stylised standing characters drawn to fill their frame. Keep them
     // chunky, but still king > … > pawn so the hierarchy reads.
     intrinsicSize: { width: 100, height: 100 },
-    opticalScale: { k: 0.95, q: 0.93, b: 0.89, n: 0.91, r: 0.87, p: 0.82 },
+    opticalScale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.89, p: 0.86 },
   },
   {
     id: "royal-legends",
@@ -64,7 +64,17 @@ export const PIECE_SETS: PieceSetOption[] = [
     // without an explicit scale the rook rendered as tall as the king —
     // these values impose the Staunton hierarchy the raster doesn't carry.
     intrinsicSize: { width: 213, height: 420 },
-    opticalScale: { k: 0.92, q: 0.85, b: 0.80, n: 0.77, r: 0.70, p: 0.62 },
+    opticalScale: { k: 1.0, q: 0.94, b: 0.90, n: 0.89, r: 0.88, p: 0.84 },
+  },
+  {
+    id: "wikimedia-classic",
+    name: "Classic",
+    emoji: "♔",
+    folder: "wikimedia-classic",
+    // Cburnett Wikimedia Commons *t45 set — 45×45 viewBox, transparent
+    // background. Pieces fill the frame evenly; modest Staunton hierarchy.
+    intrinsicSize: { width: 45, height: 45 },
+    opticalScale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.88, p: 0.86 },
   },
 ];
 

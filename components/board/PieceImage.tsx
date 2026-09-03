@@ -1,18 +1,19 @@
 import type { PieceSymbol, Color } from "chess.js";
+import clsx from "clsx";
 import { PieceSetOption } from "@/lib/types";
 import { PIECE_FILE_NAME } from "@/content/pieceSets";
 
 /**
  * The one place a chess-piece asset becomes pixels.
  *
- * Every piece is sized by HEIGHT (`pieceSet.opticalScale[type]`, a fraction
- * of the square) inside a full-width slot, and `object-fit: contain` centres
- * it. So a whole set shares one optical coordinate system — the king is the
- * tallest, the pawn the shortest, and a stubby rook can't out-scale a narrow
- * king the way it did when each piece was fitted to its own bounding box.
+ * Fills its nearest `position: relative` parent (a board square, a picker
+ * tile, etc.) via `absolute inset-0`, then caps the SVG with
+ * `max-height: opticalScale × 100%` of that box. Width follows each file's
+ * natural aspect ratio. This avoids the flex-child percentage-height trap
+ * that was leaving pieces at their tiny intrinsic SVG size.
  *
- * Purely visual: the caller's interactive square/button is never resized by
- * this, so hit targets, drag targets and legal-move dots are untouched.
+ * Purely visual: pointer-events-none so the square button underneath keeps
+ * full hit targets, drag targets, and legal-move dots.
  */
 export function PieceImage({
   set,
@@ -35,19 +36,27 @@ export function PieceImage({
 }) {
   const folder = set.folder ? `${set.folder}/` : "";
   const shade = color === "w" ? "light" : "dark";
-  const heightPct = fill ? 94 : (set.opticalScale[piece] ?? 0.9) * 100;
+  const sizePct = fill ? 94 : (set.opticalScale[piece] ?? 0.9) * 100;
 
   return (
-    <img
-      src={`/pieces/${folder}${shade}/${PIECE_FILE_NAME[piece]}.svg`}
-      alt={`${shade} ${piece}`}
-      // Real intrinsic dimensions as HTML attributes give the browser an
-      // unambiguous aspect ratio to scale from (see PieceSetOption docs).
-      width={set.intrinsicSize.width}
-      height={set.intrinsicSize.height}
-      style={{ width: "100%", height: `${heightPct}%`, objectFit: "contain" }}
-      className={className}
-      draggable={false}
-    />
+    <div
+      className={clsx(
+        "absolute inset-0 flex items-center justify-center pointer-events-none",
+        className
+      )}
+    >
+      <img
+        src={`/pieces/${folder}${shade}/${PIECE_FILE_NAME[piece]}.svg`}
+        alt={`${shade} ${piece}`}
+        className="block object-contain"
+        style={{
+          maxHeight: `${sizePct}%`,
+          maxWidth: fill ? "94%" : "92%",
+          width: "auto",
+          height: "auto",
+        }}
+        draggable={false}
+      />
+    </div>
   );
 }

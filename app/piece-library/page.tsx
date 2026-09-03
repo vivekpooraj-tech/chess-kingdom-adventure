@@ -65,10 +65,10 @@ export default function PieceLibraryPage() {
           <SecondaryCard key={entry.piece} className="flex flex-col gap-3">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1 bg-premium-midnightDeep rounded-premiumBtn p-2">
-                <span className="flex h-11 w-11 items-center justify-center">
+                <span className="relative flex h-11 w-11 items-center justify-center">
                   <PieceImage set={pieceSet} piece={PIECE_SYMBOL_BY_NAME[entry.piece]} color="w" fill />
                 </span>
-                <span className="flex h-11 w-11 items-center justify-center">
+                <span className="relative flex h-11 w-11 items-center justify-center">
                   <PieceImage set={pieceSet} piece={PIECE_SYMBOL_BY_NAME[entry.piece]} color="b" fill />
                 </span>
               </div>

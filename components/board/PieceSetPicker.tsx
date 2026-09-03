@@ -109,10 +109,10 @@ export function PieceSetPicker({
               }
             >
               <div className="flex items-center justify-center gap-3 w-full aspect-[2/1]">
-                <span className="flex h-full w-[45%] items-center justify-center">
+                <span className="relative flex h-full w-[45%] items-center justify-center">
                   <PieceImage set={set} piece="k" color="w" fill />
                 </span>
-                <span className="flex h-full w-[45%] items-center justify-center">
+                <span className="relative flex h-full w-[45%] items-center justify-center">
                   <PieceImage set={set} piece="k" color="b" fill />
                 </span>
               </div>

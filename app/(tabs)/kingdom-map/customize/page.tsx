@@ -120,7 +120,7 @@ export default function CustomizeChessboardPage() {
                   >
                     <div className="grid grid-cols-3 gap-1 w-full">
                       {PREVIEW_PIECE_ORDER.map((piece) => (
-                        <div key={piece} className="aspect-square flex items-center justify-center">
+                        <div key={piece} className="relative aspect-square">
                           <PieceImage set={set} piece={PIECE_SYMBOL_BY_NAME[piece]} color="w" />
                         </div>
                       ))}
