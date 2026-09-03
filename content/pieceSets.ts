@@ -71,10 +71,11 @@ export const PIECE_SETS: PieceSetOption[] = [
     name: "Classic",
     emoji: "♔",
     folder: "wikimedia-classic",
-    // Cburnett Wikimedia Commons *t45 set — 45×45 viewBox, transparent
-    // background. Pieces fill the frame evenly; modest Staunton hierarchy.
+    // Cburnett Wikimedia Commons *t45 set. Source SVGs use a 45×45 canvas
+    // but artwork only occupied ~65–70% of it; viewBoxes are cropped to path
+    // bounds in public/pieces/wikimedia-classic/*.svg. Scales match NeoStaunton.
     intrinsicSize: { width: 45, height: 45 },
-    opticalScale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.88, p: 0.86 },
+    opticalScale: { k: 1.0, q: 0.95, b: 0.91, n: 0.90, r: 0.89, p: 0.86 },
   },
 ];
 

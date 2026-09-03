@@ -6,11 +6,12 @@ import { PIECE_FILE_NAME } from "@/content/pieceSets";
 /**
  * The one place a chess-piece asset becomes pixels.
  *
- * Fills its nearest `position: relative` parent (a board square, a picker
- * tile, etc.) via `absolute inset-0`, then caps the SVG with
- * `max-height: opticalScale × 100%` of that box. Width follows each file's
- * natural aspect ratio. This avoids the flex-child percentage-height trap
- * that was leaving pieces at their tiny intrinsic SVG size.
+ * Fills its nearest `position: relative` parent via `absolute inset-0`,
+ * then places the SVG inside a square slot sized to
+ * `opticalScale × 100%` of that parent. `object-fit: contain` scales the
+ * artwork to fill the slot while preserving aspect ratio — this works for
+ * both large-intrinsic sets (NeoStaunton) and small-intrinsic sets
+ * (Wikimedia Classic at 45×45).
  *
  * Purely visual: pointer-events-none so the square button underneath keeps
  * full hit targets, drag targets, and legal-move dots.
@@ -45,18 +46,17 @@ export function PieceImage({
         className
       )}
     >
-      <img
-        src={`/pieces/${folder}${shade}/${PIECE_FILE_NAME[piece]}.svg`}
-        alt={`${shade} ${piece}`}
-        className="block object-contain"
-        style={{
-          maxHeight: `${sizePct}%`,
-          maxWidth: fill ? "94%" : "92%",
-          width: "auto",
-          height: "auto",
-        }}
-        draggable={false}
-      />
+      <div
+        className="flex items-center justify-center"
+        style={{ width: `${sizePct}%`, height: `${sizePct}%` }}
+      >
+        <img
+          src={`/pieces/${folder}${shade}/${PIECE_FILE_NAME[piece]}.svg`}
+          alt={`${shade} ${piece}`}
+          className="block h-full w-full object-contain"
+          draggable={false}
+        />
+      </div>
     </div>
   );
 }
