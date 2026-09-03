@@ -107,7 +107,7 @@ export default function OpeningDetailPage() {
                 {opening.name}
               </h1>
               {opening.isGambit && (
-                <span className="font-classic-body text-[10px] font-semibold text-red-300 border border-red-400/30 rounded-full px-2 py-0.5">
+                <span className="font-classic-body text-[11px] font-semibold text-red-300 border border-red-400/30 rounded-full px-2 py-0.5">
                   GAMBIT
                 </span>
               )}
@@ -297,7 +297,7 @@ export default function OpeningDetailPage() {
 
         <Link
           href="/academy/openings"
-          className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
         >
           Back to Opening Explorer
         </Link>

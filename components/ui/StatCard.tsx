@@ -17,7 +17,7 @@ export function StatCard({
     <div className="rounded-premiumCard bg-premium-navy shadow-premiumCard p-4 flex flex-col gap-1 min-h-[76px] justify-center">
       {emoji && <span className="text-xl leading-none">{emoji}</span>}
       <p className="font-classic-display text-2xl text-premium-ivory leading-tight">{value}</p>
-      <p className="font-classic-body text-[11px] text-premium-ivory/50 leading-tight">{label}</p>
+      <p className="font-classic-body text-xs text-premium-ivory/50 leading-tight">{label}</p>
     </div>
   );
 }
@@ -27,7 +27,7 @@ export function StatCardCompact({ value, label }: { value: string | number; labe
   return (
     <div className="flex flex-col items-center text-center min-w-[44px]">
       <p className="font-classic-display text-base text-premium-ivory">{value}</p>
-      <p className="font-classic-body text-[9px] text-premium-ivory/50 uppercase tracking-wide">{label}</p>
+      <p className="font-classic-body text-[11px] text-premium-ivory/50 uppercase tracking-wide">{label}</p>
     </div>
   );
 }

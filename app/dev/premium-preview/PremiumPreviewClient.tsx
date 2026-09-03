@@ -96,7 +96,7 @@ export function PremiumPreviewClient() {
 
       <Link
         href="/kingdom-map"
-        className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+        className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
       >
         Back to Chess Kingdom
       </Link>

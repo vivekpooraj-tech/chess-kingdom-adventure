@@ -206,7 +206,7 @@ export default function LessonPage() {
           <UpgradeButton tone="premium" />
           <Link
             href="/kingdom-map"
-            className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+            className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
           >
             Back to Home
           </Link>
@@ -247,7 +247,7 @@ export default function LessonPage() {
               <UpgradeButton tone="premium" label="Unlock Full Journey →" />
               <Link
                 href="/kingdom-map"
-                className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+                className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
               >
                 Keep Exploring
               </Link>

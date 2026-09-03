@@ -113,7 +113,7 @@ export function DailyChallengeCard({ childId }: DailyChallengeCardProps = {}) {
         {solved ? "✓" : "♟️"}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-classic-body text-[10px] uppercase tracking-wider text-premium-goldMuted font-semibold">
+        <p className="font-classic-body text-[11px] uppercase tracking-wider text-premium-goldMuted font-semibold">
           Daily Challenge
         </p>
         <p className="font-classic-display text-base text-premium-midnight truncate">

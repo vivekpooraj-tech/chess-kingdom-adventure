@@ -157,7 +157,7 @@ export default async function KingdomMapPage() {
           >
             <span className="text-2xl">✨</span>
             <div className="flex-1">
-              <p className="font-classic-body text-[10px] font-semibold text-premium-gold uppercase tracking-wide">
+              <p className="font-classic-body text-[11px] font-semibold text-premium-gold uppercase tracking-wide">
                 Chess Mind Bonus
               </p>
               <p className="font-classic-body text-sm text-premium-ivory/80">
@@ -248,7 +248,7 @@ export default async function KingdomMapPage() {
 
         <Link
           href="/parent-gate?next=/parent-dashboard"
-          className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
         >
           For Parents
         </Link>

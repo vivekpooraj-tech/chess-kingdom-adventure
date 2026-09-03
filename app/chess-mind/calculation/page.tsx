@@ -194,7 +194,7 @@ export default function CalculationPage() {
         <p className="font-classic-body text-xs text-premium-ivory/50 -mt-3">{levelInfo.description}</p>
 
         <div className="flex items-center gap-3">
-          <span className="font-classic-body text-[10px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-3 py-1">
+          <span className="font-classic-body text-[11px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-3 py-1">
             {levelInfo.title}
           </span>
           <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
@@ -270,7 +270,7 @@ export default function CalculationPage() {
           )}
         </div>
 
-        <Link href="/chess-mind" className="font-body text-sm text-premium-ivory/40 underline underline-offset-2">
+        <Link href="/chess-mind" className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2">
           Back to Chess Mind
         </Link>
       </Screen>

@@ -24,11 +24,11 @@ export function OpeningBadge({ match, onDismiss }: { match: OpeningMatch; onDism
             {opening.name.toUpperCase()}
           </p>
           {match.isGambit && (
-            <span className="font-classic-body text-[9px] font-semibold text-red-300 border border-red-400/30 rounded-full px-1.5 py-0.5">
+            <span className="font-classic-body text-[11px] font-semibold text-red-300 border border-red-400/30 rounded-full px-1.5 py-0.5">
               GAMBIT
             </span>
           )}
-          <span className="font-classic-body text-[10px] text-premium-ivory/30">
+          <span className="font-classic-body text-[11px] text-premium-ivory/30">
             {match.ecoCode}
           </span>
         </div>

@@ -43,7 +43,7 @@ function RatingDeltaRow({ label, before, after }: { label: string; before: numbe
   const deltaText = delta > 0 ? `+${delta}` : `${delta}`;
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <p className="font-classic-body text-[10px] uppercase tracking-wide text-premium-ivory/50">{label}</p>
+      <p className="font-classic-body text-[11px] uppercase tracking-wide text-premium-ivory/50">{label}</p>
       <p className="font-classic-display text-lg text-premium-ivory">
         {before.toLocaleString()} <span className="text-premium-ivory/40">→</span> {after.toLocaleString()}
       </p>
@@ -542,7 +542,7 @@ export default function OnlineGamePage() {
             )}
 
             <div className="flex min-h-0 flex-1 flex-col gap-1.5 rounded-premiumCard bg-premium-navy p-3 shadow-premiumCard">
-              <p className="font-classic-body text-[10px] uppercase tracking-wide text-premium-ivory/40">
+              <p className="font-classic-body text-[11px] uppercase tracking-wide text-premium-ivory/40">
                 Moves
               </p>
               <MoveList history={game.moves} />

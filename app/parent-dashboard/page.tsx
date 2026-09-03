@@ -38,52 +38,89 @@ export default async function ParentDashboardPage() {
 
   if (!user) redirect("/sign-in");
 
-  const { data: parent } = await supabase
-    .from("parents")
-    .select("id, screen_time_weekday_minutes, screen_time_weekend_minutes, premium_status")
-    .eq("auth_user_id", user.id)
-    .single();
+  // Parent row + the children list have no dependency on each other — fetch
+  // them together. Everything past here used to be a ~14-request serial
+  // waterfall (2–6 s of round trips before the first byte of real content on
+  // a phone connection); the child-scoped reads below are independent of
+  // each other too and now run as one Promise.all batch.
+  const [{ data: parent }, allChildren] = await Promise.all([
+    supabase
+      .from("parents")
+      .select(
+        "id, screen_time_weekday_minutes, screen_time_weekend_minutes, premium_status, premium_expires_at"
+      )
+      .eq("auth_user_id", user.id)
+      .single(),
+    getChildrenForParent(supabase, user.id),
+  ]);
 
   if (!parent) redirect("/sign-in");
 
-  // Expiry column read separately + best-effort so the dashboard still loads
-  // in the window before migration 0031 is applied (no premium_expires_at
-  // column yet -> treated as "no expiry", the current prod behaviour).
-  const { data: expiryRow } = await supabase
-    .from("parents")
-    .select("premium_expires_at")
-    .eq("id", parent.id)
-    .maybeSingle();
   const premiumState = resolvePremiumState({
     premium_status: parent.premium_status,
-    premium_expires_at: expiryRow?.premium_expires_at ?? null,
+    premium_expires_at: parent.premium_expires_at ?? null,
   });
 
-  const allChildren = await getChildrenForParent(supabase, user.id);
   const cookieChildId = cookies().get(ACTIVE_CHILD_COOKIE_NAME)?.value ?? null;
   // The dashboard is parent-only, so unlike the kid-facing pages it never
   // forces the "who's playing" picker — it just shows whichever child is
   // currently active, falling back to the first child if none is set yet.
   const child = allChildren.find((c) => c.id === cookieChildId) ?? allChildren[0];
 
-  const completedDays = child ? await getCompletedDays(supabase, child.id) : [];
-  const puzzleStats = child ? await getPuzzleAccuracyStats(supabase, child.id) : null;
-  const completedAcademyIds = child ? await getCompletedAcademyContentIds(supabase, child.id) : [];
-  const chessMindStats: Record<string, number> = child
-    ? await getChessMindStatsByModule(supabase, child.id).catch(() => ({}))
-    : {};
-  const chessMindTotal = child ? await getChessMindTotalSolved(supabase, child.id) : 0;
-  const openingEncounters = child ? await getOpeningEncounters(supabase, child.id) : [];
+  const [
+    completedDays,
+    puzzleStats,
+    completedAcademyIds,
+    chessMindStats,
+    chessMindTotal,
+    openingEncounters,
+    recentMinutes,
+    weeklySnapshot,
+    progressRowsResult,
+    achievementRowsResult,
+  ] = child
+    ? await Promise.all([
+        getCompletedDays(supabase, child.id),
+        getPuzzleAccuracyStats(supabase, child.id),
+        getCompletedAcademyContentIds(supabase, child.id),
+        getChessMindStatsByModule(supabase, child.id).catch(
+          () => ({} as Record<string, number>)
+        ),
+        getChessMindTotalSolved(supabase, child.id),
+        getOpeningEncounters(supabase, child.id),
+        getRecentUsageMinutes(supabase, child.id, 7).catch(() => 0),
+        getWeeklyActivitySnapshot(supabase, child.id).catch(() => ({
+          lessonsCompleted: 0,
+          puzzlesSolved: 0,
+          gamesPlayed: 0,
+          learningMinutes: 0,
+        })),
+        supabase
+          .from("child_lesson_progress")
+          .select("day_number, completed_at")
+          .eq("child_id", child.id)
+          .eq("status", "completed")
+          .order("day_number", { ascending: true }),
+        supabase
+          .from("child_achievements")
+          .select("achievement_key, earned_at")
+          .eq("child_id", child.id)
+          .order("earned_at", { ascending: false }),
+      ])
+    : [
+        [] as number[],
+        null,
+        [] as string[],
+        {} as Record<string, number>,
+        0,
+        [] as Awaited<ReturnType<typeof getOpeningEncounters>>,
+        0,
+        null,
+        { data: [] as { day_number: number; completed_at: string | null }[] },
+        { data: [] as { achievement_key: string; earned_at: string }[] },
+      ];
+
   const openingsStudied = openingEncounters.filter((e) => e.studied_at).length;
-  const recentMinutes = child ? await getRecentUsageMinutes(supabase, child.id, 7).catch(() => 0) : 0;
-  const weeklySnapshot = child
-    ? await getWeeklyActivitySnapshot(supabase, child.id).catch(() => ({
-        lessonsCompleted: 0,
-        puzzlesSolved: 0,
-        gamesPlayed: 0,
-        learningMinutes: 0,
-      }))
-    : null;
   const nextStep = child
     ? getParentNextStep({
         experienceLevel: child.experience_level ?? null,
@@ -108,22 +145,8 @@ export default async function ParentDashboardPage() {
       })
     : null;
 
-  const { data: progressRows } = child
-    ? await supabase
-        .from("child_lesson_progress")
-        .select("day_number, completed_at")
-        .eq("child_id", child.id)
-        .eq("status", "completed")
-        .order("day_number", { ascending: true })
-    : { data: [] };
-
-  const { data: achievementRows } = child
-    ? await supabase
-        .from("child_achievements")
-        .select("achievement_key, earned_at")
-        .eq("child_id", child.id)
-        .order("earned_at", { ascending: false })
-    : { data: [] };
+  const progressRows = progressRowsResult.data;
+  const achievementRows = achievementRowsResult.data;
 
   const avatar = child ? AVATARS.find((a) => a.id === child.avatar_id) : undefined;
   const buddy = child ? BUDDIES.find((b) => b.id === child.buddy_id) : undefined;

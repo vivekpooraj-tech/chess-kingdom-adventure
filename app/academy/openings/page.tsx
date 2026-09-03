@@ -28,7 +28,7 @@ export default async function OpeningExplorerPage() {
         <OpeningExplorerClient encounters={encounters} />
         <Link
           href="/academy"
-          className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
         >
           Back to the Academy
         </Link>

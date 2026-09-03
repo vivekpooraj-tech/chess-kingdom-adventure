@@ -29,7 +29,7 @@ export function MoveList({ history }: { history: string[] }) {
   return (
     <ol
       ref={scrollRef}
-      className="flex flex-1 flex-col gap-px overflow-y-auto rounded-premiumBtn bg-black/15 p-1.5 font-classic-body text-xs [max-height:min(46vh,22rem)] [min-height:4rem]"
+      className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto rounded-premiumBtn bg-black/15 p-1.5 font-classic-body text-xs [max-height:min(60vh,32rem)] [min-height:4rem]"
     >
       {pairs.map(([white, black], i) => {
         const whiteIsLast = i * 2 === lastPlyIndex;

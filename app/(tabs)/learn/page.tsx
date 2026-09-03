@@ -104,7 +104,7 @@ export default function LearnPage() {
                     <p className="font-classic-display text-base text-premium-ivory">{item.title}</p>
                     <p className={TEXT.caption}>{item.description}</p>
                   </div>
-                  <span className="font-classic-body text-[10px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
+                  <span className="font-classic-body text-[11px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
                     SOON
                   </span>
                 </ListItemRow>
@@ -133,7 +133,7 @@ export default function LearnPage() {
                     <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                     <p className={TEXT.caption}>{cat.description}</p>
                   </div>
-                  <span className="font-classic-body text-[10px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
+                  <span className="font-classic-body text-[11px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
                     SOON
                   </span>
                 </ListItemRow>

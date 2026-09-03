@@ -3,11 +3,30 @@ export const CHESS_FOCUS_SIDE_PANEL_GAP = 12;
 export const CHESS_FOCUS_MIN_BOARD = 240;
 export const CHESS_FOCUS_MAX_BOARD = 1200;
 
+/**
+ * Fixed vertical space held back for the info/move-list panel in the
+ * STACKED (portrait / narrow) layout. It is deliberately a constant, not a
+ * measurement of the panel's rendered height: the panel contains the move
+ * list, which grows as a game progresses, and feeding its height back into
+ * the board calculation is exactly what used to make the board shrink move
+ * by move. The panel takes whatever space is actually left over and scrolls
+ * internally when its content exceeds that — see ChessFocusLayout.
+ *
+ * Sized so that on every common phone portrait viewport (>= ~360×640) the
+ * board stays limited by WIDTH (i.e. full size), while still guaranteeing
+ * the panel a usable strip (captured pieces + a few move rows, or a puzzle
+ * objective) before the board starts winning height on genuinely short
+ * screens.
+ */
+export const CHESS_FOCUS_STACKED_PANEL_RESERVE = 168;
+
 export type ComputeBoardSizeParams = {
   viewportWidth: number;
   viewportHeight: number;
   boardColumnChromeHeight: number;
-  stackedPanelHeight: number;
+  /** Fixed reserve for the panel below the board in stacked layout. NOT the
+   * panel's measured height — see CHESS_FOCUS_STACKED_PANEL_RESERVE. */
+  stackedPanelReserve: number;
   isSideBySide: boolean;
   sidePanelWidth?: number;
   horizontalPadding?: number;
@@ -34,15 +53,20 @@ function breathingCap(viewportWidth: number, viewportHeight: number): number {
 
 /**
  * Single source of truth for chess focus board sizing.
- * Landscape: min(availableHeight, availableWidth - sidePanel)
- * Portrait: min(fullWidth, availableHeight - stackedPanel)
+ *
+ * The invariant: the returned size depends ONLY on the viewport and the
+ * fixed chrome (header, player rows) — never on the panel's content. Adding
+ * moves to the move list must not change it.
+ *
+ *   Side-by-side: min(availableHeight, availableWidth - sidePanel)
+ *   Stacked:      min(availableWidth, availableHeight - fixedPanelReserve)
  */
 export function computeChessFocusBoardSize(params: ComputeBoardSizeParams): number {
   const {
     viewportWidth,
     viewportHeight,
     boardColumnChromeHeight,
-    stackedPanelHeight,
+    stackedPanelReserve,
     isSideBySide,
     sidePanelWidth = CHESS_FOCUS_SIDE_PANEL_WIDTH,
     horizontalPadding = 8,
@@ -55,6 +79,9 @@ export function computeChessFocusBoardSize(params: ComputeBoardSizeParams): numb
   const cap = breathingCap(viewportWidth, viewportHeight);
 
   if (isSideBySide) {
+    // The panel is a fixed-width band (sidePanelWidth); its height never
+    // constrains the board. Board is the largest square that fits the
+    // remaining width AND the full column height.
     const availableHeight = viewportHeight - boardColumnChromeHeight - shellV;
     const availableWidth =
       viewportWidth - sidePanelWidth - CHESS_FOCUS_SIDE_PANEL_GAP - shellH;
@@ -63,7 +90,7 @@ export function computeChessFocusBoardSize(params: ComputeBoardSizeParams): numb
 
   const availableWidth = viewportWidth - shellH;
   const availableHeight =
-    viewportHeight - boardColumnChromeHeight - stackedPanelHeight - shellV;
+    viewportHeight - boardColumnChromeHeight - stackedPanelReserve - shellV;
   return clampBoard(Math.min(availableWidth, availableHeight, cap));
 }
 

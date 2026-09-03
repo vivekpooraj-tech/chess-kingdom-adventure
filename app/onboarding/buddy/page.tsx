@@ -64,7 +64,7 @@ export default function BuddyPickerPage() {
             <span className="text-5xl">{b.emoji}</span>
             <span className="font-display text-sm text-kingdom-night text-center">{b.name}</span>
             {!b.builtIn && (
-              <span className="absolute -top-2 -right-2 bg-kingdom-coral text-white text-[10px] font-bold px-2 py-1 rounded-full">
+              <span className="absolute -top-2 -right-2 bg-kingdom-coral text-white text-[11px] font-bold px-2 py-1 rounded-full">
                 Soon!
               </span>
             )}

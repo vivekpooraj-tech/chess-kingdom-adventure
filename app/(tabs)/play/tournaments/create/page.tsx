@@ -34,7 +34,7 @@ function ChoiceButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-premiumBtn px-3.5 py-2 text-sm font-classic-body border transition-colors ${
+      className={`inline-flex items-center justify-center min-h-[44px] rounded-premiumBtn px-3.5 py-2 text-sm font-classic-body border transition-colors ${
         active
           ? "bg-premium-gold text-premium-midnightDeep border-premium-gold font-semibold"
           : "bg-premium-navy/70 text-premium-ivory/80 border-white/15 hover:border-premium-gold/40"

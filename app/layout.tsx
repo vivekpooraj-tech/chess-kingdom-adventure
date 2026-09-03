@@ -65,12 +65,19 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // `suppressHydrationWarning` on <html>: LayoutBootstrapScript adds
+  // is-phone / is-tablet + data-layout to <html> before React hydrates, so
+  // first paint is already correct. The server render can't know the screen
+  // size, so those attributes legitimately differ on that first pass — this
+  // is the documented use for the flag, and it only covers <html>'s own
+  // attributes, never its subtree.
   return (
     <html
       lang="en"
       className={`${baloo2.variable} ${nunito.variable} ${fraunces.variable} ${sourceSans.variable}`}
+      suppressHydrationWarning
     >
-      <body className="min-h-screen">
+      <body className="min-h-screen bg-premium-midnight">
         <LayoutBootstrapScript />
         <NativeLayoutProvider>
           <CapacitorDeepLinkHandler />

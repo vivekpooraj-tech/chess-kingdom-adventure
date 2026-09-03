@@ -73,9 +73,10 @@ export const PIECE_SETS: PieceSetOption[] = [
     folder: "wikimedia-classic",
     // Cburnett Wikimedia Commons *t45 set. Source SVGs use a 45×45 canvas
     // but artwork only occupied ~65–70% of it; viewBoxes are cropped to path
-    // bounds in public/pieces/wikimedia-classic/*.svg. Scales match NeoStaunton.
+    // bounds in public/pieces/wikimedia-classic/*.svg. King targets ~85%
+    // of square height; other pieces keep Staunton hierarchy below that.
     intrinsicSize: { width: 45, height: 45 },
-    opticalScale: { k: 1.0, q: 0.95, b: 0.91, n: 0.90, r: 0.89, p: 0.86 },
+    opticalScale: { k: 0.85, q: 0.81, b: 0.77, n: 0.77, r: 0.76, p: 0.73 },
   },
 ];
 

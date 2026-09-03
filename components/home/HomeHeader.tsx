@@ -52,7 +52,11 @@ export function HomeHeader({
           </p>
         </div>
         {typeof rating === "number" && (
-          <Link href="/matchmaking" className="flex-none">
+          <Link
+            href="/matchmaking"
+            aria-label={`Rating ${rating} — open matchmaking`}
+            className="flex-none inline-flex min-h-[44px] items-center"
+          >
             <RatingBadge rating={rating} size="sm" />
           </Link>
         )}
@@ -69,10 +73,10 @@ export function HomeHeader({
 
       <div>
         <div className="flex items-center justify-between mb-1">
-          <p className="font-classic-body text-[11px] text-premium-ivory/60">
+          <p className="font-classic-body text-xs text-premium-ivory/60">
             Day {Math.min(currentDay, totalDays)} of {totalDays}
           </p>
-          <p className="font-classic-body text-[11px] text-premium-ivory/60">{progressPercent}%</p>
+          <p className="font-classic-body text-xs text-premium-ivory/60">{progressPercent}%</p>
         </div>
         <ProgressBar percent={progressPercent} />
       </div>

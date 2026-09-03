@@ -142,7 +142,10 @@ export default async function ProfilePage() {
         <div className="w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="font-classic-display text-base text-premium-ivory">Openings Discovered</p>
-            <Link href="/academy/openings" className="font-classic-body text-xs text-premium-gold underline underline-offset-2">
+            <Link
+              href="/academy/openings"
+              className="inline-flex items-center min-h-[44px] font-classic-body text-xs text-premium-gold underline underline-offset-2"
+            >
               Explore Openings →
             </Link>
           </div>
@@ -150,23 +153,23 @@ export default async function ProfilePage() {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <p className="font-classic-display text-xl text-premium-ivory">{discovered.length}</p>
-              <p className="font-classic-body text-[10px] text-premium-ivory/50">Discovered</p>
+              <p className="font-classic-body text-xs text-premium-ivory/50">Discovered</p>
             </div>
             <div>
               <p className="font-classic-display text-xl text-premium-ivory">{gambitsDiscovered}</p>
-              <p className="font-classic-body text-[10px] text-premium-ivory/50">Gambits</p>
+              <p className="font-classic-body text-xs text-premium-ivory/50">Gambits</p>
             </div>
             <div>
               <p className="font-classic-display text-xl text-premium-ivory">
                 {studied.length}/{OPENINGS.length}
               </p>
-              <p className="font-classic-body text-[10px] text-premium-ivory/50">Studied</p>
+              <p className="font-classic-body text-xs text-premium-ivory/50">Studied</p>
             </div>
           </div>
 
           {recentlyDiscovered.length > 0 && (
             <div className="flex flex-col gap-2">
-              <p className="font-classic-body text-[10px] uppercase tracking-wider text-premium-gold/70 font-semibold">
+              <p className="font-classic-body text-[11px] uppercase tracking-wider text-premium-gold/70 font-semibold">
                 Recently Discovered
               </p>
               <div className="flex flex-wrap gap-2">

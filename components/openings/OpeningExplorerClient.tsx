@@ -83,7 +83,7 @@ export function OpeningExplorerClient({
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`flex-none font-classic-body text-xs rounded-full px-3 py-1.5 border whitespace-nowrap transition-colors ${
+            className={`inline-flex flex-none items-center min-h-[40px] font-classic-body text-xs rounded-full px-3.5 py-2 border whitespace-nowrap transition-colors ${
               filter === f.key
                 ? "border-premium-gold bg-premium-gold/10 text-premium-gold"
                 : "border-white/10 text-premium-ivory/50"
@@ -112,17 +112,17 @@ export function OpeningExplorerClient({
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-classic-display text-sm text-premium-ivory">{o.name}</p>
                   {o.isGambit && (
-                    <span className="font-classic-body text-[9px] font-semibold text-red-300 border border-red-400/30 rounded-full px-1.5 py-0.5">
+                    <span className="font-classic-body text-[11px] font-semibold text-red-300 border border-red-400/30 rounded-full px-1.5 py-0.5">
                       GAMBIT
                     </span>
                   )}
                 </div>
-                <p className="font-classic-body text-[11px] text-premium-ivory/40 mt-0.5">
+                <p className="font-classic-body text-xs text-premium-ivory/40 mt-0.5">
                   {o.ecoCode} · {o.difficulty}
                 </p>
               </div>
               {status && (
-                <span className="flex items-center gap-1.5 font-classic-body text-[10px] text-premium-ivory/50 flex-none">
+                <span className="flex items-center gap-1.5 font-classic-body text-[11px] text-premium-ivory/50 flex-none">
                   <span className={`w-2 h-2 rounded-full ${STATUS_DOT_COLOR[status]}`} />
                   {STATUS_LABELS[status]}
                 </span>

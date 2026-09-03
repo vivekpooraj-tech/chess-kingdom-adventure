@@ -38,5 +38,5 @@ export const TEXT = {
   caption:
     "font-classic-body text-[clamp(0.75rem,0.72rem+0.12vw,0.8125rem)] text-premium-ivory/50",
   /** Timestamps, counts, ECO codes — the smallest, least emphasized tier. */
-  meta: "font-classic-body text-[10px] text-premium-ivory/50 uppercase tracking-wide",
+  meta: "font-classic-body text-[11px] text-premium-ivory/50 uppercase tracking-wide",
 } as const;

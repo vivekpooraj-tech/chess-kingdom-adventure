@@ -47,7 +47,7 @@ export default function FundamentalsPage() {
           {FUNDAMENTALS_TOPICS.map((topic, i) => (
             <SecondaryCard key={topic.id} className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <span className="font-classic-body text-[10px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full w-5 h-5 flex items-center justify-center flex-none">
+                <span className="font-classic-body text-[11px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full w-5 h-5 flex items-center justify-center flex-none">
                   {i + 1}
                 </span>
                 <h2 className={TEXT.subheading}>{topic.title}</h2>
@@ -75,7 +75,7 @@ export default function FundamentalsPage() {
 
         <Link
           href="/academy"
-          className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
         >
           Back to the Academy
         </Link>

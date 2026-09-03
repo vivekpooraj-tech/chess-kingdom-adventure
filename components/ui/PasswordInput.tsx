@@ -35,7 +35,7 @@ export function PasswordInput({
         aria-label={show ? "Hide password" : "Show password"}
         aria-pressed={show}
         tabIndex={-1}
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-premiumBtn text-premium-ivory/45 hover:text-premium-ivory/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/50 transition-colors"
+        className="absolute right-0.5 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-premiumBtn text-premium-ivory/45 hover:text-premium-ivory/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/50 transition-colors"
       >
         {show ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -123,7 +123,7 @@ export function TacticsCourseClient({
                 </p>
               </div>
               {locked ? (
-                <span className="font-classic-body text-[10px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
+                <span className="font-classic-body text-[11px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
                   🔒 Full Version
                 </span>
               ) : (
@@ -136,7 +136,7 @@ export function TacticsCourseClient({
 
       <Link
         href="/academy"
-        className="font-body text-sm text-premium-ivory/40 underline underline-offset-2 text-center"
+        className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2 text-center"
       >
         Back to the Academy
       </Link>

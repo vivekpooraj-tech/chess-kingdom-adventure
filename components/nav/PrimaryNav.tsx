@@ -80,7 +80,7 @@ export function PrimaryNav() {
             >
               <Icon className="h-6 w-6" />
               <span
-                className={`font-classic-body text-[11px] tracking-wide ${
+                className={`font-classic-body text-xs tracking-wide ${
                   isActive ? "font-semibold" : ""
                 }`}
               >

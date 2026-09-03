@@ -5,11 +5,16 @@
 html,
 body {
   height: 100%;
+  /* The premium redesign is dark everywhere; every page paints its own
+     bg-premium-midnight wrapper on top. Setting the same colour here means
+     the very first paint and any between-route gap show the premium ground
+     instead of a white flash (or the old light kids-mode gradient that used
+     to live on body and only ever leaked during navigation). */
+  background-color: #0f1629;
 }
 
 body {
   font-family: var(--font-nunito), system-ui, sans-serif;
-  background: linear-gradient(180deg, #bff0ff 0%, #eaffea 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {

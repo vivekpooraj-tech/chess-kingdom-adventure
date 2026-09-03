@@ -266,7 +266,7 @@ export default function FreePlayPage() {
         </div>
         <Link
           href="/kingdom-map"
-          className="mx-auto font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          className="mx-auto inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
         >
           Back to the Kingdom Map
         </Link>

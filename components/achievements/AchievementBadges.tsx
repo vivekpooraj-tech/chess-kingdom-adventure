@@ -68,7 +68,7 @@ export function AchievementBadges({
                     >
                       {earned ? a.emoji : "🔒"}
                     </motion.div>
-                    <span className="w-full break-words font-classic-body text-[10px] leading-tight text-premium-ivory/50">
+                    <span className="w-full break-words font-classic-body text-[11px] leading-tight text-premium-ivory/50">
                       {a.title}
                     </span>
                   </div>

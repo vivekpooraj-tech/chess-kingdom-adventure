@@ -23,7 +23,7 @@ export function useArenaBoardSize(reservedHeight: number = 220): number {
         viewportWidth: metrics.width,
         viewportHeight: metrics.height,
         boardColumnChromeHeight: reservedHeight,
-        stackedPanelHeight: sideBySide ? 0 : reservedHeight * 0.45,
+        stackedPanelReserve: sideBySide ? 0 : reservedHeight * 0.45,
         isSideBySide: sideBySide,
         sidePanelWidth: CHESS_FOCUS_SIDE_PANEL_WIDTH,
       });

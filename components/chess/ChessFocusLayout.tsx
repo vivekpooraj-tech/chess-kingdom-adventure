@@ -7,6 +7,7 @@ import {
   computeChessFocusBoardSize,
   isChessFocusSideBySide,
   CHESS_FOCUS_SIDE_PANEL_WIDTH,
+  CHESS_FOCUS_STACKED_PANEL_RESERVE,
 } from "@/lib/chessFocus/computeBoardSize";
 import { setChessFocusActive } from "@/lib/chessFocus/focusMode";
 
@@ -28,12 +29,12 @@ function readViewport(): { width: number; height: number } {
   };
 }
 
-const BOARD_COLUMN_GAPS = 12;
+const BOARD_COLUMN_GAPS = 10;
 const MEASURE_BUFFER = 6;
 /** Side-panel width band — must stay in step with the CSS clamp() below and
  * with the sidePanelWidth passed into computeChessFocusBoardSize. */
 const SIDE_PANEL_MIN = CHESS_FOCUS_SIDE_PANEL_WIDTH; // 272
-const SIDE_PANEL_MAX = 340;
+const SIDE_PANEL_MAX = 360;
 
 export type ChessFocusLayoutProps = {
   title: string;
@@ -47,11 +48,22 @@ export type ChessFocusLayoutProps = {
 };
 
 /**
- * Reusable full-screen chess focus shell for every interactive board screen.
- * Stacked: board first, info/controls directly below it.
- * Side-by-side (>=900px wide, or landscape >=600px): board + a compact
- * scrollable panel, sized as one centred group so there's no dead gap.
- * Hides PrimaryNav while mounted. Board size from one shared algorithm.
+ * Reusable full-screen chess focus shell for every interactive board screen
+ * (Puzzle Trainer, Free Play, Online, opening trainer).
+ *
+ * Board-sizing contract — the important part:
+ *   The board is the largest STABLE square that fits the viewport and the
+ *   fixed chrome (header + player rows). Its size NEVER depends on how tall
+ *   the move list / info panel is. The panel takes whatever space is left
+ *   and scrolls internally. Adding moves does not shrink the board.
+ *
+ *   Stacked (phones, tablet portrait): header · board · panel below it,
+ *   panel fills the remaining height and scrolls.
+ *   Side-by-side (landscape ≥ 560w, or any viewport ≥ 1000w): header spans
+ *   the top, board on the left sized to the FULL column height, panel is a
+ *   fixed-width scrolling band on the right that also holds the player rows.
+ *
+ * Hides PrimaryNav while mounted.
  */
 export function ChessFocusLayout({
   title,
@@ -65,9 +77,8 @@ export function ChessFocusLayout({
   const shellRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const metaRef = useRef<HTMLDivElement | null>(null);
-  const opponentRowRef = useRef<HTMLDivElement | null>(null);
-  const playerRowRef = useRef<HTMLDivElement | null>(null);
-  const sidePanelRef = useRef<HTMLDivElement | null>(null);
+  const stackedOpponentRef = useRef<HTMLDivElement | null>(null);
+  const stackedPlayerRef = useRef<HTMLDivElement | null>(null);
 
   const [boardSize, setBoardSize] = useState(480);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -101,27 +112,32 @@ export function ChessFocusLayout({
         ? parseFloat(shellStyle.paddingTop) + parseFloat(shellStyle.paddingBottom)
         : 16;
 
-      const boardColumnChrome =
-        (headerRef.current?.offsetHeight ?? 0) +
-        (metaRef.current?.offsetHeight ?? 0) +
-        (opponentRowRef.current?.offsetHeight ?? 0) +
-        (playerRowRef.current?.offsetHeight ?? 0) +
-        BOARD_COLUMN_GAPS +
-        MEASURE_BUFFER +
-        shellPadV;
+      // Chrome that sits ABOVE the board and eats into its available height.
+      // Stacked: header + meta + both player rows sit above/around the board.
+      // Side-by-side: the header AND the player rows live in the panel
+      // column, so the only thing above the board is `boardMeta` — the board
+      // gets nearly the full viewport height.
+      const headerH = sideBySide ? 0 : headerRef.current?.offsetHeight ?? 0;
+      const metaH = metaRef.current?.offsetHeight ?? 0;
+      const stackedRowsH = sideBySide
+        ? 0
+        : (stackedOpponentRef.current?.offsetHeight ?? 0) +
+          (stackedPlayerRef.current?.offsetHeight ?? 0);
 
-      const stackedPanelHeight =
-        !sideBySide && sidePanelRef.current ? sidePanelRef.current.offsetHeight + 8 : 0;
+      const boardColumnChrome =
+        headerH + metaH + stackedRowsH + BOARD_COLUMN_GAPS + MEASURE_BUFFER + shellPadV;
 
       const sidePanelWidth = sideBySide
-        ? Math.min(SIDE_PANEL_MAX, Math.max(SIDE_PANEL_MIN, Math.floor(metrics.width * 0.24)))
+        ? Math.min(SIDE_PANEL_MAX, Math.max(SIDE_PANEL_MIN, Math.floor(metrics.width * 0.3)))
         : 0;
 
       const next = computeChessFocusBoardSize({
         viewportWidth: metrics.width,
         viewportHeight: metrics.height,
         boardColumnChromeHeight: isFullscreen ? boardColumnChrome * 0.6 : boardColumnChrome,
-        stackedPanelHeight,
+        // FIXED reserve — never the panel's measured height. This is what
+        // keeps the board from shrinking as the move list grows.
+        stackedPanelReserve: sideBySide ? 0 : CHESS_FOCUS_STACKED_PANEL_RESERVE,
         isSideBySide: sideBySide,
         sidePanelWidth,
         horizontalPadding: isFullscreen ? 4 : 8,
@@ -132,8 +148,11 @@ export function ChessFocusLayout({
     }
 
     recompute();
+    // Observe only the FIXED chrome (header, meta, player rows) and the
+    // shell itself — never the info/move-list panel, whose height is
+    // content-driven and must not feed back into the board size.
     const ro = new ResizeObserver(recompute);
-    [headerRef, metaRef, opponentRowRef, playerRowRef, sidePanelRef, shellRef].forEach((ref) => {
+    [headerRef, metaRef, stackedOpponentRef, stackedPlayerRef, shellRef].forEach((ref) => {
       if (ref.current) ro.observe(ref.current);
     });
     window.addEventListener("resize", recompute);
@@ -145,7 +164,7 @@ export function ChessFocusLayout({
       window.removeEventListener("orientationchange", recompute);
       window.visualViewport?.removeEventListener("resize", recompute);
     };
-  }, [isFullscreen, sidePanel, opponentRow, playerRow, boardMeta]);
+  }, [isFullscreen]);
 
   function toggleFullscreen() {
     if (document.fullscreenElement) {
@@ -154,6 +173,38 @@ export function ChessFocusLayout({
       shellRef.current?.requestFullscreen?.().catch(() => {});
     }
   }
+
+  const header = !isFullscreen && (
+    <div
+      ref={headerRef}
+      className="chess-focus-header flex-shrink-0 w-full flex items-center justify-between gap-2 px-2 py-0.5"
+    >
+      <button
+        onClick={onExit}
+        aria-label="Exit"
+        className="flex items-center gap-1.5 font-classic-body text-xs text-premium-ivory/55 hover:text-premium-ivory transition-colors rounded min-h-[44px] px-1"
+      >
+        <CloseIcon className="w-4 h-4" /> Exit
+      </button>
+      {!isCompactLandscape && (
+        <h1 className="font-classic-display text-sm sm:text-base text-premium-ivory/85 truncate px-2">
+          {title}
+        </h1>
+      )}
+      {fullscreenSupported ? (
+        <IconButton
+          label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          tone="premium"
+          size={isCompactLandscape ? 36 : 44}
+          onClick={toggleFullscreen}
+        >
+          <FullscreenIcon className="w-4 h-4" />
+        </IconButton>
+      ) : (
+        <span className="w-11" aria-hidden="true" />
+      )}
+    </div>
+  );
 
   return (
     <div
@@ -167,38 +218,34 @@ export function ChessFocusLayout({
       }}
     >
       <style jsx>{`
-        /* Side-by-side (wide screen or roomy landscape): board column is
-           sized exactly to the board (inline width), panel is a fixed band,
-           and the row centres the pair — no dead gap, no lopsided margins. */
+        /* SIDE-BY-SIDE: board column is sized exactly to the board (inline
+           width) and centred in the row's full height; the panel is a
+           fixed-width band that scrolls and also carries the player rows. */
         .chess-focus-row[data-side="true"] {
           flex-direction: row;
-          align-items: center;
+          align-items: stretch;
           justify-content: center;
         }
         .chess-focus-row[data-side="true"] .chess-focus-board-col {
           flex: 0 0 auto;
           min-width: 0;
-          max-height: 100%;
+          align-self: center;
         }
         .chess-focus-row[data-side="true"] .chess-focus-board-slot {
-          flex: 1 1 auto;
-          min-height: 0;
+          flex: 0 0 auto;
         }
         .chess-focus-row[data-side="true"] .chess-focus-panel {
-          width: clamp(${SIDE_PANEL_MIN}px, 24vw, ${SIDE_PANEL_MAX}px);
-          max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-          overflow-y: auto;
+          width: clamp(${SIDE_PANEL_MIN}px, 30vw, ${SIDE_PANEL_MAX}px);
+          min-height: 0;
           flex: none;
         }
-        /* Stacked: board first, controls hug it directly, leftover space
-           falls to the bottom of the shell rather than opening a gap
-           between the board and its own panel. */
+        /* STACKED: header, board, then the panel fills the leftover height
+           and scrolls internally — the board's size does NOT depend on it. */
         .chess-focus-row[data-side="false"] {
           flex-direction: column;
         }
         .chess-focus-row[data-side="false"] .chess-focus-board-col {
-          flex: 0 1 auto;
-          min-height: 0;
+          flex: 0 0 auto;
           width: 100%;
         }
         .chess-focus-row[data-side="false"] .chess-focus-board-slot {
@@ -206,55 +253,38 @@ export function ChessFocusLayout({
         }
         .chess-focus-row[data-side="false"] .chess-focus-panel {
           width: 100%;
-          flex: none;
+          flex: 1 1 0;
+          min-height: 0;
+        }
+        /* The panel's scroll region — takes the leftover height, scrolls
+           its own content. Header (when it lives here, in side-by-side)
+           stays pinned above it. */
+        .chess-focus-panel-scroll {
+          flex: 1 1 0;
+          min-height: 0;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
         }
       `}</style>
 
+      {!isSideBySide && header}
+
       <div
-        className="chess-focus-row flex flex-1 min-h-0 w-full gap-2 px-2 py-1"
+        className="chess-focus-row flex flex-1 min-h-0 w-full gap-2 px-2 pb-1"
         data-side={isSideBySide ? "true" : "false"}
       >
         <div
-          className="chess-focus-board-col flex flex-col min-w-0 w-full"
+          className="chess-focus-board-col flex flex-col items-center min-w-0 w-full"
           style={isSideBySide ? { width: boardSize } : undefined}
         >
-          {!isFullscreen && (
-            <div ref={headerRef} className="flex-shrink-0 w-full flex items-center justify-between gap-2 py-0.5">
-              <button
-                onClick={onExit}
-                aria-label="Exit"
-                className="flex items-center gap-1.5 font-classic-body text-xs text-premium-ivory/55 hover:text-premium-ivory transition-colors rounded min-h-[44px] px-1"
-              >
-                <CloseIcon className="w-4 h-4" /> Exit
-              </button>
-              {!isCompactLandscape && (
-                <h1 className="font-classic-display text-sm sm:text-base text-premium-ivory/85 truncate px-2">
-                  {title}
-                </h1>
-              )}
-              {fullscreenSupported ? (
-                <IconButton
-                  label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                  tone="premium"
-                  size={isCompactLandscape ? 32 : 36}
-                  onClick={toggleFullscreen}
-                >
-                  <FullscreenIcon className="w-4 h-4" />
-                </IconButton>
-              ) : (
-                <span className="w-9" aria-hidden="true" />
-              )}
-            </div>
-          )}
-
           {boardMeta && (
             <div ref={metaRef} className="flex-shrink-0 w-full">
               {boardMeta}
             </div>
           )}
 
-          {opponentRow && (
-            <div ref={opponentRowRef} className="flex-shrink-0 w-full px-0.5">
+          {opponentRow && !isSideBySide && (
+            <div ref={stackedOpponentRef} className="flex-shrink-0 w-full px-0.5">
               {opponentRow}
             </div>
           )}
@@ -263,16 +293,25 @@ export function ChessFocusLayout({
             {renderBoard(boardSize)}
           </div>
 
-          {playerRow && (
-            <div ref={playerRowRef} className="flex-shrink-0 w-full px-0.5">
+          {playerRow && !isSideBySide && (
+            <div ref={stackedPlayerRef} className="flex-shrink-0 w-full px-0.5">
               {playerRow}
             </div>
           )}
         </div>
 
-        {sidePanel && (
-          <div ref={sidePanelRef} className="chess-focus-panel flex flex-col gap-2">
-            {sidePanel}
+        {(sidePanel || isSideBySide) && (
+          <div className="chess-focus-panel flex flex-col">
+            {isSideBySide && header}
+            <div className="chess-focus-panel-scroll flex flex-col gap-2">
+              {isSideBySide && opponentRow && (
+                <div className="flex-shrink-0 w-full px-0.5">{opponentRow}</div>
+              )}
+              {isSideBySide && playerRow && (
+                <div className="flex-shrink-0 w-full px-0.5">{playerRow}</div>
+              )}
+              {sidePanel}
+            </div>
           </div>
         )}
       </div>

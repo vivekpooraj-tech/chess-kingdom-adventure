@@ -22,7 +22,7 @@ const FIELD =
 
 const LABEL = "font-classic-body text-[13px] font-medium text-premium-ivory/75";
 const LINK =
-  "font-classic-body text-sm text-premium-gold hover:text-premium-gold/80 underline-offset-4 hover:underline " +
+  "inline-flex items-center min-h-[44px] px-1 font-classic-body text-sm text-premium-gold hover:text-premium-gold/80 underline-offset-4 hover:underline " +
   "rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/50";
 
 /**

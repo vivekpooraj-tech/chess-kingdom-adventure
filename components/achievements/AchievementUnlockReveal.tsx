@@ -19,7 +19,7 @@ export function AchievementUnlockReveal({ achievement }: { achievement: Achievem
       transition={{ type: "spring", stiffness: 220, damping: 16 }}
       className="w-full rounded-premiumCard bg-gradient-to-br from-premium-gold/15 to-premium-navy border border-premium-gold/40 shadow-premiumGlow p-5 flex flex-col items-center gap-2 text-center"
     >
-      <p className="font-classic-body text-[10px] uppercase tracking-wider text-premium-gold font-semibold">
+      <p className="font-classic-body text-[11px] uppercase tracking-wider text-premium-gold font-semibold">
         Achievement Unlocked
       </p>
       <motion.div

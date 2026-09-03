@@ -137,7 +137,7 @@ export default function ChessOriginsPage() {
       <Screen maxWidth="compact">
         <div className="mx-auto max-w-xl text-center">
           {alreadyCompleted && (
-            <span className="inline-block font-classic-body text-[10px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-2 py-1 mb-3">
+            <span className="inline-block font-classic-body text-[11px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-2 py-1 mb-3">
               ✓ COMPLETED
             </span>
           )}
@@ -176,7 +176,7 @@ export default function ChessOriginsPage() {
             >
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-classic-display text-base text-premium-ivory">{entry.era}</p>
-                <span className="font-classic-body text-[10px] text-premium-gold/70 whitespace-nowrap">
+                <span className="font-classic-body text-[11px] text-premium-gold/70 whitespace-nowrap">
                   {entry.period}
                 </span>
               </div>
@@ -254,7 +254,7 @@ export default function ChessOriginsPage() {
 
         <Link
           href="/academy"
-          className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
         >
           Back to the Academy
         </Link>

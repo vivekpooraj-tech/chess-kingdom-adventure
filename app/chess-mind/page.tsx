@@ -112,7 +112,7 @@ export default function ChessMindPage() {
           >
             <span className="text-2xl">{continueCategory.emoji}</span>
             <div className="flex-1">
-              <p className="font-classic-body text-[10px] font-semibold text-premium-ivory/50 uppercase tracking-wide">
+              <p className="font-classic-body text-[11px] font-semibold text-premium-ivory/50 uppercase tracking-wide">
                 Continue Training
               </p>
               <p className="font-classic-display text-base text-premium-ivory">
@@ -158,7 +158,7 @@ export default function ChessMindPage() {
                     <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                     <p className="font-classic-body text-xs text-premium-ivory/50">{cat.description}</p>
                   </div>
-                  <span className="font-classic-body text-[10px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
+                  <span className="font-classic-body text-[11px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
                     SOON
                   </span>
                 </ListItemRow>
@@ -184,7 +184,7 @@ export default function ChessMindPage() {
 
         <Link
           href="/kingdom-map"
-          className="font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
         >
           Back to the Kingdom Map
         </Link>

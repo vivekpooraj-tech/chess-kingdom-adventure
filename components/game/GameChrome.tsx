@@ -34,7 +34,7 @@ export function GameChrome({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-        <p className="font-classic-body text-[10px] uppercase tracking-wide text-premium-ivory/40">
+        <p className="font-classic-body text-[11px] uppercase tracking-wide text-premium-ivory/40">
           Moves
         </p>
         <MoveList history={history} />
