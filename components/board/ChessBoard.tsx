@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Chess, Square, PieceSymbol, Color } from "chess.js";
 import clsx from "clsx";
-import { motion, AnimatePresence } from "framer-motion";
 import { stockfish, Difficulty } from "@/lib/chess-engine/stockfishEngine";
 import { getBoardSkin } from "@/content/boardSkins";
 import { getPieceSet } from "@/content/pieceSets";
@@ -414,7 +413,7 @@ export function ChessBoard({
         />
       )}
       <div
-        className="grid grid-cols-8 grid-rows-8"
+        className="grid grid-cols-8 grid-rows-8 overflow-visible"
         style={
           skin.boardImageUrl
             ? {
@@ -471,7 +470,7 @@ export function ChessBoard({
                 key={square}
                 onClick={() => handleSquareClick(square)}
                 className={clsx(
-                  "relative flex items-center justify-center transition-colors w-full h-full",
+                  "relative flex items-center justify-center transition-colors w-full h-full overflow-visible",
                   isSelected && "ring-4 ring-inset ring-kingdom-gold",
                   isCheckedKing && !isSelected && "ring-4 ring-inset ring-red-500/80"
                 )}
@@ -510,28 +509,26 @@ export function ChessBoard({
                     {rank}
                   </span>
                 )}
-                <AnimatePresence>
-                  {piece && (
-                    <motion.div
-                      key={`${square}-${piece.type}-${piece.color}`}
-                      initial={{ scale: 0.6, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.6, opacity: 0 }}
-                      className="absolute inset-0 drop-shadow-sm"
-                    >
-                      <PieceImage set={pieceSet} piece={piece.type} color={piece.color} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {piece && (
+                  <div className="absolute inset-0 drop-shadow-sm pointer-events-none">
+                    <PieceImage set={pieceSet} piece={piece.type} color={piece.color} />
+                  </div>
+                )}
               </button>
             );
           })
         )}
       </div>
       </div>
-      {engineThinking && (
-        <p className="font-body text-sm text-kingdom-night/50 italic">Ollie is thinking...</p>
-      )}
+      <p
+        className={clsx(
+          "font-body text-sm italic text-center min-h-[1.25rem]",
+          engineThinking ? "text-kingdom-night/50" : "invisible"
+        )}
+        aria-live="polite"
+      >
+        Ollie is thinking...
+      </p>
     </div>
   );
 }
