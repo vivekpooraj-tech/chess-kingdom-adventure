@@ -76,7 +76,7 @@ export const PIECE_SETS: PieceSetOption[] = [
     // bounds in public/pieces/wikimedia-classic/*.svg. King targets ~85%
     // of square height; other pieces keep Staunton hierarchy below that.
     intrinsicSize: { width: 45, height: 45 },
-    opticalScale: { k: 0.85, q: 0.81, b: 0.77, n: 0.77, r: 0.76, p: 0.73 },
+    opticalScale: { k: 0.85, q: 0.81, b: 0.81, n: 0.78, r: 0.76, p: 0.73 },
   },
 ];
 
