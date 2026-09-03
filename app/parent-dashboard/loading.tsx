@@ -10,6 +10,7 @@ import { SkeletonBlock } from "@/components/ui/Skeleton";
 export default function ParentDashboardLoading() {
   return (
     <Screen maxWidth="compact">
+      <div className="h-12 w-full rounded bg-premium-navy/70 animate-pulse mb-2" />
       <div className="h-9 w-56 rounded bg-premium-navy/70 animate-pulse" />
       <SkeletonBlock className="w-full h-28" />
       <SkeletonBlock className="w-full h-24" />

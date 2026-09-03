@@ -155,6 +155,15 @@ export default async function ParentDashboardPage() {
 
   return (
     <Screen maxWidth="compact">
+      <div className="sticky top-0 z-30 -mx-[var(--screen-gutter)] px-[var(--screen-gutter)] bg-premium-midnight/95 backdrop-blur-md border-b border-premium-gold/15 mb-3">
+        <Link
+          href="/more"
+          className="inline-flex items-center gap-2 min-h-[48px] font-classic-body text-sm font-semibold text-premium-gold hover:text-premium-ivory transition-colors"
+        >
+          <span aria-hidden>←</span>
+          <span>Back to More</span>
+        </Link>
+      </div>
       <h1 className={TEXT.display}>Parent Dashboard</h1>
 
       <ManageChildren initialChildren={allChildren} activeChildId={child?.id ?? ""} />
