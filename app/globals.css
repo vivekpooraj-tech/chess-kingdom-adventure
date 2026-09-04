@@ -185,6 +185,29 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
   animation: board-pulse-incorrect 620ms ease-out;
 }
 
+/* Chess.com-style piece glide — transform is driven inline in MoveSlideOverlay. */
+.piece-move-slide {
+  will-change: transform;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
+}
+.piece-on-board {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+@keyframes piece-capture-fade {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+}
+.piece-capture-fade {
+  animation: piece-capture-fade 200ms ease-out forwards;
+  pointer-events: none;
+}
+
 /* Inline-only video player (Academy hero clips). Android's native
    fullscreen video view renders its own control bar flush against the
    system navigation bar — outside every safe-area inset we control — so

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Chess, Square, PieceSymbol, Color } from "chess.js";
 import clsx from "clsx";
 import { stockfish, Difficulty } from "@/lib/chess-engine/stockfishEngine";
 import { getBoardSkin } from "@/content/boardSkins";
 import { getPieceSet } from "@/content/pieceSets";
 import { PieceImage } from "@/components/board/PieceImage";
+import type { PieceSetOption } from "@/lib/types";
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
@@ -16,6 +17,20 @@ const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
 // square canvas. Every image-backed skin must use this same proportion so
 // the transparent interactive grid lines up with the image's drawn squares.
 const BOARD_IMAGE_FRAME_FRACTION = 36 / 792;
+// Piece-slide animation. Purely cosmetic: the chess.js `game` instance is
+// always the single source of truth and the board always renders the
+// CURRENT position — the slide is a `pointer-events-none` overlay layered
+// on top. If the animation is interrupted, never starts, or its cleanup
+// races, the only visible effect is that a piece "snaps" instead of
+// gliding; input, move legality and game state are never affected.
+// Chess.com-style glide — long enough to read, short enough to stay snappy.
+const MOVE_ANIMATION_MS = 280;
+const MOVE_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
+// Hard ceiling after which a slide is force-cleared even if no
+// `transitionend` ever arrives (reduced-motion, backgrounded tab, a
+// same-row/col move that only transitions one property, etc).
+const MOVE_ANIMATION_TIMEOUT_MS = MOVE_ANIMATION_MS + 150;
+const DEFAULT_GAME_OVER_PAUSE_MS = 1400;
 
 export interface ChessBoardProps {
   /** Starting position; defaults to the standard game start. */
@@ -114,6 +129,8 @@ export interface ChessBoardProps {
    * No vh caps or padding breakout; board is exactly min(size, 100%).
    */
   focusMode?: boolean;
+  /** Milliseconds to linger on the final position before `onGameOver`. */
+  gameOverPauseMs?: number;
 }
 
 /**
@@ -151,6 +168,108 @@ function computeCaptured(game: Chess): {
   return { capturedByWhite: missing("b"), capturedByBlack: missing("w") };
 }
 
+/**
+ * A single in-flight slide. `seq` is a monotonic id: every timer/RAF/
+ * transitionend callback captures the `seq` it was created for and no-ops
+ * unless it's still the current one, so a stale callback from a superseded
+ * move can never clear or corrupt a newer slide's state.
+ */
+type MoveAnim = {
+  seq: number;
+  from: Square;
+  to: Square;
+  piece: PieceSymbol;
+  color: Color;
+  /** Position before this ply — drawn while the slide runs. */
+  fenBefore: string;
+};
+
+function squareGridIndex(
+  square: Square,
+  ranks: readonly string[],
+  files: readonly string[]
+): { col: number; row: number } {
+  return { col: files.indexOf(square[0]), row: ranks.indexOf(square[1]) };
+}
+
+/**
+ * Imperative slide — CSS `transform` transitions do not reliably interpolate
+ * when the value uses custom properties (`var(--dx)`), which was causing
+ * pieces to snap instead of glide. This overlay always starts at the origin
+ * square, then transitions to explicit `translate3d(N%, N%, 0)` values.
+ */
+function MoveSlideOverlay({
+  from,
+  to,
+  piece,
+  color,
+  pieceSet,
+  onComplete,
+}: {
+  from: { col: number; row: number };
+  to: { col: number; row: number };
+  piece: PieceSymbol;
+  color: Color;
+  pieceSet: PieceSetOption;
+  onComplete: () => void;
+}) {
+  const slideRef = useRef<HTMLDivElement>(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
+  useLayoutEffect(() => {
+    const el = slideRef.current;
+    if (!el) return;
+
+    const dx = (to.col - from.col) * 100;
+    const dy = (to.row - from.row) * 100;
+
+    el.style.transition = "none";
+    el.style.transform = "translate3d(0, 0, 0)";
+    // Force the browser to commit the origin transform before animating.
+    void el.offsetWidth;
+
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        el.style.transition = `transform ${MOVE_ANIMATION_MS}ms ${MOVE_EASING}`;
+        el.style.transform = `translate3d(${dx}%, ${dy}%, 0)`;
+      });
+    });
+
+    const finish = () => onCompleteRef.current();
+    const handleEnd = (e: TransitionEvent) => {
+      if (e.propertyName === "transform") finish();
+    };
+    el.addEventListener("transitionend", handleEnd);
+    const timeout = setTimeout(finish, MOVE_ANIMATION_TIMEOUT_MS);
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+      el.removeEventListener("transitionend", handleEnd);
+      clearTimeout(timeout);
+    };
+  }, [from.col, from.row, to.col, to.row]);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-30">
+      <div
+        ref={slideRef}
+        className="piece-move-slide absolute motion-reduce:!transition-none"
+        style={{
+          width: "12.5%",
+          height: "12.5%",
+          left: `${from.col * 12.5}%`,
+          top: `${from.row * 12.5}%`,
+        }}
+      >
+        <PieceImage set={pieceSet} piece={piece} color={color} />
+      </div>
+    </div>
+  );
+}
+
 export function ChessBoard({
   fen,
   playableColor,
@@ -167,18 +286,38 @@ export function ChessBoard({
   displayFen,
   arenaMode = false,
   focusMode = false,
+  gameOverPauseMs = DEFAULT_GAME_OVER_PAUSE_MS,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
-  // `game` always remains the live game. A separate instance is only used
-  // for drawing a past position during review mode, never for move logic.
-  const displayGame = useMemo(() => (displayFen ? new Chess(displayFen) : game), [displayFen, game]);
   const skin = useMemo(() => getBoardSkin(boardSkinId), [boardSkinId]);
   const pieceSet = useMemo(() => getPieceSet(pieceSetId), [pieceSetId]);
   const [renderTick, forceRender] = useState(0);
+  // Purely-visual slide overlay. NEVER gates input or move legality.
+  const [anim, setAnim] = useState<MoveAnim | null>(null);
+  const animSeqRef = useRef(0);
+  const gameOverFiredRef = useRef(false);
+
+  // While a slide is running, draw the pre-move position so the piece can
+  // visibly leave its origin square instead of snapping to the destination.
+  const displayGame = useMemo(() => {
+    if (displayFen) return new Chess(displayFen);
+    if (anim?.fenBefore) return new Chess(anim.fenBefore);
+    return game;
+  }, [displayFen, game, anim, renderTick]);
   const [selected, setSelected] = useState<Square | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null);
   const [engineThinking, setEngineThinking] = useState(false);
-  const gameOverReportedRef = useRef(false);
+
+  /** Drop the slide if (and only if) `seq` is still the current one. Safe
+   * to call from any stale timer / transitionend / RAF callback — a
+   * superseded seq is a no-op. Clearing `anim` re-runs the driver effect
+   * below, which resets `animAtDestination`. Purely visual: the move it
+   * animated was already applied to `game` and reported via `onMove` when
+   * it happened. */
+  const clearAnim = useCallback((seq: number) => {
+    setAnim((cur) => (cur && cur.seq === seq ? null : cur));
+    forceRender((n) => n + 1);
+  }, []);
 
   // A live square selection belongs to the current position, never to a
   // historical one being reviewed.
@@ -186,23 +325,93 @@ export function ChessBoard({
     if (displayFen) setSelected(null);
   }, [displayFen]);
 
+  // A new position (new game, online opponent move, puzzle step, review
+  // navigation) makes any in-flight slide stale — drop it immediately so
+  // it can never linger against a position it doesn't belong to.
   useEffect(() => {
-    gameOverReportedRef.current = false;
+    setAnim(null);
+  }, [fen, displayFen]);
+
+  useEffect(() => {
+    gameOverFiredRef.current = false;
   }, [fen]);
 
-  // Fires once, right after either side's move ends the game — covers the
-  // case onMove doesn't (the opponent delivering checkmate/stalemate).
+  const applyMove = useCallback(
+    (
+      from: Square,
+      to: Square,
+      opts?: { promotion?: string; notifyPlayerMove?: boolean }
+    ) => {
+      // chess.js throws on an illegal move rather than returning null.
+      // A rejected move must never touch selection, animation or timers.
+      let result;
+      const fenBefore = game.fen();
+      try {
+        result = game.move({
+          from,
+          to,
+          promotion: (opts?.promotion ?? "q") as "q",
+        });
+      } catch {
+        return null;
+      }
+      if (!result) return null;
+
+      setSelected(null);
+      setLastMove({ from: result.from as Square, to: result.to as Square });
+
+      if (!readOnly && !displayFen) {
+        const seq = ++animSeqRef.current;
+        setAnim({
+          seq,
+          from: result.from as Square,
+          to: result.to as Square,
+          piece: (result.promotion ?? result.piece) as PieceSymbol,
+          color: result.color,
+          fenBefore,
+        });
+      }
+
+      // Re-render after `anim` is queued so the first painted frame shows
+      // `fenBefore` with the sliding overlay — not the post-move position.
+      forceRender((n) => n + 1);
+      if (opts?.notifyPlayerMove) {
+        onMove?.({
+          fen: game.fen(),
+          san: result.san,
+          isCheckmate: game.isCheckmate(),
+          piece: result.piece,
+          from: result.from as Square,
+          to: result.to as Square,
+        });
+      }
+
+      return result;
+    },
+    [game, readOnly, displayFen, onMove]
+  );
+
+  // Fires exactly once, after either side's move ends the game — covers
+  // the case onMove doesn't (the opponent delivering checkmate/stalemate).
+  // `gameOverFiredRef` is only set from inside the timer, so if this effect
+  // re-runs before the pause elapses the timer is simply rescheduled — the
+  // callback is never lost. Independent of the slide animation.
   useEffect(() => {
-    if (gameOverReportedRef.current) return;
+    if (anim) return;
+    if (gameOverFiredRef.current) return;
+    if (!onGameOver) return;
     if (!game.isGameOver()) return;
-    gameOverReportedRef.current = true;
     const isCheckmate = game.isCheckmate();
     const isDraw = game.isDraw();
-    // The side whose turn it WOULD be is the side that got checkmated.
     const winner: Color | null = isCheckmate ? (game.turn() === "w" ? "b" : "w") : null;
-    onGameOver?.({ isCheckmate, isDraw, winner });
+    const result = { isCheckmate, isDraw, winner };
+    const timer = setTimeout(() => {
+      gameOverFiredRef.current = true;
+      onGameOver(result);
+    }, gameOverPauseMs);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [renderTick, fen]);
+  }, [renderTick, fen, gameOverPauseMs, anim]);
 
   useEffect(() => {
     if (!onPositionChange) return;
@@ -222,14 +431,12 @@ export function ChessBoard({
     const moves = game.moves({ verbose: true });
     if (moves.length === 0) return;
     const pick = moves[Math.floor(Math.random() * moves.length)];
-    const result = game.move({ from: pick.from, to: pick.to, promotion: "q" });
-    if (result) {
-      setLastMove({ from: pick.from as Square, to: pick.to as Square });
-      forceRender((n) => n + 1);
-    }
+    applyMove(pick.from as Square, pick.to as Square);
   }
 
-  // Auto-opponent — see the `opponent` doc comment above.
+  // Auto-opponent — see the `opponent` doc comment above. Deliberately NOT
+  // gated on the slide animation: the opponent replies on the real game
+  // state; its own move then animates like any other.
   useEffect(() => {
     if (readOnly) return;
     if (!opponent || !playableColor) return;
@@ -255,11 +462,10 @@ export function ChessBoard({
           const from = uciMove.slice(0, 2) as Square;
           const to = uciMove.slice(2, 4) as Square;
           const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
-          const result = game.move({ from, to, promotion: promotion as any });
-          if (result) {
-            setLastMove({ from, to });
-            forceRender((n) => n + 1);
-          }
+          // If the engine's move doesn't apply (position drifted while it
+          // was thinking), applyMove returns null — fall back to a random
+          // legal move so the game can never stall on the opponent's turn.
+          if (!applyMove(from, to, { promotion }) && !cancelled) playRandomMove();
         } catch {
           // Engine failed to load (e.g. offline, worker blocked) — fall
           // back to a random legal move so the board never gets stuck.
@@ -270,7 +476,7 @@ export function ChessBoard({
       } else {
         playRandomMove();
       }
-    }, 500); // brief pause so the opponent's reply doesn't feel instant/robotic
+    }, 400); // brief beat after the slide lands, then the opponent replies
 
     return () => {
       cancelled = true;
@@ -286,7 +492,9 @@ export function ChessBoard({
   }, [selected, game]);
 
   // Presentation only — chess.js's own isCheck()/turn() decide whether and
-  // whose king to highlight, no separate check-detection logic.
+  // whose king to highlight, no separate check-detection logic. `renderTick`
+  // is a deliberate dependency: `displayGame` is the same mutated instance
+  // across moves in a live game, so recompute has to be pinned to the tick.
   const checkedKingSquare = useMemo(() => {
     if (!displayGame.isCheck()) return null;
     const mover = displayGame.turn();
@@ -296,11 +504,13 @@ export function ChessBoard({
       }
     }
     return null;
-  }, [displayGame]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayGame, renderTick]);
 
 
   const handleSquareClick = useCallback(
     (square: Square) => {
+      // Input is NEVER gated on the slide animation — see MoveAnim.
       if (readOnly) return;
       const piece = game.get(square);
 
@@ -320,20 +530,7 @@ export function ChessBoard({
 
       // Attempting a move
       if (legalTargets.has(square)) {
-        const move = game.move({ from: selected, to: square, promotion: "q" });
-        setSelected(null);
-        setLastMove({ from: selected, to: square });
-        forceRender((n) => n + 1);
-        if (move) {
-          onMove?.({
-            fen: game.fen(),
-            san: move.san,
-            isCheckmate: game.isCheckmate(),
-            piece: move.piece,
-            from: move.from as Square,
-            to: move.to as Square,
-          });
-        }
+        applyMove(selected, square, { notifyPlayerMove: true });
       } else if (piece && (!playableColor || piece.color === playableColor)) {
         // Re-select a different one of your own pieces
         setSelected(square);
@@ -342,7 +539,7 @@ export function ChessBoard({
         setSelected(null);
       }
     },
-    [selected, legalTargets, game, playableColor, onMove, onIllegalAttempt, readOnly]
+    [selected, legalTargets, game, playableColor, onIllegalAttempt, readOnly, applyMove]
   );
 
   // Image-backed skins (skin.boardImageUrl) draw their own frame/coordinate
@@ -359,6 +556,11 @@ export function ChessBoard({
   // matters for online multiplayer, where one player is genuinely Black.
   const displayRanks = playableColor === "b" ? [...RANKS].reverse() : RANKS;
   const displayFiles = playableColor === "b" ? [...FILES].reverse() : FILES;
+  // Slide overlay geometry. Only shown when NOT reviewing a historical
+  // position (a stale slide against `displayFen` would be nonsense).
+  const animActive = anim != null && !displayFen;
+  const animFrom = animActive ? squareGridIndex(anim!.from, displayRanks, displayFiles) : null;
+  const animTo = animActive ? squareGridIndex(anim!.to, displayRanks, displayFiles) : null;
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
@@ -435,6 +637,16 @@ export function ChessBoard({
             const isLegalTarget = legalTargets.has(square);
             const isLastMove = !displayFen && lastMove && (lastMove.from === square || lastMove.to === square);
             const isCheckedKing = checkedKingSquare === square;
+            // While a piece is sliding IN to `to`, suppress the real piece
+            // there so there's never a double image. If the slide is
+            // cleared early for any reason the real piece simply appears —
+            // the board state was already correct underneath.
+            const hideForSlide = animActive && anim!.from === square;
+            const captureFade =
+              animActive &&
+              anim!.to === square &&
+              piece != null &&
+              piece.color !== anim!.color;
             // Inline style always wins over a Tailwind class, so the
             // last-move highlight has to be folded into this same value
             // rather than layered on via a separate "bg-kingdom-gold/30"
@@ -443,7 +655,7 @@ export function ChessBoard({
             // image show through.
             const squareBackground =
               isLastMove && !isSelected
-                ? "rgba(255, 197, 61, 0.3)"
+                ? "rgba(205, 210, 106, 0.5)"
                 : skin.boardImageUrl
                 ? "transparent"
                 : isDark
@@ -509,14 +721,29 @@ export function ChessBoard({
                     {rank}
                   </span>
                 )}
-                {piece && (
-                  <div className="absolute inset-0 drop-shadow-sm pointer-events-none">
+                {piece && !hideForSlide && (
+                  <div
+                    className={clsx(
+                      "piece-on-board absolute inset-0 pointer-events-none",
+                      captureFade && "piece-capture-fade"
+                    )}
+                  >
                     <PieceImage set={pieceSet} piece={piece.type} color={piece.color} />
                   </div>
                 )}
               </button>
             );
           })
+        )}
+        {animActive && animFrom && animTo && (
+          <MoveSlideOverlay
+            from={animFrom}
+            to={animTo}
+            piece={anim!.piece}
+            color={anim!.color}
+            pieceSet={pieceSet}
+            onComplete={() => clearAnim(anim!.seq)}
+          />
         )}
       </div>
       </div>
