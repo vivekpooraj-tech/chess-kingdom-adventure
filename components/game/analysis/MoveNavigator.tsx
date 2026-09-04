@@ -47,7 +47,7 @@ export function MoveNavigator({
           onClick={() => onPlyChange(-1)}
           disabled={currentPly === -1}
           aria-label="First move"
-          className="w-9 h-9 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
+          className="w-10 h-10 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
         >
           ⏮
         </button>
@@ -56,7 +56,7 @@ export function MoveNavigator({
           onClick={() => onPlyChange(Math.max(-1, currentPly - 1))}
           disabled={currentPly === -1}
           aria-label="Previous move"
-          className="w-9 h-9 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
+          className="w-10 h-10 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
         >
           ◀
         </button>
@@ -68,7 +68,7 @@ export function MoveNavigator({
           onClick={() => onPlyChange(Math.min(lastPly, currentPly + 1))}
           disabled={currentPly === lastPly}
           aria-label="Next move"
-          className="w-9 h-9 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
+          className="w-10 h-10 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
         >
           ▶
         </button>
@@ -77,7 +77,7 @@ export function MoveNavigator({
           onClick={() => onPlyChange(lastPly)}
           disabled={currentPly === lastPly}
           aria-label="Last move"
-          className="w-9 h-9 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
+          className="w-10 h-10 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
         >
           ⏭
         </button>

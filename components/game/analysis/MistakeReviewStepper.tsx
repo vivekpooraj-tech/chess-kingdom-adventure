@@ -58,7 +58,7 @@ export function MistakeReviewStepper({
           onClick={() => goTo(0)}
           disabled={isFirst}
           aria-label="3 moves back"
-          className="w-9 h-9 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
+          className="w-10 h-10 flex items-center justify-center rounded-premiumBtn bg-premium-navyLight text-premium-ivory disabled:opacity-30"
         >
           ⏮
         </button>

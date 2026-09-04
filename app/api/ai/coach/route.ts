@@ -17,8 +17,19 @@ export async function POST(req: NextRequest) {
   if (!validated.ok) {
     return NextResponse.json({ error: validated.error }, { status: 400 });
   }
-  const { message, history, boardFen, lessonTitle, dayNumber, lessonTopic, buddyName, childId } =
-    validated.data;
+  const {
+    message,
+    history,
+    boardFen,
+    lessonTitle,
+    dayNumber,
+    lessonTopic,
+    buddyName,
+    childId,
+    reviewContext,
+    experienceLevel,
+    ageBand,
+  } = validated.data;
 
   if (!childId) {
     return NextResponse.json({ error: "childId is required" }, { status: 400 });
@@ -40,7 +51,16 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const systemPrompt = buildOllieSystemPrompt({ lessonTitle, dayNumber, lessonTopic, buddyName, boardFen });
+  const systemPrompt = buildOllieSystemPrompt({
+    lessonTitle,
+    dayNumber,
+    lessonTopic,
+    buddyName,
+    boardFen,
+    reviewContext,
+    experienceLevel,
+    ageBand,
+  });
 
   // TODO(Phase 2): pass this reply through the age-appropriate content filter
   // and log a summary (not raw transcript) to ai_chat_logs per the DB schema.

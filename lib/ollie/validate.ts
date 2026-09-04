@@ -1,4 +1,6 @@
 import type { ChatTurn } from "./types";
+import type { OllieReviewContext } from "./reviewContext";
+import type { ExperienceLevel, AgeBand } from "@/lib/learner/experienceLevel";
 
 export const MAX_MESSAGE_LENGTH = 500;
 export const MAX_HISTORY_MESSAGES = 16;
@@ -14,6 +16,47 @@ export interface ValidatedCoachRequest {
   lessonTopic?: string;
   buddyName?: string;
   childId?: string;
+  reviewContext?: OllieReviewContext;
+  experienceLevel?: ExperienceLevel;
+  ageBand?: AgeBand;
+}
+
+const EXPERIENCE_LEVELS = new Set(["new", "knows_basics", "plays_regularly"]);
+const AGE_BANDS = new Set(["young", "tween", "teen", "adult"]);
+const REVIEW_CATEGORIES = new Set(["inaccuracy", "mistake", "blunder"]);
+
+/** Validates the optional Game Review context block. Every field is
+ * optional; strings are hard-clipped, numbers bounded, unknown keys
+ * dropped — the client is never trusted. Returns undefined if the block is
+ * absent or not an object. */
+function validateReviewContext(raw: unknown): OllieReviewContext | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const r = raw as Record<string, unknown>;
+  const str = (v: unknown, n = 60): string | undefined =>
+    typeof v === "string" && v.trim() ? v.trim().slice(0, n) : undefined;
+  const num = (v: unknown, lo: number, hi: number): number | undefined =>
+    typeof v === "number" && Number.isFinite(v) ? Math.max(lo, Math.min(hi, Math.round(v))) : undefined;
+  const bool = (v: unknown): boolean | undefined => (typeof v === "boolean" ? v : undefined);
+
+  const ctx: OllieReviewContext = {
+    playerColor: r.playerColor === "w" || r.playerColor === "b" ? r.playerColor : undefined,
+    result: r.result === "win" || r.result === "loss" || r.result === "draw" ? r.result : undefined,
+    accuracy: num(r.accuracy, 0, 100),
+    mistakeCount: num(r.mistakeCount, 0, 200),
+    blunderCount: num(r.blunderCount, 0, 200),
+    moveNumber: num(r.moveNumber, 0, 300),
+    playedSan: str(r.playedSan, 12),
+    bestSan: str(r.bestSan, 12),
+    category: REVIEW_CATEGORIES.has(r.category as string) ? (r.category as OllieReviewContext["category"]) : undefined,
+    missedMate: bool(r.missedMate),
+    missedMaterial: bool(r.missedMaterial),
+    skillName: str(r.skillName, 40),
+    whatToNotice: str(r.whatToNotice, 200),
+    fenBefore: typeof r.fenBefore === "string" && r.fenBefore.length <= 100 ? r.fenBefore : undefined,
+    recurringSkill: bool(r.recurringSkill),
+    practiceSkillName: str(r.practiceSkillName, 40),
+  };
+  return ctx;
 }
 
 export type ValidationResult =
@@ -79,9 +122,28 @@ export function validateCoachRequest(body: unknown): ValidationResult {
   const buddyName =
     typeof b.buddyName === "string" ? b.buddyName.slice(0, MAX_FIELD_LENGTH) : undefined;
   const childId = typeof b.childId === "string" ? b.childId : undefined;
+  const reviewContext = validateReviewContext(b.reviewContext);
+  const experienceLevel =
+    typeof b.experienceLevel === "string" && EXPERIENCE_LEVELS.has(b.experienceLevel)
+      ? (b.experienceLevel as ExperienceLevel)
+      : undefined;
+  const ageBand =
+    typeof b.ageBand === "string" && AGE_BANDS.has(b.ageBand) ? (b.ageBand as AgeBand) : undefined;
 
   return {
     ok: true,
-    data: { message, history, boardFen, lessonTitle, dayNumber, lessonTopic, buddyName, childId },
+    data: {
+      message,
+      history,
+      boardFen,
+      lessonTitle,
+      dayNumber,
+      lessonTopic,
+      buddyName,
+      childId,
+      reviewContext,
+      experienceLevel,
+      ageBand,
+    },
   };
 }

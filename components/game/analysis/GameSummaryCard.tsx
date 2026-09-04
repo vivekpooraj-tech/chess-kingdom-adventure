@@ -10,7 +10,14 @@ function formatDuration(startedAt: string, endedAt: string): string | null {
   return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
 
-export function GameSummaryCard({ record }: { record: CompletedGameRecord }) {
+export function GameSummaryCard({
+  record,
+  accuracy,
+}: {
+  record: CompletedGameRecord;
+  /** 0–100 Chess Mind accuracy — omitted while analysis is still running. */
+  accuracy?: number;
+}) {
   const resultLabel = record.result.isDraw ? "Draw" : record.result.winner === record.playerColor ? "Win" : "Loss";
   const moveCount = Math.ceil(record.moves.length / 2);
   const duration = formatDuration(record.startedAt, record.endedAt);
@@ -21,6 +28,7 @@ export function GameSummaryCard({ record }: { record: CompletedGameRecord }) {
     ["Opponent", record.opponentLabel],
     ["Moves", String(moveCount)],
   ];
+  if (typeof accuracy === "number") rows.push(["Accuracy", `${accuracy}%`]);
   if (record.openingName) rows.push(["Opening", record.openingName]);
   if (duration) rows.push(["Duration", duration]);
 

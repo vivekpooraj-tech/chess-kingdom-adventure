@@ -27,6 +27,8 @@ import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { MoveList } from "@/components/game/MoveList";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
 import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
+import { PostGameAnalysis } from "@/components/game/analysis/PostGameAnalysis";
+import { buildOnlineGameRecord } from "@/lib/analysis/gameRecord";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import { TEXT } from "@/lib/designSystem";
 import { getTimeControl } from "@/content/timeControls";
@@ -68,6 +70,7 @@ export default function OnlineGamePage() {
   const [joinBlocked, setJoinBlocked] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [resignConfirm, setResignConfirm] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   // The specific draw-offer token (see DRAW_OFFER_PREFIX) the local player
   // has already dismissed — each offer is uniquely timestamped, so a new
   // offer after a declined one always compares as different and reappears.
@@ -298,6 +301,32 @@ export default function OnlineGamePage() {
     const myColor: Color = isHost ? game.host_color : game.host_color === "w" ? "b" : "w";
     const iWon = game.winner === myColor;
     const isDraw = game.winner === "draw";
+
+    // Game Review — reuses PostGameAnalysis (no second review
+    // implementation). Online games only persist the SAN list, so
+    // buildOnlineGameRecord replays it to recover per-move positions.
+    if (showReview) {
+      const backHref = game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map";
+      return (
+        <PostGameAnalysis
+          record={buildOnlineGameRecord({
+            sanMoves: game.moves,
+            playerColor: myColor,
+            winner: game.winner,
+            opponentLabel: game.match_type === "random" ? "Online Opponent" : "Friend Match",
+            openingName: openingMatch?.opening.name ?? null,
+            startedAt: game.last_move_at ?? new Date().toISOString(),
+            endedAt: game.last_move_at ?? new Date().toISOString(),
+          })}
+          boardSkinId={boardSkinId}
+          pieceSetId={pieceSetId}
+          childId={childId}
+          source="online"
+          onPlayAgain={() => router.push("/play")}
+          onBack={() => router.push(backHref)}
+        />
+      );
+    }
     // A clock reaching exactly 0 only ever happens via submit_online_move's
     // or claim_timeout's timeout branch (finish_online_game_by_result, used
     // for checkmate/draw, never touches the clock columns) — so this is a
@@ -345,8 +374,13 @@ export default function OnlineGamePage() {
               <RatingDeltaRow label="Opponent" before={opponentRatingBefore!} after={opponentRatingAfter!} />
             </div>
           )}
+          {game.moves.length > 0 && (
+            <Button tone="premium" onClick={() => setShowReview(true)}>
+              Review Game →
+            </Button>
+          )}
           <Link href={game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map"}>
-            <Button tone="premium">
+            <Button tone="premium" variant={game.moves.length > 0 ? "ghost" : "primary"}>
               {game.tournament_id ? "Back to Tournament →" : "Back to the Kingdom Map →"}
             </Button>
           </Link>

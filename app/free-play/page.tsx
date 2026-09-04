@@ -414,6 +414,8 @@ export default function FreePlayPage() {
         record={view.record}
         boardSkinId={boardSkinId}
         pieceSetId={pieceSetId}
+        childId={childId}
+        source="free_play"
         onPlayAgain={() => startGame(view.record.difficulty)}
         onBack={() => setView({ status: "picking-difficulty" })}
       />

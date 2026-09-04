@@ -89,6 +89,28 @@ export async function getChildrenForParent(
   return ((parent as unknown as { children: ChildProfile[] }).children ?? []) as ChildProfile[];
 }
 
+/**
+ * One child profile by id. RLS ("parent can manage own children", 0001)
+ * scopes the select to the caller's own children — a child id belonging to
+ * someone else, or that doesn't exist, simply returns null. Cheaper than
+ * resolveActiveChild when the caller already knows the id (e.g. the Game
+ * Review, opened from a screen that already resolved the active child).
+ */
+export async function getChildProfileById(
+  supabase: SupabaseClient,
+  childId: string
+): Promise<ChildProfile | null> {
+  const { data, error } = await supabase
+    .from("children")
+    .select(
+      "id, display_name, avatar_id, buddy_id, board_skin_id, piece_set_id, rating, current_day, experience_level, age_band"
+    )
+    .eq("id", childId)
+    .maybeSingle();
+  if (error) return null;
+  return (data as ChildProfile | null) ?? null;
+}
+
 export async function createChild(
   supabase: SupabaseClient,
   authUserId: string,
@@ -1296,4 +1318,172 @@ export async function recordOpeningPracticeAttempt(
     { onConflict: "child_id,opening_id" }
   );
   if (error) throw error;
+}
+
+// --- Game Review learning signals (Phase 26) -----------------------------
+// supabase/migrations/0033_game_review_learning_signals.sql.
+//
+// Every function here is BEST-EFFORT by design: it swallows a
+// missing-table / permission / network error and returns a safe value,
+// because the Game Review must behave identically whether or not 0033 has
+// been applied and whether or not the child has any history yet
+// (PostGameAnalysis never awaits these in a way that can block the UI).
+
+export interface GameReviewInput {
+  source: "free_play" | "online";
+  playedColor: "w" | "b" | null;
+  result: "win" | "loss" | "draw" | null;
+  accuracy: number | null;
+  totalMoves: number | null;
+  mistakes: number;
+  blunders: number;
+  inaccuracies: number;
+  biggestMomentSkill: string | null;
+  biggestMomentPly: number | null;
+  openingName: string | null;
+}
+
+export interface SkillSignal {
+  skill: string;
+  weakCount: number;
+  practiceAttempts: number;
+  practiceCorrect: number;
+}
+
+/** Insert one completed-review record. Fire-and-forget. */
+export async function recordGameReview(
+  supabase: SupabaseClient,
+  childId: string,
+  input: GameReviewInput
+): Promise<void> {
+  try {
+    await supabase.from("child_game_reviews").insert({
+      child_id: childId,
+      source: input.source,
+      played_color: input.playedColor,
+      result: input.result,
+      accuracy: input.accuracy,
+      total_moves: input.totalMoves,
+      mistakes: input.mistakes,
+      blunders: input.blunders,
+      inaccuracies: input.inaccuracies,
+      biggest_moment_skill: input.biggestMomentSkill,
+      biggest_moment_ply: input.biggestMomentPly,
+      opening_name: input.openingName,
+    });
+  } catch {
+    // best-effort — see file note
+  }
+}
+
+/**
+ * Bump the weakness counter for each skill flagged in this review.
+ * `skillCounts` maps SkillId -> how many of the game's mistakes it caused.
+ * Uses the bump_skill_signal RPC (atomic upsert, SECURITY DEFINER with an
+ * ownership check).
+ */
+export async function bumpSkillWeaknesses(
+  supabase: SupabaseClient,
+  childId: string,
+  skillCounts: Record<string, number>
+): Promise<void> {
+  const entries = Object.entries(skillCounts).filter(([, n]) => n > 0);
+  await Promise.all(
+    entries.map(async ([skill, n]) => {
+      try {
+        await supabase.rpc("bump_skill_signal", {
+          p_child_id: childId,
+          p_skill: skill,
+          p_weak_delta: n,
+        });
+      } catch {
+        // best-effort
+      }
+    })
+  );
+}
+
+/** Record the outcome of a review-driven practice set for one skill. */
+export async function recordSkillPractice(
+  supabase: SupabaseClient,
+  childId: string,
+  skill: string,
+  attempts: number,
+  correct: number
+): Promise<void> {
+  if (attempts <= 0) return;
+  try {
+    await supabase.rpc("bump_skill_signal", {
+      p_child_id: childId,
+      p_skill: skill,
+      p_attempts_delta: attempts,
+      p_correct_delta: Math.max(0, Math.min(correct, attempts)),
+    });
+  } catch {
+    // best-effort
+  }
+}
+
+/** All of this child's skill signals, keyed by SkillId. Empty object on any
+ * failure or when 0033 isn't applied yet. */
+export async function getSkillSignals(
+  supabase: SupabaseClient,
+  childId: string
+): Promise<Record<string, SkillSignal>> {
+  try {
+    const { data, error } = await supabase
+      .from("child_skill_signals")
+      .select("skill, weak_count, practice_attempts, practice_correct")
+      .eq("child_id", childId);
+    if (error || !data) return {};
+    const out: Record<string, SkillSignal> = {};
+    for (const row of data) {
+      out[row.skill as string] = {
+        skill: row.skill as string,
+        weakCount: (row.weak_count as number) ?? 0,
+        practiceAttempts: (row.practice_attempts as number) ?? 0,
+        practiceCorrect: (row.practice_correct as number) ?? 0,
+      };
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+export interface RecentReviewRow {
+  accuracy: number | null;
+  result: string | null;
+  mistakes: number;
+  blunders: number;
+  biggestMomentSkill: string | null;
+  reviewedAt: string;
+}
+
+/** The child's most recent review records (newest first) — for a future
+ * trend view / Parent Dashboard. Empty array on any failure. */
+export async function getRecentGameReviews(
+  supabase: SupabaseClient,
+  childId: string,
+  limit = 10
+): Promise<RecentReviewRow[]> {
+  try {
+    const { data, error } = await supabase
+      .from("child_game_reviews")
+      .select("accuracy, result, mistakes, blunders, biggest_moment_skill, reviewed_at")
+      .eq("child_id", childId)
+      .order("reviewed_at", { ascending: false })
+      .limit(limit);
+    if (error || !data) return [];
+    return data.map((r) => ({
+      accuracy: (r.accuracy as number | null) ?? null,
+      result: (r.result as string | null) ?? null,
+      mistakes: (r.mistakes as number) ?? 0,
+      blunders: (r.blunders as number) ?? 0,
+      biggestMomentSkill: (r.biggest_moment_skill as string | null) ?? null,
+      reviewedAt: r.reviewed_at as string,
+    }));
+  } catch {
+    return [];
+  }
 }

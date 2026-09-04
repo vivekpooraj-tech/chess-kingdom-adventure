@@ -8,6 +8,8 @@ import {
   isMateScore,
   type MoveCategory,
 } from "./moveClassification";
+import { computeAccuracy, type AccuracyResult } from "./accuracy";
+import { classifyMistakeSkill, type SkillClassification } from "./skillMapping";
 
 /** One ply, captured live during play — see app/free-play/page.tsx's
  * handlePositionChange. `fen` is the position AFTER this move. */
@@ -46,6 +48,9 @@ export interface AnalyzedMove extends PlayedMove {
   bestMove?: BestMoveSuggestion;
   missedMate: boolean;
   missedMaterial: boolean;
+  /** Set only for the player's flagged mistakes — the conservative skill
+   * attribution (see lib/analysis/skillMapping.ts). */
+  skill?: SkillClassification;
 }
 
 export interface GameAnalysisResult {
@@ -56,6 +61,8 @@ export interface GameAnalysisResult {
   highlightedGoodMoves: AnalyzedMove[];
   /** Player-move counts per category, for the performance summary. */
   counts: Record<MoveCategory, number>;
+  /** Chess Mind accuracy (0–100) for the player — see lib/analysis/accuracy.ts. */
+  accuracy: AccuracyResult;
 }
 
 function uciToMoveDetails(fen: string, uci: string): { san: string; isCapture: boolean } | null {
@@ -149,6 +156,13 @@ export async function analyzeGame(
     (a) => a.isPlayerMove && (a.category === "mistake" || a.category === "blunder")
   );
 
+  // Conservative skill attribution — only for the player's flagged
+  // mistakes, only from facts already established above. Never invents a
+  // tactical theme (see lib/analysis/skillMapping.ts).
+  for (const m of flaggedMistakes) {
+    m.skill = classifyMistakeSkill(m, analyzed);
+  }
+
   const highlightedGoodMoves = analyzed
     .filter((a) => a.isPlayerMove && a.category === "excellent")
     .sort((a, b) => a.lossCp - b.lossCp)
@@ -165,5 +179,7 @@ export async function analyzeGame(
     if (a.isPlayerMove) counts[a.category]++;
   }
 
-  return { moves: analyzed, flaggedMistakes, highlightedGoodMoves, counts };
+  const accuracy = computeAccuracy(analyzed);
+
+  return { moves: analyzed, flaggedMistakes, highlightedGoodMoves, counts, accuracy };
 }

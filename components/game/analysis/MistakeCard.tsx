@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 import { CATEGORY_INFO } from "@/lib/analysis/moveClassification";
 import { formatMoveNumber } from "@/lib/analysis/format";
+import { getSkill, type SkillId } from "@/lib/analysis/skills";
 import type { AnalyzedMove, CompletedGameRecord } from "@/lib/analysis/gameAnalysis";
 import { MistakeReviewStepper } from "./MistakeReviewStepper";
 
@@ -14,6 +15,9 @@ const MINI_BOARD_SIZE = 150;
 export interface EnrichedMistake extends AnalyzedMove {
   explanation: string;
   whatToNotice: string;
+  /** Resolved skill id (explain API's, else the conservative mapper's,
+   * else the neutral bucket) — see PostGameAnalysis. */
+  skillId: SkillId;
 }
 
 /** One flagged mistake/blunder, fully explained — section 5-9 of the brief:
@@ -53,6 +57,18 @@ export function MistakeCard({
       {opportunityLabel && (
         <p className="font-classic-body text-sm text-premium-gold text-center">🟡 {opportunityLabel}</p>
       )}
+
+      {(() => {
+        const skill = getSkill(mistake.skillId);
+        return (
+          <div className="flex items-center gap-2 self-center rounded-full bg-premium-navyLight/60 border border-premium-gold/15 px-3 py-1">
+            <span aria-hidden="true">{skill.emoji}</span>
+            <span className="font-classic-body text-xs text-premium-ivory/80">
+              Skill: <span className="text-premium-ivory">{skill.name}</span>
+            </span>
+          </div>
+        );
+      })()}
 
       <div>
         <p className={`${TEXT.meta} text-premium-gold mb-1`}>Why was this a mistake?</p>

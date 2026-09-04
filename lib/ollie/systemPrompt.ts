@@ -1,5 +1,11 @@
 import { BRAND } from "@/lib/brand";
 import { buildBoardContextLine } from "./boardContext";
+import {
+  buildReviewContextLine,
+  buildLearnerToneLine,
+  type OllieReviewContext,
+} from "./reviewContext";
+import type { ExperienceLevel, AgeBand } from "@/lib/learner/experienceLevel";
 
 const BUDDY_SYSTEM_PROMPT_BASE = `You are Ollie the Owl, a friendly chess tutor inside the "${BRAND.name}" app, teaching children aged 5-12.
 
@@ -42,10 +48,16 @@ export function buildOllieSystemPrompt(params: {
   lessonTopic?: string;
   buddyName?: string;
   boardFen?: string;
+  /** Set when the child is asking about a game they just reviewed (Phase 26). */
+  reviewContext?: OllieReviewContext;
+  experienceLevel?: ExperienceLevel;
+  ageBand?: AgeBand;
 }): string {
   return (
     BUDDY_SYSTEM_PROMPT_BASE +
     buildLessonContextLine(params.lessonTitle, params.dayNumber, params.lessonTopic, params.buddyName) +
-    buildBoardContextLine(params.boardFen)
+    buildBoardContextLine(params.boardFen ?? params.reviewContext?.fenBefore) +
+    buildReviewContextLine(params.reviewContext) +
+    buildLearnerToneLine(params.experienceLevel, params.ageBand)
   );
 }
