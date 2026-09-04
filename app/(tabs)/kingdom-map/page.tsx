@@ -48,6 +48,21 @@ export default async function KingdomMapPage() {
   if (!user) redirect("/sign-in");
 
   const cookieChildId = cookies().get(ACTIVE_CHILD_COOKIE_NAME)?.value ?? null;
+
+  // The premium/parent row keys off the auth user, not the active child, so it
+  // does not need to wait for the child to be resolved. Starting it here lets
+  // it overlap the (uncached) child-resolution round-trip instead of queueing
+  // behind it — this route pays a full cross-region round-trip per query, so
+  // every layer removed from the critical path counts. It is still awaited in
+  // the batch below, so a genuine failure surfaces exactly as before; the bare
+  // .catch() only marks the promise handled so an early redirect below can't
+  // turn it into an unhandled rejection. Promise.resolve() both starts the
+  // (lazily-executed) query builder now and returns a real promise to guard.
+  const parentPromise = Promise.resolve(
+    supabase.from("parents").select(PARENT_PREMIUM_COLUMNS).eq("auth_user_id", user.id).single()
+  );
+  void parentPromise.catch(() => {});
+
   const resolution = await resolveActiveChildCached(supabase, user.id, cookieChildId);
   if (resolution.needsSelection) redirect("/choose-child");
 
@@ -74,7 +89,7 @@ export default async function KingdomMapPage() {
     screenTimeStatus,
   ] = await Promise.all([
     getCompletedDays(supabase, child.id),
-    supabase.from("parents").select(PARENT_PREMIUM_COLUMNS).eq("auth_user_id", user.id).single(),
+    parentPromise,
     getCompletedAcademyContentIds(supabase, child.id),
     getOpeningEncounters(supabase, child.id),
     getChessMindTotalSolved(supabase, child.id),
