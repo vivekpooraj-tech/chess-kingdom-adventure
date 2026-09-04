@@ -6,7 +6,6 @@ import { CHESS_MATH_POSITIONS } from "@/content/chessMindMath";
 import { PATTERN_CHALLENGES } from "@/content/chessMindPatterns";
 import { generateVisualizationQuestion, RevealQuestion } from "@/lib/chessMind/revealQuestions";
 import { RevealChallenge } from "@/components/chessMind/RevealChallenge";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -62,7 +61,6 @@ export default function VisualizationPage() {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
-        <PrimaryNav />
       </>
     );
   }
@@ -99,7 +97,6 @@ export default function VisualizationPage() {
           Back to Chess Mind
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

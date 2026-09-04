@@ -5,7 +5,6 @@ import { resolveActiveChild, getAcademyProgressForIds } from "@/lib/supabase/que
 import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { TACTICS_LESSONS } from "@/content/tacticsLessons";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { TacticsCourseClient } from "@/components/academy/TacticsCourseClient";
 
@@ -39,7 +38,6 @@ export default async function TacticsCoursePage() {
       <Screen maxWidth="compact">
         <TacticsCourseClient isPremium={isPremium} progressByLessonId={progressByLessonId} />
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

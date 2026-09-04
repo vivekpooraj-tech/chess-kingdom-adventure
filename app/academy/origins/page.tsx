@@ -18,7 +18,6 @@ import { getActiveChildIdClient } from "@/lib/childSession";
 import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { HISTORY_OF_CHESS } from "@/content/academyVideos";
 import { getAchievement } from "@/content/achievements";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { Button } from "@/components/ui/Button";
 import { HistoryVideo } from "@/components/academy/HistoryVideo";
@@ -127,7 +126,6 @@ export default function ChessOriginsPage() {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
-        <PrimaryNav />
       </>
     );
   }
@@ -259,7 +257,6 @@ export default function ChessOriginsPage() {
           Back to the Academy
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

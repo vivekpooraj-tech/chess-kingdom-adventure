@@ -6,6 +6,8 @@ import { MotionProvider } from "@/components/MotionProvider";
 import { DevTestModeBar } from "@/components/dev/DevTestModeBar";
 import { NativeLayoutProvider } from "@/components/nav/NativeLayoutProvider";
 import { LayoutBootstrapScript } from "@/components/nav/LayoutBootstrapScript";
+import { ShellBootstrapScript } from "@/components/nav/ShellBootstrapScript";
+import { AppShell } from "@/components/nav/AppShell";
 import { BRAND } from "@/lib/brand";
 
 // Adventure Mode faces. These were referenced in tailwind.config.ts as bare
@@ -79,13 +81,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-screen bg-premium-midnight">
         <LayoutBootstrapScript />
+        <ShellBootstrapScript />
         <NativeLayoutProvider>
           <CapacitorDeepLinkHandler />
           {/* Every framer-motion animation in the app (lesson transitions,
               achievement unlocks, board taps, confetti) automatically respects
               the OS-level prefers-reduced-motion setting via this one wrapper,
               rather than each animated component needing its own check. */}
-          <MotionProvider>{children}</MotionProvider>
+          <MotionProvider>
+            {/* AppShell (UI-2A) is the one persistent navigation frame. It
+                passes bare routes (auth, onboarding, splash, full-screen
+                game/lesson screens, chess-focus) straight through, and wraps
+                normal app pages in the responsive bottom-nav / sidebar
+                chrome — so navigating between them no longer remounts the
+                nav tree. It composes the existing Screen/page-shell system,
+                it does not replace it. */}
+            <AppShell>{children}</AppShell>
+          </MotionProvider>
           {/* Renders nothing unless LOCAL_TEST_MODE is on (lib/devTestMode.ts) —
               see that file for why a production build can't activate it. */}
           <DevTestModeBar />

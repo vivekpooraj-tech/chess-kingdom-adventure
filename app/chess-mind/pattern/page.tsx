@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Chess } from "chess.js";
 import { PATTERN_CHALLENGES, PatternChallenge } from "@/content/chessMindPatterns";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -108,7 +107,6 @@ export default function PatternRecognitionPage() {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
-        <PrimaryNav />
       </>
     );
   }
@@ -196,7 +194,6 @@ export default function PatternRecognitionPage() {
           Back to Chess Mind
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

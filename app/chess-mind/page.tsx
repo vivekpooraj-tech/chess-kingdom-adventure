@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { ListItemRow } from "@/components/ui/Card";
 import { CHESS_MIND_CATEGORIES, getChessMindCategory } from "@/content/chessMindCategories";
@@ -189,7 +188,6 @@ export default function ChessMindPage() {
           Back to the Kingdom Map
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

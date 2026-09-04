@@ -13,7 +13,6 @@ import {
   MathQuestion,
 } from "@/lib/chessMind/mathQuestions";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -154,7 +153,6 @@ export default function ChessMathematicsPage() {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
-        <PrimaryNav />
       </>
     );
   }
@@ -233,7 +231,6 @@ export default function ChessMathematicsPage() {
           Back to Chess Mind
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

@@ -1,5 +1,4 @@
 import { Screen } from "@/components/layout/Screen";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 
 /**
  * Phase 21 — this app has no route-level loading state anywhere (confirmed
@@ -15,8 +14,9 @@ import { PrimaryNav } from "@/components/nav/PrimaryNav";
  * its own), so it's the fix: real, immediate confirmation the tap landed.
  * Mirrors Profile's real layout shape (header block, two customize rows, a
  * 6-tile stat grid, an openings card, an achievements row) so nothing jumps
- * when the real content swaps in, and renders PrimaryNav itself so the nav
- * bar doesn't flicker out and back during the transition.
+ * when the real content swaps in. (The bottom nav / sidebar is persistent —
+ * mounted once by AppShell in the root layout — so it no longer needs to
+ * be re-rendered here to avoid a flicker.)
  */
 export default function ProfileLoading() {
   return (
@@ -40,7 +40,6 @@ export default function ProfileLoading() {
 
         <div className="w-full h-16 rounded-premiumCard bg-premium-navy/70 animate-pulse" />
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

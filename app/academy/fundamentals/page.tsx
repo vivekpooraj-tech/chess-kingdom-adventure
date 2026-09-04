@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FUNDAMENTALS_TOPICS } from "@/content/academyFundamentals";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
@@ -80,7 +79,6 @@ export default function FundamentalsPage() {
           Back to the Academy
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

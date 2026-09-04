@@ -8,7 +8,6 @@ import { getOpening } from "@/content/openings";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { Button } from "@/components/ui/Button";
 import { MoveFeedback } from "@/components/game/MoveFeedback";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
@@ -302,7 +301,6 @@ export default function OpeningDetailPage() {
           Back to Opening Explorer
         </Link>
       </main>
-      <PrimaryNav />
     </>
   );
 }

@@ -24,8 +24,8 @@ const BOARD_IMAGE_FRAME_FRACTION = 36 / 792;
 // races, the only visible effect is that a piece "snaps" instead of
 // gliding; input, move legality and game state are never affected.
 // Chess.com-style glide — long enough to read, short enough to stay snappy.
-const MOVE_ANIMATION_MS = 280;
-const MOVE_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
+const MOVE_ANIMATION_MS = 480;
+const MOVE_EASING = "cubic-bezier(0.33, 0, 0.2, 1)";
 // Hard ceiling after which a slide is force-cleared even if no
 // `transitionend` ever arrives (reduced-motion, backgrounded tab, a
 // same-row/col move that only transitions one property, etc).
@@ -476,7 +476,7 @@ export function ChessBoard({
       } else {
         playRandomMove();
       }
-    }, 400); // brief beat after the slide lands, then the opponent replies
+    }, 550); // wait for the slide to finish before the opponent replies
 
     return () => {
       cancelled = true;

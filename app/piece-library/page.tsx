@@ -10,7 +10,6 @@ import { getPieceSet, PIECE_SYMBOL_BY_NAME } from "@/content/pieceSets";
 import { PIECE_LIBRARY } from "@/content/pieceLibrary";
 import { PieceImage } from "@/components/board/PieceImage";
 import { SecondaryCard } from "@/components/ui/Card";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -43,7 +42,6 @@ export default function PieceLibraryPage() {
     return (
       <>
         <ScreenSkeleton maxWidth="wide" />
-        <PrimaryNav />
       </>
     );
   }
@@ -104,7 +102,6 @@ export default function PieceLibraryPage() {
         Back to Discover
       </Link>
     </Screen>
-    <PrimaryNav />
     </>
   );
 }

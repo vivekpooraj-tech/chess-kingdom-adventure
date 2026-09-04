@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { TEXT } from "@/lib/designSystem";
 
@@ -98,7 +97,6 @@ export default function DiscoverPage() {
           Back to Home
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

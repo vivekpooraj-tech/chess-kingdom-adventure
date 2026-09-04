@@ -1,5 +1,4 @@
 import { Screen } from "@/components/layout/Screen";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 
 export default function TacticsLoading() {
@@ -14,7 +13,6 @@ export default function TacticsLoading() {
           ))}
         </div>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

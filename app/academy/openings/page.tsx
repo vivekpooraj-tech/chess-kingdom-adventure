@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { resolveActiveChild, getOpeningEncounters } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { OpeningExplorerClient } from "@/components/openings/OpeningExplorerClient";
 
@@ -33,7 +32,6 @@ export default async function OpeningExplorerPage() {
           Back to the Academy
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

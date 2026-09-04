@@ -11,7 +11,6 @@ import {
   SpatialQuestion,
 } from "@/lib/chessMind/spatialQuestions";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -126,7 +125,6 @@ export default function SpatialThinkingPage() {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
-        <PrimaryNav />
       </>
     );
   }
@@ -202,7 +200,6 @@ export default function SpatialThinkingPage() {
           Back to Chess Mind
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

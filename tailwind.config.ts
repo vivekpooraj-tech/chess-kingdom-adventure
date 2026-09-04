@@ -60,7 +60,57 @@ const config: Config = {
           emerald: "#146B4A",
           emeraldDeep: "#0D4A33",
         },
+
+        // ============================================================
+        // UI-2A — SEMANTIC COLOUR ALIASES (additive, CSS-var backed).
+        // These resolve to the SAME verified values as `premium.*` (see
+        // :root in app/globals.css) — they only give them intent names so
+        // future components use `bg-surface` / `text-text-secondary` /
+        // `border-border` instead of `bg-premium-navy` / `text-premium-
+        // ivory/70`. `premium.*` and `kingdom.*` above stay in full use;
+        // nothing is migrated in this phase.
+        // ============================================================
+        bg: "var(--bg)",
+        "bg-elevated": "var(--bg-elevated)",
+        surface: "var(--surface)",
+        "surface-raised": "var(--surface-raised)",
+        "surface-sunken": "var(--surface-sunken)",
+        "surface-warm": "var(--surface-warm)",
+        primary: "var(--primary)",
+        "primary-ink": "var(--primary-ink)",
+        "primary-soft": "var(--primary-soft)",
+        secondary: "var(--secondary)",
+        accent: "var(--accent)",
+        success: "var(--success)",
+        "success-soft": "var(--success-soft)",
+        "success-line": "var(--success-line)",
+        warning: "var(--warning)",
+        "warning-soft": "var(--warning-soft)",
+        "warning-line": "var(--warning-line)",
+        danger: "var(--danger)",
+        "danger-soft": "var(--danger-soft)",
+        "danger-fill": "var(--danger-fill)",
+        "danger-line": "var(--danger-line)",
+        info: "var(--info)",
+        "info-soft": "var(--info-soft)",
+        "info-line": "var(--info-line)",
+        text: "var(--text)",
+        "text-secondary": "var(--text-secondary)",
+        "text-muted": "var(--text-muted)",
+        "text-disabled": "var(--text-disabled)",
+        // `border` as a colour key is the standard shadcn pattern — it adds
+        // `border-border` / `text-border` and does NOT affect the
+        // `border` (width) utility.
+        border: "var(--border)",
+        "border-strong": "var(--border-strong)",
       },
+
+      // NOTE: spacing / radius / shadow / motion semantic tokens live as
+      // CSS custom properties in :root (app/globals.css) rather than
+      // Tailwind theme keys — the natural key names (`sm`/`md`/`lg`) would
+      // clobber Tailwind's own `rounded-md`, `shadow-sm`, `min-w-md`, etc.
+      // and silently change existing screens. Future components reference
+      // them via `var(--radius-md)` / `var(--shadow-card)` / `var(--space-lg)`.
       borderRadius: {
         btn: "24px",
         card: "20px",

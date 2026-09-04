@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { ListItemRow } from "@/components/ui/Card";
 import { BRAND } from "@/lib/brand";
@@ -109,7 +108,6 @@ export default function AcademyPage() {
           Back to Home
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

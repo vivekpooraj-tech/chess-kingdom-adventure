@@ -46,6 +46,133 @@ body {
   /* One fluid horizontal page gutter: tight on phones, generous on
      desktop, never a hard jump. */
   --screen-gutter: clamp(1rem, 4vw, 2.5rem);
+
+  /* ==================================================================
+     UI-2A — SEMANTIC DESIGN TOKENS (additive)
+     A named layer over the existing, WCAG-verified `premium` palette
+     (tailwind.config.ts). Values are unchanged from what the app already
+     ships — this only gives them intent-based names so components stop
+     picking a raw `premium-*` shade / opacity by eye. The old
+     `premium.*` / `kingdom.*` Tailwind classes remain fully in use; this
+     is a compatibility layer, not a migration. See UI-1 §7–10.
+     ================================================================== */
+
+  /* Colour — surfaces */
+  --bg: #0f1629;              /* app ground (matches the radial base) */
+  --bg-elevated: #1b2440;     /* first elevation / page-level panels */
+  --surface: #1b2440;         /* default card */
+  --surface-raised: #28315a;  /* focal card / hover / popover */
+  --surface-sunken: #080c18;  /* inset rows, wells, board frames */
+  --surface-warm: #efe7d8;    /* the one "paper" surface (daily challenge, reports) */
+
+  /* Colour — action */
+  --primary: #d4af37;             /* the single accent — antique gold */
+  --primary-ink: #080c18;        /* text on gold */
+  --primary-soft: rgba(212, 175, 55, 0.12);
+  --secondary: #28315a;
+  --accent: #d4af37;             /* = primary; one accent only */
+
+  /* Colour — state (never decoration) */
+  --success: #34d399;
+  --warning: #f5b942;           /* deliberately distinct from gold */
+  --danger: #f87171;
+  --info: #5ac8fa;
+  /* Pre-mixed soft fills / lines for state surfaces — Tailwind's `/opacity`
+     modifier does not compose onto arbitrary `var()` colours in this setup,
+     so these are provided explicitly. */
+  --success-soft: rgba(52, 211, 153, 0.12);
+  --success-line: rgba(52, 211, 153, 0.3);
+  --warning-soft: rgba(245, 185, 66, 0.14);
+  --warning-line: rgba(245, 185, 66, 0.3);
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --danger-fill: rgba(248, 113, 113, 0.16);
+  --danger-line: rgba(248, 113, 113, 0.35);
+  --info-soft: rgba(90, 200, 250, 0.12);
+  --info-line: rgba(90, 200, 250, 0.3);
+
+  /* Colour — text (opacity scale is the WCAG-verified one from the palette) */
+  --text: #f7f3e8;                       /* headings / primary  (11–14:1) */
+  --text-secondary: rgba(247, 243, 232, 0.7);  /* body            (7.5–8.8:1) */
+  --text-muted: rgba(247, 243, 232, 0.5);      /* caption (min AA) (4.5:1) */
+  --text-disabled: rgba(247, 243, 232, 0.4);   /* large/decorative/disabled only */
+
+  /* Colour — lines */
+  --border: rgba(247, 243, 232, 0.08);
+  --border-strong: rgba(212, 175, 55, 0.25);
+
+  /* Colour — board (placeholders; per-skin values still live in
+     content/boardSkins.ts and are not wired to these yet) */
+  --board-light: #efe7d8;
+  --board-dark: #b58863;
+  --board-frame: #1b2440;
+  --last-move: rgba(212, 175, 55, 0.3);
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: clamp(1.25rem, 1rem + 1.2vw, 2rem); /* = .screen-stack gap */
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(8, 12, 24, 0.4);
+  --shadow-card: 0 1px 2px rgba(8, 12, 24, 0.4), 0 12px 32px -12px rgba(8, 12, 24, 0.55);
+  --shadow-raised: 0 8px 24px -8px rgba(8, 12, 24, 0.6);
+  --shadow-modal: 0 24px 64px -16px rgba(0, 0, 0, 0.6);
+  --glow-gold: 0 0 20px rgba(212, 175, 55, 0.3);
+
+  /* Motion */
+  --motion-instant: 0ms;
+  --motion-fast: 120ms;
+  --motion-standard: 220ms;
+  --motion-emphasis: 380ms;
+  --motion-celebrate: 700ms;
+
+  /* AppShell frame (UI-2A). Phone = bottom nav only. Tablet/desktop add a
+     top bar; desktop adds the sidebar and drops the bottom bar. */
+  --topbar-h: 0px;
+  --app-sidenav-w: 15rem;   /* 240px expanded (72px collapsed via [data-sidenav]) */
+}
+
+html[data-layout="tablet"],
+html[data-layout="desktop"] {
+  --topbar-h: 3.5rem;
+}
+
+/* Desktop has no bottom navigation — .pb-nav-safe then resolves to just a
+   breathing gap, and PrimaryNav is display:none'd below. */
+html[data-layout="desktop"] {
+  --bottom-nav-h: 0px;
+}
+
+html[data-sidenav="collapsed"] {
+  --app-sidenav-w: 4.5rem; /* 72px */
+}
+
+/* Collapsed sidebar: labels + wordmark are always in the DOM, hidden here
+   (pre-paint via ShellBootstrapScript) so a reload never flashes them. */
+.app-sidenav-crest {
+  display: none;
+}
+.app-sidenav-wordmark {
+  display: inline-flex;
+}
+html[data-sidenav="collapsed"] .app-sidenav-wordmark,
+html[data-sidenav="collapsed"] .app-sidenav-label {
+  display: none;
+}
+html[data-sidenav="collapsed"] .app-sidenav-crest {
+  display: inline-flex;
+}
+html[data-sidenav="collapsed"] .app-sidenav-item {
+  justify-content: center;
 }
 
 /* Horizontal page padding — use instead of ad-hoc px-4 / px-6 / tablet:px-8. */
@@ -206,6 +333,24 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
 .piece-capture-fade {
   animation: piece-capture-fade 200ms ease-out forwards;
   pointer-events: none;
+}
+
+/* UI-2B Sheet open transitions (bottom on phone, right edge on tablet+). */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes sheet-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 /* Inline-only video player (Academy hero clips). Android's native
@@ -435,6 +580,85 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
 
 html.chess-focus-active .layout-bottom-nav {
   display: none !important;
+}
+
+/* ===================================================================
+   APPSHELL (UI-2A) — the persistent product frame for normal app pages.
+   Phone: unchanged (bottom nav only). Tablet: + a top bar. Desktop: a
+   left sidebar + top bar, no bottom nav, content sits BESIDE the sidebar.
+   Visibility is driven purely by <html data-layout> (set pre-hydration by
+   LayoutBootstrapScript) so there is no first-paint flash. Bare routes
+   (auth, onboarding, welcome, splash, game/lesson screens, chess-focus)
+   render none of this — AppShell passes children straight through.
+   =================================================================== */
+
+.app-sidenav {
+  display: none;
+}
+html[data-layout="desktop"] .app-sidenav {
+  display: flex;
+}
+
+.app-topbar {
+  display: none;
+}
+html[data-layout="tablet"] .app-topbar,
+html[data-layout="desktop"] .app-topbar {
+  display: flex;
+}
+/* The brand sits in the sidebar on desktop; the top bar only carries it on
+   tablet, where there is no sidebar. */
+html[data-layout="tablet"] .app-topbar-brand {
+  display: inline-flex;
+}
+
+/* Desktop: PrimaryNav is replaced by the sidebar. */
+html[data-layout="desktop"] .layout-bottom-nav {
+  display: none !important;
+}
+
+/* Content column: on desktop it is inset by the sidebar width so page
+   content sits beside — never underneath — the sidebar. The existing
+   <Screen> max-width + .screen-x gutter still control readable width
+   within this column. */
+html[data-layout="desktop"] .app-shell-content {
+  padding-left: var(--app-sidenav-w);
+  transition: padding-left var(--motion-standard) cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* A page's own `min-h-screen` would otherwise be viewport-tall UNDER the
+   sticky top bar, adding a top-bar's worth of dead scroll on short pages.
+   Trim it by the bar height — scoped to the shell so bare pages (which
+   have no bar) are untouched. */
+html[data-layout="tablet"] .app-shell-content main.min-h-screen,
+html[data-layout="desktop"] .app-shell-content main.min-h-screen {
+  min-height: calc(100vh - var(--topbar-h)); /* fallback for engines without dvh */
+  min-height: calc(100dvh - var(--topbar-h));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-layout="desktop"] .app-shell-content {
+    transition: none;
+  }
+}
+
+/* A ChessFocusLayout page (Puzzle Trainer) is a full-screen board
+   experience — on desktop it hides the AppShell frame the same way
+   chess-focus mode already hides the bottom nav on phone, and drops the
+   sidebar inset so the board has the whole viewport. On phone/tablet the
+   bottom nav stays (that is exactly what `preserveBottomNav` is for).
+   `:has()` is supported by every current engine incl. the Capacitor
+   WebView; the raised z-index below is the fallback for anything older
+   (the fixed shell simply paints over the frame). */
+html[data-layout="desktop"] .chess-focus-shell {
+  z-index: 60;
+}
+html[data-layout="desktop"] body:has(.chess-focus-shell) .app-sidenav,
+html[data-layout="desktop"] body:has(.chess-focus-shell) .app-topbar {
+  display: none;
+}
+html[data-layout="desktop"] body:has(.chess-focus-shell) .app-shell-content {
+  padding-left: 0;
 }
 
 html.chess-focus-active,

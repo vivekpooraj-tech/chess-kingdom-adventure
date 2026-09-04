@@ -19,7 +19,6 @@ import {
   getTodayRatingChange,
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { AchievementBadges } from "@/components/achievements/AchievementBadges";
@@ -192,7 +191,6 @@ export default async function ProfilePage() {
 
         <AchievementBadges earnedKeys={earnedKeys} />
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

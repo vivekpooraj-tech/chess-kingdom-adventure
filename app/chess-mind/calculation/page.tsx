@@ -10,7 +10,6 @@ import {
   getCalculationChallengesForLevel,
 } from "@/content/chessMindCalculation";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -155,7 +154,6 @@ export default function CalculationPage() {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
-        <PrimaryNav />
       </>
     );
   }
@@ -274,7 +272,6 @@ export default function CalculationPage() {
           Back to Chess Mind
         </Link>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

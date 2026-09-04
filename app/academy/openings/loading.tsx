@@ -1,5 +1,4 @@
 import { Screen } from "@/components/layout/Screen";
-import { PrimaryNav } from "@/components/nav/PrimaryNav";
 import { SkeletonBlock } from "@/components/ui/Skeleton";
 
 export default function OpeningsLoading() {
@@ -14,7 +13,6 @@ export default function OpeningsLoading() {
           ))}
         </div>
       </Screen>
-      <PrimaryNav />
     </>
   );
 }

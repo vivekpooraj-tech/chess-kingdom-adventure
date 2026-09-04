@@ -1,20 +1,12 @@
-import { TabShellNav } from "@/components/nav/TabShellNav";
-
-// Persistent shell for the 5 primary tabs (Home/Puzzles/Play/Learn/More) --
-// a route group (the parens are invisible to the URL, so /kingdom-map etc.
-// are unchanged) so PrimaryNav renders from ONE place instead of once per
-// page. Before this, every one of these pages imported and rendered its
-// own <PrimaryNav />, which meant Next.js unmounted and remounted the nav
-// (and everything else in the tree) on every single tab switch -- the
-// primary cause of navigation feeling like a full page reload instead of
-// an instant tab change. Now it's the same mounted component across the
-// whole cycle; only `children` swaps.
+// Route group for the five primary tabs (Home/Puzzles/Play/Learn/More). The
+// parens are invisible to the URL, so /kingdom-map etc. are unchanged.
+//
+// The persistent bottom nav / sidebar now lives in AppShell (mounted once
+// in the root layout — components/nav/AppShell.tsx), so this layout no
+// longer renders navigation itself. It stays as the route group's boundary
+// (for its shared loading.tsx and so the group reads intentionally); the
+// premium ground is already painted by <body> and by each page's own
+// <Screen> wrapper.
 export default function TabsLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-premium-midnight">
-      <TabShellNav />
-      {/* Offset main content above the bottom tab bar on all screen sizes */}
-      <div>{children}</div>
-    </div>
-  );
+  return <>{children}</>;
 }
