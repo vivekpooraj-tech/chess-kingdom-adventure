@@ -282,7 +282,7 @@ function PuzzlesPageInner() {
     // `selectionReady` also guards the one-tick window before the random
     // free-practice puzzle is chosen, so the placeholder is never shown.
     return (
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-nav-safe">
         <div className="h-9 w-48 rounded bg-premium-navy/70 animate-pulse" />
         <SkeletonBlock className="w-full max-w-md aspect-square" />
         <SkeletonRow className="h-4 w-40" />
@@ -297,7 +297,6 @@ function PuzzlesPageInner() {
       <ChessFocusLayout
         title="Puzzle Trainer"
         preserveBottomNav
-        onExit={() => router.push("/kingdom-map")}
         renderBoard={(boardSize) => (
           <div className="board-feedback flex w-full items-center justify-center" data-feedback={status}>
             <ChessBoard
@@ -380,7 +379,7 @@ function PuzzlesPageInner() {
   }
 
   return (
-    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-4 sm:px-6 pt-8 pb-28">
+    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-4 sm:px-6 pt-8 pb-nav-safe">
       <h1 className={`${TEXT.display} text-center`}>Puzzle Trainer</h1>
       <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
         <span className="text-5xl">🔒</span>

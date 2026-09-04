@@ -197,8 +197,9 @@ html[data-sidenav="collapsed"] .app-sidenav-item {
 .pb-nav-safe {
   padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 1.5rem);
 }
-/* Chess-focus mode hides the bottom nav, so pages inside it reclaim the space. */
-html.chess-focus-active .pb-nav-safe {
+/* Chess-focus mode hides the bottom nav, so pages inside it reclaim the space.
+   Puzzle Trainer opts out via .chess-focus-shell--preserve-nav. */
+html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) .pb-nav-safe {
   padding-bottom: 0;
 }
 
@@ -211,7 +212,7 @@ html.chess-focus-active .pb-nav-safe {
 main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
   padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 1.5rem);
 }
-html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
+html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
   padding-bottom: 0;
 }
 
@@ -578,8 +579,15 @@ html.chess-focus-active main.min-h-screen.bg-premium-midnight[class*="pb-24"] {
    (safe-area aware), applied by <Screen> / TabPageShell — no per-layout or
    per-page padding rules needed. */
 
-html.chess-focus-active .layout-bottom-nav {
+html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) .layout-bottom-nav {
   display: none !important;
+}
+/* Bottom tabs on phone + tablet. */
+html:not([data-layout="desktop"]):has(.chess-focus-shell--preserve-nav) .layout-bottom-nav {
+  display: flex !important;
+}
+html.chess-focus-active:not([data-layout="desktop"])[data-puzzle-trainer] .layout-bottom-nav {
+  display: flex !important;
 }
 
 /* ===================================================================
@@ -642,27 +650,57 @@ html[data-layout="desktop"] .app-shell-content main.min-h-screen {
   }
 }
 
-/* A ChessFocusLayout page (Puzzle Trainer) is a full-screen board
-   experience — on desktop it hides the AppShell frame the same way
-   chess-focus mode already hides the bottom nav on phone, and drops the
-   sidebar inset so the board has the whole viewport. On phone/tablet the
-   bottom nav stays (that is exactly what `preserveBottomNav` is for).
-   `:has()` is supported by every current engine incl. the Capacitor
-   WebView; the raised z-index below is the fallback for anything older
-   (the fixed shell simply paints over the frame). */
-html[data-layout="desktop"] .chess-focus-shell {
+/* Full-screen chess focus (Free Play, Online) hides the AppShell frame on
+   desktop. Puzzle Trainer opts out via `chess-focus-shell--preserve-nav`
+   and stays in normal document flow inside the shell. */
+html[data-layout="desktop"] .chess-focus-shell:not(.chess-focus-shell--preserve-nav) {
   z-index: 60;
 }
-html[data-layout="desktop"] body:has(.chess-focus-shell) .app-sidenav,
-html[data-layout="desktop"] body:has(.chess-focus-shell) .app-topbar {
+html[data-layout="desktop"] body:has(.chess-focus-shell:not(.chess-focus-shell--preserve-nav)) .app-sidenav,
+html[data-layout="desktop"] body:has(.chess-focus-shell:not(.chess-focus-shell--preserve-nav)) .app-topbar {
   display: none;
 }
-html[data-layout="desktop"] body:has(.chess-focus-shell) .app-shell-content {
+html[data-layout="desktop"] body:has(.chess-focus-shell:not(.chess-focus-shell--preserve-nav)) .app-shell-content {
   padding-left: 0;
 }
 
-html.chess-focus-active,
-html.chess-focus-active body {
+html[data-layout="tablet"] .app-shell-content .chess-focus-shell--preserve-nav,
+html[data-layout="desktop"] .app-shell-content .chess-focus-shell--preserve-nav {
+  min-height: 0;
+}
+
+/* ── Puzzle Trainer: standard AppShell chrome (tabs below / sidebar left) ── */
+html:not([data-layout="desktop"])[data-puzzle-trainer] .layout-bottom-nav,
+html:not([data-layout="desktop"]):has(.chess-focus-shell--preserve-nav) .layout-bottom-nav {
+  display: flex !important;
+}
+html[data-layout="desktop"][data-puzzle-trainer] .app-sidenav,
+html[data-layout="desktop"][data-puzzle-trainer] .app-topbar,
+html[data-layout="desktop"]:has(.chess-focus-shell--preserve-nav) .app-sidenav,
+html[data-layout="desktop"]:has(.chess-focus-shell--preserve-nav) .app-topbar {
+  display: flex !important;
+}
+html[data-layout="desktop"][data-puzzle-trainer] .app-shell-content,
+html[data-layout="desktop"]:has(.chess-focus-shell--preserve-nav) .app-shell-content {
+  padding-left: var(--app-sidenav-w);
+}
+
+/* Board shell fits in the content column — never under the tab bar or sidebar. */
+html[data-layout="phone"] .app-shell-content .chess-focus-shell--preserve-nav {
+  height: calc(100dvh - var(--bottom-nav-h) - env(safe-area-inset-bottom, 0px));
+  max-height: calc(100dvh - var(--bottom-nav-h) - env(safe-area-inset-bottom, 0px));
+}
+html[data-layout="tablet"] .app-shell-content .chess-focus-shell--preserve-nav {
+  height: calc(100dvh - var(--topbar-h) - var(--bottom-nav-h) - env(safe-area-inset-bottom, 0px));
+  max-height: calc(100dvh - var(--topbar-h) - var(--bottom-nav-h) - env(safe-area-inset-bottom, 0px));
+}
+html[data-layout="desktop"] .app-shell-content .chess-focus-shell--preserve-nav {
+  height: calc(100dvh - var(--topbar-h));
+  max-height: calc(100dvh - var(--topbar-h));
+}
+
+html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)),
+html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) body {
   overflow: hidden;
 }
 

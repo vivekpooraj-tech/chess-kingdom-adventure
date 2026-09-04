@@ -9,7 +9,7 @@ import {
   CHESS_FOCUS_SIDE_PANEL_WIDTH,
   CHESS_FOCUS_STACKED_PANEL_RESERVE,
 } from "@/lib/chessFocus/computeBoardSize";
-import { setChessFocusActive } from "@/lib/chessFocus/focusMode";
+import { setChessFocusActive, resetChessFocusMode } from "@/lib/chessFocus/focusMode";
 
 /**
  * The true CSS viewport the shell has to fit into. Deliberately NOT
@@ -38,7 +38,7 @@ const SIDE_PANEL_MAX = 360;
 
 export type ChessFocusLayoutProps = {
   title: string;
-  onExit: () => void;
+  onExit?: () => void;
   opponentRow?: ReactNode;
   playerRow?: ReactNode;
   renderBoard: (boardSize: number) => ReactNode;
@@ -90,9 +90,11 @@ export function ChessFocusLayout({
   const [isSideBySide, setIsSideBySide] = useState(false);
 
   useEffect(() => {
-    if (preserveBottomNav) return;
-    setChessFocusActive(true);
-    return () => setChessFocusActive(false);
+    if (!preserveBottomNav) {
+      setChessFocusActive(true);
+      return () => setChessFocusActive(false);
+    }
+    resetChessFocusMode();
   }, [preserveBottomNav]);
 
   useLayoutEffect(() => {
@@ -106,12 +108,16 @@ export function ChessFocusLayout({
 
   useLayoutEffect(() => {
     function recompute() {
-      const metrics = readViewport();
+      const shellEl = shellRef.current;
+      const metrics =
+        preserveBottomNav && shellEl
+          ? { width: shellEl.clientWidth, height: shellEl.clientHeight }
+          : readViewport();
       const sideBySide = isChessFocusSideBySide(metrics.width, metrics.height);
       setIsSideBySide(sideBySide);
       setIsCompactLandscape(sideBySide && metrics.height <= 520);
 
-      const shellStyle = shellRef.current ? getComputedStyle(shellRef.current) : null;
+      const shellStyle = shellEl ? getComputedStyle(shellEl) : null;
       const shellPadV = shellStyle
         ? parseFloat(shellStyle.paddingTop) + parseFloat(shellStyle.paddingBottom)
         : 16;
@@ -135,18 +141,28 @@ export function ChessFocusLayout({
         ? Math.min(SIDE_PANEL_MAX, Math.max(SIDE_PANEL_MIN, Math.floor(metrics.width * 0.3)))
         : 0;
 
-      const navReserve = preserveBottomNav
-        ? (() => {
-            const root = getComputedStyle(document.documentElement);
-            const navH = parseFloat(root.getPropertyValue("--bottom-nav-h")) || 56;
-            const safeBottom = parseFloat(root.getPropertyValue("--safe-bottom")) || 0;
-            return navH + safeBottom;
-          })()
-        : 0;
-      const viewportHeight = metrics.height - navReserve;
+      let viewportHeight = metrics.height;
+      let viewportWidth = metrics.width;
+
+      if (!preserveBottomNav) {
+        // Full-screen shell — readViewport is the whole visual viewport.
+      } else if (!shellEl) {
+        const root = getComputedStyle(document.documentElement);
+        const layout = document.documentElement.dataset.layout ?? "phone";
+        const navH = parseFloat(root.getPropertyValue("--bottom-nav-h")) || 56;
+        const topbarH = parseFloat(root.getPropertyValue("--topbar-h")) || 0;
+        const safeBottom = parseFloat(root.getPropertyValue("--safe-bottom")) || 0;
+        const bottomReserve = layout === "desktop" ? safeBottom : navH + safeBottom;
+        const topReserve = layout === "phone" ? 0 : topbarH;
+        viewportHeight = metrics.height - bottomReserve - topReserve;
+        if (layout === "desktop") {
+          viewportWidth =
+            metrics.width - (parseFloat(root.getPropertyValue("--app-sidenav-w")) || 240);
+        }
+      }
 
       const next = computeChessFocusBoardSize({
-        viewportWidth: metrics.width,
+        viewportWidth,
         viewportHeight,
         boardColumnChromeHeight: isFullscreen ? boardColumnChrome * 0.6 : boardColumnChrome,
         // FIXED reserve — never the panel's measured height. This is what
@@ -188,7 +204,7 @@ export function ChessFocusLayout({
     }
   }
 
-  const header = !isFullscreen && (
+  const header = !isFullscreen && !preserveBottomNav && (
     <div
       ref={headerRef}
       className="chess-focus-header flex-shrink-0 w-full flex items-center justify-between gap-2 px-2 py-0.5"
@@ -220,21 +236,25 @@ export function ChessFocusLayout({
     </div>
   );
 
+  const shellProps = {
+    ref: shellRef,
+    className: preserveBottomNav
+      ? "chess-focus-shell--preserve-nav flex flex-col w-full bg-premium-midnight pt-safe overflow-hidden"
+      : "chess-focus-shell fixed inset-0 z-50 bg-premium-midnight flex flex-col overflow-hidden",
+    style: preserveBottomNav
+      ? undefined
+      : {
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          paddingLeft: "env(safe-area-inset-left, 0px)",
+          paddingRight: "env(safe-area-inset-right, 0px)",
+        },
+  };
+
+  const Shell = preserveBottomNav ? "main" : "div";
+
   return (
-    <div
-      ref={shellRef}
-      className={
-        preserveBottomNav
-          ? "chess-focus-shell fixed inset-x-0 top-0 z-40 bg-premium-midnight flex flex-col overflow-hidden bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px))]"
-          : "chess-focus-shell fixed inset-0 z-50 bg-premium-midnight flex flex-col overflow-hidden"
-      }
-      style={{
-        paddingTop: "env(safe-area-inset-top, 0px)",
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        paddingLeft: "env(safe-area-inset-left, 0px)",
-        paddingRight: "env(safe-area-inset-right, 0px)",
-      }}
-    >
+    <Shell {...shellProps}>
       <style jsx>{`
         /* SIDE-BY-SIDE: board column is sized exactly to the board (inline
            width) and centred in the row's full height; the panel is a
@@ -333,6 +353,6 @@ export function ChessFocusLayout({
           </div>
         )}
       </div>
-    </div>
+    </Shell>
   );
 }

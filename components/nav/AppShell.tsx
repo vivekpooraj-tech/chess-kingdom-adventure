@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { isChessFocusActive, subscribeChessFocus } from "@/lib/chessFocus/focusMode";
+import { resetChessFocusMode } from "@/lib/chessFocus/focusMode";
 import { isAppChromeRoute } from "./navConfig";
 import { PrimaryNav } from "./PrimaryNav";
 import { SideNav } from "./SideNav";
@@ -35,14 +35,18 @@ const COLLAPSE_KEY = "chessmind-sidenav-collapsed";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [focusActive, setFocusActive] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  // Mirror focus mode (same source as the old TabShellNav).
-  useEffect(() => {
-    setFocusActive(isChessFocusActive());
-    return subscribeChessFocus(() => setFocusActive(isChessFocusActive()));
-  }, []);
+  // Puzzle Trainer is a normal tab page — clear any chess-focus left over from
+  // Free Play / Online before paint so the tab bar / sidebar never flickers out.
+  useLayoutEffect(() => {
+    if (pathname === "/puzzles") {
+      resetChessFocusMode();
+      document.documentElement.dataset.puzzleTrainer = "1";
+    } else {
+      delete document.documentElement.dataset.puzzleTrainer;
+    }
+  }, [pathname]);
 
   // Sidebar collapse preference. The pre-paint ShellBootstrapScript already
   // set `html[data-sidenav]` for a flash-free first paint; this just brings
@@ -68,7 +72,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const showChrome = isAppChromeRoute(pathname) && !focusActive;
+  // App chrome is route-driven only. Chess-focus hides the bottom bar via CSS
+  // on full-screen board routes (Free Play, Online) — never by unmounting the
+  // shell, which broke Puzzle Trainer when focus state leaked across tab taps.
+  const showChrome = isAppChromeRoute(pathname);
 
   if (!showChrome) {
     return <>{children}</>;

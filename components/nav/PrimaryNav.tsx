@@ -17,7 +17,7 @@ export function PrimaryNav() {
   return (
     <nav
       aria-label="Primary"
-      className="layout-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
+      className="layout-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="mx-auto flex w-full max-w-lg items-stretch justify-between px-1 sm:px-2">
