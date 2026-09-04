@@ -45,6 +45,8 @@ export type ChessFocusLayoutProps = {
   sidePanel?: ReactNode;
   /** Extra content measured as part of board-column chrome (above the board). */
   boardMeta?: ReactNode;
+  /** Keep the primary tab bar visible (e.g. Puzzle Trainer tab). */
+  preserveBottomNav?: boolean;
 };
 
 /**
@@ -63,7 +65,7 @@ export type ChessFocusLayoutProps = {
  *   the top, board on the left sized to the FULL column height, panel is a
  *   fixed-width scrolling band on the right that also holds the player rows.
  *
- * Hides PrimaryNav while mounted.
+ * Hides PrimaryNav while mounted unless `preserveBottomNav` is set.
  */
 export function ChessFocusLayout({
   title,
@@ -73,6 +75,7 @@ export function ChessFocusLayout({
   boardMeta,
   renderBoard,
   sidePanel,
+  preserveBottomNav = false,
 }: ChessFocusLayoutProps) {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
@@ -87,9 +90,10 @@ export function ChessFocusLayout({
   const [isSideBySide, setIsSideBySide] = useState(false);
 
   useEffect(() => {
+    if (preserveBottomNav) return;
     setChessFocusActive(true);
     return () => setChessFocusActive(false);
-  }, []);
+  }, [preserveBottomNav]);
 
   useLayoutEffect(() => {
     setFullscreenSupported(typeof document !== "undefined" && document.fullscreenEnabled === true);
@@ -131,9 +135,19 @@ export function ChessFocusLayout({
         ? Math.min(SIDE_PANEL_MAX, Math.max(SIDE_PANEL_MIN, Math.floor(metrics.width * 0.3)))
         : 0;
 
+      const navReserve = preserveBottomNav
+        ? (() => {
+            const root = getComputedStyle(document.documentElement);
+            const navH = parseFloat(root.getPropertyValue("--bottom-nav-h")) || 56;
+            const safeBottom = parseFloat(root.getPropertyValue("--safe-bottom")) || 0;
+            return navH + safeBottom;
+          })()
+        : 0;
+      const viewportHeight = metrics.height - navReserve;
+
       const next = computeChessFocusBoardSize({
         viewportWidth: metrics.width,
-        viewportHeight: metrics.height,
+        viewportHeight,
         boardColumnChromeHeight: isFullscreen ? boardColumnChrome * 0.6 : boardColumnChrome,
         // FIXED reserve — never the panel's measured height. This is what
         // keeps the board from shrinking as the move list grows.
@@ -164,7 +178,7 @@ export function ChessFocusLayout({
       window.removeEventListener("orientationchange", recompute);
       window.visualViewport?.removeEventListener("resize", recompute);
     };
-  }, [isFullscreen]);
+  }, [isFullscreen, preserveBottomNav]);
 
   function toggleFullscreen() {
     if (document.fullscreenElement) {
@@ -209,7 +223,11 @@ export function ChessFocusLayout({
   return (
     <div
       ref={shellRef}
-      className="chess-focus-shell fixed inset-0 z-50 bg-premium-midnight flex flex-col overflow-hidden"
+      className={
+        preserveBottomNav
+          ? "chess-focus-shell fixed inset-x-0 top-0 z-40 bg-premium-midnight flex flex-col overflow-hidden bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px))]"
+          : "chess-focus-shell fixed inset-0 z-50 bg-premium-midnight flex flex-col overflow-hidden"
+      }
       style={{
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",

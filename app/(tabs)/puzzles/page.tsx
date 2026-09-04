@@ -296,6 +296,7 @@ function PuzzlesPageInner() {
     return (
       <ChessFocusLayout
         title="Puzzle Trainer"
+        preserveBottomNav
         onExit={() => router.push("/kingdom-map")}
         renderBoard={(boardSize) => (
           <div className="board-feedback flex w-full items-center justify-center" data-feedback={status}>
