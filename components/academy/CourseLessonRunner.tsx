@@ -13,6 +13,12 @@ import { TEXT } from "@/lib/designSystem";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, completeAcademyContent } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { OllieNote } from "@/components/ollie/OllieNote";
+import {
+  COURSE_COMPLETION_NOTE,
+  COURSE_STUCK_NOTE,
+  OLLIE_DEFAULT_STUCK,
+} from "@/lib/ollie/courseNotes";
 import type { LessonResponse, CourseLesson } from "@/lib/academy/courseTypes";
 
 /**
@@ -319,9 +325,12 @@ export function CourseLessonRunner({
                 {/* Never trap a learner: after a couple of attempts the answer
                     is offered rather than withheld. */}
                 {attempts >= 2 && (
-                  <p className={`${TEXT.caption} normal-case text-center`}>
-                    Hint: play {exercise.solutionFrom} → {exercise.solutionTo}.
-                  </p>
+                  <>
+                    <OllieNote>{COURSE_STUCK_NOTE[courseId] ?? OLLIE_DEFAULT_STUCK}</OllieNote>
+                    <p className={`${TEXT.caption} normal-case text-center`}>
+                      Hint: play {exercise.solutionFrom} → {exercise.solutionTo}.
+                    </p>
+                  </>
                 )}
               </div>
             )}
@@ -369,6 +378,7 @@ export function CourseLessonRunner({
               <p className={`${TEXT.meta} text-premium-gold`}>Take this into your next game</p>
               <p className={`${TEXT.body} mt-1`}>{lesson.takeaway}</p>
             </div>
+            <OllieNote>{COURSE_COMPLETION_NOTE[courseId]}</OllieNote>
             <p className={TEXT.caption}>
               {savedState === "saved"
                 ? "Progress saved."

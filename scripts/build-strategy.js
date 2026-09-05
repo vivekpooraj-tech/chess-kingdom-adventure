@@ -35,9 +35,33 @@ const LIB = JSON.parse(
 
 const PIECE_VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
-/** Count the legal moves a specific piece has in a position. */
+/**
+ * Count the legal moves the piece on `square` has — regardless of whose turn
+ * it is.
+ *
+ * chess.js only generates moves for the side to move, so asking for a piece's
+ * scope in the position AFTER it moved returns 0, because it is then the
+ * opponent's turn. An earlier version of this script did exactly that, which
+ * made every "did this move increase the piece's scope?" test compute a
+ * negative number and silently reject every candidate — the engine was never
+ * even consulted. So flip the side to move in the FEN before counting.
+ */
 function mobilityOf(game, square) {
-  return game.moves({ square, verbose: true }).length;
+  const piece = game.get(square);
+  if (!piece) return 0;
+  const parts = game.fen().split(" ");
+  if (parts[1] === piece.color) {
+    return game.moves({ square, verbose: true }).length;
+  }
+  parts[1] = piece.color;
+  parts[3] = "-"; // an en-passant target is not valid once the turn flips
+  try {
+    return new Chess(parts.join(" ")).moves({ square, verbose: true }).length;
+  } catch {
+    // Flipping the turn can produce an illegal position (e.g. the other king
+    // is in check). Nothing sensible to count there.
+    return 0;
+  }
 }
 
 /** Can any enemy pawn ever attack this square? (Outpost test.) */
@@ -65,7 +89,18 @@ const LESSONS = {
   "piece-activity": {
     label: "a quiet move that markedly increases the moved piece's scope",
     test: (before, mv, after) => {
-      if (mv.captured || mv.san.includes("+") || mv.piece === "p" || mv.piece === "k") return false;
+      // "#" as well as "+": a checkmate has no "+" in its SAN, and an
+      // earlier version of this test let Nd3# and Bb4# through as "quiet
+      // strategic moves" — caught by verify-course-lessons.js.
+      if (
+        mv.captured ||
+        mv.san.includes("+") ||
+        mv.san.includes("#") ||
+        mv.piece === "p" ||
+        mv.piece === "k"
+      ) {
+        return false;
+      }
       const gained = mobilityOf(after, mv.to) - mobilityOf(before, mv.from);
       return gained >= 3;
     },
@@ -112,7 +147,18 @@ const LESSONS = {
   "worst-piece": {
     label: "moving the least active piece to a better square",
     test: (before, mv, after) => {
-      if (mv.captured || mv.san.includes("+") || mv.piece === "p" || mv.piece === "k") return false;
+      // "#" as well as "+": a checkmate has no "+" in its SAN, and an
+      // earlier version of this test let Nd3# and Bb4# through as "quiet
+      // strategic moves" — caught by verify-course-lessons.js.
+      if (
+        mv.captured ||
+        mv.san.includes("+") ||
+        mv.san.includes("#") ||
+        mv.piece === "p" ||
+        mv.piece === "k"
+      ) {
+        return false;
+      }
       // The moved piece must have been the least mobile piece on the board for
       // its side — the classic "improve your worst piece" instruction.
       const mine = [];

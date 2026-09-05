@@ -89,13 +89,28 @@ async function recordSolve(client, childId, puzzleId, source, firstTry, attempts
 async function main() {
   // ---- pure-function check: no-repeat selection (no DB) ----
   {
-    // Minimal re-implementation guard: pickRandomPuzzle must never return a
-    // solved puzzle while an unsolved one exists. Load the real function via
-    // a tiny transpile-free require of the compiled logic is overkill here;
-    // instead assert the contract against the source shape.
-    const selSrc = fs.readFileSync(path.join(__dirname, "..", "lib", "puzzles", "selection.ts"), "utf8");
-    check("selection.ts: pickRandomPuzzle takes a `solved` set param", /pickRandomPuzzle\(\s*[^)]*solved/.test(selSrc), "signature");
-    check("selection.ts: unsolved puzzles are preferred over solved", /unsolved/.test(selSrc) && /solved\.has/.test(selSrc), "filter logic");
+    // Minimal re-implementation guard: puzzle selection must never return an
+    // already-solved puzzle while an unsolved one remains. Asserted against the
+    // source shape rather than by importing TypeScript into plain node.
+    //
+    // This used to point at lib/puzzles/selection.ts. That module was deleted
+    // when the 5,000-puzzle library landed: selection moved server-side to
+    // selectTacticsPuzzle, so the client never downloads a pool to choose from.
+    // The contract being guarded is unchanged — only where it lives.
+    const selSrc = fs.readFileSync(
+      path.join(__dirname, "..", "lib", "puzzles", "tacticsLibrary.server.ts"),
+      "utf8"
+    );
+    check(
+      "tacticsLibrary.server.ts: selectTacticsPuzzle accepts an `exclude` set",
+      /exclude\?:\s*ReadonlySet<string>/.test(selSrc),
+      "signature"
+    );
+    check(
+      "tacticsLibrary.server.ts: excluded (already-solved) puzzles are filtered out",
+      /exclude\.has\(/.test(selSrc),
+      "filter logic"
+    );
   }
 
   // ---- page-logic check: Daily Challenge bypasses the free quota ----

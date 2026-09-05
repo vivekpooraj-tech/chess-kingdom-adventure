@@ -45,6 +45,28 @@ const { STRATEGY_LESSONS } = (() => {
   }
 })();
 
+/**
+ * Legal moves available to the piece on `square`, whichever side is to move.
+ *
+ * chess.js generates moves only for the side to move, so counting a piece's
+ * scope in the position after its own move returns zero. Written independently
+ * of the selector's version on purpose — this file exists to disagree with the
+ * selector when the selector is wrong.
+ */
+function scopeOf(game, square) {
+  const piece = game.get(square);
+  if (!piece) return 0;
+  const parts = game.fen().split(" ");
+  if (parts[1] === piece.color) return game.moves({ square, verbose: true }).length;
+  parts[1] = piece.color;
+  parts[3] = "-";
+  try {
+    return new Chess(parts.join(" ")).moves({ square, verbose: true }).length;
+  } catch {
+    return 0;
+  }
+}
+
 /** Piece census for a position, used by the endgame claims. */
 function census(game) {
   const c = { w: {}, b: {}, total: 0 };
@@ -196,17 +218,44 @@ const CLAIM = {
   "piece-activity": {
     label: "must be a quiet move that increases the moved piece's scope",
     test: (mv, before, after) => {
-      if (mv.captured || mv.san.includes("+") || mv.piece === "p" || mv.piece === "k") return false;
-      return after.moves({ square: mv.to, verbose: true }).length >
-        before.moves({ square: mv.from, verbose: true }).length;
+      if (
+        mv.captured ||
+        mv.san.includes("+") ||
+        mv.san.includes("#") ||
+        mv.piece === "p" ||
+        mv.piece === "k"
+      ) {
+        return false;
+      }
+      return scopeOf(after, mv.to) > scopeOf(before, mv.from);
     },
   },
   "worst-piece": {
     label: "must be a quiet move improving the least active piece",
     test: (mv, before, after) => {
-      if (mv.captured || mv.san.includes("+") || mv.piece === "p" || mv.piece === "k") return false;
-      return after.moves({ square: mv.to, verbose: true }).length >
-        before.moves({ square: mv.from, verbose: true }).length;
+      if (
+        mv.captured ||
+        mv.san.includes("+") ||
+        mv.san.includes("#") ||
+        mv.piece === "p" ||
+        mv.piece === "k"
+      ) {
+        return false;
+      }
+      // Independently re-derive that the moved piece really was the least
+      // active one for its side, rather than trusting the selector's word.
+      const scopes = [];
+      for (const row of before.board()) {
+        for (const sq of row) {
+          if (sq && sq.color === mv.color && sq.type !== "p" && sq.type !== "k") {
+            scopes.push({ square: sq.square, n: scopeOf(before, sq.square) });
+          }
+        }
+      }
+      const movedScope = scopes.find((x) => x.square === mv.from)?.n;
+      if (movedScope === undefined) return false;
+      if (movedScope !== Math.min(...scopes.map((x) => x.n))) return false;
+      return scopeOf(after, mv.to) > movedScope;
     },
   },
 };

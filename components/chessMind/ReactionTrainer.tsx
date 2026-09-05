@@ -11,6 +11,7 @@ import { TEXT } from "@/lib/designSystem";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { OllieNote } from "@/components/ollie/OllieNote";
 import type { ReactionChallenge, ReactionResponse } from "@/lib/chessMind/reactionTypes";
 
 /**
@@ -229,7 +230,10 @@ export function ReactionTrainer() {
         </div>
 
         {/* Live session numbers, all measured. */}
-        <dl className="grid grid-cols-4 gap-2" aria-label="Session statistics">
+        {/* Two columns on the narrowest phones: at 320px four columns clipped
+            the "Accuracy" label, and a statistic you cannot read is not a
+            statistic. Four across from 640px up. */}
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Session statistics">
           <Stat label="Streak" value={String(stats.streak)} />
           <Stat label="Accuracy" value={accuracy === null ? "—" : `${accuracy}%`} />
           <Stat label="Average" value={avgMs === null ? "—" : `${(avgMs / 1000).toFixed(2)}s`} />
@@ -296,6 +300,16 @@ export function ReactionTrainer() {
                       : "Right move."
                     : `The move was ${challenge.options[challenge.correctIndex].san}.`}
                 </p>
+                {/* Ollie speaks only when the mistake was a RUSHED one — a
+                    wrong answer inside two seconds. Saying "slow down" to
+                    someone who thought carefully and still got it wrong would
+                    be both wrong and annoying. */}
+                {status === "wrong" && (elapsed ?? 0) < 2000 && (
+                  <OllieNote>
+                    Fast is useful — but accurate comes first. Speed is what accuracy turns into,
+                    not the other way round.
+                  </OllieNote>
+                )}
                 <Button tone="premium" onClick={next} className="w-full">
                   Next position →
                 </Button>
@@ -311,7 +325,7 @@ export function ReactionTrainer() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-premiumBtn border border-white/10 bg-premium-navy/70 px-2 py-2 text-center">
-      <dt className={`${TEXT.meta} truncate`}>{label}</dt>
+      <dt className={TEXT.meta}>{label}</dt>
       <dd className="font-classic-display text-base text-premium-ivory">{value}</dd>
     </div>
   );
