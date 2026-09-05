@@ -294,7 +294,7 @@ export default async function KingdomMapPage() {
 
         <Link
           href="/parent-gate?next=/parent-dashboard"
-          className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+          className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
         >
           For Parents
         </Link>

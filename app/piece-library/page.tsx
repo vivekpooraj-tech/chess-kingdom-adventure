@@ -97,7 +97,7 @@ export default function PieceLibraryPage() {
 
       <Link
         href="/discover"
-        className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2"
+        className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
       >
         Back to Discover
       </Link>

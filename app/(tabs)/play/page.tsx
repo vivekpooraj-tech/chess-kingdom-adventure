@@ -73,7 +73,7 @@ export default function PlayPage() {
           <DailyChallengeCard />
           <Link
             href="/puzzles"
-            className="font-body text-sm text-premium-ivory/40 underline underline-offset-2 min-h-[44px] flex items-center"
+            className="font-body text-sm text-premium-ivory/65 underline underline-offset-2 min-h-[44px] flex items-center"
           >
             Practice more puzzles
           </Link>

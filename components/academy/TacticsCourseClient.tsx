@@ -136,7 +136,7 @@ export function TacticsCourseClient({
 
       <Link
         href="/academy"
-        className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2 text-center"
+        className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2 text-center"
       >
         Back to the Academy
       </Link>

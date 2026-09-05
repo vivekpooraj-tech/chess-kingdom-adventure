@@ -413,7 +413,7 @@ function PuzzlesPageInner() {
       </SecondaryCard>
       <Link
         href="/kingdom-map"
-        className="font-body text-sm text-premium-ivory/40 underline underline-offset-2 min-h-[44px] flex items-center"
+        className="font-body text-sm text-premium-ivory/65 underline underline-offset-2 min-h-[44px] flex items-center"
       >
         Back to Home
       </Link>

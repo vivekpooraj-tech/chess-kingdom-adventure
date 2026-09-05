@@ -268,7 +268,7 @@ export default function CalculationPage() {
           )}
         </div>
 
-        <Link href="/chess-mind" className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/40 underline underline-offset-2">
+        <Link href="/chess-mind" className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2">
           Back to Chess Mind
         </Link>
       </Screen>
