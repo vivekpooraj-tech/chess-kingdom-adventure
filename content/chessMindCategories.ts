@@ -67,7 +67,7 @@ export const CHESS_MIND_CATEGORIES: ChessMindCategory[] = [
     title: "Tactical Thinking",
     emoji: "⚡",
     description: "Checks, captures, and threats — the building blocks of tactics.",
-    href: null,
+    href: "/academy/tactical-thinking",
   },
   {
     id: "reaction",
