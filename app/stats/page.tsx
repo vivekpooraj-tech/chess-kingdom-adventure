@@ -297,6 +297,12 @@ export default async function StatsPage({
         <SectionHeader title="Keep going" />
         <div className="flex flex-col gap-2">
           <Link
+            href="/games"
+            className="flex min-h-[52px] items-center justify-between rounded-premiumBtn border border-white/10 bg-premium-navy/70 px-4 font-classic-body text-sm text-premium-ivory hover:border-premium-gold/30"
+          >
+            Your games and reviews <span aria-hidden="true">→</span>
+          </Link>
+          <Link
             href="/play"
             className="flex min-h-[52px] items-center justify-between rounded-premiumBtn border border-white/10 bg-premium-navy/70 px-4 font-classic-body text-sm text-premium-ivory hover:border-premium-gold/30"
           >

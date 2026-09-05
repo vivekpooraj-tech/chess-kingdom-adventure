@@ -66,7 +66,7 @@ export function buildRecommendation(input: RecommendationInput): Recommendation 
     return {
       title: `Review a game you played as ${colorName}`,
       evidence: input.colorClaim,
-      href: "/profile",
+      href: "/games",
       cta: "Open your games",
     };
   }
