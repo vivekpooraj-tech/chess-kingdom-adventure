@@ -40,7 +40,7 @@ type Mode = "replay" | "analysis";
 type Screen = "review" | "practice";
 
 interface ExplainResponse {
-  mistakes: Record<number, { explanation: string; whatToNotice: string; skill?: string }>;
+  mistakes: Record<number, { explanation: string; whyBetter?: string; whatToNotice: string; skill?: string }>;
   goodMoves: Record<number, { explanation: string }>;
   biggestLesson: string;
   insights: string[];
@@ -238,6 +238,7 @@ export function PostGameAnalysis({
       return {
         ...m,
         explanation: fromApi?.explanation ?? FALLBACK_TEXT.explanation,
+        whyBetter: fromApi?.whyBetter,
         whatToNotice: fromApi?.whatToNotice ?? FALLBACK_TEXT.whatToNotice,
         skillId,
       };

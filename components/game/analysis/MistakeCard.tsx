@@ -14,6 +14,10 @@ const MINI_BOARD_SIZE = 150;
 
 export interface EnrichedMistake extends AnalyzedMove {
   explanation: string;
+  /** What the better move actually achieves. Optional: the explain API only
+   * supplies it when there was a better move to explain, and there is no
+   * honest generic fallback, so the UI omits the line instead. */
+  whyBetter?: string;
   whatToNotice: string;
   /** Resolved skill id (explain API's, else the conservative mapper's,
    * else the neutral bucket) — see PostGameAnalysis. */
@@ -109,12 +113,19 @@ export function MistakeCard({
               Best move: <span className="text-premium-gold">{mistake.bestMove.san}</span>
             </span>
           </div>
-          <p className={TEXT.caption}>One strong option was {mistake.bestMove.san}.</p>
+          {/* Naming the better move only tells the child WHAT; whyBetter is
+              what makes it transferable to the next game. Omitted rather than
+              padded when the explain API had nothing grounded to say. */}
+          {mistake.whyBetter ? (
+            <p className={TEXT.body}>{mistake.whyBetter}</p>
+          ) : (
+            <p className={TEXT.caption}>One strong option was {mistake.bestMove.san}.</p>
+          )}
         </div>
       )}
 
       <Button tone="premium" variant="ghost" onClick={() => setReviewOpen((v) => !v)}>
-        {reviewOpen ? "Hide Review Position" : "Review Position →"}
+        {reviewOpen ? "Hide this position" : "Try this position again →"}
       </Button>
 
       {reviewOpen && (

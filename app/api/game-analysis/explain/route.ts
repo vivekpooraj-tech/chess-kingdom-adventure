@@ -39,12 +39,15 @@ otherwise use tactical_awareness or keep the hint.
 
 Respond with ONLY valid JSON, no markdown fences, matching exactly this shape:
 {
-  "mistakes": { "<ply>": { "explanation": "...", "whatToNotice": "...", "skill": "<skill_id>" } },
+  "mistakes": { "<ply>": { "explanation": "...", "whyBetter": "...", "whatToNotice": "...", "skill": "<skill_id>" } },
   "goodMoves": { "<ply>": { "explanation": "..." } },
   "biggestLesson": "...",
   "insights": ["...", "..."]
 }
-"explanation" for a mistake: 1-2 short sentences on what went wrong in THIS position. "whatToNotice":
+"explanation" for a mistake: 1-2 short sentences on what went wrong in THIS position. "whyBetter": 1
+short sentence on what the better move you were given actually achieves (what it defends, wins, stops
+or threatens) — omit it entirely if you were not given a better move, and never guess at a tactic you
+were not told about. "whatToNotice":
 one short, reusable principle ("Before attacking, check whether your king is safe."). "skill": one id
 from the list above. "explanation" for a good move: 1 short encouraging sentence on what they saw.
 "biggestLesson": one sentence summarizing the single most important thing from this specific game.
@@ -96,7 +99,10 @@ function coerceSkill(value: unknown, hint: string | undefined): SkillId {
 }
 
 function mockResponse(body: ExplainRequestBody) {
-  const mistakes: Record<number, { explanation: string; whatToNotice: string; skill: SkillId }> = {};
+  const mistakes: Record<
+    number,
+    { explanation: string; whyBetter?: string; whatToNotice: string; skill: SkillId }
+  > = {};
   for (const m of body.mistakes) {
     mistakes[m.ply] = {
       explanation:
@@ -132,11 +138,20 @@ function normalizeParsed(parsed: unknown, body: ExplainRequestBody) {
   const rawMistakes = (p.mistakes ?? {}) as Record<string, Record<string, unknown>>;
   const rawGood = (p.goodMoves ?? {}) as Record<string, Record<string, unknown>>;
 
-  const mistakes: Record<number, { explanation: string; whatToNotice: string; skill: SkillId }> = {};
+  const mistakes: Record<
+    number,
+    { explanation: string; whyBetter?: string; whatToNotice: string; skill: SkillId }
+  > = {};
   for (const m of body.mistakes) {
     const r = rawMistakes[String(m.ply)] ?? {};
+    // whyBetter stays OPTIONAL rather than getting a generic fallback: there is
+    // no honest default for "what this specific move achieves", and the UI
+    // simply omits the line when it is missing.
+    const whyBetter =
+      m.bestMoveSan && typeof r.whyBetter === "string" && r.whyBetter.trim() ? r.whyBetter.trim() : undefined;
     mistakes[m.ply] = {
       explanation: typeof r.explanation === "string" && r.explanation.trim() ? r.explanation.trim() : FALLBACK_EXPLANATION,
+      ...(whyBetter ? { whyBetter } : {}),
       whatToNotice: typeof r.whatToNotice === "string" && r.whatToNotice.trim() ? r.whatToNotice.trim() : FALLBACK_NOTICE,
       skill: coerceSkill(r.skill, m.skillHint),
     };
