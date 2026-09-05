@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/Button";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
 import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 import { TEXT } from "@/lib/designSystem";
+import { getMatePattern } from "@/content/matePatterns";
 
 type Status = "playing" | "correct" | "incorrect";
 
@@ -83,6 +84,9 @@ function PuzzlesPageInner() {
   const [moveCount, setMoveCount] = useState(0);
   const [status, setStatus] = useState<Status>("playing");
   const [solvedCount, setSolvedCount] = useState(0);
+  // Consecutive first-try solves this session. Reset by a wrong attempt, so it
+  // reports genuine unaided runs rather than counting retried puzzles.
+  const [streakCount, setStreakCount] = useState(0);
   const [dailyAttempts, setDailyAttempts] = useState(0);
 
   const puzzle = PUZZLES[index];
@@ -185,6 +189,7 @@ function PuzzlesPageInner() {
   function markSolved() {
     setStatus("correct");
     setSolvedCount((n) => n + 1);
+    setStreakCount((n) => (dailyAttempts === 0 ? n + 1 : 0));
 
     // Attempts / first-try for THIS solving session (dailyAttempts counts
     // wrong tries on the current puzzle, reset on nextPuzzle) — real numbers,
@@ -244,6 +249,7 @@ function PuzzlesPageInner() {
 
   function markIncorrect() {
     setStatus("incorrect");
+    setStreakCount(0);
     setDailyAttempts((n) => n + 1);
     if (isDaily && childId) {
       const supabase = createClient();
@@ -291,6 +297,7 @@ function PuzzlesPageInner() {
   }
 
   const movesRemaining = puzzle.mateIn - moveCount;
+  const matePattern = getMatePattern(puzzle.theme);
 
   if (!limitReached) {
     return (
@@ -343,7 +350,21 @@ function PuzzlesPageInner() {
             )}
             {status === "correct" && !isDaily && (
               <div className="flex flex-col gap-2">
-                <MoveFeedback tone="correct">Checkmate — you found it.</MoveFeedback>
+                <MoveFeedback tone="correct">
+                  {streakCount >= 2
+                    ? `Checkmate — that's ${streakCount} in a row, first try.`
+                    : "Checkmate — you found it."}
+                </MoveFeedback>
+                {/* Naming the pattern is what makes a solved puzzle reusable on
+                    a real board. Omitted entirely for themes we cannot describe
+                    accurately — see content/matePatterns.ts. */}
+                {matePattern && (
+                  <div className="rounded-premiumBtn border border-premium-gold/20 bg-premium-navy/70 p-3 flex flex-col gap-1">
+                    <p className={`${TEXT.meta} text-premium-gold`}>{puzzle.theme}</p>
+                    <p className={TEXT.body}>{matePattern.description}</p>
+                    <p className={`${TEXT.caption} normal-case`}>{matePattern.recognise}</p>
+                  </div>
+                )}
                 <Button tone="premium" onClick={nextPuzzle} className="w-full">
                   Next Puzzle →
                 </Button>
