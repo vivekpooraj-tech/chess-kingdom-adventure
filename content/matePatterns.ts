@@ -32,7 +32,7 @@ export const MATE_PATTERNS: Record<string, MatePattern> = {
   "Back-Rank Mate": {
     description:
       "The king is stuck on its back row because its own pawns block the squares in front of it, and a rook or queen mates along that row.",
-    recognise: "A king that hasn't made a escape square for itself is always in danger on the back rank.",
+    recognise: "A king that hasn't made an escape square for itself is always in danger on the back rank.",
   },
   "Smothered Mate": {
     description:

@@ -15,8 +15,9 @@ import {
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { DAILY_PREVIEW_LIMIT } from "@/content/lessons";
-import { PUZZLES } from "@/content/puzzles";
-import { pickRandomPuzzle, rememberPuzzleShown } from "@/lib/puzzles/selection";
+import { rememberPuzzleShown, readRecentPuzzleIds } from "@/lib/puzzles/recentPuzzles";
+import type { ChessPuzzle } from "@/lib/types";
+import type { MatePuzzleResponse } from "@/app/api/puzzles/mate/route";
 import { isSoundMateInNFirstMove } from "@/lib/chess-engine/puzzleValidation";
 import { recordDailyChallengeResult } from "@/lib/supabase/dailyChallengeQueries";
 import { ChessBoard } from "@/components/board/ChessBoard";
@@ -58,17 +59,11 @@ function PuzzlesPageInner() {
   // and opening Puzzles never lands you on the same position every time.
   const requestedId = searchParams.get("id");
   const isDaily = searchParams.get("daily") === "1";
-  // Deterministic first value (requested puzzle, or a placeholder) so the
-  // server and client render the same first paint; the real random pick
-  // for a bare visit happens client-side in the effect below, before the
-  // board is ever shown (it waits on `selectionReady`).
-  const initialIndex = (() => {
-    if (requestedId) {
-      const i = PUZZLES.findIndex((p) => p.id === requestedId);
-      if (i !== -1) return i;
-    }
-    return 0;
-  })();
+  // The puzzle itself now arrives from /api/puzzles/mate rather than from a
+  // bundled copy of the pool, so there is no puzzle to render until that
+  // resolves. The board stays behind the skeleton until `selectionReady`
+  // flips, exactly as it did before — that gate already existed because the
+  // random pick was always deferred to an effect.
 
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
@@ -77,7 +72,7 @@ function PuzzlesPageInner() {
   const [isPremium, setIsPremium] = useState(false);
   const [todayCount, setTodayCount] = useState(0);
 
-  const [index, setIndex] = useState(initialIndex);
+  const [puzzle, setPuzzle] = useState<ChessPuzzle | null>(null);
   const [selectionReady, setSelectionReady] = useState(false);
   const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [boardKey, setBoardKey] = useState(0);
@@ -89,7 +84,6 @@ function PuzzlesPageInner() {
   const [streakCount, setStreakCount] = useState(0);
   const [dailyAttempts, setDailyAttempts] = useState(0);
 
-  const puzzle = PUZZLES[index];
   // The Daily Challenge is a separate free daily activity — it never counts
   // against the 3/day Puzzle Trainer allowance and is always playable, even
   // once that allowance is spent. Only bare (free-practice) /puzzles visits
@@ -101,11 +95,11 @@ function PuzzlesPageInner() {
   // opponent's reply lands on after each of the player's non-final moves.
   // Never the live game's post-move FEN (that's `opts.fen` in handleMove,
   // which is the position AFTER the move being validated, not before it).
-  const [beforeFen, setBeforeFen] = useState(puzzle.fen);
+  const [beforeFen, setBeforeFen] = useState<string>("");
 
   useEffect(() => {
-    setBeforeFen(puzzle.fen);
-  }, [puzzle.fen]);
+    if (puzzle) setBeforeFen(puzzle.fen);
+  }, [puzzle]);
 
   useEffect(() => {
     async function load() {
@@ -135,11 +129,23 @@ function PuzzlesPageInner() {
       setPieceSetId(child.piece_set_id);
 
       // Independent of each other (all only need user/child ids already in
-      // hand) — run together instead of one after the other.
-      const [{ data: parent }, previewCount, solved] = await Promise.all([
+      // hand) — run together instead of one after the other. The puzzle fetch
+      // joins the same batch: it is a server round-trip now, so issuing it
+      // alongside these rather than after them keeps the page's time-to-board
+      // the same as when the pool was bundled.
+      const recent = readRecentPuzzleIds();
+      const query = requestedId
+        ? `?id=${encodeURIComponent(requestedId)}`
+        : recent.length
+          ? `?exclude=${recent.map(encodeURIComponent).join(",")}`
+          : "";
+      const [{ data: parent }, previewCount, solved, mateRes] = await Promise.all([
         supabase.from("parents").select(PARENT_PREMIUM_COLUMNS).eq("auth_user_id", user.id).single(),
         getTodayPreviewCount(supabase, child.id, localDateString()),
         getSolvedPuzzleIds(supabase, child.id).catch(() => [] as string[]),
+        fetch(`/api/puzzles/mate${query}`, { cache: "no-store" })
+          .then((r) => r.json() as Promise<MatePuzzleResponse>)
+          .catch(() => ({ puzzle: null, solvedIds: [] }) as MatePuzzleResponse),
       ]);
       const premium = resolvePremiumState(parent).isPremium;
       setIsPremium(premium);
@@ -150,18 +156,13 @@ function PuzzlesPageInner() {
       const solvedSet = new Set(solved);
       setSolvedIds(solvedSet);
 
-      // Settle which puzzle to open now that the child's solve history is in
-      // hand — a `?id=` link (Daily Challenge, or a deep link) opens that
-      // exact puzzle; a bare visit opens a random puzzle the child hasn't
-      // solved yet, skipping the ones shown most recently on this device.
-      // The board stays behind the skeleton until `selectionReady` flips, so
-      // no placeholder puzzle is ever painted.
-      if (requestedId && PUZZLES.some((p) => p.id === requestedId)) {
-        rememberPuzzleShown(requestedId);
-      } else {
-        const picked = pickRandomPuzzle([], solvedSet);
-        rememberPuzzleShown(picked.id);
-        setIndex(PUZZLES.findIndex((p) => p.id === picked.id));
+      // The server settled which puzzle to open: a `?id=` link (Daily
+      // Challenge, or a deep link) gets that exact puzzle; a bare visit gets a
+      // random one the child hasn't solved, skipping this device's recent
+      // list. Same rules as before, just decided where the pool lives now.
+      if (mateRes.puzzle) {
+        setPuzzle(mateRes.puzzle);
+        rememberPuzzleShown(mateRes.puzzle.id);
       }
       setSelectionReady(true);
       setLoaded(true);
@@ -173,13 +174,26 @@ function PuzzlesPageInner() {
     setBoardKey((k) => k + 1);
     setMoveCount(0);
     setStatus("playing");
-    setBeforeFen(puzzle.fen);
+    if (puzzle) setBeforeFen(puzzle.fen);
   }
 
-  function nextPuzzle() {
-    const picked = pickRandomPuzzle([puzzle.id], solvedIds);
-    rememberPuzzleShown(picked.id);
-    setIndex(PUZZLES.findIndex((p) => p.id === picked.id));
+  async function nextPuzzle() {
+    // Ask the server for the next one. Recent ids (this device) plus the
+    // current puzzle are excluded; solved ids are applied server-side.
+    const exclude = [...readRecentPuzzleIds(), ...(puzzle ? [puzzle.id] : [])];
+    try {
+      const res = await fetch(
+        `/api/puzzles/mate?exclude=${exclude.map(encodeURIComponent).join(",")}`,
+        { cache: "no-store" }
+      );
+      const data = (await res.json()) as MatePuzzleResponse;
+      if (!data.puzzle) return;
+      setPuzzle(data.puzzle);
+      rememberPuzzleShown(data.puzzle.id);
+    } catch {
+      // Network blip: keep the current puzzle rather than blanking the board.
+      return;
+    }
     setBoardKey((k) => k + 1);
     setMoveCount(0);
     setStatus("playing");
@@ -187,6 +201,7 @@ function PuzzlesPageInner() {
   }
 
   function markSolved() {
+    if (!puzzle) return;
     setStatus("correct");
     setSolvedCount((n) => n + 1);
     setStreakCount((n) => (dailyAttempts === 0 ? n + 1 : 0));
@@ -258,6 +273,7 @@ function PuzzlesPageInner() {
   }
 
   function handleMove(opts: { fen: string; san: string; isCheckmate: boolean }) {
+    if (!puzzle) return;
     const isFinalMove = moveCount === puzzle.mateIn - 1;
     if (isFinalMove) {
       if (opts.isCheckmate) {
@@ -279,7 +295,7 @@ function PuzzlesPageInner() {
     }
   }
 
-  if (!loaded || !selectionReady) {
+  if (!loaded || !selectionReady || !puzzle) {
     // A real skeleton, not a blank screen — this page is a client component
     // (needs the puzzle id from the URL before it knows what to render), so
     // there's no server loading.tsx that can cover this gap; the tap needs
