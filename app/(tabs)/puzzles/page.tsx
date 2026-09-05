@@ -17,7 +17,7 @@ import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entit
 import { DAILY_PREVIEW_LIMIT } from "@/content/lessons";
 import { rememberPuzzleShown, readRecentPuzzleIds } from "@/lib/puzzles/recentPuzzles";
 import type { ChessPuzzle } from "@/lib/types";
-import type { MatePuzzleResponse } from "@/app/api/puzzles/mate/route";
+import type { MatePuzzleResponse } from "@/lib/puzzles/mateTypes";
 import { isSoundMateInNFirstMove } from "@/lib/chess-engine/puzzleValidation";
 import { recordDailyChallengeResult } from "@/lib/supabase/dailyChallengeQueries";
 import { ChessBoard } from "@/components/board/ChessBoard";

@@ -4,7 +4,7 @@ import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { resolveActiveChildCached, getSolvedPuzzleIds } from "@/lib/supabase/queries";
 import { getMatePuzzleById, selectMatePuzzle } from "@/lib/puzzles/matePool.server";
-import type { ChessPuzzle } from "@/lib/types";
+import type { MatePuzzleResponse } from "@/lib/puzzles/mateTypes";
 
 /**
  * Serve ONE mate puzzle from content/puzzles.ts.
@@ -24,13 +24,6 @@ import type { ChessPuzzle } from "@/lib/types";
  * `exclude` carries the client's per-device recency list. That split is
  * deliberate — see lib/puzzles/recentPuzzles.ts.
  */
-export interface MatePuzzleResponse {
-  puzzle: ChessPuzzle | null;
-  /** Ids this child has already solved — returned so the trainer can keep its
-   *  existing in-session solved set without a second round-trip. */
-  solvedIds: string[];
-}
-
 export async function GET(req: NextRequest) {
   const supabase = createClient();
   const user = await getSessionUser(supabase);

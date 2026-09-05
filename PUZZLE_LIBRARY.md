@@ -9,7 +9,8 @@ Chess Mind now has **two** puzzle pools. They are separate on purpose.
 | Kind | forced mate only | forks, pins, skewers, discovered attacks, deflection, endgames, mates |
 | Solution | none stored | explicit forced line |
 | Correctness | proven at runtime (`lib/chess-engine/puzzleValidation.ts`) | proven at build time, compared at runtime |
-| Reaches the browser | yes — bundled | **no** — one puzzle per request |
+| Reaches the browser | **no** — one puzzle per request | **no** — one puzzle per request |
+| Served by | `/api/puzzles/mate` | `/api/puzzles/next` |
 | Used by | `/puzzles` (Puzzle Trainer + Daily Challenge) | `/puzzles/tactics` (Tactics Trainer) |
 
 They are not merged because their notions of "correct" genuinely differ. The
@@ -101,6 +102,27 @@ automatically (it appears in `route.js.nft.json`), so no config change is needed
 The browser download does not change as the library grows — 5,000 or 500,000
 puzzles both cost ~360 bytes per puzzle served.
 
+The mate pool is server-only by the same principle, via
+`lib/puzzles/matePool.server.ts` and `/api/puzzles/mate` (~140 bytes per
+puzzle).
+
+### Keeping it that way
+
+Two things protect this, because nothing in the type system does:
+
+1. **Wire types live in neutral modules** — `lib/puzzles/mateTypes.ts` and
+   `lib/puzzles/tacticsTypes.ts`. A client component must never import a type
+   from a route or a `.server` module: that works only because TypeScript
+   erases type-only imports, so deleting one keyword in a refactor would
+   silently pull the whole dataset back into the bundle.
+2. **`scripts/check-puzzle-bundle.js`** asserts it against the real build
+   output and exits non-zero on violation. Run it after `npm run build`.
+
+The mate pool IS legitimately present in `/free-play` and `/online/[gameId]`
+chunks, which reach it through `PostGameAnalysis -> SkillPracticeSet ->
+lib/training/recommendation.ts` for skill-practice positions. The guard allows
+that and only fails on a puzzle route's first load.
+
 ## Selection and personalization
 
 All from signals the app already records; nothing is invented.
@@ -135,9 +157,8 @@ knows how puzzles are stored, so that swap stays inside one file.
 
 ## Known limitations
 
-- `/puzzles` (the mate trainer) still bundles `content/puzzles.ts` into the
-  client. Migrating it behind an API is the obvious next step but is a riskier
-  change: it also drives the Daily Challenge and has its own level system.
+- Two trainers now exist. Justified — their notions of "correct" genuinely
+  differ — but it is product surface area worth a deliberate decision.
 - Tactics puzzles are not yet wired into Ollie's practice runner or the Game
   Review's "practice this skill" flow — both still use the mate pool and the
   small pattern set. The API already accepts `?skill=`, so this is a wiring
