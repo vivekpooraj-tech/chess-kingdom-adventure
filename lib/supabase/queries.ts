@@ -1242,6 +1242,46 @@ export async function getTodayRatingChange(supabase: SupabaseClient, childId: st
   return (data ?? []).reduce((sum, r) => sum + r.rating_change, 0);
 }
 
+export interface RatingPoint {
+  newRating: number;
+  ratingChange: number;
+  result: "win" | "loss" | "draw";
+  createdAt: string;
+}
+
+/**
+ * This child's rated-game rating timeline, oldest first.
+ *
+ * rating_history has been written on every rated Random Match since 0026 but
+ * was only ever read for two booleans, so the app has never been able to answer
+ * "am I improving?" — the one question a chess player actually asks. Returned
+ * oldest-first because every consumer wants it in chronological order.
+ *
+ * Capped: a trend needs a window, not a full career, and this keeps the payload
+ * small on a route that already fetches plenty.
+ */
+export async function getRatingTimeline(
+  supabase: SupabaseClient,
+  childId: string,
+  limit = 30
+): Promise<RatingPoint[]> {
+  const { data, error } = await supabase
+    .from("rating_history")
+    .select("new_rating, rating_change, result, created_at")
+    .eq("child_id", childId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? [])
+    .map((r) => ({
+      newRating: r.new_rating as number,
+      ratingChange: r.rating_change as number,
+      result: r.result as "win" | "loss" | "draw",
+      createdAt: r.created_at as string,
+    }))
+    .reverse();
+}
+
 // --- Opening progress ladder (DISCOVERED / STUDIED / PRACTICED / MASTERED) --
 
 export interface OpeningEncounterDetail {

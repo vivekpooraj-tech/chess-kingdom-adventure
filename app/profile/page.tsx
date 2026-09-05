@@ -17,6 +17,8 @@ import {
   getChessMindStreak,
   getOnlineWinsCount,
   getTodayRatingChange,
+  getRatingTimeline,
+  getRecentGameReviews,
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { Screen } from "@/components/layout/Screen";
@@ -25,6 +27,8 @@ import { AchievementBadges } from "@/components/achievements/AchievementBadges";
 import { ListItemRow } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { buildChessJourney } from "@/lib/learner/chessJourney";
+import { ChessJourneyPanel } from "@/components/learner/ChessJourneyPanel";
 import { getPieceSet } from "@/content/pieceSets";
 import { getBoardSkin } from "@/content/boardSkins";
 import { TEXT } from "@/lib/designSystem";
@@ -53,6 +57,8 @@ export default async function ProfilePage() {
     onlineWins,
     chessMindStreak,
     todayRatingChange,
+    ratingTimeline,
+    recentReviews,
   ] = await Promise.all([
     getCompletedDays(supabase, child.id),
     getEarnedAchievementKeys(supabase, child.id),
@@ -63,7 +69,13 @@ export default async function ProfilePage() {
     getOnlineWinsCount(supabase, child.id),
     getChessMindStreak(supabase, child.id).catch(() => 0),
     getTodayRatingChange(supabase, child.id).catch(() => 0),
+    // Both join the existing parallel batch — no new sequential layer on a
+    // route that already pays cross-region latency per query.
+    getRatingTimeline(supabase, child.id).catch(() => []),
+    getRecentGameReviews(supabase, child.id, 20).catch(() => []),
   ]);
+
+  const journey = buildChessJourney(ratingTimeline, recentReviews);
 
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
   const currentZone = getZoneForDay(Math.min(child.current_day, LESSONS.length));
@@ -125,6 +137,11 @@ export default async function ProfilePage() {
             <span className="text-premium-gold text-lg flex-none">→</span>
           </ListItemRow>
         </div>
+
+        {/* The time dimension, above the lifetime totals: "am I improving?"
+            is a more useful first answer than "how much have I done?". Renders
+            nothing until there are enough rated games to say something honest. */}
+        <ChessJourneyPanel journey={journey} />
 
         <div className="w-full flex flex-col gap-2">
           <SectionHeader title="Your Stats" />
