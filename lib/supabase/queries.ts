@@ -1675,3 +1675,181 @@ export async function getTournamentParticipations(
     return [];
   }
 }
+
+// --- Friends (migration 0034) ----------------------------------------------
+//
+// Every function here tolerates the migration not being applied. This
+// environment applies migrations by hand through the Supabase SQL editor (see
+// the note in scripts/test-puzzle-economy.js about 0029), so the table may not
+// exist yet, and a friends page that threw in that state would take down the
+// whole route. Missing table reads as "no friends yet"; writes report
+// `not_enabled` so the UI can say so plainly rather than failing silently.
+
+export type FriendshipStatus = "pending" | "accepted" | "declined" | "blocked";
+
+export interface FriendRow {
+  friendshipId: string;
+  /** The OTHER child in the friendship. */
+  friendChildId: string;
+  friendName: string;
+  friendRating: number | null;
+  status: FriendshipStatus;
+  /** True when the signed-in child sent the request. */
+  outgoing: boolean;
+  createdAt: string;
+}
+
+/**
+ * True when the failure means "this table/function has not been created yet".
+ *
+ * Two different errors mean that, and only checking one of them is how a
+ * feature-detection flag ends up lying. Postgres raises 42P01 ("relation does
+ * not exist"), but PostgREST usually answers first with PGRST205 and the text
+ * "Could not find the table ... in the schema cache" — which contains neither
+ * the code nor the phrase "does not exist". An earlier version of this checked
+ * only the Postgres form, so the friends page rendered its full working UI
+ * against a table that was not there.
+ */
+function isMissingRelation(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  if (error.code === "42P01" || error.code === "PGRST205" || error.code === "PGRST202") return true;
+  const message = error.message ?? "";
+  return /does not exist|schema cache|could not find the (table|function)/i.test(message);
+}
+
+export interface FriendsResult {
+  /** False when migration 0034 has not been applied. */
+  enabled: boolean;
+  accepted: FriendRow[];
+  incoming: FriendRow[];
+  outgoing: FriendRow[];
+}
+
+export async function getFriends(
+  supabase: SupabaseClient,
+  childId: string
+): Promise<FriendsResult> {
+  const empty: FriendsResult = { enabled: true, accepted: [], incoming: [], outgoing: [] };
+  try {
+    const { data, error } = await supabase
+      .from("friendships")
+      .select("id, child_a, child_b, requested_by, status, created_at")
+      .or(`child_a.eq.${childId},child_b.eq.${childId}`)
+      .neq("status", "declined");
+
+    if (isMissingRelation(error)) return { ...empty, enabled: false };
+    if (error || !data) return empty;
+
+    const otherIds = data.map((r) => (r.child_a === childId ? r.child_b : r.child_a));
+    // Names come from `children`, which is parent-owns-child. A friend in
+    // another family therefore resolves to no row, and is shown as "Chess Mind
+    // player" rather than leaking anything — the same treatment opponents get.
+    const names = new Map<string, { name: string; rating: number | null }>();
+    if (otherIds.length) {
+      const { data: kids } = await supabase
+        .from("children")
+        .select("id, display_name, rating")
+        .in("id", otherIds);
+      for (const k of kids ?? []) {
+        names.set(k.id as string, {
+          name: (k.display_name as string) ?? "Chess Mind player",
+          rating: (k.rating as number) ?? null,
+        });
+      }
+    }
+
+    const rows: FriendRow[] = data.map((r) => {
+      const other = r.child_a === childId ? (r.child_b as string) : (r.child_a as string);
+      const known = names.get(other);
+      return {
+        friendshipId: r.id as string,
+        friendChildId: other,
+        friendName: known?.name ?? "Chess Mind player",
+        friendRating: known?.rating ?? null,
+        status: r.status as FriendshipStatus,
+        outgoing: r.requested_by === childId,
+        createdAt: r.created_at as string,
+      };
+    });
+
+    return {
+      enabled: true,
+      accepted: rows.filter((r) => r.status === "accepted"),
+      incoming: rows.filter((r) => r.status === "pending" && !r.outgoing),
+      outgoing: rows.filter((r) => r.status === "pending" && r.outgoing),
+    };
+  } catch {
+    return empty;
+  }
+}
+
+/** The child's own shareable code, or null before 0034 is applied. */
+export async function getFriendCode(
+  supabase: SupabaseClient,
+  childId: string
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from("children")
+      .select("friend_code")
+      .eq("id", childId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return (data.friend_code as string | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export type SendFriendRequestResult =
+  | "pending"
+  | "accepted"
+  | "already_friends"
+  | "not_found"
+  | "self"
+  | "not_authorized"
+  | "not_enabled"
+  | "error";
+
+export async function sendFriendRequest(
+  supabase: SupabaseClient,
+  childId: string,
+  friendCode: string
+): Promise<SendFriendRequestResult> {
+  try {
+    const { data, error } = await supabase.rpc("send_friend_request", {
+      p_child_id: childId,
+      p_friend_code: friendCode,
+    });
+    if (error) {
+      // Missing function reads the same as a missing table: not enabled yet.
+      if (/does not exist|schema cache/i.test(error.message)) return "not_enabled";
+      return "error";
+    }
+    return (data as SendFriendRequestResult) ?? "error";
+  } catch {
+    return "error";
+  }
+}
+
+export async function respondToFriendRequest(
+  supabase: SupabaseClient,
+  childId: string,
+  friendshipId: string,
+  action: "accept" | "decline" | "remove" | "block"
+): Promise<string> {
+  try {
+    const { data, error } = await supabase.rpc("respond_to_friend_request", {
+      p_child_id: childId,
+      p_friendship_id: friendshipId,
+      p_action: action,
+    });
+    if (error) {
+      if (/does not exist|schema cache/i.test(error.message)) return "not_enabled";
+      return "error";
+    }
+    return (data as string) ?? "error";
+  } catch {
+    return "error";
+  }
+}

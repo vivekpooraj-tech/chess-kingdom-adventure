@@ -71,6 +71,14 @@ export default async function MorePage() {
               </div>
               <span className="text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
+            <ListItemRow href="/friends">
+              <span className="text-2xl flex-none">👥</span>
+              <div className="flex-1">
+                <p className="font-classic-display text-base text-premium-ivory">Friends</p>
+                <p className={`${TEXT.caption} normal-case`}>Add by code and challenge them</p>
+              </div>
+              <span className="text-premium-gold text-lg flex-none">→</span>
+            </ListItemRow>
             <ListItemRow href="/games">
               <span className="text-2xl flex-none">♟️</span>
               <div className="flex-1">
