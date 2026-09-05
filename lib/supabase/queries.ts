@@ -1498,6 +1498,10 @@ export interface RecentReviewRow {
   blunders: number;
   biggestMomentSkill: string | null;
   reviewedAt: string;
+  /** Opening the reviewed game was played in, when the review recorded one.
+   *  Only reviewed games carry this, so anything computed from it measures
+   *  reviewed games rather than all games played. */
+  openingName: string | null;
 }
 
 /** The child's most recent review records (newest first) — for a future
@@ -1510,7 +1514,7 @@ export async function getRecentGameReviews(
   try {
     const { data, error } = await supabase
       .from("child_game_reviews")
-      .select("accuracy, result, mistakes, blunders, biggest_moment_skill, reviewed_at")
+      .select("accuracy, result, mistakes, blunders, biggest_moment_skill, opening_name, reviewed_at")
       .eq("child_id", childId)
       .order("reviewed_at", { ascending: false })
       .limit(limit);
@@ -1521,8 +1525,85 @@ export async function getRecentGameReviews(
       mistakes: (r.mistakes as number) ?? 0,
       blunders: (r.blunders as number) ?? 0,
       biggestMomentSkill: (r.biggest_moment_skill as string | null) ?? null,
+      openingName: (r.opening_name as string | null) ?? null,
       reviewedAt: r.reviewed_at as string,
     }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Every finished online game for a child, from that child's point of view.
+ *
+ * Returns rows already normalised to the shape lib/stats/playerStats.ts works
+ * in — colour and result resolved here rather than in the UI, because the
+ * host/guest and winner/host_color mapping is easy to get subtly backwards and
+ * should exist in exactly one place. getOnlineWinsCount does the same mapping
+ * inline; this is the same rule, applied once for every consumer.
+ *
+ * Reads go through RLS, so this can only ever return games belonging to a
+ * child the caller owns.
+ *
+ * Never throws: statistics are a read-only view, and a failed fetch should show
+ * "no data yet" rather than break the page it is on.
+ */
+export interface PlayedGameRow {
+  id: string;
+  playedAt: string;
+  color: "w" | "b";
+  result: "win" | "loss" | "draw";
+  timeControl: string | null;
+  matchType: string;
+  ratingBefore: number | null;
+  ratingAfter: number | null;
+  opponentChildId: string | null;
+  tournamentId: string | null;
+}
+
+export async function getPlayedGames(
+  supabase: SupabaseClient,
+  childId: string,
+  limit = 500
+): Promise<PlayedGameRow[]> {
+  try {
+    const { data, error } = await supabase
+      .from("online_games")
+      .select(
+        "id, created_at, host_child_id, guest_child_id, host_color, winner, status, match_type, time_control, host_rating_before, host_rating_after, guest_rating_before, guest_rating_after, tournament_id"
+      )
+      .eq("status", "finished")
+      .or(`host_child_id.eq.${childId},guest_child_id.eq.${childId}`)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error || !data) return [];
+
+    const rows: PlayedGameRow[] = [];
+    for (const g of data) {
+      const isHost = g.host_child_id === childId;
+      // host_color is the colour the HOST had; the guest necessarily had the other.
+      const hostColor = (g.host_color as string) === "b" ? "b" : "w";
+      const color: "w" | "b" = isHost ? hostColor : hostColor === "w" ? "b" : "w";
+
+      const winner = g.winner as string | null;
+      let result: "win" | "loss" | "draw";
+      if (!winner || winner === "draw") result = "draw";
+      else result = winner === color ? "win" : "loss";
+
+      rows.push({
+        id: g.id as string,
+        playedAt: g.created_at as string,
+        color,
+        result,
+        timeControl: (g.time_control as string | null) ?? null,
+        matchType: (g.match_type as string | null) ?? "invite",
+        ratingBefore: (isHost ? g.host_rating_before : g.guest_rating_before) ?? null,
+        ratingAfter: (isHost ? g.host_rating_after : g.guest_rating_after) ?? null,
+        opponentChildId: (isHost ? g.guest_child_id : g.host_child_id) ?? null,
+        tournamentId: (g.tournament_id as string | null) ?? null,
+      });
+    }
+    return rows;
   } catch {
     return [];
   }

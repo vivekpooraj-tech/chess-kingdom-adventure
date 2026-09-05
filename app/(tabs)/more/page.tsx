@@ -63,6 +63,14 @@ export default async function MorePage() {
         <section className="w-full flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>Your Chess Mind</p>
           <div className="flex flex-col gap-1.5">
+            <ListItemRow href="/stats">
+              <span className="text-2xl flex-none">📈</span>
+              <div className="flex-1">
+                <p className="font-classic-display text-base text-premium-ivory">Your Chess</p>
+                <p className={`${TEXT.caption} normal-case`}>What your games show, and what to practise next</p>
+              </div>
+              <span className="text-premium-gold text-lg flex-none">→</span>
+            </ListItemRow>
             <ListItemRow href="/profile">
               <span className="text-2xl flex-none">📊</span>
               <div className="flex-1">
