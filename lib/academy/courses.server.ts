@@ -1,4 +1,5 @@
 import { TACTICAL_THINKING_LESSONS } from "@/content/tacticalThinkingLessons";
+import { ENDGAME_LESSONS } from "@/content/endgameLessons";
 import type { CourseLesson, CourseSummary } from "./courseTypes";
 
 /**
@@ -30,6 +31,16 @@ const COURSES: Record<string, Course> = {
       lessonCount: TACTICAL_THINKING_LESSONS.length,
     },
     lessons: [...TACTICAL_THINKING_LESSONS].sort((a, b) => a.order - b.order),
+  },
+  endgames: {
+    summary: {
+      id: "endgames",
+      title: "Endgames",
+      emoji: "🏰",
+      description: "King activity, passed pawns, rook endings — the phase that decides games.",
+      lessonCount: ENDGAME_LESSONS.length,
+    },
+    lessons: [...ENDGAME_LESSONS].sort((a, b) => a.order - b.order),
   },
 };
 

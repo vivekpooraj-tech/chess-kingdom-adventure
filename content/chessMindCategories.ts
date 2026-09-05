@@ -8,16 +8,17 @@ export interface ChessMindCategory {
 }
 
 /**
- * All 8 categories from the product spec. Six are real and playable
- * (pattern, visualization, calculation, memory, spatial, mathematics).
+ * All 8 categories from the product spec, all now playable.
  * Calculation (content/chessMindCalculation.ts) uses curated, chess.js-
  * verified positions rather than live per-generation engine grading —
  * the same "verify once at authoring time" approach every other category
- * here already uses, not procedural generation. Tactical and reaction are
- * still listed — establishing the real shape of the feature — but not yet
- * built: both need the same attack-detection primitives Pattern
- * Recognition uses, applied to a faster timed format. Marked "Soon" rather
- * than stubbed, same convention used everywhere else in this app.
+ * here already uses, not procedural generation.
+ *
+ * Tactical Thinking is an Academy course (/academy/tactical-thinking) rather
+ * than a timed drill, because what it teaches is a search procedure — checks,
+ * captures, threats — which needs explanation before practice. Reaction is the
+ * timed format, served one position at a time from the puzzle library by
+ * /api/chess-mind/reaction.
  */
 export const CHESS_MIND_CATEGORIES: ChessMindCategory[] = [
   {
@@ -74,7 +75,7 @@ export const CHESS_MIND_CATEGORIES: ChessMindCategory[] = [
     title: "Reaction",
     emoji: "⏱️",
     description: "Quick-fire pattern spotting against the clock.",
-    href: null,
+    href: "/chess-mind/reaction",
   },
 ];
 

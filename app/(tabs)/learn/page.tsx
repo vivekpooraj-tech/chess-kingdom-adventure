@@ -58,15 +58,15 @@ const LEARN_CHESS = [
     id: "strategy",
     title: "Strategy",
     emoji: "🧭",
-    description: "Development, king safety, and long-term planning.",
-    soon: true as const,
+    description: "Outposts, pawn breaks, king safety, and how to form a plan.",
+    href: "/academy/strategy",
   },
   {
     id: "endgames",
     title: "Endgames",
     emoji: "🏰",
-    description: "Converting an advantage when the board empties out.",
-    soon: true as const,
+    description: "King activity, passed pawns, rook endings, and converting a win.",
+    href: "/academy/endgames",
   },
 ];
 
