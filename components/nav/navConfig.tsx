@@ -1,4 +1,13 @@
-import { HomeIcon, PuzzlePieceIcon, PlayIcon, AcademyIcon, MoreIcon } from "./icons";
+import {
+  HomeIcon,
+  PuzzlePieceIcon,
+  PlayIcon,
+  AcademyIcon,
+  MoreIcon,
+  ChessMindIcon,
+  DiscoverIcon,
+  ProfileIcon,
+} from "./icons";
 
 /**
  * The five primary destinations — the app's information architecture — and
@@ -45,6 +54,31 @@ export const NAV_ITEMS: NavItem[] = [
     icon: MoreIcon,
     match: ["/more", "/profile", "/kingdom-map/customize", "/parent-gate", "/parent-dashboard"],
   },
+];
+
+/**
+ * Secondary destinations, shown ONLY in the desktop sidebar.
+ *
+ * On a phone these correctly live behind Home and More: five thumb-reachable
+ * tabs is the right ceiling, and burying the rest one tap deeper costs
+ * almost nothing there. On desktop that same routing is pure friction — the
+ * sidebar is a full-height column carrying five items and roughly 70% empty
+ * space, while Academy, Chess Mind, Profile and Discover each need a detour
+ * through Learn or More.
+ *
+ * So this is a chrome affordance for one layout, NOT an IA change: every
+ * route here is already reachable exactly as before, the phone bottom bar is
+ * untouched, and nothing is added or removed from the five primary tabs.
+ *
+ * Parent Dashboard is deliberately absent. It sits behind the parent gate,
+ * and putting it in a child's primary chrome would both invite them to
+ * knock on that door and imply it is theirs.
+ */
+export const SECONDARY_NAV_ITEMS: NavItem[] = [
+  { label: "Academy", href: "/academy", icon: AcademyIcon },
+  { label: "Chess Mind", href: "/chess-mind", icon: ChessMindIcon },
+  { label: "Profile", href: "/profile", icon: ProfileIcon },
+  { label: "Discover", href: "/discover", icon: DiscoverIcon },
 ];
 
 export function isNavItemActive(pathname: string, item: NavItem): boolean {
