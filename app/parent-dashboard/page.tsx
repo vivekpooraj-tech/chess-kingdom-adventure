@@ -11,7 +11,12 @@ import {
   getChessMindTotalSolved,
   getOpeningEncounters,
   getRecentUsageMinutes,
+  getSkillSignals,
+  getRecentGameReviews,
 } from "@/lib/supabase/queries";
+import { deriveLearnerProfile } from "@/lib/ollie/learnerContext";
+import { buildChessBrainView } from "@/lib/learner/chessBrain";
+import { ChildLearningInsight } from "@/components/parent/ChildLearningInsight";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { LESSONS } from "@/content/lessons";
 import { BUDDIES } from "@/content/buddies";
@@ -78,6 +83,8 @@ export default async function ParentDashboardPage() {
     weeklySnapshot,
     progressRowsResult,
     achievementRowsResult,
+    skillSignals,
+    recentReviews,
   ] = child
     ? await Promise.all([
         getCompletedDays(supabase, child.id),
@@ -106,6 +113,11 @@ export default async function ParentDashboardPage() {
           .select("achievement_key, earned_at")
           .eq("child_id", child.id)
           .order("earned_at", { ascending: false }),
+        // Same signals the child's Chess Mind panel reads, so parent and child
+        // are never shown different stories about the same progress. Both
+        // already swallow their own failures.
+        getSkillSignals(supabase, child.id),
+        getRecentGameReviews(supabase, child.id),
       ])
     : [
         [] as number[],
@@ -118,6 +130,8 @@ export default async function ParentDashboardPage() {
         null,
         { data: [] as { day_number: number; completed_at: string | null }[] },
         { data: [] as { achievement_key: string; earned_at: string }[] },
+        {} as Awaited<ReturnType<typeof getSkillSignals>>,
+        [] as Awaited<ReturnType<typeof getRecentGameReviews>>,
       ];
 
   const openingsStudied = openingEncounters.filter((e) => e.studied_at).length;
@@ -143,6 +157,10 @@ export default async function ParentDashboardPage() {
             : null,
         lessonsCompleted: completedDays.length,
       })
+    : null;
+
+  const learningView = child
+    ? buildChessBrainView(skillSignals, recentReviews, deriveLearnerProfile(skillSignals, recentReviews))
     : null;
 
   const progressRows = progressRowsResult.data;
@@ -191,6 +209,14 @@ export default async function ParentDashboardPage() {
                 <StatTile value={`${weeklySnapshot.learningMinutes}m`} label="Learning time" />
               </div>
             </SecondaryCard>
+          )}
+
+          {/* Answers the question a parent actually opens this page with:
+              is my child learning, and at what. Placed straight after the
+              activity counts, which say how MUCH they did but not whether any
+              of it is working. */}
+          {learningView && (
+            <ChildLearningInsight view={learningView} childName={child.display_name} />
           )}
 
           {nextStep && (
