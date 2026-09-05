@@ -72,6 +72,21 @@ export default function PlayPage() {
         >
           <DailyChallengeCard />
           <Link
+            href="/puzzles/tactics"
+            className="list-row w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-4 flex items-center gap-4"
+          >
+            <span className="text-2xl" aria-hidden="true">⚔️</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-classic-body text-[11px] font-semibold text-premium-ivory/50 uppercase tracking-wide">
+                Tactics Trainer
+              </p>
+              <p className="font-classic-display text-base text-premium-ivory">
+                Forks, pins, skewers and more
+              </p>
+            </div>
+            <span className="text-premium-ivory/40 text-lg" aria-hidden="true">→</span>
+          </Link>
+          <Link
             href="/puzzles"
             className="font-body text-sm text-premium-ivory/65 underline underline-offset-2 min-h-[44px] flex items-center"
           >
