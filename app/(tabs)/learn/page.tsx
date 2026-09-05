@@ -3,6 +3,7 @@ import { PrimaryCard, ListItemRow } from "@/components/ui/Card";
 import { CHESS_MIND_CATEGORIES } from "@/content/chessMindCategories";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
+import { NextLessonCard } from "@/components/learner/NextLessonCard";
 
 /**
  * Learn (Phase 19) — a single combined index over the existing Academy and
@@ -13,12 +14,16 @@ import { TEXT } from "@/lib/designSystem";
  * intact and still reachable directly, and are still the "back" target for
  * their own children — see e.g. app/academy/fundamentals/page.tsx).
  *
- * Deliberately a plain static page — no auth check, no Supabase calls. The
- * "Continue Your Journey" card below links to the Kingdom Journey by anchor
- * rather than re-fetching per-child progress here (that data already lives
- * on Kingdom Map); a second personalized fetch on every visit to this page
- * would be exactly the kind of redundant request the tab-switching
- * performance pass just removed elsewhere.
+ * Deliberately a static server page — no auth check, no server-side Supabase
+ * calls. The "Continue Your Journey" card below links to the Kingdom Journey
+ * by anchor rather than re-fetching per-child progress here (that data already
+ * lives on Kingdom Map); a second personalized fetch on every visit to this
+ * page would be exactly the kind of redundant request the tab-switching
+ * performance pass removed elsewhere.
+ *
+ * That constraint is why the one personalized element, <NextLessonCard/>, is a
+ * client island: this shell still renders and paints exactly as before, and
+ * the recommendation fills in afterwards without ever blocking it.
  */
 const LEARN_CHESS = [
   {
@@ -76,6 +81,11 @@ export default function LearnPage() {
           Structured lessons on the game, and training for how you think about it.
         </p>
       </div>
+
+      {/* Client island: the page stays static and paints unchanged, and this
+          fills in only when the child has a real recurring weakness with a
+          lesson that teaches it. See NextLessonCard. */}
+      <NextLessonCard />
 
       <Link href="/kingdom-map#journey" className="w-full block active:scale-[0.98] transition-transform duration-100">
         <PrimaryCard className="flex items-center gap-4">
