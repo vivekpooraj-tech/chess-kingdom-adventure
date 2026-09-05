@@ -47,7 +47,52 @@ const TACTICS_MARKER = (() => {
 })();
 
 /** Routes whose first load must contain no dataset at all. */
-const PUZZLE_ROUTES = [/\/puzzles\/page$/, /\/puzzles\/tactics\/page$/];
+const PUZZLE_ROUTES = [
+  /\/puzzles\/page$/,
+  /\/puzzles\/tactics\/page$/,
+  // The Reaction trainer serves positions from the same library through
+  // /api/chess-mind/reaction, so it is subject to exactly the same rule.
+  /\/chess-mind\/reaction\/page$/,
+];
+
+/**
+ * Academy course content is server-only for the same reason the puzzle pools
+ * are: courses are served one lesson at a time by /api/academy/lesson so that
+ * adding a course costs the browser nothing. A client component importing
+ * lib/academy/courses.server.ts — or a content file directly — would put every
+ * lesson of every course into First Load JS, and nothing in the type system
+ * would catch it.
+ *
+ * Each marker is a distinctive phrase from one course's prose.
+ */
+const COURSE_MARKERS = [
+  ["tactical-thinking", "content/tacticalThinkingLessons.ts"],
+  ["endgames", "content/endgameLessons.ts"],
+  ["strategy", "content/strategyLessons.ts"],
+]
+  .map(([id, rel]) => {
+    try {
+      const src = fs.readFileSync(path.join(ROOT, rel), "utf8");
+      // takeaway: strings are prose unique to the course and survive minification.
+      // \s* spans the newline Prettier inserts when the string is long.
+      const m = /takeaway:\s*"([^"\\]{40,})"/.exec(src);
+      return m ? { id, marker: m[1].slice(0, 40) } : { id, marker: null, rel };
+    } catch {
+      return { id, marker: null, rel };
+    }
+  });
+
+// A guard with a silent gap is worse than no guard: it reports OK for content
+// it never actually checked. If a course yields no marker, fail rather than
+// quietly skip it.
+const unguarded = COURSE_MARKERS.filter((c) => !c.marker);
+if (unguarded.length) {
+  console.error(
+    `Could not derive a content marker for: ${unguarded.map((c) => c.id).join(", ")}.\n` +
+      "Fix the marker extraction — do not leave a course unguarded."
+  );
+  process.exit(1);
+}
 
 const manifest = JSON.parse(fs.readFileSync(MANIFEST, "utf8"));
 const cache = new Map();
@@ -96,11 +141,34 @@ if (TACTICS_MARKER && fs.existsSync(STATIC_DIR)) {
   }
 }
 
+// Course content must not appear in ANY client chunk, on any route.
+if (COURSE_MARKERS.length && fs.existsSync(STATIC_DIR)) {
+  const stack = [STATIC_DIR];
+  while (stack.length) {
+    const dir = stack.pop();
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else if (entry.name.endsWith(".js")) {
+        const text = fs.readFileSync(full, "utf8");
+        for (const c of COURSE_MARKERS) {
+          if (text.includes(c.marker)) {
+            violations.push(
+              `${c.id} course content found in client chunk ${path.relative(ROOT, full)}`
+            );
+          }
+        }
+      }
+    }
+  }
+}
+
 const checkedRoutes = Object.keys(manifest.pages).filter((r) =>
   PUZZLE_ROUTES.some((re) => re.test(r))
 );
 console.log("puzzle routes checked:", checkedRoutes.length ? checkedRoutes.join(", ") : "(none found)");
 console.log("tactics marker:", TACTICS_MARKER ?? "(library missing — skipped)");
+console.log("course content guarded:", COURSE_MARKERS.map((c) => c.id).join(", ") || "(none)");
 
 if (violations.length) {
   console.error(`\nBUNDLE VIOLATION (${violations.length}):`);

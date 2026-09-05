@@ -1,5 +1,6 @@
 import { TACTICAL_THINKING_LESSONS } from "@/content/tacticalThinkingLessons";
 import { ENDGAME_LESSONS } from "@/content/endgameLessons";
+import { STRATEGY_LESSONS } from "@/content/strategyLessons";
 import type { CourseLesson, CourseSummary } from "./courseTypes";
 
 /**
@@ -31,6 +32,16 @@ const COURSES: Record<string, Course> = {
       lessonCount: TACTICAL_THINKING_LESSONS.length,
     },
     lessons: [...TACTICAL_THINKING_LESSONS].sort((a, b) => a.order - b.order),
+  },
+  strategy: {
+    summary: {
+      id: "strategy",
+      title: "Strategy",
+      emoji: "🧭",
+      description: "How to think when there is no tactic: king safety, outposts, pawn breaks.",
+      lessonCount: STRATEGY_LESSONS.length,
+    },
+    lessons: [...STRATEGY_LESSONS].sort((a, b) => a.order - b.order),
   },
   endgames: {
     summary: {

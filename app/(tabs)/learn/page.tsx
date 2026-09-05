@@ -4,6 +4,8 @@ import { CHESS_MIND_CATEGORIES } from "@/content/chessMindCategories";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
 import { NextLessonCard } from "@/components/learner/NextLessonCard";
+import { CourseStatusChip } from "@/components/learner/CourseStatusChip";
+import { getCourse } from "@/lib/academy/courses.server";
 
 /**
  * Learn (Phase 19) — a single combined index over the existing Academy and
@@ -60,6 +62,7 @@ const LEARN_CHESS = [
     emoji: "🧭",
     description: "Outposts, pawn breaks, king safety, and how to form a plan.",
     href: "/academy/strategy",
+    courseId: "strategy",
   },
   {
     id: "endgames",
@@ -67,11 +70,21 @@ const LEARN_CHESS = [
     emoji: "🏰",
     description: "King activity, passed pawns, rook endings, and converting a win.",
     href: "/academy/endgames",
+    courseId: "endgames",
   },
 ];
 
 export default function LearnPage() {
   const trainCategories = CHESS_MIND_CATEGORIES;
+
+  // Lesson IDS only. getCourse is server-only and this page is a server
+  // component, so the course CONTENT never leaves the server — the client
+  // island below receives a handful of short strings.
+  const courseLessonIds: Record<string, string[]> = {};
+  for (const id of ["strategy", "endgames", "tactical-thinking"]) {
+    const course = getCourse(id);
+    if (course) courseLessonIds[id] = course.lessons.map((l) => l.id);
+  }
 
   return (
     <TabPageShell maxWidth="wide">
@@ -125,6 +138,12 @@ export default function LearnPage() {
                     <p className="font-classic-display text-base text-premium-ivory">{item.title}</p>
                     <p className={TEXT.caption}>{item.description}</p>
                   </div>
+                  {"courseId" in item && item.courseId ? (
+                    <CourseStatusChip
+                      courseId={item.courseId}
+                      lessonIds={courseLessonIds[item.courseId] ?? []}
+                    />
+                  ) : null}
                   <span className="text-premium-gold text-lg flex-none">→</span>
                 </ListItemRow>
               )
@@ -154,6 +173,12 @@ export default function LearnPage() {
                     <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                     <p className={TEXT.caption}>{cat.description}</p>
                   </div>
+                  {cat.id === "tactical" ? (
+                    <CourseStatusChip
+                      courseId="tactical-thinking"
+                      lessonIds={courseLessonIds["tactical-thinking"] ?? []}
+                    />
+                  ) : null}
                   <span className="text-premium-gold text-lg flex-none">→</span>
                 </ListItemRow>
               )

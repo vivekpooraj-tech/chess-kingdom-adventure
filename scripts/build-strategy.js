@@ -182,6 +182,12 @@ const DEPTH = Number(process.env.DEPTH || 14);
 const MAX_PROBES = Number(process.env.MAX_PROBES || 1200);
 /** How far below the engine's best a taught move may sit, in centipawns. */
 const MARGIN_CP = Number(process.env.MARGIN_CP || 40);
+const MULTIPV = Number(process.env.MULTIPV || 3);
+/** Restrict the search to specific lessons, comma separated. */
+const ONLY = (process.env.ONLY || "").split(",").map((s) => s.trim()).filter(Boolean);
+/** Write results after every find, so a long run can be interrupted without
+ *  losing what it already verified. */
+const OUT = process.env.OUT || null;
 
 (async () => {
   const engine = await createEngine();
@@ -190,7 +196,8 @@ const MARGIN_CP = Number(process.env.MARGIN_CP || 40);
   process.stderr.write(`quiet pool: ${quiet.length}  opening pool: ${opening.length}\n`);
 
   const found = {};
-  for (const k of Object.keys(LESSONS)) found[k] = [];
+  const wanted = ONLY.length ? ONLY : Object.keys(LESSONS);
+  for (const k of wanted) found[k] = [];
   const used = new Set();
 
   // king-safety and pawn-breaks are far likelier in opening-phase positions.
@@ -199,7 +206,7 @@ const MARGIN_CP = Number(process.env.MARGIN_CP || 40);
 
   for (const cand of pools) {
     if (probes >= MAX_PROBES) break;
-    const remaining = Object.keys(LESSONS).filter((k) => found[k].length < PER_LESSON);
+    const remaining = wanted.filter((k) => found[k].length < PER_LESSON);
     if (!remaining.length) break;
     if (used.has(cand.fen)) continue;
 
@@ -222,7 +229,7 @@ const MARGIN_CP = Number(process.env.MARGIN_CP || 40);
     if (!couldMatch) continue;
 
     probes++;
-    const ranked = await engine.analyse(cand.fen, { depth: DEPTH, multipv: 3 });
+    const ranked = await engine.analyse(cand.fen, { depth: DEPTH, multipv: MULTIPV });
     if (!ranked.length) continue;
     const topCp = ranked[0].cp;
 
@@ -271,6 +278,9 @@ const MARGIN_CP = Number(process.env.MARGIN_CP || 40);
         process.stderr.write(
           `  [${k}] ${found[k].length}/${PER_LESSON}  ${mv.san}  (-${topCp - candidateMove.cp}cp, probe ${probes})\n`
         );
+        // Persist after every find so a long search can be interrupted
+        // without losing the positions it has already verified.
+        if (OUT) fs.writeFileSync(OUT, JSON.stringify(found, null, 2), "utf8");
         placed = true;
         break;
       }
