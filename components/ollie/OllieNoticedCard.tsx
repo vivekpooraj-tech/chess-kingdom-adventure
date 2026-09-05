@@ -1,12 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/Button";
-import { SkillPracticeSet } from "@/components/game/analysis/SkillPracticeSet";
-import { recommendPractice } from "@/lib/training/recommendation";
-import { getSkill, type SkillId } from "@/lib/analysis/skills";
-import { recordSkillPractice } from "@/lib/supabase/queries";
-import { createClient } from "@/lib/supabase/client";
+import { getSkill } from "@/lib/analysis/skills";
 import type { OllieLearnerProfile } from "@/lib/ollie/learnerContext";
 import type { ExperienceLevel, AgeBand } from "@/lib/learner/experienceLevel";
 import { TEXT } from "@/lib/designSystem";
@@ -27,9 +24,20 @@ import { TEXT } from "@/lib/designSystem";
  * weakness — being told you keep missing something you have never missed is
  * how a child stops believing the coach.
  *
- * The practice set, its content selection and the honest coverage note are all
- * the existing review-driven ones; this only changes what triggers them.
+ * The practice runner is loaded on demand (see OlliePracticeRunner): it drags
+ * in the content library and the board, which should not be downloaded by every
+ * child who merely opens Chess Mind.
  */
+const OlliePracticeRunner = dynamic(
+  () => import("./OlliePracticeRunner").then((m) => m.OlliePracticeRunner),
+  {
+    ssr: false,
+    loading: () => (
+      <p className={`${TEXT.caption} normal-case`}>Loading your challenge…</p>
+    ),
+  }
+);
+
 export function OllieNoticedCard({
   profile,
   childId,
@@ -50,35 +58,12 @@ export function OllieNoticedCard({
   className?: string;
 }) {
   const [practicing, setPracticing] = useState(false);
-  const [practiceKey, setPracticeKey] = useState(0);
-  const [justFinished, setJustFinished] = useState<{ attempts: number; correct: number } | null>(null);
 
   const focusSkill = profile.focusSkill;
-
-  const recommendation = useMemo(() => {
-    if (!focusSkill) return null;
-    return recommendPractice({ skill: focusSkill, experienceLevel, ageBand });
-  }, [focusSkill, experienceLevel, ageBand]);
-
   // No genuine recurring pattern yet — say nothing rather than manufacture one.
-  if (!focusSkill || !recommendation) return null;
+  if (!focusSkill) return null;
 
   const skill = getSkill(focusSkill);
-
-  function handleComplete(skillId: SkillId, attempts: number, correct: number) {
-    setJustFinished({ attempts, correct });
-    if (childId) {
-      // Feeds practice_attempts / practice_correct back into the same signal
-      // that surfaced this weakness, so sustained practice eventually flips
-      // the card's message from "keeps coming up" to "that's real progress".
-      void recordSkillPractice(createClient(), childId, skillId, attempts, correct);
-    }
-  }
-
-  function restart() {
-    setPracticeKey((k) => k + 1);
-    setJustFinished(null);
-  }
 
   return (
     <section
@@ -114,28 +99,19 @@ export function OllieNoticedCard({
         </p>
       )}
 
-      {justFinished && (
-        <p className="rounded-premiumBtn border border-premium-gold/25 bg-premium-gold/10 px-3 py-2 font-classic-body text-sm text-premium-gold">
-          {justFinished.correct} of {justFinished.attempts} solved. Every rep makes this easier to spot.
-        </p>
-      )}
-
       {!practicing ? (
         <Button tone="premium" onClick={() => setPracticing(true)}>
           Try Ollie&apos;s challenge →
         </Button>
       ) : (
-        <SkillPracticeSet
-          // Remounting is what actually resets the runner's internal progress.
-          key={practiceKey}
-          recommendation={recommendation}
+        <OlliePracticeRunner
+          skill={focusSkill}
           childId={childId}
+          experienceLevel={experienceLevel}
+          ageBand={ageBand}
           boardSkinId={boardSkinId}
           pieceSetId={pieceSetId}
-          onComplete={handleComplete}
-          onPlayAgain={restart}
-          onBackToReview={() => setPracticing(false)}
-          backLabel="Done for now"
+          onExit={() => setPracticing(false)}
         />
       )}
     </section>
