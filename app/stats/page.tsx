@@ -9,6 +9,7 @@ import {
   getSkillSignals,
   getPuzzleAccuracyStats,
   getTournamentParticipations,
+  getRatingTimeline,
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { Screen } from "@/components/layout/Screen";
@@ -33,6 +34,11 @@ import {
 } from "@/lib/stats/playerStats";
 import { buildRecommendation, ollieStatsNote } from "@/lib/stats/recommendation";
 import { buildTournamentRecord, describeFinish } from "@/lib/stats/tournamentRecord";
+import { buildImprovementTimeline, MIN_POINTS_FOR_TIMELINE } from "@/lib/stats/improvementTimeline";
+import { RatingTimeline } from "@/components/stats/RatingTimeline";
+import { GettingStarted } from "@/components/stats/GettingStarted";
+import { MIN_GAMES_FOR_RATE, MIN_GAMES_PER_SPLIT, MIN_GAMES_FOR_TREND, MIN_GAMES_PER_OPENING } from "@/lib/stats/playerStats";
+import { MIN_PUZZLE_ATTEMPTS } from "@/lib/stats/recommendation";
 
 export const metadata = {
   title: "Your Chess · Chess Mind",
@@ -84,15 +90,17 @@ export default async function StatsPage({
   const child = resolution.child;
   if (!child) redirect("/choose-child");
 
-  const [allGames, reviews, signals, puzzleStats, participations] = await Promise.all([
+  const [allGames, reviews, signals, puzzleStats, participations, ratingPoints] = await Promise.all([
     getPlayedGames(supabase, child.id),
     getRecentGameReviews(supabase, child.id, 100).catch(() => []),
     getSkillSignals(supabase, child.id).catch(() => ({})),
     getPuzzleAccuracyStats(supabase, child.id).catch(() => null),
     getTournamentParticipations(supabase, child.id).catch(() => []),
+    getRatingTimeline(supabase, child.id, 40).catch(() => []),
   ]);
 
   const tournaments = buildTournamentRecord(participations);
+  const timeline = buildImprovementTimeline(ratingPoints);
 
   const selected = PERIODS.find((p) => p.id === searchParams.period) ?? PERIODS[3];
   const games: GameRecord[] = withinDays(allGames, selected.days);
@@ -177,11 +185,53 @@ export default async function StatsPage({
       </nav>
 
       {games.length === 0 ? (
-        <EmptySection>
-          {allGames.length === 0
-            ? "No finished games recorded yet. Play a game and this page starts filling in."
-            : `No games in the last ${selected.label.toLowerCase()}. Try a longer period.`}
-        </EmptySection>
+        allGames.length === 0 ? (
+          <GettingStarted
+            hasAnyActivity={(puzzleStats?.totalAttempts ?? 0) > 0 || reviews.length > 0}
+            rows={[
+              {
+                label: "Your score rate",
+                have: 0,
+                need: MIN_GAMES_FOR_RATE,
+                detail: "A percentage from fewer games than this would be noise, not a rate.",
+              },
+              {
+                label: "Rating progression",
+                have: ratingPoints.length,
+                need: MIN_POINTS_FOR_TIMELINE,
+                detail: "Rated games only — a two-point line always looks dramatic.",
+              },
+              {
+                label: "White and Black comparison",
+                have: 0,
+                need: MIN_GAMES_PER_SPLIT * 2,
+                detail: "Enough games with each colour to tell a real difference from a coin flip.",
+              },
+              {
+                label: "Recent form",
+                have: 0,
+                need: MIN_GAMES_FOR_TREND,
+                detail: "Two windows of games, so improvement can be measured against something.",
+              },
+              {
+                label: "Opening insights",
+                have: reviews.filter((r) => r.openingName).length,
+                need: MIN_GAMES_PER_OPENING,
+                detail: "Recorded when you run a Game Review, not from every game played.",
+              },
+              {
+                label: "Tactics recommendation",
+                have: puzzleStats?.totalAttempts ?? 0,
+                need: MIN_PUZZLE_ATTEMPTS,
+                detail: "Enough puzzle attempts for your first-try rate to mean something.",
+              },
+            ]}
+          />
+        ) : (
+          <EmptySection>
+            {`No games in the last ${selected.label.toLowerCase()}. Try a longer period.`}
+          </EmptySection>
+        )
       ) : (
         <>
           <section className="flex flex-col gap-3">
@@ -200,6 +250,7 @@ export default async function StatsPage({
                 fallbackNote="No rated games yet"
               />
             </div>
+            <RatingTimeline timeline={timeline} />
             <p className={TEXT.caption}>
               {recordLine(overview.record)}
               {overview.rated.games > 0

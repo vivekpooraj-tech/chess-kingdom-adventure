@@ -240,6 +240,46 @@ function games(n, result, opts = {}) {
   check("missing opening names and results are ignored", messy.rows.length === 0);
 }
 
+
+// ---- improvement timeline ----
+{
+  const T = require(path.join(process.cwd(), "lib", "stats", "improvementTimeline.ts"));
+  const pt = (r, i) => ({
+    newRating: r,
+    ratingChange: 0,
+    result: "win",
+    createdAt: new Date(Date.UTC(2026, 0, 1 + i)).toISOString(),
+  });
+
+  check("no rated games -> locked", T.buildImprovementTimeline([]).kind === "locked");
+  const few = T.buildImprovementTimeline([pt(400, 0), pt(410, 1)]);
+  check("two points is still locked", few.kind === "locked");
+  check("locked state reports the gap", few.have === 2 && few.need === T.MIN_POINTS_FOR_TIMELINE);
+  check("no summary while locked", T.describeTimeline(few) === null);
+
+  const ready = T.buildImprovementTimeline([pt(400, 0), pt(420, 1), pt(410, 2), pt(450, 3), pt(470, 4)]);
+  check("five points unlocks", ready.kind === "ready");
+  check("net is last minus first", ready.net === 70);
+  check("min and max are real extremes", ready.min === 400 && ready.max === 470);
+  check("peak equals max", ready.peak === 470);
+  check("one coordinate per point", ready.coords.length === 5);
+  check("oldest sits at x=0, newest at x=1", ready.coords[0].x === 0 && ready.coords[4].x === 1);
+  // y is inverted for SVG: the highest rating must be nearest the top (y=0).
+  check("highest rating maps to the top", ready.coords[4].y === 0);
+  check("lowest rating maps to the bottom", ready.coords[0].y === 1);
+  check("a gain is described as a gain", /gained 70/.test(T.describeTimeline(ready)));
+
+  const flat = T.buildImprovementTimeline([pt(400, 0), pt(400, 1), pt(400, 2), pt(400, 3), pt(400, 4)]);
+  check("a flat line does not divide by zero", flat.coords.every((c) => c.y === 0.5));
+  check("a flat line is described as steady", /held steady/.test(T.describeTimeline(flat)));
+
+  const down = T.buildImprovementTimeline([pt(500, 0), pt(480, 1), pt(470, 2), pt(450, 3), pt(430, 4)]);
+  check("a decline is described honestly", /down 70/.test(T.describeTimeline(down)));
+
+  const noise = T.buildImprovementTimeline([pt(400, 0), pt(404, 1), pt(399, 2), pt(402, 3), pt(405, 4)]);
+  check("small movement is called steady, not a trend", /held steady/.test(T.describeTimeline(noise)));
+}
+
 console.log(`\n=== PLAYER STATS: ${pass} passed, ${failures.length} failed ===`);
 if (failures.length) {
   console.error("Failures:\n" + failures.map((f) => " - " + f).join("\n"));
