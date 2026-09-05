@@ -89,6 +89,9 @@ export function ManageChildren({
         })}
       </ul>
 
+      {/* min-w-0 on the input is load-bearing: a flex item defaults to
+          min-width:auto, so without it the input refuses to shrink past its
+          intrinsic width and pushes "+ Add Child" off-screen on a 320px phone. */}
       <div className="flex gap-2">
         <input
           value={newName}
@@ -96,7 +99,7 @@ export function ManageChildren({
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder="New child's name"
           aria-label="New child's name"
-          className="flex-1 rounded-premiumBtn px-4 py-2 border border-white/15 bg-premium-midnightDeep text-premium-ivory font-classic-body placeholder:text-premium-ivory/30"
+          className="min-w-0 flex-1 rounded-premiumBtn px-4 py-2 border border-white/15 bg-premium-midnightDeep text-premium-ivory font-classic-body placeholder:text-premium-ivory/30"
           maxLength={40}
         />
         <Button tone="premium" size="md" onClick={handleAdd} disabled={!newName.trim() || adding}>
