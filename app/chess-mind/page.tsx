@@ -17,6 +17,8 @@ import {
   getRecentGameReviews,
 } from "@/lib/supabase/queries";
 import { deriveLearnerProfile, type OllieLearnerProfile } from "@/lib/ollie/learnerContext";
+import { buildChessBrainView, type ChessBrainView } from "@/lib/learner/chessBrain";
+import { ChessBrainPanel } from "@/components/learner/ChessBrainPanel";
 import { OllieNoticedCard } from "@/components/ollie/OllieNoticedCard";
 import type { ExperienceLevel, AgeBand } from "@/lib/learner/experienceLevel";
 import { getActiveChildIdClient } from "@/lib/childSession";
@@ -33,6 +35,7 @@ export default function ChessMindPage() {
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(null);
   const [ageBand, setAgeBand] = useState<AgeBand | null>(null);
   const [profile, setProfile] = useState<OllieLearnerProfile>({});
+  const [brain, setBrain] = useState<ChessBrainView | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -64,7 +67,9 @@ export default function ChessMindPage() {
       setChildId(childId);
       setExperienceLevel(resolution.child.experience_level ?? null);
       setAgeBand(resolution.child.age_band ?? null);
-      setProfile(deriveLearnerProfile(signals, reviews));
+      const derived = deriveLearnerProfile(signals, reviews);
+      setProfile(derived);
+      setBrain(buildChessBrainView(signals, reviews, derived));
       setLoaded(true);
     }
     load();
@@ -113,6 +118,8 @@ export default function ChessMindPage() {
             ageBand={ageBand}
           />
         )}
+
+        {loaded && brain && <ChessBrainPanel view={brain} />}
 
         {dailyCategory?.href && (
           <Link
