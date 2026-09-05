@@ -8,6 +8,7 @@ import {
   getRecentGameReviews,
   getSkillSignals,
   getPuzzleAccuracyStats,
+  getTournamentParticipations,
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { Screen } from "@/components/layout/Screen";
@@ -31,6 +32,7 @@ import {
   type Stat,
 } from "@/lib/stats/playerStats";
 import { buildRecommendation, ollieStatsNote } from "@/lib/stats/recommendation";
+import { buildTournamentRecord, describeFinish } from "@/lib/stats/tournamentRecord";
 
 export const metadata = {
   title: "Your Chess · Chess Mind",
@@ -82,12 +84,15 @@ export default async function StatsPage({
   const child = resolution.child;
   if (!child) redirect("/choose-child");
 
-  const [allGames, reviews, signals, puzzleStats] = await Promise.all([
+  const [allGames, reviews, signals, puzzleStats, participations] = await Promise.all([
     getPlayedGames(supabase, child.id),
     getRecentGameReviews(supabase, child.id, 100).catch(() => []),
     getSkillSignals(supabase, child.id).catch(() => ({})),
     getPuzzleAccuracyStats(supabase, child.id).catch(() => null),
+    getTournamentParticipations(supabase, child.id).catch(() => []),
   ]);
+
+  const tournaments = buildTournamentRecord(participations);
 
   const selected = PERIODS.find((p) => p.id === searchParams.period) ?? PERIODS[3];
   const games: GameRecord[] = withinDays(allGames, selected.days);
@@ -292,6 +297,62 @@ export default async function StatsPage({
 
       {/* The existing Chess Brain, not a second opinion about the same player. */}
       <ChessBrainPanel view={brain} />
+
+      {tournaments.entered > 0 && (
+        <section className="flex flex-col gap-3">
+          <SectionHeader title="Tournaments" />
+          <PrimaryCard className="flex flex-col gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="font-classic-display text-2xl text-premium-ivory">
+                  {tournaments.entered}
+                </p>
+                <p className={TEXT.caption}>Entered</p>
+              </div>
+              <div>
+                <p className="font-classic-display text-2xl text-premium-ivory">
+                  {tournaments.wins}
+                </p>
+                <p className={TEXT.caption}>Won</p>
+              </div>
+              <div>
+                <p className="font-classic-display text-2xl text-premium-ivory">
+                  {tournaments.podiums}
+                </p>
+                <p className={TEXT.caption}>Top three</p>
+              </div>
+            </div>
+            {tournaments.best && (
+              <p className={TEXT.body}>
+                Best finish: {describeFinish(tournaments.best)} in {tournaments.best.tournamentName}.
+              </p>
+            )}
+            {tournaments.finished === 0 && (
+              <p className={TEXT.caption}>
+                Nothing finished yet — positions appear once a tournament completes.
+              </p>
+            )}
+            {tournaments.recent.length > 0 && (
+              <ul className="flex flex-col gap-1.5 border-t border-white/10 pt-3">
+                {tournaments.recent.map((f) => (
+                  <li key={f.tournamentId} className="flex items-baseline justify-between gap-3">
+                    <span className="font-classic-body text-sm text-premium-ivory">
+                      {f.tournamentName}
+                    </span>
+                    <span className={TEXT.caption}>{describeFinish(f)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link
+              href="/play/tournaments"
+              className="inline-flex min-h-[44px] items-center font-classic-body text-sm text-premium-gold underline underline-offset-4"
+            >
+              Tournaments →
+            </Link>
+          </PrimaryCard>
+        </section>
+      )}
 
       <section className="flex flex-col gap-2">
         <SectionHeader title="Keep going" />

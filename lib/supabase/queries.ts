@@ -1608,3 +1608,70 @@ export async function getPlayedGames(
     return [];
   }
 }
+
+/**
+ * A child's tournament participations, with every rival's points, so finishing
+ * positions can be derived (lib/stats/tournamentRecord.ts).
+ *
+ * Positions are not stored anywhere — tournament_participants records points
+ * only — so this reads the whole participant list of each tournament the child
+ * entered. That is allowed: 0023_group_tournaments.sql lets any authenticated
+ * user read participants, unlike `children`, whose parent-owns-child RLS is
+ * exactly why a global cross-family leaderboard is not possible without a
+ * SECURITY DEFINER function.
+ *
+ * Never throws — an empty record renders as "no tournaments yet".
+ */
+export async function getTournamentParticipations(
+  supabase: SupabaseClient,
+  childId: string
+): Promise<
+  {
+    tournamentId: string;
+    tournamentName: string;
+    status: string;
+    points: number;
+    allPoints: number[];
+    endedAt: string | null;
+  }[]
+> {
+  try {
+    const { data: mine, error } = await supabase
+      .from("tournament_participants")
+      .select("tournament_id, points")
+      .eq("child_id", childId);
+    if (error || !mine || mine.length === 0) return [];
+
+    const ids = mine.map((r) => r.tournament_id as string);
+
+    const [{ data: tournaments }, { data: everyone }] = await Promise.all([
+      supabase.from("tournaments").select("id, name, status, created_at").in("id", ids),
+      supabase.from("tournament_participants").select("tournament_id, points").in("tournament_id", ids),
+    ]);
+
+    const byTournament = new Map<string, number[]>();
+    for (const row of everyone ?? []) {
+      const key = row.tournament_id as string;
+      const list = byTournament.get(key);
+      const pts = Number(row.points) || 0;
+      if (list) list.push(pts);
+      else byTournament.set(key, [pts]);
+    }
+    const meta = new Map((tournaments ?? []).map((t) => [t.id as string, t]));
+
+    return mine.map((r) => {
+      const id = r.tournament_id as string;
+      const t = meta.get(id);
+      return {
+        tournamentId: id,
+        tournamentName: (t?.name as string) ?? "Tournament",
+        status: (t?.status as string) ?? "unknown",
+        points: Number(r.points) || 0,
+        allPoints: byTournament.get(id) ?? [],
+        endedAt: (t?.created_at as string) ?? null,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
