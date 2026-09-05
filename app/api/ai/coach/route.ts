@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
+import { getSkillSignals, getRecentGameReviews } from "@/lib/supabase/queries";
+import { deriveLearnerProfile } from "@/lib/ollie/learnerContext";
 import { buildOllieSystemPrompt } from "@/lib/ollie/systemPrompt";
 import { isRateLimited } from "@/lib/ollie/rateLimit";
 import { validateCoachRequest } from "@/lib/ollie/validate";
@@ -44,12 +46,25 @@ export async function POST(req: NextRequest) {
   }
 
   if (isRateLimited(user.id)) {
+    // Checked before the learner reads below so a rate-limited caller can't
+    // still make us pay for two queries.
     return NextResponse.json({
       reply: "Hoo! You're asking fast -- give me just a moment to catch up, then try again.",
       mocked: true,
       error: "rate_limited",
     });
   }
+
+  // Cross-session awareness is derived HERE, from the child's own recorded
+  // counters, rather than accepted from the request body — otherwise a caller
+  // could hand Ollie invented claims about the child's history. Both reads are
+  // best-effort and already swallow their own failures, so a signals outage
+  // just means Ollie answers without the extra context.
+  const [skillSignals, recentReviews] = await Promise.all([
+    getSkillSignals(supabase, childId),
+    getRecentGameReviews(supabase, childId),
+  ]);
+  const learnerProfile = deriveLearnerProfile(skillSignals, recentReviews);
 
   const systemPrompt = buildOllieSystemPrompt({
     lessonTitle,
@@ -60,6 +75,7 @@ export async function POST(req: NextRequest) {
     reviewContext,
     experienceLevel,
     ageBand,
+    learnerProfile,
   });
 
   // TODO(Phase 2): pass this reply through the age-appropriate content filter

@@ -66,6 +66,7 @@ export function SkillPracticeSet({
   onComplete,
   onPlayAgain,
   onBackToReview,
+  backLabel = "Back to Review",
 }: {
   recommendation: PracticeRecommendation;
   childId?: string | null;
@@ -76,6 +77,10 @@ export function SkillPracticeSet({
   onComplete?: (skill: PracticeRecommendation["skill"], attempts: number, correct: number) => void;
   onPlayAgain: () => void;
   onBackToReview: () => void;
+  /** Label for the exit button. Defaults to the post-game review wording; other
+   * surfaces that reuse this runner (e.g. Ollie's challenge on Chess Mind) pass
+   * their own so the copy matches where the child actually is. */
+  backLabel?: string;
 }) {
   const skill = getSkill(recommendation.skill);
   const items = recommendation.items;
@@ -161,7 +166,7 @@ export function SkillPracticeSet({
             Play Again
           </Button>
           <Button tone="premium" variant="ghost" onClick={onBackToReview}>
-            Back to Review
+            {backLabel}
           </Button>
         </div>
       </div>

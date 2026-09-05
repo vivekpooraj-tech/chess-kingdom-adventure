@@ -5,6 +5,7 @@ import {
   buildLearnerToneLine,
   type OllieReviewContext,
 } from "./reviewContext";
+import { buildLearnerContextLine, type OllieLearnerProfile } from "./learnerContext";
 import type { ExperienceLevel, AgeBand } from "@/lib/learner/experienceLevel";
 
 const BUDDY_SYSTEM_PROMPT_BASE = `You are Ollie the Owl, a friendly chess tutor inside the "${BRAND.name}" app, teaching children aged 5-12.
@@ -52,12 +53,17 @@ export function buildOllieSystemPrompt(params: {
   reviewContext?: OllieReviewContext;
   experienceLevel?: ExperienceLevel;
   ageBand?: AgeBand;
+  /** Cross-session signals the app already recorded. Derived server-side —
+   * never accepted from the client — so a caller can't put words about the
+   * child's history into Ollie's mouth. */
+  learnerProfile?: OllieLearnerProfile;
 }): string {
   return (
     BUDDY_SYSTEM_PROMPT_BASE +
     buildLessonContextLine(params.lessonTitle, params.dayNumber, params.lessonTopic, params.buddyName) +
     buildBoardContextLine(params.boardFen ?? params.reviewContext?.fenBefore) +
     buildReviewContextLine(params.reviewContext) +
+    (params.learnerProfile ? buildLearnerContextLine(params.learnerProfile) : "") +
     buildLearnerToneLine(params.experienceLevel, params.ageBand)
   );
 }

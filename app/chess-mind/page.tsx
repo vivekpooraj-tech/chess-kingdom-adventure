@@ -13,7 +13,12 @@ import {
   getChessMindStatsByModule,
   getChessMindStreak,
   getTodayChessMindModules,
+  getSkillSignals,
+  getRecentGameReviews,
 } from "@/lib/supabase/queries";
+import { deriveLearnerProfile, type OllieLearnerProfile } from "@/lib/ollie/learnerContext";
+import { OllieNoticedCard } from "@/components/ollie/OllieNoticedCard";
+import type { ExperienceLevel, AgeBand } from "@/lib/learner/experienceLevel";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { FlameIcon } from "@/components/nav/icons";
 import { TEXT } from "@/lib/designSystem";
@@ -24,6 +29,10 @@ export default function ChessMindPage() {
   const [todayModules, setTodayModules] = useState<string[]>([]);
   const [bonuses, setBonuses] = useState<UnlockedBonus[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [childId, setChildId] = useState<string | null>(null);
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(null);
+  const [ageBand, setAgeBand] = useState<AgeBand | null>(null);
+  const [profile, setProfile] = useState<OllieLearnerProfile>({});
 
   useEffect(() => {
     async function load() {
@@ -39,15 +48,23 @@ export default function ChessMindPage() {
         return;
       }
       const childId = resolution.child.id;
-      const [statsResult, streakResult, todayResult] = await Promise.all([
+      // The two signal reads join the existing batch rather than adding a new
+      // sequential layer, so Ollie's awareness costs no extra round-trip.
+      const [statsResult, streakResult, todayResult, signals, reviews] = await Promise.all([
         getChessMindStatsByModule(supabase, childId).catch(() => ({})),
         getChessMindStreak(supabase, childId).catch(() => 0),
         getTodayChessMindModules(supabase, childId).catch(() => []),
+        getSkillSignals(supabase, childId).catch(() => ({})),
+        getRecentGameReviews(supabase, childId).catch(() => []),
       ]);
       setStats(statsResult);
       setStreak(streakResult);
       setTodayModules(todayResult);
       setBonuses(getUnlockedKingdomBonuses(statsResult));
+      setChildId(childId);
+      setExperienceLevel(resolution.child.experience_level ?? null);
+      setAgeBand(resolution.child.age_band ?? null);
+      setProfile(deriveLearnerProfile(signals, reviews));
       setLoaded(true);
     }
     load();
@@ -84,6 +101,17 @@ export default function ChessMindPage() {
               {streak}-day streak
             </span>
           </div>
+        )}
+
+        {/* Renders only once a genuine recurring weakness exists — see
+            OllieNoticedCard / deriveLearnerProfile. New learners see nothing. */}
+        {loaded && (
+          <OllieNoticedCard
+            profile={profile}
+            childId={childId}
+            experienceLevel={experienceLevel}
+            ageBand={ageBand}
+          />
         )}
 
         {dailyCategory?.href && (
