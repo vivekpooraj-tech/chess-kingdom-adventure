@@ -1,12 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import { Baloo_2, Nunito, Fraunces, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
+// After globals.css on purpose: the theme layer re-derives some of its
+// :root tokens from the active theme's channels, and later wins at equal
+// specificity. See app/themes.css.
+import "./themes.css";
 import { CapacitorDeepLinkHandler } from "@/components/CapacitorDeepLinkHandler";
 import { MotionProvider } from "@/components/MotionProvider";
 import { DevTestModeBar } from "@/components/dev/DevTestModeBar";
 import { NativeLayoutProvider } from "@/components/nav/NativeLayoutProvider";
 import { LayoutBootstrapScript } from "@/components/nav/LayoutBootstrapScript";
 import { ShellBootstrapScript } from "@/components/nav/ShellBootstrapScript";
+import { ThemeBootstrapScript } from "@/components/theme/ThemeBootstrapScript";
 import { AppShell } from "@/components/nav/AppShell";
 import { BRAND } from "@/lib/brand";
 
@@ -82,6 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-premium-midnight">
         <LayoutBootstrapScript />
         <ShellBootstrapScript />
+        <ThemeBootstrapScript />
         <NativeLayoutProvider>
           <CapacitorDeepLinkHandler />
           {/* Every framer-motion animation in the app (lesson transitions,

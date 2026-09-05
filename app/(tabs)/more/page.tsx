@@ -10,6 +10,7 @@ import { ListItemRow } from "@/components/ui/Card";
 import { SignOutRow } from "@/components/more/SignOutRow";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
+import { ThemePicker } from "@/components/theme/ThemePicker";
 
 /**
  * More (mobile UI/UX redesign) — the 5th primary tab. Chess Kingdom moved
@@ -87,6 +88,14 @@ export default async function MorePage() {
               <span className="text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
           </div>
+        </section>
+
+        <section className="w-full flex flex-col gap-2">
+          <p className={`${TEXT.caption} uppercase tracking-wide`}>Appearance</p>
+          {/* Client island: the theme lives on <html> + localStorage, so this
+              is the only part of the app that needs to be interactive for
+              theming to work. */}
+          <ThemePicker />
         </section>
 
         <section className="w-full flex flex-col gap-2">

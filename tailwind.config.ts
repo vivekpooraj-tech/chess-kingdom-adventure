@@ -48,17 +48,22 @@ const config: Config = {
         //                         decorative-only (2.1–2.5:1, fails AA)
         // `premium.gold` at full opacity passes AA on every background here
         // (7.3–9.3:1), so gold accents/links never need an opacity cut.
+        /* Theme-driven. Channels (not hex) live in app/themes.css and are
+           swapped by `data-theme` on <html>; the `rgb(... / <alpha-value>)`
+           form is what keeps Tailwind's `/opacity` modifier working, which
+           ~519 call sites depend on. Default values are unchanged from the
+           original hex palette — see app/themes.css. */
         premium: {
-          midnight: "#0F1629",
-          midnightDeep: "#080C18",
-          navy: "#1B2440",
-          navyLight: "#28315A",
-          gold: "#D4AF37",
-          goldMuted: "#B8944A",
-          ivory: "#F7F3E8",
-          cream: "#EFE7D8",
-          emerald: "#146B4A",
-          emeraldDeep: "#0D4A33",
+          midnight: "rgb(var(--cm-midnight) / <alpha-value>)",
+          midnightDeep: "rgb(var(--cm-midnight-deep) / <alpha-value>)",
+          navy: "rgb(var(--cm-navy) / <alpha-value>)",
+          navyLight: "rgb(var(--cm-navy-light) / <alpha-value>)",
+          gold: "rgb(var(--cm-gold) / <alpha-value>)",
+          goldMuted: "rgb(var(--cm-gold-muted) / <alpha-value>)",
+          ivory: "rgb(var(--cm-ivory) / <alpha-value>)",
+          cream: "rgb(var(--cm-cream) / <alpha-value>)",
+          emerald: "rgb(var(--cm-emerald) / <alpha-value>)",
+          emeraldDeep: "rgb(var(--cm-emerald-deep) / <alpha-value>)",
         },
 
         // ============================================================

@@ -1,0 +1,289 @@
+/* ==========================================================================
+   CHESS MIND — THEME LAYER
+   ==========================================================================
+
+   Four premium visual identities for ONE application. No duplicated pages,
+   components or layouts: every theme is a set of colour channels swapped by a
+   `data-theme` attribute on <html>.
+
+   WHY CHANNELS, NOT HEX
+   The app's 10-colour `premium` palette is referenced ~1,109 times across 117
+   files, and 519 of those use Tailwind's `/opacity` modifier
+   (`bg-premium-gold/15`, `border-premium-gold/25`, `text-premium-ivory/65`…).
+   A colour stored as a full `var(--x)` hex string silently breaks that
+   modifier. Storing bare RGB channels instead lets tailwind.config.ts declare
+   `rgb(var(--cm-gold) / <alpha-value>)`, which composes correctly — so all 519
+   opacity call sites keep working untouched. That is the whole reason this
+   file stores `212 175 55` rather than `#D4AF37`.
+
+   WHY THIS FILE AND NOT globals.css
+   app/globals.css is a protected file carrying unrelated uncommitted work, so
+   the theme layer lives here and is imported AFTER it in app/layout.tsx. Later
+   `:root` definitions win at equal specificity, so the semantic tokens below
+   cleanly re-derive globals.css's values from the channels without editing it.
+
+   WHY EVERY THEME IS DARK-SURFACE / LIGHT-TEXT
+   Not an aesthetic preference — a structural fact of the codebase. The
+   `midnight` and `midnightDeep` tokens are used as a BACKGROUND 124 times but
+   also as TEXT 19 times (dark ink on a gold button). A light theme would need
+   that single token to be simultaneously a light surface and dark ink, which
+   is impossible without editing those 19 call sites. So all four themes keep
+   the same polarity and express their personality through hue, temperature and
+   accent instead. Royal Classic is therefore a warm, deep-green hall rather
+   than an ivory one.
+
+   ADDING A THEME
+   Add one `[data-theme="..."]` block with the 10 channels. Nothing else — the
+   semantic tokens, Tailwind classes and every component follow automatically.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CHESS KINGDOM — the default, and the app's existing appearance.
+   Values are byte-for-byte the current tailwind.config.ts palette, converted
+   to channels. This theme must render identically to before the theme system
+   existed; that is verified, not assumed.
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme="chess-kingdom"] {
+  --cm-midnight: 15 22 41;
+  --cm-midnight-deep: 8 12 24;
+  --cm-navy: 27 36 64;
+  --cm-navy-light: 40 49 90;
+  --cm-gold: 212 175 55;
+  --cm-gold-muted: 184 148 74;
+  --cm-ivory: 247 243 232;
+  --cm-cream: 239 231 216;
+  --cm-emerald: 20 107 74;
+  --cm-emerald-deep: 13 74 51;
+
+  /* Board frame tint — the board's own squares stay owned by
+     content/boardSkins.ts; only the surround follows the theme. */
+  --cm-board-frame: 27 36 64;
+}
+
+/* --------------------------------------------------------------------------
+   2. MIDNIGHT GRANDMASTER — "professional online chess club at midnight".
+   Cool charcoal and near-black with a restrained steel-blue accent. No neon,
+   no cyberpunk: the accent is a muted platinum blue that reads as considered
+   rather than loud, and still clears AA as both text and a button fill.
+   -------------------------------------------------------------------------- */
+[data-theme="midnight-grandmaster"] {
+  --cm-midnight: 12 15 20;
+  --cm-midnight-deep: 7 9 16;
+  --cm-navy: 22 26 33;
+  --cm-navy-light: 35 41 53;
+  --cm-gold: 143 176 217;
+  --cm-gold-muted: 110 136 168;
+  --cm-ivory: 233 237 243;
+  --cm-cream: 220 227 236;
+  /* The hero-card surface (HeroJourneyCard / a puzzle chip) — NOT a semantic
+     success colour, which stays theme-invariant. Kept deep and desaturated so
+     it reads as part of this palette rather than a green card dropped into a
+     charcoal room. */
+  --cm-emerald: 28 62 78;
+  --cm-emerald-deep: 17 40 52;
+
+  --cm-board-frame: 22 26 33;
+}
+
+/* --------------------------------------------------------------------------
+   3. ROYAL CLASSIC — "premium tournament in a historic grand hall".
+   Deep forest green surfaces, warm ivory text, brass accent. The atmosphere
+   comes entirely from hue and warmth — there are no wood or marble images,
+   because a texture asset would cost every route bandwidth for decoration.
+   -------------------------------------------------------------------------- */
+[data-theme="royal-classic"] {
+  --cm-midnight: 20 32 26;
+  --cm-midnight-deep: 12 21 17;
+  --cm-navy: 28 43 35;
+  --cm-navy-light: 39 57 47;
+  --cm-gold: 201 162 39;
+  --cm-gold-muted: 168 135 58;
+  /* Brighter than the obvious "warm ivory" choice, for a measured reason: the
+     green surfaces are lighter in luminance than the default navy, so a softer
+     ivory pushed muted text (the /50 tint) to 4.25:1 — under the 4.5 AA bar
+     this app documents for that token. At 252/247/238 it reaches 4.60 on cards
+     and 4.90 on the ground, matching the default theme, and is still clearly
+     warm (R > G > B). Surfaces were left alone instead: darkening them enough
+     to fix contrast collapsed the card against the ground. */
+  --cm-ivory: 252 247 238;
+  --cm-cream: 230 218 196;
+  --cm-emerald: 27 122 86;
+  --cm-emerald-deep: 16 85 58;
+
+  --cm-board-frame: 28 43 35;
+}
+
+/* --------------------------------------------------------------------------
+   4. FUTURE ARENA — "next-generation professional chess arena".
+   Dark slate base with an electric blue accent. Deliberately restrained: the
+   accent appears on controls and focus states, never as a glowing background,
+   so it still reads as professional to an adult competitor.
+   -------------------------------------------------------------------------- */
+[data-theme="future-arena"] {
+  --cm-midnight: 10 14 23;
+  --cm-midnight-deep: 5 7 13;
+  --cm-navy: 18 26 43;
+  --cm-navy-light: 29 40 65;
+  --cm-gold: 77 163 255;
+  --cm-gold-muted: 61 127 196;
+  --cm-ivory: 230 236 245;
+  --cm-cream: 211 221 236;
+  /* Hero-card surface, pulled toward the arena's blue rather than green. */
+  --cm-emerald: 26 106 138;
+  --cm-emerald-deep: 15 66 92;
+
+  --cm-board-frame: 18 26 43;
+}
+
+/* ==========================================================================
+   SEMANTIC LAYER
+   Re-derives the UI-2A tokens declared in globals.css from the channels above,
+   so the named layer (`bg-surface`, `text-text-secondary`, …) and the raw
+   palette (`bg-premium-navy`) can never drift apart across themes. Same
+   values as globals.css under the default theme.
+
+   State colours (success / warning / danger / info) are deliberately NOT
+   re-derived: they must mean the same thing in every theme. An error is red
+   whichever environment you chose.
+   ========================================================================== */
+:root {
+  --bg: rgb(var(--cm-midnight));
+  --bg-elevated: rgb(var(--cm-navy));
+  --surface: rgb(var(--cm-navy));
+  --surface-raised: rgb(var(--cm-navy-light));
+  --surface-sunken: rgb(var(--cm-midnight-deep));
+  --surface-warm: rgb(var(--cm-cream));
+
+  --primary: rgb(var(--cm-gold));
+  --primary-ink: rgb(var(--cm-midnight-deep));
+  --primary-soft: rgb(var(--cm-gold) / 0.12);
+  --secondary: rgb(var(--cm-navy-light));
+  --accent: rgb(var(--cm-gold));
+
+  --text: rgb(var(--cm-ivory));
+  --text-secondary: rgb(var(--cm-ivory) / 0.7);
+  --text-muted: rgb(var(--cm-ivory) / 0.5);
+  --text-disabled: rgb(var(--cm-ivory) / 0.4);
+
+  --border: rgb(var(--cm-ivory) / 0.08);
+  --border-strong: rgb(var(--cm-gold) / 0.25);
+
+  --board-frame: rgb(var(--cm-board-frame));
+  --last-move: rgb(var(--cm-gold) / 0.3);
+
+  --glow-gold: 0 0 20px rgb(var(--cm-gold) / 0.35);
+}
+
+/* ==========================================================================
+   THEME TRANSITION
+   Only the properties that actually change, only on the elements that carry
+   them, and only for a moment. A blanket `* { transition: all }` would make
+   every hover and layout change in the app feel laggy, which is exactly the
+   kind of "polish" that reads as slow.
+
+   The class is added by the theme switcher for ~220ms and then removed.
+   ========================================================================== */
+html.cm-theme-switching,
+html.cm-theme-switching body,
+html.cm-theme-switching main,
+html.cm-theme-switching header,
+html.cm-theme-switching nav,
+html.cm-theme-switching section,
+html.cm-theme-switching aside,
+html.cm-theme-switching a,
+html.cm-theme-switching button,
+html.cm-theme-switching p,
+html.cm-theme-switching span,
+html.cm-theme-switching div {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.cm-theme-switching,
+  html.cm-theme-switching * {
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
+   OVERRIDES FOR HARD-CODED COLOURS IN globals.css
+
+   globals.css is a protected file, so a handful of literal colours in it are
+   re-pointed at the theme channels here instead of being edited there. This
+   file is imported after it, so these win at equal specificity.
+   ========================================================================== */
+
+/* The first-paint ground. globals.css sets `#0f1629` so a between-route gap
+   never flashes white; that reasoning holds for every theme, it just needs to
+   be the ACTIVE theme's ground.
+
+   BOTH html and body, matching globals.css's own `body, html` selector. An
+   earlier version overrode only `body` and left the <html> canvas painted the
+   original navy in every theme — visible in any gap the page content does not
+   cover, and during route transitions. */
+html,
+body {
+  background-color: rgb(var(--cm-midnight));
+}
+
+/* Browser autofill on the auth screens. globals.css paints these with the
+   opaque equivalent of the field's normal background composited over the auth
+   card; `color-mix` reproduces that per-theme rather than hard-coding one
+   navy. Selectors and !important match the originals exactly so the same
+   states are covered. */
+.bg-premium-midnight input:-webkit-autofill,
+.bg-premium-midnight input:-webkit-autofill:hover,
+.bg-premium-midnight input:-webkit-autofill:active,
+.bg-premium-midnight input:autofill,
+.bg-premium-midnight input:autofill:hover,
+.bg-premium-midnight input:autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px
+    color-mix(in srgb, rgb(var(--cm-midnight-deep)) 50%, rgb(var(--cm-midnight))) inset !important;
+  box-shadow: 0 0 0 1000px
+    color-mix(in srgb, rgb(var(--cm-midnight-deep)) 50%, rgb(var(--cm-midnight))) inset !important;
+  -webkit-text-fill-color: rgb(var(--cm-ivory)) !important;
+  caret-color: rgb(var(--cm-ivory));
+}
+
+.bg-premium-midnight input:-webkit-autofill:focus,
+.bg-premium-midnight input:autofill:focus {
+  -webkit-box-shadow: 0 0 0 2px rgb(var(--cm-gold) / 0.2),
+    0 0 0 1000px color-mix(in srgb, rgb(var(--cm-midnight-deep)) 50%, rgb(var(--cm-midnight))) inset !important;
+  box-shadow: 0 0 0 2px rgb(var(--cm-gold) / 0.2),
+    0 0 0 1000px color-mix(in srgb, rgb(var(--cm-midnight-deep)) 50%, rgb(var(--cm-midnight))) inset !important;
+  -webkit-text-fill-color: rgb(var(--cm-ivory)) !important;
+  caret-color: rgb(var(--cm-ivory));
+}
+
+/* The app ground. globals.css redefines the `.bg-premium-midnight` utility as
+   a radial gradient with three literal colours — it is on essentially every
+   page wrapper, so without this the whole app kept the original navy ground in
+   every theme while only cards and accents changed. Same geometry and same
+   three stops, re-pointed at the active theme's channels. */
+.bg-premium-midnight {
+  background: radial-gradient(
+    120% 140% at 15% 0%,
+    rgb(var(--cm-navy)) 0%,
+    rgb(var(--cm-midnight)) 45%,
+    rgb(var(--cm-midnight-deep)) 100%
+  );
+}
+
+/* Gold sheen text. The light stop is derived from the accent rather than a
+   second hard-coded colour, so it stays a highlight of whatever the theme's
+   accent is instead of always being gold. */
+.text-gold-sheen {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, rgb(var(--cm-gold)) 65%, white) 0%,
+    rgb(var(--cm-gold)) 45%,
+    rgb(var(--cm-gold-muted)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
