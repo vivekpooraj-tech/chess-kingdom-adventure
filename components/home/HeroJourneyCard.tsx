@@ -2,6 +2,30 @@ import Link from "next/link";
 import type { HomeLeadRecommendation } from "@/lib/home/getHomeLead";
 
 export function HeroJourneyCard({ recommendation }: { recommendation: HomeLeadRecommendation }) {
+  if (recommendation.kind === "focus") {
+    return (
+      <Link
+        href={recommendation.href}
+        className="w-full h-full min-h-[180px] rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/25 active:scale-[0.99] transition-transform duration-100"
+      >
+        <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
+          Your focus
+        </p>
+        <p className="font-classic-display text-lg sm:text-xl text-premium-ivory leading-snug">
+          {recommendation.skillName}
+        </p>
+        {/* Naming the count is what separates this from a generic nudge: the
+            child can see the recommendation came from their own games. */}
+        <p className="font-classic-body text-sm text-premium-ivory/65">
+          It came up in {recommendation.weakCount} of your reviewed games. Let&apos;s work on it.
+        </p>
+        <span className="self-start mt-auto font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center">
+          Work on {recommendation.skillName} →
+        </span>
+      </Link>
+    );
+  }
+
   if (recommendation.kind === "practice") {
     return (
       <Link

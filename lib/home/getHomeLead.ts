@@ -30,6 +30,14 @@ export type HomeLeadRecommendation =
       kind: "play";
       title: string;
       subtitle: string;
+    }
+  | {
+      /** A skill this child keeps losing games to, with somewhere to work on
+       *  it. Only ever produced from a real recurring signal — see `focus`. */
+      kind: "focus";
+      skillName: string;
+      weakCount: number;
+      href: string;
     };
 
 type Params = {
@@ -37,19 +45,43 @@ type Params = {
   currentDay: number;
   isPremium: boolean;
   zoneEmoji: string;
+  /**
+   * The child's recurring weakness and where to work on it, when one exists.
+   * Caller-supplied (from deriveLearnerProfile + the review flow's existing
+   * skill-to-lesson mapping) so this stays a pure function with no I/O and no
+   * second copy of the "what counts as a weakness" rule.
+   */
+  focus?: { skillName: string; weakCount: number; href: string } | null;
 };
 
 /**
- * Single adaptive home lead card — Kingdom Journey for new learners,
- * Academy/puzzles/play emphasis for more experienced players.
+ * Single adaptive home lead card.
+ *
+ * Order of preference:
+ *  1. A skill the child keeps losing games to — the most useful thing they
+ *     could do today, and the only branch grounded in their actual play.
+ *  2. Kingdom Journey for brand-new learners, whose story order IS the
+ *     curriculum; hijacking Day 5 for tactics practice would break the thread
+ *     that makes the journey work for young children. So `new` learners keep
+ *     the lesson lead until the journey runs out.
+ *  3. The per-level defaults.
+ *
+ * Before this took `focus`, an experienced child saw the same "Puzzle Trainer"
+ * lead every day forever: the card was adaptive to who they were on signup,
+ * but not to anything they had done since.
  */
 export function getHomeLeadRecommendation({
   experienceLevel,
   currentDay,
   isPremium,
   zoneEmoji,
+  focus,
 }: Params): HomeLeadRecommendation {
   const level = effectiveExperienceLevel(experienceLevel);
+
+  if (focus && level !== "new") {
+    return { kind: "focus", skillName: focus.skillName, weakCount: focus.weakCount, href: focus.href };
+  }
 
   if (level === "plays_regularly") {
     return {
@@ -78,6 +110,12 @@ export function getHomeLeadRecommendation({
       zoneEmoji,
       locked: !isDayFree(nextLesson.dayNumber) && !isPremium,
     };
+  }
+
+  // A new learner who has finished the journey: a real weakness is a better
+  // lead than the generic "you've completed every lesson" card.
+  if (focus) {
+    return { kind: "focus", skillName: focus.skillName, weakCount: focus.weakCount, href: focus.href };
   }
 
   return { kind: "practice" };

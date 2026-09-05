@@ -18,6 +18,7 @@ import {
   getChessMindStreak,
   getOnlineWinsCount,
   getScreenTimeStatus,
+  getSkillSignals,
 } from "@/lib/supabase/queries";
 import { getUnlockedKingdomBonuses } from "@/lib/chessMind/kingdomUnlocks";
 import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
@@ -37,6 +38,9 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
 import { getHomeLeadRecommendation } from "@/lib/home/getHomeLead";
+import { deriveLearnerProfile } from "@/lib/ollie/learnerContext";
+import { recommendPractice, type PracticeLessonItem } from "@/lib/training/recommendation";
+import { getSkill } from "@/lib/analysis/skills";
 import {
   prefersNeutralHomeTone,
 } from "@/lib/learner/experienceLevel";
@@ -87,6 +91,7 @@ export default async function KingdomMapPage() {
     chessMindStatsByModule,
     chessMindStreak,
     screenTimeStatus,
+    skillSignals,
   ] = await Promise.all([
     getCompletedDays(supabase, child.id),
     parentPromise,
@@ -97,6 +102,11 @@ export default async function KingdomMapPage() {
     getChessMindStatsByModule(supabase, child.id).catch(() => ({})),
     getChessMindStreak(supabase, child.id).catch(() => 0),
     getScreenTimeStatus(supabase, user.id, child.id),
+    // Joins the existing parallel batch rather than adding a sequential layer.
+    // Reviews aren't fetched here: the lead only needs the focus skill, and
+    // deriveLearnerProfile derives that from signals alone (reviews only feed
+    // the accuracy trend, which this card doesn't show).
+    getSkillSignals(supabase, child.id).catch(() => ({})),
   ]);
   const isPremium = resolvePremiumState(parent).isPremium;
   const kingdomBonuses = getUnlockedKingdomBonuses(chessMindStatsByModule);
@@ -121,11 +131,32 @@ export default async function KingdomMapPage() {
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
   const currentZone = getZoneForDay(Math.min(child.current_day, LESSONS.length));
 
+  // Turn a recurring weakness into a concrete destination, reusing the Game
+  // Review's skill-to-lesson mapping so Home, Learn and the review all point
+  // at the same lesson for a given skill.
+  const learnerProfile = deriveLearnerProfile(skillSignals, []);
+  const focusLead = (() => {
+    if (!learnerProfile.focusSkill || !learnerProfile.focusSkillWeakCount) return null;
+    const practice = recommendPractice({
+      skill: learnerProfile.focusSkill,
+      experienceLevel: child.experience_level,
+      ageBand: child.age_band ?? null,
+    });
+    const lesson = practice.items.find((i): i is PracticeLessonItem => i.kind === "lesson");
+    if (!lesson) return null;
+    return {
+      skillName: getSkill(learnerProfile.focusSkill).name,
+      weakCount: learnerProfile.focusSkillWeakCount,
+      href: lesson.href,
+    };
+  })();
+
   const heroRecommendation = getHomeLeadRecommendation({
     experienceLevel: child.experience_level,
     currentDay: child.current_day,
     isPremium,
     zoneEmoji: currentZone.emoji,
+    focus: focusLead,
   });
 
   const neutralTone = prefersNeutralHomeTone(child.experience_level, child.age_band);
