@@ -384,6 +384,25 @@ export default function OnlineGamePage() {
               {game.tournament_id ? "Back to Tournament →" : "Back to the Kingdom Map →"}
             </Button>
           </Link>
+
+          {/* Where the game leads next. Until now the only way out of this
+              screen was back to the map, which ended the improvement loop at
+              exactly the moment there was something to learn from: the game
+              became unreachable as soon as this screen was dismissed. */}
+          <div className="flex w-full items-center justify-center gap-4 border-t border-white/10 pt-3">
+            <Link
+              href="/games"
+              className="flex min-h-[44px] items-center font-classic-body text-sm text-premium-ivory/70 underline underline-offset-4"
+            >
+              Your games
+            </Link>
+            <Link
+              href="/stats"
+              className="flex min-h-[44px] items-center font-classic-body text-sm text-premium-ivory/70 underline underline-offset-4"
+            >
+              Your Chess
+            </Link>
+          </div>
         </PrimaryCard>
 
         {/* Only populated if this session was present for the live game —

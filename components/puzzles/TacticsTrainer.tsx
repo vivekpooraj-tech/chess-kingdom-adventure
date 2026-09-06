@@ -36,7 +36,15 @@ import type { TacticsPuzzle, TacticsPuzzleResponse } from "@/lib/puzzles/tactics
 
 type Status = "loading" | "playing" | "wrong" | "solved" | "empty";
 
-export function TacticsTrainer() {
+/**
+ * `focusSkill` narrows the puzzles to one tactical theme. It arrives from the Stats
+ * page's "Train this skill" recommendation, which names a specific weakness —
+ * that link previously passed ?skill= and nothing read it, so the button
+ * promised targeted practice and delivered the generic mix.
+ *
+ * The API already accepted the parameter; only this hand-off was missing.
+ */
+export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = {}) {
   const [puzzle, setPuzzle] = useState<TacticsPuzzle | null>(null);
   const [reason, setReason] = useState<TacticsPuzzleResponse["reason"]>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -84,8 +92,12 @@ export function TacticsTrainer() {
     setMoveIndex(0);
     setAttempts(0);
     try {
+      const params = new URLSearchParams();
       const exclude = seenRef.current.slice(-20).join(",");
-      const res = await fetch(`/api/puzzles/next${exclude ? `?exclude=${exclude}` : ""}`, {
+      if (exclude) params.set("exclude", exclude);
+      if (focusSkill) params.set("skill", focusSkill);
+      const query = params.toString();
+      const res = await fetch(`/api/puzzles/next${query ? `?${query}` : ""}`, {
         cache: "no-store",
       });
       const data: TacticsPuzzleResponse = await res.json();
@@ -102,7 +114,7 @@ export function TacticsTrainer() {
     } catch {
       setStatus("empty");
     }
-  }, []);
+  }, [focusSkill]);
 
   useEffect(() => {
     void loadPuzzle();
