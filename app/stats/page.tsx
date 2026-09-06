@@ -105,7 +105,11 @@ export default async function StatsPage({
   const selected = PERIODS.find((p) => p.id === searchParams.period) ?? PERIODS[3];
   const games: GameRecord[] = withinDays(allGames, selected.days);
 
-  const overview = buildOverview(games, child.rating ?? null);
+  const overview = buildOverview(
+    games,
+    child.rating ?? null,
+    ratingPoints.map((p) => p.newRating)
+  );
   const colors = byColor(games);
   const timeControls = byTimeControl(games, (id) => (id ? getTimeControl(id).description : null));
   const openings = byOpening(

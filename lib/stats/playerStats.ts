@@ -213,14 +213,30 @@ export function currentWinStreak(games: GameRecord[]): number {
 }
 
 /** Peak rating seen in the record, from the rating values games carry. */
-export function peakRating(games: GameRecord[], currentRating: number | null): Stat<number> {
+export function peakRating(
+  games: GameRecord[],
+  currentRating: number | null,
+  /** Ratings from rating_history, oldest or newest order — only the max matters. */
+  historyRatings: number[] = []
+): Stat<number> {
   const values: number[] = [];
   for (const g of games) {
     if (typeof g.ratingAfter === "number") values.push(g.ratingAfter);
     if (typeof g.ratingBefore === "number") values.push(g.ratingBefore);
   }
-  if (typeof currentRating === "number") values.push(currentRating);
+  for (const r of historyRatings) {
+    if (typeof r === "number") values.push(r);
+  }
+
+  // The current rating alone is NOT a peak. Every child starts on a default
+  // (400 now, 1200 historically), so counting it unconditionally reported
+  // "Peak rating 1200" to someone who had never played a rated game — a number
+  // they never reached, presented as an achievement. A peak needs at least one
+  // real recorded rating; without one the UI shows "no rated games yet", which
+  // is what its own fallback copy already says.
   if (!values.length) return { kind: "none" };
+
+  if (typeof currentRating === "number") values.push(currentRating);
   return ok(Math.max(...values));
 }
 
@@ -243,13 +259,17 @@ export interface PlayerOverview {
   rated: Record3;
 }
 
-export function buildOverview(games: GameRecord[], currentRating: number | null): PlayerOverview {
+export function buildOverview(
+  games: GameRecord[],
+  currentRating: number | null,
+  historyRatings: number[] = []
+): PlayerOverview {
   return {
     record: tally(games),
     rate: rateStat(tally(games)),
     trend: resultTrend(games),
     streak: currentWinStreak(games),
-    peak: peakRating(games, currentRating),
+    peak: peakRating(games, currentRating, historyRatings),
     rated: tally(games.filter((g) => g.matchType === "random")),
   };
 }

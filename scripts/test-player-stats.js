@@ -166,9 +166,33 @@ function games(n, result, opts = {}) {
   const withRatings = games(2, "win", { ratingBefore: 800, ratingAfter: 815 });
   const p = S.peakRating(withRatings, 790);
   check("peak takes the highest seen", p.kind === "ok" && p.value === 815);
+
+  // The starting rating is not an achievement. Every child begins on a default,
+  // so counting the current rating with no recorded history reported a "peak"
+  // the player never reached.
   check(
-    "current rating counts toward peak",
-    S.peakRating(games(1, "win"), 1234).value === 1234
+    "current rating alone is NOT a peak",
+    S.peakRating(games(1, "win"), 1234).kind === "none"
+  );
+  check(
+    "rating history unlocks a peak",
+    S.peakRating(games(1, "win"), 1234, [1300, 1250]).value === 1300
+  );
+  check(
+    "current rating counts once there is real history",
+    S.peakRating(games(1, "win"), 1400, [1300]).value === 1400
+  );
+  check(
+    "a rated game unlocks a peak without history",
+    S.peakRating(games(1, "win", { ratingAfter: 900 }), 880).value === 900
+  );
+  check(
+    "overview with no rating evidence reports no peak",
+    S.buildOverview(games(3, "win"), 1200).peak.kind === "none"
+  );
+  check(
+    "overview with history reports a peak",
+    S.buildOverview(games(3, "win"), 1200, [1210, 1190]).peak.value === 1210
   );
 }
 
