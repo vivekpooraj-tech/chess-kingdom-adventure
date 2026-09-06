@@ -8,7 +8,6 @@ import {
   resolveActiveChild,
   getOnlineGame,
   joinOnlineGame,
-  submitOnlineMove,
   claimTimeout,
   createInviteGame,
   sendReaction,
@@ -324,12 +323,39 @@ export default function OnlineGamePage() {
     setGame(fresh);
   }
 
-  async function handleMove(fen: string, san: string) {
-    // If this rejects because the mover's own server-tracked clock had
-    // already hit zero, the Realtime UPDATE from the server-side finish
-    // (inside submit_online_move) will land momentarily and flip the view
-    // to the "finished" branch below — no separate handling needed here.
-    await submitOnlineMove(supabaseRef.current, params.gameId, childId!, fen, san);
+  /**
+   * Send the move INTENT only.
+   *
+   * The board's own fen/san are not sent and are not authoritative: the server
+   * replays the stored history, validates from/to itself, and generates the
+   * official SAN and FEN. Previously those client values were written straight
+   * into the row, so a browser could store any position it liked.
+   *
+   * expectedPly is optimistic concurrency — a double-click, a retry or a second
+   * tab acting on a stale board is refused rather than applied to a position
+   * the player was not actually looking at.
+   *
+   * If the server rejects (illegal, not your turn, stale), the authoritative
+   * state arrives over the existing Realtime subscription and the board
+   * re-syncs from it; nothing local is treated as truth.
+   */
+  async function handleMove(from: string, to: string) {
+    const current = game !== "loading" && game ? game.moves.length : undefined;
+    try {
+      const res = await fetch(`/api/online/${params.gameId}/move`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ from, to, expectedPly: current }),
+      });
+      if (!res.ok) {
+        // Re-sync from the server rather than leaving a rejected move on screen.
+        const fresh = await getOnlineGame(supabaseRef.current, params.gameId);
+        if (fresh) setGame(fresh);
+      }
+    } catch {
+      const fresh = await getOnlineGame(supabaseRef.current, params.gameId).catch(() => null);
+      if (fresh) setGame(fresh);
+    }
   }
 
   async function handleGameOver(result: { isCheckmate: boolean; isDraw: boolean; winner: Color | null }) {
@@ -677,7 +703,7 @@ export default function OnlineGamePage() {
             focusMode
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}
-            onMove={(opts) => handleMove(opts.fen, opts.san)}
+            onMove={(opts) => handleMove(opts.from, opts.to)}
             onGameOver={handleGameOver}
           />
         )}
