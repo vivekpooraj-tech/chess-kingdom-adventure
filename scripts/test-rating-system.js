@@ -77,6 +77,35 @@ async function cleanupChild(childId) {
   await admin.from("children").delete().eq("id", childId);
 }
 
+
+/**
+ * Remove any RS_* fixture children still present.
+ *
+ * Each test block cleans up its own children on the happy path, but those calls
+ * sit at the end of the block rather than in a finally — so a failed assertion
+ * or an unexpected null (e.g. a .single() that matched nothing) leaves that
+ * block's children behind. Repeated runs accumulate: a check of the database
+ * found 72 orphaned RS_* rows, which also clutter the child picker.
+ *
+ * This runs on both the success and failure paths, so a crash cannot leak
+ * fixtures. Scoped to the test parent and the RS_ prefix, so it can only ever
+ * reach rows this suite created.
+ */
+async function sweepFixtures() {
+  try {
+    const parentId = await getTestParentId();
+    const { data } = await admin
+      .from("children")
+      .select("id, display_name")
+      .eq("parent_id", parentId);
+    const strays = (data ?? []).filter((c) => (c.display_name || "").startsWith("RS_"));
+    for (const c of strays) await cleanupChild(c.id);
+    if (strays.length) console.log(`swept ${strays.length} leftover RS_* fixture(s)`);
+  } catch (e) {
+    console.warn("fixture sweep failed (non-fatal):", e.message);
+  }
+}
+
 /** Seed a finished online_games row directly (data seeding, not calling the RPC on someone's behalf). */
 async function seedFinishedGame(hostId, guestId, winner, matchType) {
   const { data, error } = await admin
@@ -416,6 +445,8 @@ async function main() {
     await cleanupChild(a.id);
     await cleanupChild(b.id);
   }
+  await sweepFixtures();
+
 
   console.log(`\n=== RATING SYSTEM SUMMARY: ${pass} passed, ${fail} failed ===`);
   if (fail > 0) {
@@ -424,7 +455,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error("Rating system test suite crashed:", err);
-  process.exit(1);
+  // Sweep on the failure path too: a crash is exactly when fixtures leak.
+  await sweepFixtures();
+  process.exitCode = 1;
 });
