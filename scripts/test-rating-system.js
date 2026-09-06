@@ -56,12 +56,38 @@ async function getTestParentId() {
   return parent.id;
 }
 
+/**
+ * Every child this run creates, by id.
+ *
+ * Tracking happens at the single point of creation (makeChild) rather than at
+ * each use site, because the leak this fixes came from cleanup living at the
+ * end of ~20 individual test blocks: a failed assertion or an unexpected null
+ * skipped the block's cleanup and left its children behind. 72 orphans had
+ * accumulated that way, cluttering the child picker.
+ *
+ * Deletion is by explicit id only — never by name prefix — so a run can only
+ * ever remove rows it created itself, even if two runs overlap.
+ */
+const createdChildIds = new Set();
+
+/** Distinguishes this run's fixtures from a concurrent run's, for humans
+ *  reading the table. Deletion never relies on it. */
+const RUN_ID = Math.random().toString(36).slice(2, 8);
+
 async function makeChild(label, rating) {
   const parentId = await getTestParentId();
-  const row = { parent_id: parentId, display_name: label.slice(0, 40), avatar_id: "knight-kid", buddy_id: "wise-owl" };
+  const row = {
+    parent_id: parentId,
+    display_name: `${label}~${RUN_ID}`.slice(0, 40),
+    avatar_id: "knight-kid",
+    buddy_id: "wise-owl",
+  };
   if (rating !== undefined) row.rating = rating;
   const { data, error } = await admin.from("children").insert(row).select("id, rating").single();
   if (error) throw new Error("makeChild failed: " + error.message);
+  // Track before returning, so a throw later in the caller still leaves the id
+  // recorded for the finally block.
+  createdChildIds.add(data.id);
   return data;
 }
 
@@ -79,30 +105,72 @@ async function cleanupChild(childId) {
 
 
 /**
- * Remove any RS_* fixture children still present.
+ * Remove every fixture THIS RUN created, by explicit id.
  *
- * Each test block cleans up its own children on the happy path, but those calls
- * sit at the end of the block rather than in a finally — so a failed assertion
- * or an unexpected null (e.g. a .single() that matched nothing) leaves that
- * block's children behind. Repeated runs accumulate: a check of the database
- * found 72 orphaned RS_* rows, which also clutter the child picker.
+ * Runs in a finally, so it executes after a passing run, a failing assertion,
+ * an unexpected throw, or an early return alike. Idempotent: cleanupChild
+ * deletes by id, so re-deleting a row a test block already removed is a no-op.
  *
- * This runs on both the success and failure paths, so a crash cannot leak
- * fixtures. Scoped to the test parent and the RS_ prefix, so it can only ever
- * reach rows this suite created.
+ * Deliberately never deletes by name prefix. A prefix delete would reach a
+ * concurrent run's rows, and "everything that looks like a fixture" is exactly
+ * the kind of broad delete that turns a test-hygiene fix into data loss.
  */
-async function sweepFixtures() {
+async function cleanupTrackedFixtures() {
+  const ids = [...createdChildIds];
+  if (ids.length === 0) return;
+
+  const failed = [];
+  for (const id of ids) {
+    try {
+      await cleanupChild(id);
+    } catch (e) {
+      failed.push(`${id}: ${e.message}`);
+    }
+  }
+
+  // Prove it rather than assume it: re-read the ids just deleted.
+  let remaining = [];
   try {
-    const parentId = await getTestParentId();
-    const { data } = await admin
-      .from("children")
-      .select("id, display_name")
-      .eq("parent_id", parentId);
-    const strays = (data ?? []).filter((c) => (c.display_name || "").startsWith("RS_"));
-    for (const c of strays) await cleanupChild(c.id);
-    if (strays.length) console.log(`swept ${strays.length} leftover RS_* fixture(s)`);
+    const { data } = await admin.from("children").select("id").in("id", ids);
+    remaining = data ?? [];
   } catch (e) {
-    console.warn("fixture sweep failed (non-fatal):", e.message);
+    console.warn("cleanup verification could not run:", e.message);
+  }
+
+  if (failed.length || remaining.length) {
+    console.error(`
+CLEANUP INCOMPLETE: ${remaining.length} of ${ids.length} fixture children still present.`);
+    for (const f of failed) console.error("  delete failed - " + f);
+    for (const r of remaining) console.error("  still present - " + r.id);
+    process.exitCode = 1;
+  } else {
+    console.log(`cleaned up ${ids.length} fixture children (run ${RUN_ID})`);
+  }
+  createdChildIds.clear();
+}
+
+/**
+ * Remove RS_* fixtures left behind by OLDER runs, from before tracking existed.
+ *
+ * Opt-in only (--sweep-orphans). Unlike the tracked cleanup above, this matches
+ * on a name prefix and so could reach another run's in-flight rows. It is a
+ * migration aid for historical orphans, not part of a normal run.
+ */
+async function sweepLegacyOrphans() {
+  const parentId = await getTestParentId();
+  const { data } = await admin
+    .from("children")
+    .select("id, display_name")
+    .eq("parent_id", parentId);
+  const strays = (data ?? []).filter((c) => (c.display_name || "").startsWith("RS_"));
+  if (!strays.length) {
+    console.log("no legacy RS_* orphans found");
+    return;
+  }
+  console.log(`sweeping ${strays.length} legacy RS_* orphan(s):`);
+  for (const c of strays) {
+    console.log("  " + c.display_name);
+    await cleanupChild(c.id);
   }
 }
 
@@ -131,7 +199,7 @@ async function seedQueueRow(childId, rating, secondsAgo) {
   if (error) throw new Error("seedQueueRow failed: " + error.message);
 }
 
-async function main() {
+async function runSuite() {
   const client = createClient(url, anonKey);
   const { data: authData, error: authError } = await client.auth.signInWithPassword({
     email: "dev-test@local.chessmind.test",
@@ -257,7 +325,12 @@ async function main() {
     check("direct client UPDATE of children.rating is blocked", !!error || after === 400, error?.message ?? after);
     const { error: insErr, data: insData } = await client.from("children").insert({ parent_id: await getTestParentId(), display_name: "RS_InsertRating", rating: 9999 }).select("id");
     check("direct client INSERT with an explicit rating is blocked", !!insErr, insErr?.message ?? JSON.stringify(insData));
-    if (!insErr && insData?.[0]?.id) await admin.from("children").delete().eq("id", insData[0].id);
+    // This insert is expected to be blocked; if it ever succeeds, the row is
+    // still tracked so the finally block removes it.
+    if (!insErr && insData?.[0]?.id) {
+      createdChildIds.add(insData[0].id);
+      await admin.from("children").delete().eq("id", insData[0].id);
+    }
     await cleanupChild(c.id);
   }
 
@@ -445,19 +518,34 @@ async function main() {
     await cleanupChild(a.id);
     await cleanupChild(b.id);
   }
-  await sweepFixtures();
 
 
   console.log(`\n=== RATING SYSTEM SUMMARY: ${pass} passed, ${fail} failed ===`);
   if (fail > 0) {
     console.log("Failures:\n" + failures.map((f) => " - " + f).join("\n"));
-    process.exit(1);
+    // exitCode, not exit(): process.exit() here would terminate before the
+    // finally block runs and leak every fixture this run created.
+    process.exitCode = 1;
   }
 }
 
-main().catch(async (err) => {
-  console.error("Rating system test suite crashed:", err);
-  // Sweep on the failure path too: a crash is exactly when fixtures leak.
-  await sweepFixtures();
+/**
+ * Entry point. The finally is the point of this structure: no outcome — pass,
+ * fail, throw, or early return — can skip fixture cleanup.
+ */
+async function main() {
+  if (process.argv.includes("--sweep-orphans")) {
+    await sweepLegacyOrphans();
+    return;
+  }
+  try {
+    await runSuite();
+  } finally {
+    await cleanupTrackedFixtures();
+  }
+}
+
+main().catch((err) => {
+  console.error("Rating system test suite crashed:", err.message ?? err);
   process.exitCode = 1;
 });
