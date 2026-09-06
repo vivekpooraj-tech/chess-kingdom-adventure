@@ -3,7 +3,6 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
-  addUsageMinutes,
   getScreenTimeLimits,
   getTodayUsageMinutes,
   localDateString,
@@ -86,12 +85,17 @@ export function ScreenTimeGate({
     // re-checks with the device-local date/weekday before the lock sticks.
     if (!hasInitial || initiallyLocked) init();
 
+    // Accrual moved to ScreenTimeTracker (mounted in AppShell). This gate used
+    // to add a minute itself, but it wraps only four screens, so it both
+    // under-counted the rest of the app and would now double-count alongside
+    // the tracker. It re-checks the total instead, and still enforces the lock
+    // on the screens it wraps.
     const interval = setInterval(async () => {
       if (cancelled || lockedRef.current) return;
-      const today = localDateString();
-      const newTotal = await addUsageMinutes(supabase, childId, today, 1);
-      usedRef.current = newTotal;
-      if (newTotal >= limitRef.current) {
+      const total = await getTodayUsageMinutes(supabase, childId, localDateString());
+      if (cancelled) return;
+      usedRef.current = total;
+      if (limitRef.current > 0 && total >= limitRef.current) {
         lockedRef.current = true;
         setStatus("locked");
       }
