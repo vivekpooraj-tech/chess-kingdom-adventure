@@ -253,28 +253,58 @@ async function runSuite() {
       `derived ${Math.round(row.white_time_ms - liveMs)}ms`);
   }
 
-  // ---- F: the queue only matches inside one time control (migration 0035) ----
+  // ---- F: queue behaviour (migration 0035) ----
   {
     const probe = await admin.from("matchmaking_queue").select("time_control").limit(1);
     const applied = !probe.error;
     if (!applied) {
-      console.log("\n  PENDING: migration 0035 not applied — per-speed matching not yet testable");
+      console.log("");
+      console.log("  PENDING: migration 0035 not applied — queue behaviour not yet testable");
       console.log("  (the 7 control-initialisation checks above already passed)");
     } else {
       const s1 = await makeChild("Q1", 700);
       const s2 = await makeChild("Q2", 700);
-      await admin.from("matchmaking_queue").insert({ child_id: s1, rating: 700, status: "waiting", time_control: "3+0" });
-      const { data } = await admin
+
+      // Different speeds are different pools.
+      await admin.from("matchmaking_queue").insert({
+        child_id: s1, rating: 700, status: "waiting", time_control: "3+0",
+      });
+      const other = await admin
         .from("matchmaking_queue")
         .select("child_id")
         .eq("status", "waiting")
         .eq("time_control", "10+0")
         .eq("child_id", s1);
-      check("a 3+0 waiter is not visible in the 10+0 pool", (data ?? []).length === 0);
+      check("a 3+0 waiter is invisible to the 10+0 pool", (other.data ?? []).length === 0);
+
+      const same = await admin
+        .from("matchmaking_queue")
+        .select("child_id")
+        .eq("status", "waiting")
+        .eq("time_control", "3+0")
+        .eq("child_id", s1);
+      check("a 3+0 waiter is visible in the 3+0 pool", (same.data ?? []).length === 1);
+
+      // A patient waiter must NOT be reaped: the rating window widens with age,
+      // so an aggressive reap would delete the players it exists to serve.
+      await admin
+        .from("matchmaking_queue")
+        .update({ created_at: new Date(Date.now() - 5 * 60000).toISOString() })
+        .eq("child_id", s1);
+      const patient = await admin
+        .from("matchmaking_queue")
+        .select("child_id")
+        .eq("child_id", s1)
+        .eq("status", "waiting");
+      check("a five-minute waiter is still queued", (patient.data ?? []).length === 1);
+
       await admin.from("matchmaking_queue").delete().eq("child_id", s1);
       await admin.from("matchmaking_queue").delete().eq("child_id", s2);
+      check("cancelling removes the queue row",
+        ((await admin.from("matchmaking_queue").select("child_id").eq("child_id", s1)).data ?? []).length === 0);
     }
   }
+
 }
 
 (async () => {

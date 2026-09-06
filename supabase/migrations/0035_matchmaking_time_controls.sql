@@ -20,6 +20,14 @@
 -- measured for drift at that speed, and a 60-second game is where an unreliable
 -- clock stops being a nuisance and starts deciding games.
 --
+-- It also closes a matchmaking-quality gap found while auditing: nothing ever
+-- removed abandoned queue rows. A player who closed the tab while waiting stayed
+-- "waiting" forever, so the next player to search could be matched against
+-- someone who was no longer there — a game that starts already lost on the
+-- clock. Rows older than thirty minutes are now ignored when matching and
+-- deleted on sight — long enough not to evict a patient waiter, since the
+-- rating window is designed to keep widening for them.
+--
 -- Safe to run more than once.
 
 -- 1. Queue gains a speed --------------------------------------------------
@@ -67,6 +75,14 @@ declare
   v_eligible boolean;
   v_opponent_eligible boolean;
   v_have_opponent boolean := false;
+  -- Deliberately long. A waiting client holds its place through a Realtime
+  -- subscription, not by polling, so created_at is never refreshed — and the
+  -- rating window WIDENS with that age (the final branch below exists to serve
+  -- waits past 120s). Reaping on a short timer would therefore delete exactly
+  -- the patient players the expansion is designed to match. Thirty minutes is
+  -- past any plausible real wait, so it only removes rows whose client is
+  -- genuinely gone.
+  v_stale_secs constant int := 1800;
 begin
   -- Ownership check, unchanged from 0026: a caller may only act as a child
   -- they own, or they could create games and burn free-game credits as
@@ -98,12 +114,22 @@ begin
     return;
   end if;
 
+  -- Reap abandoned rows before matching. A waiting row is only meaningful
+  -- while that client is still polling; once it stops, the row is a trap for
+  -- the next player to search.
+  delete from matchmaking_queue
+  where status = 'waiting'
+    and created_at < clock_timestamp() - make_interval(secs => v_stale_secs);
+
   select * into opponent
   from matchmaking_queue q
   where q.status = 'waiting'
     and q.child_id <> p_child_id
     -- The one behavioural change: only ever match inside the same speed.
     and q.time_control = v_tc
+    -- Belt and braces: even if the reap above missed a row (a concurrent
+    -- insert, say), never match against one that has gone quiet.
+    and q.created_at >= clock_timestamp() - make_interval(secs => v_stale_secs)
     and q.rating between v_rating - (
       case
         when extract(epoch from (clock_timestamp() - q.created_at)) < 15 then 50

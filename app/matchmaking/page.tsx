@@ -2,6 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { TIME_CONTROLS, DEFAULT_TIME_CONTROL_ID } from "@/content/timeControls";
+
+/**
+ * The speeds offered for random matchmaking at launch.
+ *
+ * A deliberate subset of TIME_CONTROLS. Every speed is its own queue, so
+ * offering all seven would split an already small player base into seven thin
+ * pools and make matches slower and worse for everyone. Friend invites still
+ * offer the full set, where fragmentation does not apply because both players
+ * are already agreed.
+ *
+ * Bullet is absent on purpose — see 0035 and scripts/test-online-clocks.js.
+ */
+const LAUNCH_CONTROLS = ["3+0", "5+0", "10+0", "15+10"];
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -185,7 +198,9 @@ export default function MatchmakingPage() {
                       aria-label={`${category} time controls`}
                       className="grid grid-cols-3 gap-2"
                     >
-                      {TIME_CONTROLS.filter((t) => t.description === category).map((t) => {
+                      {TIME_CONTROLS.filter(
+                        (t) => t.description === category && LAUNCH_CONTROLS.includes(t.id)
+                      ).map((t) => {
                         const active = t.id === timeControlId;
                         return (
                           <button
