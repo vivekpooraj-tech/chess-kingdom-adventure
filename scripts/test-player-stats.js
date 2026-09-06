@@ -280,6 +280,64 @@ function games(n, result, opts = {}) {
   check("small movement is called steady, not a trend", /held steady/.test(T.describeTimeline(noise)));
 }
 
+// ---- timeline states A-D, and language that must never overclaim ----
+{
+  const T = require(path.join(process.cwd(), "lib", "stats", "improvementTimeline.ts"));
+  const R = require(path.join(process.cwd(), "lib", "stats", "recommendation.ts"));
+  const pt = (r, i) => ({
+    newRating: r,
+    ratingChange: 0,
+    result: "win",
+    createdAt: new Date(Date.UTC(2026, 0, 1 + i)).toISOString(),
+  });
+
+  // A. Brand-new user: no games, no rating history, and above all no chart.
+  const a = T.buildImprovementTimeline([]);
+  check("A: new user gets no chart", a.kind === "locked" && a.have === 0);
+  check("A: new user gets no trend sentence", T.describeTimeline(a) === null);
+
+  // B. Puzzle-only learner: still no rating history, so still no chart. The
+  //    Getting Started panel carries the experience here instead.
+  const b = T.buildImprovementTimeline([]);
+  check("B: puzzle-only learner still gets no invented chart", b.kind === "locked");
+
+  // C. A few rating records: below the bar, so nothing is drawn and the
+  //    remaining gap is reported instead.
+  const c = T.buildImprovementTimeline([pt(400, 0), pt(410, 1), pt(405, 2), pt(415, 3)]);
+  check("C: four points stays locked", c.kind === "locked");
+  check("C: locked state reports the remaining gap", c.need - c.have === 1);
+
+  // D. Meaningful history: renders, and the sentence matches real movement.
+  const d = T.buildImprovementTimeline([pt(400, 0), pt(430, 1), pt(420, 2), pt(455, 3), pt(470, 4), pt(500, 5)]);
+  check("D: six points renders", d.kind === "ready");
+  check("D: net movement is the real difference", d.net === 100);
+  check("D: sentence states the actual gain", /gained 100 rating points/.test(T.describeTimeline(d)));
+
+  // Language guard: no superlatives in any state. "Improving rapidly" is
+  // exactly the kind of claim this data cannot support.
+  const BANNED = /rapid|dramatic|amazing|incredible|soaring|massive|huge|on fire/i;
+  const samples = [
+    T.describeTimeline(d),
+    T.describeTimeline(T.buildImprovementTimeline([pt(500, 0), pt(470, 1), pt(460, 2), pt(440, 3), pt(430, 4)])),
+    T.describeTimeline(T.buildImprovementTimeline([pt(400, 0), pt(401, 1), pt(400, 2), pt(402, 3), pt(400, 4)])),
+    R.ollieStatsNote({ trend: "improving", games: 30, recommendation: null }),
+    R.ollieStatsNote({ trend: "declining", games: 30, recommendation: null }),
+  ].filter(Boolean);
+  check("no timeline or Ollie copy overclaims", samples.every((t) => !BANNED.test(t)));
+  check("copy is either absent or a real sentence", samples.every((t) => t.length > 20));
+
+  // Ollie stays silent when there is nothing to say.
+  check(
+    "Ollie says nothing without a trend or a recommendation",
+    R.ollieStatsNote({ trend: null, games: 0, recommendation: null }) === null
+  );
+  check(
+    "Ollie says nothing on a steady trend with no recommendation",
+    R.ollieStatsNote({ trend: "steady", games: 30, recommendation: null }) === null
+  );
+}
+
+
 console.log(`\n=== PLAYER STATS: ${pass} passed, ${failures.length} failed ===`);
 if (failures.length) {
   console.error("Failures:\n" + failures.map((f) => " - " + f).join("\n"));
