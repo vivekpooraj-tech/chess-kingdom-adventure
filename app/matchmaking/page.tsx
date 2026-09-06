@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { TIME_CONTROLS, DEFAULT_TIME_CONTROL_ID } from "@/content/timeControls";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   findOrCreateMatch,
+  supportsTimeControlMatchmaking,
   cancelMatchmaking,
   getFreeGameStatus,
   hasRatingHistory,
@@ -30,6 +32,10 @@ export default function MatchmakingPage() {
   const [gameStatus, setGameStatus] = useState<FreeGameStatus | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [isFirstTimer, setIsFirstTimer] = useState(false);
+  // The speed the player wants. Only offered when the server can honour it
+  // (migration 0035); a picker that is silently ignored is worse than none.
+  const [timeControlId, setTimeControlId] = useState<string>(DEFAULT_TIME_CONTROL_ID);
+  const [canPickSpeed, setCanPickSpeed] = useState(false);
   const childIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -47,6 +53,10 @@ export default function MatchmakingPage() {
       }
       const child = resolution.child!;
       childIdRef.current = child.id;
+
+      void supportsTimeControlMatchmaking(supabase)
+        .then((ok) => setCanPickSpeed(ok))
+        .catch(() => setCanPickSpeed(false));
 
       const [status, hasHistory] = await Promise.all([
         getFreeGameStatus(supabase, child.id),
@@ -83,7 +93,7 @@ export default function MatchmakingPage() {
     const supabase = createClient();
     let result;
     try {
-      result = await findOrCreateMatch(supabase, childId, rating);
+      result = await findOrCreateMatch(supabase, childId, rating, timeControlId);
     } catch (err) {
       setView({ status: "error", rating, message: "Couldn't start matchmaking — please try again." });
       return;
@@ -162,8 +172,47 @@ export default function MatchmakingPage() {
         {view.status === "idle" && (
           <>
             <p className={TEXT.body}>
-              We'll find you the closest-rated opponent available, anywhere in the world.
+              We&apos;ll find you the closest-rated opponent available, anywhere in the world.
             </p>
+
+            {canPickSpeed && (
+              <div className="w-full flex flex-col gap-3">
+                {(["Blitz", "Rapid"] as const).map((category) => (
+                  <div key={category} className="flex flex-col gap-2">
+                    <p className={`${TEXT.meta} text-premium-gold`}>{category}</p>
+                    <div
+                      role="radiogroup"
+                      aria-label={`${category} time controls`}
+                      className="grid grid-cols-3 gap-2"
+                    >
+                      {TIME_CONTROLS.filter((t) => t.description === category).map((t) => {
+                        const active = t.id === timeControlId;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => setTimeControlId(t.id)}
+                            className={`min-h-[48px] rounded-premiumBtn border px-2 font-classic-body text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 ${
+                              active
+                                ? "border-premium-gold bg-premium-gold/15 text-premium-ivory"
+                                : "border-white/12 bg-premium-navy/70 text-premium-ivory/75 hover:border-premium-gold/30"
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                <p className={TEXT.caption}>
+                  You are only matched with players who chose the same time control.
+                </p>
+              </div>
+            )}
+
             <Button tone="premium" size="lg" onClick={findOpponent}>
               Find Opponent →
             </Button>
@@ -172,7 +221,11 @@ export default function MatchmakingPage() {
 
         {view.status === "searching" && (
           <>
-            <p className={`${TEXT.body} animate-pulse`}>Searching for an opponent...</p>
+            <p className={`${TEXT.body} animate-pulse`}>
+              Searching for an opponent
+              {canPickSpeed ? ` at ${TIME_CONTROLS.find((t) => t.id === timeControlId)?.label ?? ""}` : ""}
+              ...
+            </p>
             <Button tone="premium" variant="ghost" onClick={cancelSearch}>
               Cancel Search
             </Button>

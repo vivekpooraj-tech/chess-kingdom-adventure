@@ -813,15 +813,53 @@ export interface MatchmakingResult {
 export async function findOrCreateMatch(
   supabase: SupabaseClient,
   childId: string,
-  rating: number
+  rating: number,
+  /** Desired speed. Players only match with others who asked for the same one.
+   *  Omitted (or with migration 0035 unapplied) the server keeps its previous
+   *  hardcoded 10+0 behaviour. */
+  timeControl?: string
 ): Promise<MatchmakingResult> {
-  const { data, error } = await supabase.rpc("find_or_create_match", {
-    p_child_id: childId,
-    p_rating: rating,
-  });
+  const payload: Record<string, unknown> = { p_child_id: childId, p_rating: rating };
+  if (timeControl) payload.p_time_control = timeControl;
+
+  let { data, error } = await supabase.rpc("find_or_create_match", payload);
+
+  // Migration 0035 adds the third parameter. Until it is applied the
+  // three-argument overload does not exist, and PostgREST reports that as a
+  // missing function rather than a bad argument — so fall back to the
+  // two-argument call, which still produces a (10+0) game. Matchmaking keeps
+  // working either way; only the choice of speed is unavailable.
+  if (error && timeControl && /does not exist|schema cache|could not find the function/i.test(error.message)) {
+    ({ data, error } = await supabase.rpc("find_or_create_match", {
+      p_child_id: childId,
+      p_rating: rating,
+    }));
+  }
+
   if (error) throw error;
   const row = data?.[0];
   return { matched: row?.matched ?? false, gameId: row?.game_id ?? null, blocked: row?.blocked ?? false };
+}
+
+/**
+ * Whether the server understands per-speed matchmaking (migration 0035).
+ *
+ * Probed so the UI can hide a speed picker that would silently do nothing.
+ * Offering a choice that is quietly ignored is worse than offering none.
+ */
+export async function supportsTimeControlMatchmaking(
+  supabase: SupabaseClient
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("matchmaking_queue")
+      .select("time_control")
+      .limit(1);
+    if (!error) return true;
+    return !/does not exist|schema cache|column/i.test(error.message);
+  } catch {
+    return false;
+  }
 }
 
 /** Leaves the queue — used both for an explicit "Cancel search" and as

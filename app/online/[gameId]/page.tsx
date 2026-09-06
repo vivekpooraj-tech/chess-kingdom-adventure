@@ -10,6 +10,7 @@ import {
   joinOnlineGame,
   submitOnlineMove,
   claimTimeout,
+  createInviteGame,
   finishOnlineGame,
   sendReaction,
   applyMatchRating,
@@ -19,6 +20,15 @@ import {
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { QUICK_CHAT_PHRASES, EMOJI_REACTIONS, DRAW_OFFER_PREFIX } from "@/content/quickChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import {
+  INITIAL as REMATCH_INITIAL,
+  reduce as rematchReduce,
+  shouldCreateGame,
+  isRematchCreator,
+  describe as describeRematch,
+  OFFER_TTL_MS,
+  type RematchContext,
+} from "@/lib/online/rematch";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
 import { LiveChessClock } from "@/components/game/ChessClock";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
@@ -71,6 +81,13 @@ export default function OnlineGamePage() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [resignConfirm, setResignConfirm] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  // Rematch lives entirely in an ephemeral Realtime broadcast on the channel
+  // this page already opens for moves — no extra subscription, no new table.
+  const [rematch, setRematch] = useState<RematchContext>(REMATCH_INITIAL);
+  const rematchRef = useRef<RematchContext>(REMATCH_INITIAL);
+  rematchRef.current = rematch;
+  const channelRef = useRef<ReturnType<typeof supabaseRef.current.channel> | null>(null);
+  const creatingRef = useRef(false);
   // The specific draw-offer token (see DRAW_OFFER_PREFIX) the local player
   // has already dismissed — each offer is uniquely timestamped, so a new
   // offer after a declined one always compares as different and reappears.
@@ -118,13 +135,96 @@ export default function OnlineGamePage() {
           setGame(payload.new as OnlineGame);
         }
       )
+      // Same channel, so this costs no additional Realtime connection.
+      .on("broadcast", { event: "rematch" }, ({ payload }) => {
+        const kind = payload?.kind;
+        if (kind === "offer") setRematch((c) => rematchReduce(c, { type: "OFFER_REMOTE" }));
+        else if (kind === "decline") setRematch((c) => rematchReduce(c, { type: "DECLINE_REMOTE" }));
+        else if (kind === "created" && typeof payload?.gameId === "string") {
+          setRematch((c) => rematchReduce(c, { type: "CREATED", gameId: payload.gameId }));
+        }
+      })
       .subscribe();
+    channelRef.current = channel;
 
     return () => {
       cancelled = true;
       supabase.removeChannel(channel);
     };
   }, [params.gameId, router]);
+
+  // Navigate once the rematch game exists. Both sides run this; whoever is
+  // told first simply goes.
+  useEffect(() => {
+    if (rematch.state === "ready" && rematch.newGameId) {
+      router.push(`/online/${rematch.newGameId}`);
+    }
+  }, [rematch.state, rematch.newGameId, router]);
+
+  // An unanswered offer expires, so a stale one cannot commit someone minutes
+  // later to a game they have forgotten about.
+  useEffect(() => {
+    if (rematch.state !== "offered" && rematch.state !== "received") return;
+    const t = window.setTimeout(
+      () => setRematch((c) => rematchReduce(c, { type: "EXPIRE" })),
+      OFFER_TTL_MS
+    );
+    return () => window.clearTimeout(t);
+  }, [rematch.state]);
+
+  // Only the player who just had Black creates the game, and only once. That
+  // single rule is what makes two simultaneous clicks produce one game.
+  useEffect(() => {
+    const g = game !== "loading" && game ? game : null;
+    if (!g || !childId) return;
+    const isHost = g.host_child_id === childId;
+    const myColor: "w" | "b" = isHost ? g.host_color : g.host_color === "w" ? "b" : "w";
+    if (!shouldCreateGame(rematchRef.current, isRematchCreator(myColor))) return;
+    if (creatingRef.current) return;
+    creatingRef.current = true;
+
+    (async () => {
+      try {
+        const result = await createInviteGame(
+          supabaseRef.current,
+          childId,
+          g.time_control ?? "10+0"
+        );
+        if (!result.id) {
+          creatingRef.current = false;
+          setRematch((c) => rematchReduce(c, { type: "DECLINE_LOCAL" }));
+          return;
+        }
+        channelRef.current?.send({
+          type: "broadcast",
+          event: "rematch",
+          payload: { kind: "created", gameId: result.id },
+        });
+        setRematch((c) => rematchReduce(c, { type: "CREATED", gameId: result.id! }));
+      } catch {
+        creatingRef.current = false;
+        setRematch((c) => rematchReduce(c, { type: "DECLINE_LOCAL" }));
+      }
+    })();
+  }, [rematch.state, game, childId]);
+
+  function offerRematch() {
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "rematch",
+      payload: { kind: "offer" },
+    });
+    setRematch((c) => rematchReduce(c, { type: "OFFER_LOCAL" }));
+  }
+
+  function declineRematch() {
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "rematch",
+      payload: { kind: "decline" },
+    });
+    setRematch((c) => rematchReduce(c, { type: "DECLINE_LOCAL" }));
+  }
 
   // Opening recognition reads game.moves (synced from the DB, appended to by
   // whichever player made each move) rather than ChessBoard's own history —
@@ -374,6 +474,46 @@ export default function OnlineGamePage() {
               <RatingDeltaRow label="Opponent" before={opponentRatingBefore!} after={opponentRatingAfter!} />
             </div>
           )}
+          {/* Rematch. Offering is also how you accept — an offer from both
+              sides IS the agreement, which is why two simultaneous clicks
+              cannot conflict. */}
+          {game.match_type === "random" && (
+            <div className="flex w-full flex-col gap-2">
+              {rematch.state === "idle" && (
+                <Button tone="premium" onClick={offerRematch}>
+                  Rematch
+                </Button>
+              )}
+              {rematch.state === "received" && (
+                <div className="flex gap-2">
+                  <Button tone="premium" onClick={offerRematch} className="flex-1">
+                    Accept rematch
+                  </Button>
+                  <Button tone="premium" variant="ghost" onClick={declineRematch}>
+                    Decline
+                  </Button>
+                </div>
+              )}
+              {(rematch.state === "offered" ||
+                rematch.state === "agreed" ||
+                rematch.state === "ready") && (
+                <p className={TEXT.caption} role="status">
+                  {describeRematch(rematch)}
+                </p>
+              )}
+              {(rematch.state === "declined" || rematch.state === "expired") && (
+                <>
+                  <p className={TEXT.caption} role="status">
+                    {describeRematch(rematch)}
+                  </p>
+                  <Button tone="premium" variant="ghost" onClick={offerRematch}>
+                    Offer again
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
           {game.moves.length > 0 && (
             <Button tone="premium" onClick={() => setShowReview(true)}>
               Review Game →
