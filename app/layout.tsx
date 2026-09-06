@@ -13,6 +13,7 @@ import { LayoutBootstrapScript } from "@/components/nav/LayoutBootstrapScript";
 import { ShellBootstrapScript } from "@/components/nav/ShellBootstrapScript";
 import { ThemeBootstrapScript } from "@/components/theme/ThemeBootstrapScript";
 import { AppShell } from "@/components/nav/AppShell";
+import { ScreenTimeTracker } from "@/components/screen-time/ScreenTimeTracker";
 import { BRAND } from "@/lib/brand";
 
 // Adventure Mode faces. These were referenced in tailwind.config.ts as bare
@@ -102,6 +103,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 chrome — so navigating between them no longer remounts the
                 nav tree. It composes the existing Screen/page-shell system,
                 it does not replace it. */}
+            {/* Screen-time accrual for the WHOLE app, deliberately a sibling
+                of AppShell rather than inside it. AppShell renders its chrome
+                only for APP_PREFIXES and passes every other route straight
+                through, so a tracker mounted within it never ran on Free Play,
+                a live online game, a day lesson or a tactics lesson — several
+                of the longest child activities in the product. Here it is
+                independent of whether nav chrome is shown, and the root layout
+                keeps it mounted across every navigation. */}
+            <ScreenTimeTracker />
             <AppShell>{children}</AppShell>
           </MotionProvider>
           {/* Renders nothing unless LOCAL_TEST_MODE is on (lib/devTestMode.ts) —

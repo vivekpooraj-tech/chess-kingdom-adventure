@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ScreenTimeTracker } from "@/components/screen-time/ScreenTimeTracker";
 import { resetChessFocusMode } from "@/lib/chessFocus/focusMode";
 import { isAppChromeRoute } from "./navConfig";
 import { PrimaryNav } from "./PrimaryNav";
@@ -84,10 +83,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Screen-time accrual for the whole app. Mounted here because AppShell
-          survives route changes, so the tick is not restarted (and partial
-          minutes lost) every time the child navigates. */}
-      <ScreenTimeTracker />
       <SideNav collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
       <div className="app-shell-content">
         <AppTopBar />

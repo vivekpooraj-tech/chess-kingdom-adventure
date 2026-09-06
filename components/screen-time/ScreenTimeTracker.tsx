@@ -7,40 +7,60 @@ import {
   addUsageMinutes,
   getScreenTimeLimits,
   getTodayUsageMinutes,
-  localDateString,
+  resolveActiveChild,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { resolveActiveChild } from "@/lib/supabase/queries";
-import { Card } from "@/components/ui/Card";
+import { TimeCompleteOverlay } from "@/components/screen-time/TimeCompleteOverlay";
+import {
+  accumulate,
+  dateKey,
+  isBlocked,
+  parseLeader,
+  pickLimit,
+  shouldClaimLeadership,
+  type Accumulator,
+} from "@/lib/screenTime/session";
 
 /**
- * The one owner of screen-time accrual.
+ * The single owner of screen-time accrual.
  *
- * A parent who sets "60 minutes on a weekday" means sixty minutes of using
- * Chess Mind, not sixty minutes on a subset of its screens. Accrual previously
- * lived inside ScreenTimeGate, which wraps only four surfaces — Kingdom Map,
- * its customize page, the day lessons and Welcome. Everything else counted for
- * nothing: playing a real game at /online, Free Play, the Puzzle Trainer, every
- * Academy course, every Chess Mind module. A child could play chess all
- * afternoon and the parent's limit would never be approached, let alone hit.
+ * Mounted once in AppShell, which the root layout renders and route changes do
+ * not remount — so one interval runs for the whole app and navigation never
+ * restarts it. No page mounts a timer of its own.
  *
- * It also lost time on every navigation. The 60-second interval lived in a page
- * component, so moving between screens before it fired discarded that partial
- * minute entirely; a child tapping between tabs could stay under the limit
- * indefinitely.
+ * What it counts is ACTIVE, VISIBLE time. Wall-clock counting billed a child
+ * for a tab left open on a sleeping laptop; the accumulator only advances
+ * while the document is visible, and a suspiciously large jump (a machine
+ * resuming from sleep) is discarded rather than charged.
  *
- * Mounting here in AppShell fixes both: AppShell is mounted once by the root
- * layout and is NOT remounted by route changes, so the tick keeps running
- * across navigation and covers every screen the shell wraps.
+ * Sub-minute time is kept in a remainder and persisted, so moving between
+ * screens — or closing the tab — no longer throws away partial minutes. That
+ * was exploitable: navigating every 30 seconds accrued nothing at all.
  *
- * Accrual is deliberately skipped on parent and auth screens — a parent
- * adjusting settings is not the child using their allowance.
+ * With several tabs open, exactly one accrues. Tabs elect a leader through a
+ * heartbeat in localStorage, so three tabs cost one minute a minute rather
+ * than three.
+ *
+ * The server stays authoritative. The client decides when to WRITE a minute,
+ * never how many minutes exist: totals and limits are re-read from Supabase on
+ * a slow timer, so clearing local state, refreshing or opening a second device
+ * cannot restore a spent allowance.
  */
 
-const TICK_MS = 60_000;
+/** How often the accumulator folds in elapsed active time. */
+const TICK_MS = 5_000;
+/**
+ * How often limits and the server total are re-read (parent changes, other
+ * devices, midnight). Slow on purpose — a background correctness check, not a
+ * live feed.
+ */
+const RESYNC_MS = 5 * 60_000;
 
-/** Routes where time must not be charged to the child. */
-const EXCLUDED = [
+const LEADER_KEY = "chessmind-st-leader";
+const REMAINDER_KEY = "chessmind-st-remainder";
+
+/** Surfaces whose time is not the child's play time. */
+const EXCLUDED_PREFIXES = [
   "/parent-dashboard",
   "/parent-gate",
   "/sign-in",
@@ -51,105 +71,208 @@ const EXCLUDED = [
   "/dev/",
 ];
 
-function isExcluded(pathname: string): boolean {
-  return EXCLUDED.some((p) => pathname === p || pathname.startsWith(p));
+export function isExcludedPath(pathname: string): boolean {
+  return EXCLUDED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p));
+}
+
+/**
+ * A live online game is not interrupted.
+ *
+ * Blocking mid-game would abandon a real opponent and, in a rated game, cost
+ * the child material and rating through no fault of their own. The chess clock
+ * bounds how long this defers for, time keeps accruing throughout, and the
+ * overlay appears the moment they leave the board.
+ */
+function deferOverlay(pathname: string): boolean {
+  return pathname.startsWith("/online/");
+}
+
+function readStorage(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    /* private mode — degrade to single-tab behaviour */
+  }
 }
 
 export function ScreenTimeTracker() {
   const pathname = usePathname();
-  const [locked, setLocked] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [limitMinutes, setLimitMinutes] = useState<number | null>(null);
+  const [usedMinutes, setUsedMinutes] = useState(0);
 
-  // Refs so the interval never restarts when these change — restarting is what
-  // used to throw away partial minutes.
+  // Refs so nothing here can restart the interval.
   const childIdRef = useRef<string | null>(null);
   const limitRef = useRef<number | null>(null);
   const usedRef = useRef(0);
+  const accRef = useRef<Accumulator>({ remainderMs: 0, date: dateKey(new Date()) });
+  const lastTickRef = useRef<number>(Date.now());
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
+  const selfIdRef = useRef<string>(Math.random().toString(36).slice(2));
+  const lastResyncRef = useRef<number>(0);
 
   useEffect(() => {
     let cancelled = false;
     const supabase = createClient();
+    const selfId = selfIdRef.current;
 
-    async function init() {
+    // Restore a partial minute left by a previous tab or a reload.
+    const savedRemainder = readStorage(REMAINDER_KEY);
+    if (savedRemainder) {
       try {
-        const user = await getVerifiedUser(supabase);
-        if (!user || cancelled) return;
-        // Resolve the child the same way every other surface does, rather than
-        // trusting the cookie alone: straight after sign-in the active-child
-        // cookie may not be set yet, and requiring it meant the tracker
-        // silently accrued nothing for that whole session. resolveActiveChild
-        // falls back to the parent's child when the cookie is absent.
-        const resolution = await resolveActiveChild(
-          supabase,
-          user.id,
-          getActiveChildIdClient()
-        );
-        const childId = resolution.child?.id ?? null;
-        if (!childId || cancelled) return;
-
-        const limits = await getScreenTimeLimits(supabase, user.id);
-        const day = new Date().getDay();
-        const limit = day === 0 || day === 6 ? limits.weekendMinutes : limits.weekdayMinutes;
-        const used = await getTodayUsageMinutes(supabase, childId, localDateString());
-        if (cancelled) return;
-
-        childIdRef.current = childId;
-        limitRef.current = limit;
-        usedRef.current = used;
-        if (limit > 0 && used >= limit && !isExcluded(pathRef.current)) setLocked(true);
+        const parsed = JSON.parse(savedRemainder);
+        if (parsed?.date === dateKey(new Date()) && typeof parsed.remainderMs === "number") {
+          accRef.current = { remainderMs: parsed.remainderMs, date: parsed.date };
+        }
       } catch {
-        // Screen time must never break the app. A failed read simply means no
-        // enforcement this session rather than a blank screen.
+        /* ignore malformed state */
       }
     }
-    void init();
 
-    const interval = setInterval(async () => {
-      if (cancelled) return;
-      const childId = childIdRef.current;
-      const limit = limitRef.current;
-      if (!childId || limit === null) return;
-      // Don't charge parent/auth time to the child, and stop counting once the
-      // limit is reached — the total should not run away while locked.
-      if (isExcluded(pathRef.current) || usedRef.current >= limit) return;
+    async function resync(): Promise<void> {
+      const user = await getVerifiedUser(supabase);
+      if (!user || cancelled) return;
 
-      try {
-        const total = await addUsageMinutes(supabase, childId, localDateString(), 1);
-        if (cancelled) return;
-        usedRef.current = total;
-        if (limit > 0 && total >= limit) setLocked(true);
-      } catch {
-        /* transient failure — try again next tick */
+      let childId = childIdRef.current;
+      if (!childId) {
+        // Resolve the child the way every other surface does. The active-child
+        // cookie is not set straight after sign-in, and requiring it meant the
+        // tracker accrued nothing for that whole session.
+        const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
+        childId = resolution.child?.id ?? null;
+        if (!childId || cancelled) return;
+        childIdRef.current = childId;
       }
+
+      const [limits, used] = await Promise.all([
+        getScreenTimeLimits(supabase, user.id),
+        getTodayUsageMinutes(supabase, childId, dateKey(new Date())),
+      ]);
+      if (cancelled) return;
+
+      const limit = pickLimit(new Date(), limits);
+      limitRef.current = limit;
+      usedRef.current = used;
+      setLimitMinutes(limit);
+      setUsedMinutes(used);
+      setBlocked(isBlocked(used, limit));
+      lastResyncRef.current = Date.now();
+    }
+
+    void resync().catch(() => {
+      /* Screen time must never break the app; no enforcement beats a blank page. */
+    });
+
+    const interval = window.setInterval(() => {
+      void (async () => {
+        if (cancelled) return;
+        const now = Date.now();
+        const elapsed = now - lastTickRef.current;
+        lastTickRef.current = now;
+
+        // Leader election: only one tab accrues.
+        const record = parseLeader(readStorage(LEADER_KEY));
+        const mayAccrue = shouldClaimLeadership(record, selfId, now);
+        if (mayAccrue) writeStorage(LEADER_KEY, JSON.stringify({ id: selfId, ts: now }));
+
+        const visible =
+          typeof document === "undefined" || document.visibilityState === "visible";
+        const excluded = isExcludedPath(pathRef.current);
+        const childId = childIdRef.current;
+        const limit = limitRef.current;
+
+        // Periodic correctness resync, even while idle: catches a parent
+        // raising the limit, another device spending time, and midnight.
+        if (now - lastResyncRef.current > RESYNC_MS) {
+          await resync().catch(() => {});
+          return;
+        }
+
+        if (!childId || limit === null) return;
+        // Stop the meter once blocked; a locked child is not spending time.
+        if (!mayAccrue || !visible || excluded || usedRef.current >= limit) return;
+
+        const result = accumulate(accRef.current, elapsed, new Date());
+        accRef.current = result.accumulator;
+        writeStorage(
+          REMAINDER_KEY,
+          JSON.stringify({
+            date: result.accumulator.date,
+            remainderMs: result.accumulator.remainderMs,
+          })
+        );
+
+        if (result.dayRolled) {
+          // New day: new allowance, and the lock lifts.
+          await resync().catch(() => {});
+          return;
+        }
+        if (result.minutesToCommit <= 0) return;
+
+        try {
+          const total = await addUsageMinutes(
+            supabase,
+            childId,
+            dateKey(new Date()),
+            result.minutesToCommit
+          );
+          if (cancelled) return;
+          usedRef.current = total;
+          setUsedMinutes(total);
+          if (isBlocked(total, limit)) setBlocked(true);
+        } catch {
+          /* transient failure — the remainder is kept, so nothing is lost */
+        }
+      })();
     }, TICK_MS);
+
+    // A visibility change resets the elapsed baseline, so hidden time is not
+    // folded in when the tab comes back.
+    const onVisibility = () => {
+      lastTickRef.current = Date.now();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Persist the partial minute when the tab goes away, and release
+    // leadership so another tab takes over immediately rather than waiting for
+    // the heartbeat to go stale.
+    const onPageHide = () => {
+      writeStorage(
+        REMAINDER_KEY,
+        JSON.stringify({ date: accRef.current.date, remainderMs: accRef.current.remainderMs })
+      );
+      const record = parseLeader(readStorage(LEADER_KEY));
+      if (record?.id === selfId) {
+        try {
+          window.localStorage.removeItem(LEADER_KEY);
+        } catch {
+          /* nothing to do */
+        }
+      }
+    };
+    window.addEventListener("pagehide", onPageHide);
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      onPageHide();
     };
   }, []);
 
-  // Leaving a child screen for a parent screen must lift the overlay, so a
-  // parent can always reach the dashboard to change the limit.
-  if (!locked || isExcluded(pathname)) return null;
+  if (!blocked || limitMinutes === null) return null;
+  if (isExcludedPath(pathname)) return null; // a parent must always reach the dashboard
+  if (deferOverlay(pathname)) return null;
 
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Daily screen time reached"
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-premium-midnight px-6"
-    >
-      <Card className="flex w-full max-w-sm flex-col items-center gap-5 text-center">
-        <span className="text-6xl" aria-hidden="true">
-          🌙
-        </span>
-        <h1 className="font-display text-2xl text-kingdom-night">Time to rest for today!</h1>
-        <p className="font-body text-kingdom-night/70">
-          You&apos;ve used up today&apos;s Chess Mind time. Come back tomorrow.
-        </p>
-      </Card>
-    </div>
-  );
+  return <TimeCompleteOverlay limitMinutes={limitMinutes} usedMinutes={usedMinutes} />;
 }
