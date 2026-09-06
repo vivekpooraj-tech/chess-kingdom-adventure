@@ -55,7 +55,8 @@ async function main() {
     console.log("  - accept-only-by-recipient");
     console.log("  - code enumeration resistance");
     console.log("  - RLS isolation between families");
-    process.exit(0);
+    process.exitCode = 0;
+    return;
   }
   if (probe.error) throw new Error("unexpected probe error: " + probe.error.message);
 
@@ -65,7 +66,8 @@ async function main() {
     .limit(3);
   if (!kids || kids.length < 2) {
     console.error("Need at least two children to test friendships.");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   const [a, b] = kids;
 
@@ -144,13 +146,16 @@ async function main() {
   console.log(`\n=== FRIENDSHIPS: ${pass} passed, ${failures.length} failed ===`);
   if (failures.length) {
     console.error("Failures:\n" + failures.map((f) => " - " + f).join("\n"));
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
-  process.exit(0);
+  process.exitCode = 0;
+    return;
 }
 
 main().catch(async (e) => {
   await cleanup();
   console.error("crashed:", e.message);
-  process.exit(1);
+  process.exitCode = 1;
+    return;
 });

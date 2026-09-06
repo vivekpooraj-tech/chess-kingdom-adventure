@@ -95,7 +95,8 @@ async function main() {
   const dev = await findDevChild();
   if (!dev) {
     console.error("Dev Test Child not found — run scripts/dev-seed-test-user.js first.");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   // A second child to act as the opponent.
@@ -106,7 +107,8 @@ async function main() {
     .limit(1);
   if (!others || !others.length) {
     console.error("Need a second child row to act as an opponent.");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   const opponentId = others[0].id;
 
@@ -119,7 +121,8 @@ async function main() {
     const ids = (data ?? []).map((r) => r.id);
     await cleanup(ids);
     console.log(`removed ${ids.length} demo games`);
-    process.exit(0);
+    process.exitCode = 0;
+    return;
   }
 
   // ---- A: result and colour mapping, from both sides of the board ----
@@ -248,13 +251,16 @@ async function main() {
   console.log(`\n=== STATS INTEGRATION: ${pass} passed, ${failures.length} failed ===`);
   if (failures.length) {
     console.error("Failures:\n" + failures.map((f) => " - " + f).join("\n"));
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
-  process.exit(0);
+  process.exitCode = 0;
+    return;
 }
 
 main().catch(async (e) => {
   await cleanup();
   console.error("crashed:", e.message);
-  process.exit(1);
+  process.exitCode = 1;
+    return;
 });
