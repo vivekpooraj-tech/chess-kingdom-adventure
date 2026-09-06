@@ -11,7 +11,6 @@ import {
   submitOnlineMove,
   claimTimeout,
   createInviteGame,
-  finishOnlineGame,
   sendReaction,
   applyMatchRating,
   recordOpeningEncounter,
@@ -64,6 +63,31 @@ function RatingDeltaRow({ label, before, after }: { label: string; before: numbe
       </p>
     </div>
   );
+}
+
+
+/**
+ * Ask the server to finish this game.
+ *
+ * The client sends an INTENT and never a winner. The server replays the stored
+ * moves with chess.js and decides the result itself, so a browser cannot
+ * declare a checkmate that did not happen or pick who won. See
+ * app/api/online/[gameId]/complete/route.ts.
+ */
+async function requestCompletion(
+  gameId: string,
+  intent: "resign" | "claim_result" | "accept_draw"
+): Promise<void> {
+  try {
+    await fetch(`/api/online/${gameId}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ intent }),
+    });
+  } catch {
+    // The Realtime subscription still carries the result if the server settled
+    // it; a failed request must not wedge the board.
+  }
 }
 
 export default function OnlineGamePage() {
@@ -311,7 +335,9 @@ export default function OnlineGamePage() {
   async function handleGameOver(result: { isCheckmate: boolean; isDraw: boolean; winner: Color | null }) {
     const winner = result.isDraw ? "draw" : result.winner;
     if (winner) {
-      await finishOnlineGame(supabaseRef.current, params.gameId, childId!, winner);
+      // The board's own verdict is only a prompt: the server replays the moves
+      // and decides for itself whether this really is mate or a draw.
+      await requestCompletion(params.gameId, "claim_result");
       if (game && game !== "loading" && game.match_type === "random") {
         const supabase = supabaseRef.current;
         // Idempotent server-side (rating_applied) — safe even if the
@@ -581,13 +607,15 @@ export default function OnlineGamePage() {
     const hasClock = game.time_control !== null && game.white_time_ms !== null && game.black_time_ms !== null;
 
     async function handleResign() {
-      await finishOnlineGame(supabaseRef.current, params.gameId, childId!, opponentColor);
+      // No winner is sent: the server makes the OPPONENT of whoever resigned
+      // the winner, so a resigning player cannot name themselves.
+      await requestCompletion(params.gameId, "resign");
     }
     async function handleOfferDraw() {
       await sendReaction(supabaseRef.current, params.gameId, isHost, `${DRAW_OFFER_PREFIX}${Date.now()}`);
     }
     async function handleAcceptDraw() {
-      await finishOnlineGame(supabaseRef.current, params.gameId, childId!, "draw");
+      await requestCompletion(params.gameId, "accept_draw");
     }
 
     const arenaTitle =
