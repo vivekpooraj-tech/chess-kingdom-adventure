@@ -368,7 +368,7 @@ async function runSuite() {
     const far1 = await makeChild("RS_Closest_Far1", 700);
     const far2 = await makeChild("RS_Closest_Far2", 900);
     for (const c of [near, mid, far1, far2]) await seedQueueRow(c.id, c.rating, 0);
-    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: searcher.rating });
+    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: searcher.rating, p_time_control: "10+0" });
     check("matchmaking call succeeds", !r.error, r.error?.message);
     check("matched immediately (someone within the initial window)", r.data[0].matched === true, JSON.stringify(r.data));
     const game = await admin.from("online_games").select("host_child_id, guest_child_id").eq("id", r.data[0].game_id).single();
@@ -382,7 +382,7 @@ async function runSuite() {
     const searcher = await makeChild("RS_Expand_Searcher", 500);
     const distant = await makeChild("RS_Expand_Distant", 850); // 350 away -- outside the immediate ±50 window
     await seedQueueRow(distant.id, distant.rating, 130); // waited 130s -> window is ±400 by then, so 350 is in range
-    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: searcher.rating });
+    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: searcher.rating, p_time_control: "10+0" });
     check("a candidate far outside the immediate window is still matched once their own wait has expanded it enough", r.data?.[0]?.matched === true, JSON.stringify(r.data));
     await cleanupChild(searcher.id);
     await cleanupChild(distant.id);
@@ -391,7 +391,7 @@ async function runSuite() {
     const searcher = await makeChild("RS_NoExpand_Searcher", 500);
     const tooFar = await makeChild("RS_NoExpand_TooFar", 1200); // 700 away, waited only 5s -> window is ±50
     await seedQueueRow(tooFar.id, tooFar.rating, 5);
-    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: searcher.rating });
+    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: searcher.rating, p_time_control: "10+0" });
     check("a candidate still far outside their own (small) current window is correctly NOT matched", r.data?.[0]?.matched === false, JSON.stringify(r.data));
     await admin.from("matchmaking_queue").delete().eq("child_id", tooFar.id);
     await cleanupChild(searcher.id);
@@ -405,7 +405,7 @@ async function runSuite() {
     const older = await makeChild("RS_Tie_Older", 480); // -20, waited more (same absolute difference)
     await seedQueueRow(newer.id, newer.rating, 2);
     await seedQueueRow(older.id, older.rating, 10);
-    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: searcher.rating });
+    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: searcher.rating, p_time_control: "10+0" });
     const game = await admin.from("online_games").select("host_child_id, guest_child_id").eq("id", r.data[0].game_id).single();
     const opponentId = game.data.host_child_id === searcher.id ? game.data.guest_child_id : game.data.host_child_id;
     check("with an equal rating gap, the longer-waiting candidate is chosen", opponentId === older.id, opponentId);
@@ -419,7 +419,7 @@ async function runSuite() {
     const a = await makeChild("RS_NoDup_A", 400);
     const b = await makeChild("RS_NoDup_B", 400);
     await seedQueueRow(b.id, b.rating, 0);
-    await client.rpc("find_or_create_match", { p_child_id: a.id, p_rating: a.rating });
+    await client.rpc("find_or_create_match", { p_child_id: a.id, p_rating: a.rating, p_time_control: "10+0" });
     const { count } = await admin.from("matchmaking_queue").select("id", { count: "exact", head: true }).in("child_id", [a.id, b.id]).eq("status", "waiting");
     check("no leftover 'waiting' queue rows for either player after a match", count === 0, count);
     await cleanupChild(a.id);
@@ -430,7 +430,7 @@ async function runSuite() {
   {
     const searchers = [];
     for (let i = 0; i < 6; i++) searchers.push(await makeChild(`RS_Conc_${i}`, 400 + i * 5));
-    const results = await Promise.all(searchers.map((c) => client.rpc("find_or_create_match", { p_child_id: c.id, p_rating: c.rating })));
+    const results = await Promise.all(searchers.map((c) => client.rpc("find_or_create_match", { p_child_id: c.id, p_rating: c.rating, p_time_control: "10+0" })));
     check("all 6 concurrent matchmaking calls succeed", results.every((r) => !r.error), JSON.stringify(results.filter((r) => r.error).map((r) => r.error.message)));
     const gameIds = [...new Set(results.map((r) => r.data?.[0]?.game_id).filter(Boolean))];
     const { data: games } = await admin.from("online_games").select("host_child_id, guest_child_id").in("id", gameIds);
@@ -457,7 +457,7 @@ async function runSuite() {
       if (remaining.data.length < 2) break;
       const searcher = remaining.data[0];
       await admin.from("matchmaking_queue").delete().eq("child_id", searcher.child_id); // remove searcher from pool, they're now the active searcher
-      const r = await client.rpc("find_or_create_match", { p_child_id: searcher.child_id, p_rating: searcher.rating });
+      const r = await client.rpc("find_or_create_match", { p_child_id: searcher.child_id, p_rating: searcher.rating, p_time_control: "10+0" });
       if (!r.data?.[0]?.matched) continue;
       const game = await admin.from("online_games").select("host_child_id, guest_child_id").eq("id", r.data[0].game_id).single();
       const opponentId = game.data.host_child_id === searcher.child_id ? game.data.guest_child_id : game.data.host_child_id;
@@ -474,7 +474,7 @@ async function runSuite() {
     const a = await makeChild("RS_400_A", 400);
     const b = await makeChild("RS_400_B", 400);
     await seedQueueRow(b.id, 400, 0);
-    const r = await client.rpc("find_or_create_match", { p_child_id: a.id, p_rating: 400 });
+    const r = await client.rpc("find_or_create_match", { p_child_id: a.id, p_rating: 400, p_time_control: "10+0" });
     check("two fresh 400-rated players match each other immediately", r.data?.[0]?.matched === true, JSON.stringify(r.data));
     await cleanupChild(a.id);
     await cleanupChild(b.id);
@@ -487,7 +487,7 @@ async function runSuite() {
     const far = await makeChild("RS_S_Far", 1200);
     await seedQueueRow(close.id, 420, 0);
     await seedQueueRow(far.id, 1200, 200); // even with a huge expanded window, closest-first must still win
-    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: 400 });
+    const r = await client.rpc("find_or_create_match", { p_child_id: searcher.id, p_rating: 400, p_time_control: "10+0" });
     const game = await admin.from("online_games").select("host_child_id, guest_child_id").eq("id", r.data[0].game_id).single();
     const opponentId = game.data.host_child_id === searcher.id ? game.data.guest_child_id : game.data.host_child_id;
     check("the closer 420-rated candidate is chosen over the 1200, even though the 1200 is also technically eligible", opponentId === close.id, opponentId);
@@ -501,16 +501,54 @@ async function runSuite() {
     const a = await makeChild("RS_Full_A", 400);
     const b = await makeChild("RS_Full_B", 420);
     await seedQueueRow(b.id, 420, 0);
-    const matchResult = await client.rpc("find_or_create_match", { p_child_id: a.id, p_rating: 400 });
+    const matchResult = await client.rpc("find_or_create_match", { p_child_id: a.id, p_rating: 400, p_time_control: "10+0" });
     check("matchmaking creates a real game", matchResult.data?.[0]?.matched === true, JSON.stringify(matchResult.data));
     const gameId = matchResult.data[0].game_id;
     const game = await admin.from("online_games").select("*").eq("id", gameId).single();
     check("created game has match_type='random' and a real clock", game.data.match_type === "random" && game.data.white_time_ms > 0, JSON.stringify(game.data));
     const mover = game.data.host_color === "w" ? game.data.host_child_id : game.data.guest_child_id;
-    const moveResult = await client.rpc("submit_online_move", { p_game_id: gameId, p_child_id: mover, p_fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1", p_san: "e4" });
-    check("a real move can be submitted on the matched game", !moveResult.error, moveResult.error?.message);
-    const finishResult = await client.rpc("finish_online_game_by_result", { p_game_id: gameId, p_child_id: mover, p_winner: game.data.host_color });
-    check("the game can be finished via the existing result RPC", !finishResult.error, finishResult.error?.message);
+    // Moves and results go through the SERVER path now. 0037/0038/0039 revoked
+    // the browser-facing RPCs, so a signed-in client calling them directly must
+    // be refused — assert that too, because it is the security property, not an
+    // inconvenience to work around.
+    const browserMove = await client.rpc("submit_online_move", { p_game_id: gameId, p_child_id: mover, p_fen: "forged", p_san: "e4" });
+    check("a browser CANNOT submit a move directly", !!browserMove.error, "the browser-facing RPC accepted a call");
+    const browserFinish = await client.rpc("finish_online_game_by_result", { p_game_id: gameId, p_child_id: mover, p_winner: game.data.host_color });
+    check("a browser CANNOT declare a result directly", !!browserFinish.error, "the browser-facing RPC accepted a call");
+
+    // Colours, derived rather than assumed: find_or_create_match assigns
+    // host_color randomly, and the old version of this block declared
+    // game.host_color the winner after a single move — which is a SELF-declared
+    // win half the time, and a resignation the other half. That made it a 50/50
+    // flake against 0036's minimum-plies guard.
+    const white = game.data.host_color === "w" ? game.data.host_child_id : game.data.guest_child_id;
+    const black = game.data.host_color === "w" ? game.data.guest_child_id : game.data.host_child_id;
+    const moverColor = mover === white ? "w" : "b";
+
+    const moveResult = await admin.rpc("submit_online_move_as_server", { p_game_id: gameId, p_child_id: mover, p_fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1", p_san: "e4" });
+    check("a real move can be submitted on the matched game (server path)", !moveResult.error, moveResult.error?.message);
+
+    // 0036's guard: the fastest possible mate is four plies, so a player
+    // claiming a win for THEMSELVES after one move cannot be reporting a real
+    // checkmate. Assert it fires — this is the anti-exploit property, and it
+    // must hold on the server path too.
+    const premature = await admin.rpc("finish_online_game_by_result_as_server", { p_game_id: gameId, p_child_id: mover, p_winner: moverColor });
+    check("a self-declared win before 4 plies is refused even on the server path",
+      !!premature.error && /before a checkmate is possible/.test(premature.error.message ?? ""),
+      premature.error?.message ?? "the premature claim was ACCEPTED");
+
+    // Play out to four plies so a win claim is legitimate, then finish.
+    for (const [child, fen, san] of [
+      [black, "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2", "e5"],
+      [white, "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2", "Nf3"],
+      [black, "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3", "Nf6"],
+    ]) {
+      const r = await admin.rpc("submit_online_move_as_server", { p_game_id: gameId, p_child_id: child, p_fen: fen, p_san: san });
+      check("subsequent server-path move accepted (" + san + ")", !r.error, r.error?.message);
+    }
+
+    const finishResult = await admin.rpc("finish_online_game_by_result_as_server", { p_game_id: gameId, p_child_id: mover, p_winner: moverColor });
+    check("the game can be finished via the server result RPC once 4 plies are played", !finishResult.error, finishResult.error?.message);
     const ratingResult = await client.rpc("apply_match_rating", { p_game_id: gameId });
     check("rating applies after finishing", !ratingResult.error, ratingResult.error?.message);
     const finalGame = await admin.from("online_games").select("host_rating_before, host_rating_after, guest_rating_before, guest_rating_after").eq("id", gameId).single();
