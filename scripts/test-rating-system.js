@@ -193,9 +193,14 @@ async function seedFinishedGame(hostId, guestId, winner, matchType) {
   return data.id;
 }
 
-async function seedQueueRow(childId, rating, secondsAgo) {
+async function seedQueueRow(childId, rating, secondsAgo, timeControl) {
   const createdAt = new Date(Date.now() - (secondsAgo ?? 0) * 1000).toISOString();
-  const { error } = await admin.from("matchmaking_queue").insert({ child_id: childId, rating, status: "waiting", created_at: createdAt });
+  const row = { child_id: childId, rating, status: "waiting", created_at: createdAt };
+  // 0035 made the queue per-speed: find_or_create_match only considers rows
+  // whose time_control equals the searcher's. Without this a 5+0 searcher can
+  // never find a seeded opponent, because the column defaults to 10+0.
+  if (timeControl) row.time_control = timeControl;
+  const { error } = await admin.from("matchmaking_queue").insert(row);
   if (error) throw new Error("seedQueueRow failed: " + error.message);
 }
 
@@ -494,6 +499,48 @@ async function runSuite() {
     await cleanupChild(searcher.id);
     await cleanupChild(close.id);
     await cleanupChild(far.id);
+  }
+
+  console.log("\n=== T0: 0041 — one canonical signature, DEFAULT and explicit ===");
+  {
+    // Two arguments. Before 0041 both overloads matched this and PostgREST
+    // refused with PGRST203; afterwards it resolves to the canonical function
+    // and the omitted third parameter falls back to its DEFAULT.
+    const a = await makeChild("RS_TC_Default_A", 500);
+    const b = await makeChild("RS_TC_Default_B", 505);
+    await seedQueueRow(b.id, 505, 0);
+    const r = await client.rpc("find_or_create_match", { p_child_id: a.id, p_rating: 500 });
+    check("a 2-argument call resolves (no PGRST203 ambiguity)", !r.error, r.error?.message);
+    check("a 2-argument call still matches players", r.data?.[0]?.matched === true, JSON.stringify(r.data));
+    if (r.data?.[0]?.game_id) {
+      const g = await admin.from("online_games").select("time_control, white_time_ms").eq("id", r.data[0].game_id).single();
+      check("the omitted third argument defaults to 10+0",
+        g.data?.time_control === "10+0", JSON.stringify(g.data));
+      check("the clock trigger sized 10+0 correctly (600000ms)",
+        Number(g.data?.white_time_ms) === 600000, String(g.data?.white_time_ms));
+    }
+    await cleanupChild(a.id);
+    await cleanupChild(b.id);
+  }
+  {
+    // Three arguments, a non-default control. The chosen speed must reach the
+    // created game, not be silently replaced by 10+0.
+    const a = await makeChild("RS_TC_Explicit_A", 600);
+    const b = await makeChild("RS_TC_Explicit_B", 605);
+    await seedQueueRow(b.id, 605, 0, "5+0");
+    const r = await client.rpc("find_or_create_match", { p_child_id: a.id, p_rating: 600, p_time_control: "5+0" });
+    check("a 3-argument call resolves", !r.error, r.error?.message);
+    if (r.data?.[0]?.game_id) {
+      const g = await admin.from("online_games").select("time_control, white_time_ms").eq("id", r.data[0].game_id).single();
+      check("the chosen time control is persisted (5+0)",
+        g.data?.time_control === "5+0", JSON.stringify(g.data));
+      check("the clock trigger sized 5+0 correctly (300000ms)",
+        Number(g.data?.white_time_ms) === 300000, String(g.data?.white_time_ms));
+    } else {
+      check("3-argument call matched a same-speed opponent", false, JSON.stringify(r.data));
+    }
+    await cleanupChild(a.id);
+    await cleanupChild(b.id);
   }
 
   console.log("\n=== T: existing Random Match functionality (full real flow) ===");
