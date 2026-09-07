@@ -33,6 +33,17 @@ export default function PlayPage() {
           description="Join a Swiss-style tournament — multiple rounds, real standings."
           icon={TrophyIcon}
         />
+
+        {/* Chess Mind World. It lives here rather than in the five primary
+            tabs — see the note in components/nav/navConfig.tsx on why five is
+            the ceiling on a phone — and this is where a player is already
+            deciding what kind of game to start. */}
+        <FeatureCard
+          href="/world"
+          title="Chess Mind World"
+          description="Play in extraordinary places. Same rules, remarkable view."
+          icon={GlobeIcon}
+        />
       </div>
 
       <SecondaryCard className="w-full flex flex-col gap-3">

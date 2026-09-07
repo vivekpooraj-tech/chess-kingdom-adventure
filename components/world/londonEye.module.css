@@ -1,0 +1,349 @@
+/*
+ * London Eye — the scene, drawn entirely in CSS.
+ *
+ * No photographs, no 3D engine, no external artwork: every element here is a
+ * gradient or a positioned box. That is a deliberate choice, not a shortcut.
+ * It keeps the feature free of licensing questions, adds no image bytes to the
+ * bundle, scales to any viewport without a sprite set, and re-themes by
+ * changing a handful of custom properties when the next location lands.
+ *
+ * Performance rules observed throughout:
+ *   - only `transform` and `opacity` are animated, so nothing here triggers
+ *     layout or paint on the main thread
+ *   - no JavaScript animation loop exists; the browser owns every keyframe
+ *   - the whole scene is `pointer-events: none` and `aria-hidden`, so it can
+ *     never intercept a click meant for the board or confuse a screen reader
+ *   - every animation stops under `prefers-reduced-motion`
+ *
+ * The board is the subject. Everything in this file is deliberately low
+ * contrast and sits behind a scrim, so no piece ever competes with scenery.
+ */
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Tuned per location; London Eye is a warm sunset. */
+  --sky-top: #1a1030;
+  --sky-mid: #6d2f63;
+  --sky-warm: #c95a4a;
+  --sky-horizon: #f0954f;
+  --sun: #ffcf8a;
+  --city: #150d24;
+  --city-far: #2a1a3d;
+  --water: #3a1f42;
+  --lamp: #ffd9a0;
+  --strut: #d8dee8;
+}
+
+/* ---------------------------------------------------------------- sky ---- */
+.sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--sky-top) 0%,
+    #2f1a45 22%,
+    var(--sky-mid) 45%,
+    var(--sky-warm) 66%,
+    var(--sky-horizon) 82%,
+    #f7b978 100%
+  );
+}
+
+/* The sun, low and hazy. A radial gradient rather than a circle so it bleeds
+   into the sky the way a real one does through haze. */
+.sun {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  width: min(46rem, 90vw);
+  height: min(46rem, 90vw);
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 233, 191, 0.95) 0%,
+    rgba(255, 200, 130, 0.55) 12%,
+    rgba(255, 160, 95, 0.28) 26%,
+    rgba(255, 140, 90, 0.1) 42%,
+    transparent 62%
+  );
+}
+
+/* Two cloud bands drifting at different speeds — parallax without parallax
+   maths. Very low opacity: these read as texture, never as shapes. */
+.clouds,
+.cloudsFar {
+  position: absolute;
+  left: -50%;
+  width: 200%;
+  height: 42%;
+  background-repeat: repeat-x;
+  will-change: transform;
+}
+.clouds {
+  top: 18%;
+  opacity: 0.24;
+  background-image:
+    radial-gradient(ellipse 22rem 4rem at 12% 60%, rgba(255, 214, 180, 0.9), transparent 70%),
+    radial-gradient(ellipse 30rem 5rem at 42% 40%, rgba(255, 196, 170, 0.8), transparent 72%),
+    radial-gradient(ellipse 18rem 3.5rem at 72% 65%, rgba(255, 224, 200, 0.85), transparent 70%);
+  animation: drift 190s linear infinite;
+}
+.cloudsFar {
+  top: 30%;
+  opacity: 0.16;
+  background-image:
+    radial-gradient(ellipse 26rem 3rem at 25% 50%, rgba(255, 205, 190, 0.8), transparent 72%),
+    radial-gradient(ellipse 34rem 4rem at 65% 55%, rgba(255, 190, 175, 0.7), transparent 74%);
+  animation: drift 300s linear infinite reverse;
+}
+@keyframes drift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(25%, 0, 0); }
+}
+
+/* -------------------------------------------------------------- skyline --- */
+/* Two silhouette bands. The far one is lighter and slightly hazed, which is
+   what actually sells distance — not detail. */
+.skylineFar,
+.skyline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 26%;
+  height: 20%;
+}
+.skylineFar {
+  bottom: 30%;
+  height: 16%;
+  opacity: 0.45;
+  filter: blur(0.6px);
+  background:
+    linear-gradient(to right, transparent 2%, var(--city-far) 2%, var(--city-far) 7%, transparent 7%) bottom / 100% 55% no-repeat,
+    linear-gradient(to right, transparent 11%, var(--city-far) 11%, var(--city-far) 15%, transparent 15%) bottom / 100% 75% no-repeat,
+    linear-gradient(to right, transparent 20%, var(--city-far) 20%, var(--city-far) 27%, transparent 27%) bottom / 100% 45% no-repeat,
+    linear-gradient(to right, transparent 31%, var(--city-far) 31%, var(--city-far) 36%, transparent 36%) bottom / 100% 68% no-repeat,
+    linear-gradient(to right, transparent 62%, var(--city-far) 62%, var(--city-far) 68%, transparent 68%) bottom / 100% 60% no-repeat,
+    linear-gradient(to right, transparent 74%, var(--city-far) 74%, var(--city-far) 79%, transparent 79%) bottom / 100% 80% no-repeat,
+    linear-gradient(to right, transparent 86%, var(--city-far) 86%, var(--city-far) 93%, transparent 93%) bottom / 100% 50% no-repeat;
+}
+.skyline {
+  background:
+    linear-gradient(to right, transparent 0%, var(--city) 0%, var(--city) 6%, transparent 6%) bottom / 100% 42% no-repeat,
+    linear-gradient(to right, transparent 8%, var(--city) 8%, var(--city) 13%, transparent 13%) bottom / 100% 62% no-repeat,
+    linear-gradient(to right, transparent 16%, var(--city) 16%, var(--city) 24%, transparent 24%) bottom / 100% 34% no-repeat,
+    linear-gradient(to right, transparent 27%, var(--city) 27%, var(--city) 33%, transparent 33%) bottom / 100% 55% no-repeat,
+    linear-gradient(to right, transparent 66%, var(--city) 66%, var(--city) 73%, transparent 73%) bottom / 100% 48% no-repeat,
+    linear-gradient(to right, transparent 76%, var(--city) 76%, var(--city) 82%, transparent 82%) bottom / 100% 66% no-repeat,
+    linear-gradient(to right, transparent 88%, var(--city) 88%, var(--city) 100%, transparent 100%) bottom / 100% 38% no-repeat;
+}
+
+/* The clock tower, centred behind the board's horizon line. Suggested, not
+   traced: a tapered shaft, a lit clock face, a spire. */
+.tower {
+  position: absolute;
+  left: 50%;
+  bottom: 26%;
+  width: 3.4rem;
+  height: 30%;
+  transform: translateX(-50%);
+}
+.towerShaft {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 2.1rem;
+  height: 78%;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, #241635 0%, var(--city) 70%);
+  clip-path: polygon(18% 100%, 82% 100%, 74% 0%, 26% 0%);
+}
+.towerFace {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  width: 1.5rem;
+  height: 1.5rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffe6b0 0%, #ffc978 55%, #b8823c 100%);
+  box-shadow: 0 0 1.4rem rgba(255, 208, 138, 0.75);
+}
+.towerSpire {
+  position: absolute;
+  left: 50%;
+  top: -8%;
+  width: 0.9rem;
+  height: 22%;
+  transform: translateX(-50%);
+  background: var(--city);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+/* ---------------------------------------------------------------- river --- */
+.river {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12%;
+  height: 16%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 176, 120, 0.32) 0%,
+    var(--water) 45%,
+    #24132c 100%
+  );
+}
+/* A slow horizontal shimmer standing in for reflected light on water. */
+.shimmer {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 3px,
+    rgba(255, 200, 150, 0.14) 3px 4px
+  );
+  animation: shimmer 9s ease-in-out infinite alternate;
+}
+@keyframes shimmer {
+  from { transform: translate3d(0, 0, 0); opacity: 0.38; }
+  to   { transform: translate3d(0, 2px, 0); opacity: 0.58; }
+}
+
+/* --------------------------------------------------------------- lights --- */
+/* City lights as a repeating dot field, gently pulsing as a whole rather than
+   individually — one animation instead of dozens of elements. */
+.lights {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 26%;
+  height: 20%;
+  opacity: 0.7;
+  background-image:
+    radial-gradient(circle, var(--lamp) 0.6px, transparent 0.7px),
+    radial-gradient(circle, rgba(255, 233, 200, 0.7) 0.5px, transparent 0.6px);
+  background-size: 37px 23px, 61px 41px;
+  background-position: 0 0, 19px 11px;
+  animation: pulse 7s ease-in-out infinite alternate;
+}
+@keyframes pulse {
+  from { opacity: 0.55; }
+  to   { opacity: 0.82; }
+}
+
+/* -------------------------------------------------------------- capsule --- */
+/* The glass pod, framing the whole view. An oversized rounded rectangle whose
+   border is the frame; struts are thin gradient bars. */
+.capsule {
+  position: absolute;
+  inset: -6% -4%;
+  border-radius: 50% / 22%;
+  border: clamp(10px, 1.6vw, 22px) solid rgba(214, 222, 234, 0.16);
+  box-shadow:
+    inset 0 0 12rem rgba(10, 6, 20, 0.75),
+    inset 0 0 3rem rgba(255, 190, 140, 0.14);
+}
+.strut {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: clamp(4px, 0.5vw, 9px);
+  background: linear-gradient(
+    to bottom,
+    rgba(216, 222, 232, 0.05),
+    rgba(216, 222, 232, 0.22) 30%,
+    rgba(216, 222, 232, 0.22) 70%,
+    rgba(216, 222, 232, 0.05)
+  );
+}
+.strutA { left: 16%; transform: rotate(4deg); }
+.strutB { right: 16%; transform: rotate(-4deg); }
+
+/* Warm interior bounce along the bottom edge, where the capsule floor would
+   catch the sunset. This is what stops the scene feeling like a wallpaper. */
+.interior {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 120% 40% at 50% 108%, rgba(255, 150, 90, 0.3), transparent 62%),
+    radial-gradient(ellipse 60% 30% at 8% 96%, rgba(255, 120, 90, 0.18), transparent 70%),
+    radial-gradient(ellipse 60% 30% at 92% 96%, rgba(255, 120, 90, 0.18), transparent 70%);
+}
+
+/* ----------------------------------------------------------------- scrim -- */
+/*
+ * The most important rule in this file.
+ *
+ * The board sits in the middle of the viewport, so the middle of the scene is
+ * darkened hard. Without this the sunset would sit directly behind the pieces
+ * and wreck contrast. Everything above is decoration; this is what keeps the
+ * game readable, and it is why the scene can be as warm as it is.
+ */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 62% 58% at 50% 54%, rgba(6, 9, 18, 0.86) 0%, rgba(6, 9, 18, 0.66) 42%, rgba(6, 9, 18, 0.3) 70%, transparent 100%),
+    linear-gradient(to bottom, rgba(6, 9, 18, 0.55) 0%, transparent 22%, transparent 70%, rgba(6, 9, 18, 0.62) 100%);
+}
+
+/* ------------------------------------------------------------- entrance --- */
+/* One gentle settle on mount. Never repeats — a looping entrance beside a
+   chess clock would be maddening. */
+.enter {
+  animation: settle 1100ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes settle {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* --------------------------------------------------------------- motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .clouds,
+  .cloudsFar,
+  .shimmer,
+  .lights,
+  .enter {
+    animation: none !important;
+  }
+  .enter { opacity: 1; transform: none; }
+}
+
+/* ------------------------------------------------------------ responsive -- */
+/*
+ * On a phone the scene simplifies rather than shrinks. The struts and the far
+ * skyline go, the capsule frame thins, and the scrim gets stronger — the board
+ * occupies proportionally more of a small screen, so it needs more protection,
+ * and there is less room for scenery to earn its keep.
+ */
+@media (max-width: 640px) {
+  .strut,
+  .skylineFar,
+  .cloudsFar {
+    display: none;
+  }
+  .capsule {
+    inset: -10% -8%;
+    border-width: 8px;
+  }
+  .scrim {
+    background:
+      radial-gradient(ellipse 78% 52% at 50% 52%, rgba(6, 9, 18, 0.9) 0%, rgba(6, 9, 18, 0.74) 46%, rgba(6, 9, 18, 0.4) 74%, transparent 100%),
+      linear-gradient(to bottom, rgba(6, 9, 18, 0.6) 0%, transparent 20%, transparent 66%, rgba(6, 9, 18, 0.7) 100%);
+  }
+}
+
+/* Landscape phones: the board is height-bound and takes nearly the whole
+   viewport, so the scene recedes further still. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .clouds { display: none; }
+  .scrim {
+    background: radial-gradient(ellipse 86% 70% at 50% 50%, rgba(6, 9, 18, 0.92) 0%, rgba(6, 9, 18, 0.8) 50%, rgba(6, 9, 18, 0.5) 80%, transparent 100%);
+  }
+}

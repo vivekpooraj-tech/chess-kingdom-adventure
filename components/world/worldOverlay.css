@@ -1,0 +1,68 @@
+/*
+ * Letting the scene show through the game shell.
+ *
+ * A PLAIN global stylesheet, not a CSS module: every rule here targets a class
+ * rendered by another component, and CSS Modules reject rules that contain no
+ * local class of their own. It is imported by LondonEyeScene, which is loaded
+ * dynamically, so these bytes still arrive only once a location is active.
+ *
+ * ChessFocusLayout paints `bg-premium-midnight`, which is opaque — a scene
+ * behind it would be invisible. That component owns the board-sizing contract
+ * for every board screen in the app and is deliberately not modified here, so
+ * the shell is made transparent from the outside instead.
+ *
+ * This mirrors the pattern the app already uses: focusMode.ts toggles
+ * `html.chess-focus-active` and globals.css reacts to it. Same idea, same
+ * place (the root element), different flag — and it means the entire
+ * integration with gameplay is one class name plus the rules below.
+ *
+ * `:global()` because these target real class names rendered by other
+ * components, not CSS-module-scoped ones.
+ */
+
+/* Only while a location is active. Absent the flag, nothing here applies and
+   the game renders exactly as it always has. */
+html.cm-world-active .chess-focus-shell {
+  background: transparent !important;
+}
+
+/* The shell sits at z-50; the scene is fixed at z-0. Establishing no new
+   stacking context on the shell is what lets the scene sit behind its
+   children rather than behind the whole app. */
+html.cm-world-active .chess-focus-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+ * The board's own surround. The board component paints a frame behind the
+ * squares; over a sunset that frame is what separates "a chessboard in a
+ * place" from "a chessboard lost in a picture". Deepening it slightly, rather
+ * than removing it, keeps the pieces sitting ON something.
+ */
+html.cm-world-active .chess-focus-board-slot {
+  filter: drop-shadow(0 1.5rem 3rem rgba(4, 6, 14, 0.75));
+}
+
+/*
+ * Panels become glass. They keep their own borders and text colours — only the
+ * fill changes — so contrast tokens the rest of the app relies on are
+ * untouched.
+ */
+html.cm-world-active .chess-focus-panel {
+  background: rgba(8, 12, 24, 0.55);
+  backdrop-filter: blur(14px);
+  border-radius: 1rem;
+}
+
+/* The app frame behind the shell, for screens that keep their chrome. */
+html.cm-world-active .app-shell-content {
+  background: transparent;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html.cm-world-active .chess-focus-panel {
+    background: rgba(8, 12, 24, 0.92);
+    backdrop-filter: none;
+  }
+}

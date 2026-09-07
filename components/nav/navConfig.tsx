@@ -7,6 +7,7 @@ import {
   ChessMindIcon,
   DiscoverIcon,
   ProfileIcon,
+  GlobeIcon,
 } from "./icons";
 
 /**
@@ -75,6 +76,11 @@ export const NAV_ITEMS: NavItem[] = [
  * knock on that door and imply it is theirs.
  */
 export const SECONDARY_NAV_ITEMS: NavItem[] = [
+  // Chess Mind World sits here, not in NAV_ITEMS, for the reason stated above:
+  // five thumb-reachable tabs is the ceiling on a phone, and a sixth would
+  // shrink all six. It is reachable from the Play hub on every device, which
+  // is also where a player is already thinking about starting a game.
+  { label: "World", href: "/world", icon: GlobeIcon },
   { label: "Academy", href: "/academy", icon: AcademyIcon },
   { label: "Chess Mind", href: "/chess-mind", icon: ChessMindIcon },
   { label: "Profile", href: "/profile", icon: ProfileIcon },
@@ -99,6 +105,7 @@ const APP_PREFIXES = [
   "/play",
   "/learn",
   "/more",
+  "/world",
   "/profile",
   "/academy",
   "/chess-mind",
@@ -122,5 +129,9 @@ export function isAppChromeRoute(pathname: string): boolean {
   // The tactics-lesson runner (/academy/tactics/<lessonId>) is a full-screen
   // board experience; the /academy/tactics index is a normal app page.
   if (/^\/academy\/tactics\/.+/.test(pathname)) return false;
+  // Same shape for Chess Mind World: /world is a normal tab page, but a
+  // location preview (/world/<id>) is a full-bleed cinematic screen and the
+  // chrome would box it in.
+  if (/^\/world\/.+/.test(pathname)) return false;
   return APP_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

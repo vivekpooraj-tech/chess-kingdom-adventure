@@ -28,6 +28,9 @@ import {
   type RematchContext,
 } from "@/lib/online/rematch";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
+import { WorldSceneBackdrop } from "@/components/world/WorldSceneBackdrop";
+import { WorldPlayerRow } from "@/components/world/WorldPlayerRow";
+import { WorldControlBar } from "@/components/world/WorldControlBar";
 import { LiveChessClock } from "@/components/game/ChessClock";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -652,16 +655,27 @@ export default function OnlineGamePage() {
         : "Friend Match";
 
     return (
+      <>
+      <WorldSceneBackdrop />
+      {/* Shortcuts to the page's OWN handlers — Resign opens the same
+          confirmation in the panel below, so the two can never disagree. */}
+      <WorldControlBar
+        onResign={() => setResignConfirm(true)}
+        onOfferDraw={handleOfferDraw}
+        disabled={game.status !== "active"}
+      />
       <GameArenaLayout
         title={arenaTitle}
         onExit={() =>
           router.push(game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map")
         }
         opponentRow={
-          <div className="flex items-center justify-between w-full font-classic-body text-sm text-premium-ivory/70">
-            <span className="flex items-center gap-2">
-              <span className="text-xl">⚔️</span> Opponent
-            </span>
+          <WorldPlayerRow
+            icon="⚔️"
+            label="Opponent"
+            isOpponent
+            isActive={game.current_turn === opponentColor && game.status === "active"}
+          >
             <span className="flex items-center gap-2">
               {showSocial && theirReaction && (
                 <span className="bg-premium-navy border border-premium-gold/20 rounded-full px-3 py-1 text-premium-ivory">
@@ -677,14 +691,14 @@ export default function OnlineGamePage() {
                 />
               )}
             </span>
-          </div>
+          </WorldPlayerRow>
         }
         playerRow={
-          <div className="flex items-center justify-between w-full font-classic-body text-sm text-premium-ivory">
-            <span className="flex items-center gap-2">
-              <span className="text-xl">♟️</span>
-              You — {myColor === "w" ? "White" : "Black"}
-            </span>
+          <WorldPlayerRow
+            icon="♟️"
+            label={`You — ${myColor === "w" ? "White" : "Black"}`}
+            isActive={game.current_turn === myColor && game.status === "active"}
+          >
             {hasClock && (
               <LiveChessClock
                 baseMs={myColor === "w" ? game.white_time_ms! : game.black_time_ms!}
@@ -693,7 +707,7 @@ export default function OnlineGamePage() {
                 gameActive={game.status === "active"}
               />
             )}
-          </div>
+          </WorldPlayerRow>
         }
         renderBoard={(boardSize) => (
           <ChessBoard
@@ -827,6 +841,7 @@ export default function OnlineGamePage() {
           </>
         }
       />
+      </>
     );
   }
 

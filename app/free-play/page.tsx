@@ -9,6 +9,7 @@ import { resolveActiveChild, recordOpeningEncounter, getFreeGameStatus, startAiG
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
+import { WorldSceneBackdrop } from "@/components/world/WorldSceneBackdrop";
 import { GameChrome } from "@/components/game/GameChrome";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
@@ -293,6 +294,8 @@ export default function FreePlayPage() {
         : moveLogRef.current[reviewPly - 1]?.fen ?? position.fen;
     const reviewPlies = Array.from({ length: totalPlies - minReviewPly + 1 }, (_, i) => minReviewPly + i);
     return (
+      <>
+      <WorldSceneBackdrop />
       <GameArenaLayout
         title={`${difficultyInfo.label} Match`}
         onExit={() => setView({ status: "picking-difficulty" })}
@@ -405,6 +408,7 @@ export default function FreePlayPage() {
           </>
         }
       />
+      </>
     );
   }
 

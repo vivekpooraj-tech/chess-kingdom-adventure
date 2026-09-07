@@ -79,6 +79,20 @@ export default async function MorePage() {
               </div>
               <span className="text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
+            {/* World's second route to discovery on a phone, where it is not a
+                bottom tab. The Play hub carries the primary card. */}
+            <ListItemRow href="/world">
+              <span className="text-2xl flex-none">🌍</span>
+              <div className="flex-1">
+                <p className="font-classic-display text-base text-premium-ivory">
+                  Chess Mind World
+                </p>
+                <p className={`${TEXT.caption} normal-case`}>
+                  Play in extraordinary places around the world
+                </p>
+              </div>
+              <span className="text-premium-gold text-lg flex-none">→</span>
+            </ListItemRow>
             <ListItemRow href="/games">
               <span className="text-2xl flex-none">♟️</span>
               <div className="flex-1">
