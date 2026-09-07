@@ -332,9 +332,18 @@
 
 /* ------------------------------------------------------------- entrance --- */
 /* One gentle settle on mount. Never repeats — a looping entrance beside a
-   chess clock would be maddening. */
+   chess clock would be maddening.
+
+   Deliberately NOT `fill: both`. With a fill mode the element adopts the
+   keyframe's `from` state before the animation starts, and a browser freezes
+   animations in a hidden document — so a game opened in a background tab sat
+   at `opacity: 0` and the scene was simply invisible until something forced a
+   restart. Verified: document.visibilityState "hidden" -> currentTime 0,
+   computed opacity 0. Without a fill mode the resting style (fully visible) is
+   what shows before and after, and the entrance is a pure enhancement that
+   cannot hide the scene. */
 .enter {
-  animation: settle 1100ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: settle 1100ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 @keyframes settle {
   from { opacity: 0; transform: scale(1.04); }
