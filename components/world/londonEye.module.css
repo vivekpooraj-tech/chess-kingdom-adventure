@@ -42,14 +42,20 @@
 .sky {
   position: absolute;
   inset: 0;
+  /* Warm band raised. It previously started around 66% and was compressed into
+     the bottom quarter, which read as a flat purple sky with a stripe at the
+     bottom rather than a sunset. Bringing the magenta to 34% and the orange to
+     70% lets the warmth carry across most of the frame, which is the whole
+     point of choosing sunset. */
   background: linear-gradient(
     to bottom,
     var(--sky-top) 0%,
-    #2f1a45 22%,
-    var(--sky-mid) 45%,
-    var(--sky-warm) 66%,
-    var(--sky-horizon) 82%,
-    #f7b978 100%
+    #34194f 18%,
+    var(--sky-mid) 34%,
+    #a8456a 52%,
+    var(--sky-warm) 68%,
+    var(--sky-horizon) 84%,
+    #f9c48a 100%
   );
 }
 
@@ -143,13 +149,33 @@
 
 /* The clock tower, centred behind the board's horizon line. Suggested, not
    traced: a tapered shaft, a lit clock face, a spire. */
+/*
+ * Off-centre, deliberately.
+ *
+ * It sat at 50% and was invisible in practice: the board occupies the middle
+ * of every game screen, and the preview panel sits there too, so the one
+ * landmark that identifies the place was permanently behind the content.
+ * Measured at 1024x768: at 31% the tower spanned x 290-345 while the content
+ * panel spanned 196-828 — still completely occluded. The only reliably clear
+ * band on both the preview and a side-by-side game screen is the outer left
+ * edge, so it lives at 11%.
+ */
 .tower {
   position: absolute;
-  left: 50%;
+  left: 11%;
   bottom: 26%;
   width: 3.4rem;
-  height: 30%;
+  height: 34%;
   transform: translateX(-50%);
+}
+
+/* Below the side-by-side breakpoint the board is centred and full-width, and
+   the left edge is the only clear band there too — but a phone shows so little
+   scenery that a landmark reads as clutter. Hidden rather than crowded. */
+@media (max-width: 640px) {
+  .tower {
+    display: none;
+  }
 }
 .towerShaft {
   position: absolute;
@@ -244,9 +270,12 @@
   inset: -6% -4%;
   border-radius: 50% / 22%;
   border: clamp(10px, 1.6vw, 22px) solid rgba(214, 222, 234, 0.16);
+  /* Inset shadow halved. At 12rem it merged with the interior bounce into one
+     dark band along the bottom; the frame should suggest depth, not close the
+     view down. */
   box-shadow:
-    inset 0 0 12rem rgba(10, 6, 20, 0.75),
-    inset 0 0 3rem rgba(255, 190, 140, 0.14);
+    inset 0 0 6rem rgba(10, 6, 20, 0.5),
+    inset 0 0 3rem rgba(255, 190, 140, 0.1);
 }
 .strut {
   position: absolute;
@@ -266,13 +295,22 @@
 
 /* Warm interior bounce along the bottom edge, where the capsule floor would
    catch the sunset. This is what stops the scene feeling like a wallpaper. */
+/*
+ * Interior bounce, pulled back.
+ *
+ * The first version put a wide 30%-opacity ellipse across the bottom, which
+ * combined with the capsule's inset shadow to read as a muddy brown band —
+ * more smudge than structure. Observed at 1024x768. Now: tighter, dimmer, and
+ * split to the two lower corners where a capsule's sills would actually catch
+ * the light, leaving the centre of the floor clear.
+ */
 .interior {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 120% 40% at 50% 108%, rgba(255, 150, 90, 0.3), transparent 62%),
-    radial-gradient(ellipse 60% 30% at 8% 96%, rgba(255, 120, 90, 0.18), transparent 70%),
-    radial-gradient(ellipse 60% 30% at 92% 96%, rgba(255, 120, 90, 0.18), transparent 70%);
+    radial-gradient(ellipse 90% 22% at 50% 112%, rgba(255, 150, 90, 0.16), transparent 66%),
+    radial-gradient(ellipse 42% 22% at 6% 99%, rgba(255, 135, 95, 0.16), transparent 72%),
+    radial-gradient(ellipse 42% 22% at 94% 99%, rgba(255, 135, 95, 0.16), transparent 72%);
 }
 
 /* ----------------------------------------------------------------- scrim -- */
