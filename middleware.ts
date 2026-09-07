@@ -21,6 +21,16 @@ const PUBLIC_PATHS = [
   "/auth/callback",
   "/api/stripe/webhook",
   "/api/dev/auto-signin",
+  // Vercel Cron. Like the Stripe webhook above, this is a machine-to-machine
+  // endpoint that authenticates ITSELF — on CRON_SECRET rather than a user
+  // session — so a session check here can only get in its way. The matcher
+  // below has no dot in "/api/cron/settle-games", so without this entry the
+  // request is redirected to /sign-in with a 307 and the handler never runs.
+  // Measured against the deployment, not assumed: the route returned 307
+  // Redirecting, which would have meant the sweeper silently never fired.
+  // Making it public costs nothing — authorizeCron() rejects any request
+  // without the secret, and fails closed when the secret is unset.
+  "/api/cron/settle-games",
 ];
 const DEV_AUTO_SIGNIN_PATH = "/api/dev/auto-signin";
 

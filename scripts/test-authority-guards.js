@@ -315,6 +315,20 @@ for (const [file, expected] of [
     !has(route, 'searchParams.get("winner")') && !has(route, "body.winner"));
   check("one failing game does not abort the pass", has(route, "continue;"));
 
+  // The middleware matcher excludes only paths containing a dot, so
+  // /api/cron/settle-games matches and an unauthenticated request is
+  // redirected to /sign-in with a 307 — the handler never runs and the sweeper
+  // silently never fires. Caught by probing the real deployment, which
+  // returned exactly that. The route must be listed alongside the Stripe
+  // webhook as a machine-to-machine endpoint that authenticates itself.
+  // Comments stripped: the explanation beside the entry quotes the same path,
+  // and prose must never satisfy an assertion about code. (Caught by mutation
+  // testing — the first version of this check passed with the entry deleted.)
+  const mw = stripJs(readRepo("middleware.ts"));
+  check("the cron path bypasses the session middleware",
+    has(mw, '"/api/cron/settle-games"'),
+    "middleware would 307 the cron request to /sign-in and the sweeper would never run");
+
   const auth = readRepo("lib", "online", "cronAuth.ts");
   check("cron auth fails CLOSED when the secret is unset",
     has(auth, "if (!secret) return { ok: false"),
