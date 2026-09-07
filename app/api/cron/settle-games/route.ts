@@ -188,6 +188,30 @@ export async function GET(req: NextRequest) {
   // no NEXT_PUBLIC_ prefix, so it never reaches a client bundle.
   const auth = authorizeCron(req.headers.get("authorization"), process.env.CRON_SECRET);
   if (!auth.ok) {
+    // TEMPORARY DIAGNOSTIC — remove once the secret is confirmed present.
+    //
+    // The endpoint kept returning cron_not_configured across several redeploys
+    // that were believed to have set CRON_SECRET, and there is no way to tell
+    // "variable absent" from "variable present under another name or scope"
+    // by probing from outside. This distinguishes them WITHOUT disclosing
+    // anything: it reports how many environment variable NAMES contain "cron",
+    // and the length of CRON_SECRET if it exists — never a value, never a
+    // name, never a prefix. A count and a length are not a secret.
+    if (auth.error === "cron_not_configured") {
+      const matchingNames = Object.keys(process.env).filter((k) => /cron/i.test(k)).length;
+      return NextResponse.json(
+        {
+          error: auth.error,
+          diagnostic: {
+            envVarsMatchingCron: matchingNames,
+            cronSecretDefined: typeof process.env.CRON_SECRET === "string",
+            cronSecretLength: process.env.CRON_SECRET?.length ?? 0,
+            vercelEnv: process.env.VERCEL_ENV ?? "unknown",
+          },
+        },
+        { status: auth.status }
+      );
+    }
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
