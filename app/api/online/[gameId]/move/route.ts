@@ -81,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
   // Persist through the existing function, with SERVER-generated chess state.
   // It re-checks ownership, participation, active status and turn under a row
   // lock, and owns the clock arithmetic — so two racing moves serialise there.
-  const { data: moveRows, error: moveError } = await admin.rpc("submit_online_move", {
+  const { data: moveRows, error: moveError } = await admin.rpc("submit_online_move_as_server", {
     p_game_id: game.id,
     p_child_id: child.id,
     p_fen: result.fen,
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
   // The move itself ended the game: mate, stalemate, or a drawn position.
   if (!flagged && result.endsGame) {
     const winner = result.winner ?? "draw";
-    const { error: finishError } = await admin.rpc("finish_online_game_by_result", {
+    const { error: finishError } = await admin.rpc("finish_online_game_by_result_as_server", {
       p_game_id: game.id,
       p_child_id: child.id,
       p_winner: winner,

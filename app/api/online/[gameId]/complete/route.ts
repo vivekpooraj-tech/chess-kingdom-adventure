@@ -116,7 +116,7 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
 
   // 5. Finish the game. finish_online_game_by_result is a no-op once the game
   //    is no longer active, so two racing requests settle it exactly once.
-  const { error: finishError } = await admin.rpc("finish_online_game_by_result", {
+  const { error: finishError } = await admin.rpc("finish_online_game_by_result_as_server", {
     p_game_id: game.id,
     p_child_id: child.id,
     p_winner: decision.winner,

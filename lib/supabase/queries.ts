@@ -711,6 +711,15 @@ export interface SubmitMoveResult {
  * the very update that marks the game finished — see the migration's
  * comment on why).
  */
+/**
+ * @deprecated Unused, and non-functional after migration 0039.
+ *
+ * Moves go through POST /api/online/[gameId]/move, which validates them with
+ * chess.js and calls submit_online_move_as_server (service_role only). 0039
+ * makes the browser-facing submit_online_move raise unconditionally, so this
+ * wrapper can only throw. Kept as a signpost rather than deleted so the reason
+ * is discoverable from the call site someone is tempted to restore.
+ */
 export async function submitOnlineMove(
   supabase: SupabaseClient,
   gameId: string,
@@ -762,6 +771,12 @@ export async function claimTimeout(
  * the clock work this phase is about). Moved to an RPC purely so
  * status/winner can be locked down from direct client writes without
  * also breaking this call site.
+ */
+/**
+ * @deprecated Unused, and revoked from the browser by migrations 0037/0039.
+ *
+ * Results are decided by POST /api/online/[gameId]/complete, which replays the
+ * stored moves and calls finish_online_game_by_result_as_server.
  */
 export async function finishOnlineGame(
   supabase: SupabaseClient,
