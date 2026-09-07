@@ -22,7 +22,8 @@ export interface WorldLocation {
   name: string;
   city: string;
   country: string;
-  /** Two-letter ISO code, used for the flag emoji. */
+  /** Two-letter ISO code. Metadata only — the UI never renders flag glyphs,
+   *  because Windows ships none and they fall back to letter-boxes. */
   countryCode: string;
   /** The headline shown on the card and in-game badge. */
   title: string;
@@ -41,17 +42,64 @@ export interface WorldLocation {
   /** Card gradient, also used as the scene's cheap first paint. Tailwind-free
    *  so it can be inlined as a style without a class-name round trip. */
   palette: { from: string; via: string; to: string; accent: string };
+  /** A short, rare label on the location card. Optional and meant to stay
+   *  that way: if more than one or two locations carry a badge it stops
+   *  meaning anything. */
+  badge?: string;
+  /**
+   * Per-location UI tokens, applied as CSS custom properties on the root while
+   * this location is active (see WorldSceneBackdrop) and consumed by
+   * worldOverlay.css.
+   *
+   * This exists because the game panels sit ON the scene. London's cool navy
+   * glass over Chaturanga's sandstone would read as a bug, not a theme. Every
+   * token is optional and every rule that uses one carries London's value as
+   * its `var()` fallback, so a location that specifies nothing looks exactly
+   * as it did before this field existed.
+   */
+  theme?: {
+    /** Fill for .chess-focus-panel and the World glass surfaces. */
+    glass?: string;
+    /** The same fill for prefers-reduced-transparency, where blur is dropped
+     *  and the panel must carry contrast on its own. */
+    glassSolid?: string;
+    /** Drop shadow under the board. Warm scenes need a warmer shadow or the
+     *  board looks pasted on. */
+    boardShadow?: string;
+  };
 }
 
 /**
  * The catalogue.
  *
- * Only London Eye is built. The rest carry enough metadata to render an honest
- * "coming soon" card — they are a promise of where this goes, not a stub
+ * Chaturanga and London Eye are built. The rest carry enough metadata to
+ * render an honest "coming soon" card — they are a promise of where this goes, not a stub
  * pretending to work. None of them is reachable: the preview route refuses any
  * id whose status is not "available".
  */
 export const WORLD_LOCATIONS: WorldLocation[] = [
+  {
+    id: "chaturanga",
+    name: "Chaturanga",
+    city: "Royal Court",
+    country: "India",
+    countryCode: "IN",
+    title: "The Birthplace of Strategy",
+    subtitle: "Where the game began",
+    description:
+      "Chess grew out of chaturanga, played in India more than a thousand years ago. This place is not one of those courts and does not pretend to be — it is a room built for the game, where sandstone arches open onto a courtyard and the light turns gold before evening. The board between you is where all of it ended up.",
+    flavour: "Every move has a long memory.",
+    status: "available",
+    isPremium: false,
+    badge: "Flagship",
+    ambience: { label: "Royal Sunset", detail: "6:48 PM", temperature: "31°C" },
+    palette: { from: "#2b1630", via: "#9c4a35", to: "#eaa84f", accent: "#ffd98a" },
+    theme: {
+      glass: "rgba(26, 13, 12, 0.55)",
+      glassSolid: "rgba(26, 13, 12, 0.92)",
+      boardShadow: "drop-shadow(0 1.5rem 3rem rgba(28, 10, 4, 0.78))",
+    },
+  },
   {
     id: "london-eye",
     name: "London Eye",

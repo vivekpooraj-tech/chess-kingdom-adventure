@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import dynamic from "next/dynamic";
 import { useWorldLocation } from "@/lib/world/useWorldLocation";
 import { LocationBadge, LocationSwitcherChip } from "./LocationBadge";
+import { getScene } from "./sceneRegistry";
 
 /**
  * Mounts the active location's scene behind a game screen, or renders nothing.
@@ -13,23 +13,14 @@ import { LocationBadge, LocationSwitcherChip } from "./LocationBadge";
  * to own, no change to how the board, clocks or controls work. Delete the line
  * and the page is exactly what it was before.
  *
- * The scene is `next/dynamic` with `ssr: false`, so neither the component nor
- * its stylesheet is in any bundle a player downloads until they have actually
+ * Scenes are code-split in sceneRegistry, so neither a scene component nor its
+ * stylesheet is in any bundle a player downloads until they have actually
  * chosen a location. Someone who never opens World pays nothing for it.
  */
-const LondonEyeScene = dynamic(
-  () => import("./LondonEyeScene").then((m) => m.LondonEyeScene),
-  { ssr: false }
-);
-
-/** id -> scene. The only place a location id maps to a component. */
-const SCENES: Record<string, React.ComponentType> = {
-  "london-eye": LondonEyeScene,
-};
-
 export function WorldSceneBackdrop() {
   const { location, ready } = useWorldLocation();
-  const active = Boolean(ready && location && SCENES[location.id]);
+  const Scene = getScene(location?.id);
+  const active = Boolean(ready && location && Scene);
 
   /**
    * The root flag that lets the scene show through the game shell.
@@ -47,12 +38,31 @@ export function WorldSceneBackdrop() {
     if (!active) return;
     const root = document.documentElement;
     root.classList.add("cm-world-active");
-    return () => root.classList.remove("cm-world-active");
-  }, [active]);
 
-  if (!active || !location) return null;
+    /*
+     * The location's own UI tokens, set as custom properties beside the flag.
+     *
+     * Set here rather than in each scene's stylesheet because the surfaces
+     * they colour (.chess-focus-panel and friends) are rendered by the game,
+     * outside the scene's subtree. Every rule in worldOverlay.css falls back
+     * to London's value, so a location with no theme is unchanged.
+     */
+    const theme = location?.theme;
+    const vars: [string, string | undefined][] = [
+      ["--cm-world-glass", theme?.glass],
+      ["--cm-world-glass-solid", theme?.glassSolid],
+      ["--cm-world-board-shadow", theme?.boardShadow],
+    ];
+    for (const [name, value] of vars) if (value) root.style.setProperty(name, value);
 
-  const Scene = SCENES[location.id];
+    return () => {
+      root.classList.remove("cm-world-active");
+      for (const [name] of vars) root.style.removeProperty(name);
+    };
+  }, [active, location]);
+
+  if (!active || !location || !Scene) return null;
+
   return (
     <>
       <Scene />

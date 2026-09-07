@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { WorldLocation } from "@/lib/world/locations";
 import { useWorldLocation } from "@/lib/world/useWorldLocation";
-import { LondonEyeScene } from "./LondonEyeScene";
+import { getScene } from "./sceneRegistry";
 
 /**
  * The pre-game screen for one location.
@@ -21,6 +21,9 @@ import { LondonEyeScene } from "./LondonEyeScene";
 export function LocationPreview({ location }: { location: WorldLocation }) {
   const router = useRouter();
   const { select } = useWorldLocation();
+  // Same registry the in-game backdrop uses, so the preview can never show a
+  // different scene from the one the game will.
+  const Scene = getScene(location.id);
 
   const enter = () => {
     select(location.id);
@@ -29,7 +32,7 @@ export function LocationPreview({ location }: { location: WorldLocation }) {
 
   return (
     <div className="relative min-h-[100dvh] w-full overflow-hidden">
-      {location.id === "london-eye" && <LondonEyeScene />}
+      {Scene && <Scene />}
 
       <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-2xl flex-col justify-center px-5 py-16">
         <div className="rounded-3xl border border-white/10 bg-black/45 p-6 backdrop-blur-md sm:p-8">

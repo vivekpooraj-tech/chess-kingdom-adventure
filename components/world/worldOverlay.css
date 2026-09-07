@@ -41,16 +41,21 @@ html.cm-world-active .chess-focus-shell > * {
  * than removing it, keeps the pieces sitting ON something.
  */
 html.cm-world-active .chess-focus-board-slot {
-  filter: drop-shadow(0 1.5rem 3rem rgba(4, 6, 14, 0.75));
+  filter: var(--cm-world-board-shadow, drop-shadow(0 1.5rem 3rem rgba(4, 6, 14, 0.75)));
 }
 
 /*
  * Panels become glass. They keep their own borders and text colours — only the
  * fill changes — so contrast tokens the rest of the app relies on are
  * untouched.
+ *
+ * The fill comes from the active location (WorldSceneBackdrop sets the custom
+ * properties). London's own values are the `var()` fallbacks throughout, so a
+ * location that ships no theme renders exactly as London always did, and a
+ * theme that fails to apply degrades to something that still works.
  */
 html.cm-world-active .chess-focus-panel {
-  background: rgba(8, 12, 24, 0.55);
+  background: var(--cm-world-glass, rgba(8, 12, 24, 0.55));
   backdrop-filter: blur(14px);
   border-radius: 1rem;
 }
@@ -62,7 +67,7 @@ html.cm-world-active .app-shell-content {
 
 @media (prefers-reduced-transparency: reduce) {
   html.cm-world-active .chess-focus-panel {
-    background: rgba(8, 12, 24, 0.92);
+    background: var(--cm-world-glass-solid, rgba(8, 12, 24, 0.92));
     backdrop-filter: none;
   }
 }
