@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRemainingMs, type ClockSync } from "@/lib/game/useRemainingMs";
 
 /**
  * Purely presentational — the ms value it renders is computed by the
@@ -64,39 +64,13 @@ export function ChessClock({ ms, active }: ChessClockProps) {
  * every 250ms tick re-rendered the entire game screen — the board, the
  * side panel, everything — just to update two numbers. The server-
  * authoritative inputs (baseMs/lastSyncAt/isRunning) only change on a real
- * Realtime update (an actual move or timeout), so this component's own
- * setInterval is the only thing ticking in between.
+ * Realtime update (an actual move or timeout), so the hook's setInterval is
+ * the only thing ticking in between.
+ *
+ * The tick itself now lives in useRemainingMs so the progress bar can share
+ * it; the behaviour here is unchanged.
  */
-export function LiveChessClock({
-  baseMs,
-  lastSyncAt,
-  isRunning,
-  gameActive,
-}: {
-  /** Remaining ms as of `lastSyncAt`, from the server row. */
-  baseMs: number;
-  /** ISO timestamp of the last authoritative sync (online_games.last_move_at). */
-  lastSyncAt: string | null;
-  /** Is this side the one whose clock is currently running down? */
-  isRunning: boolean;
-  /** game.status === "active" — ticking is meaningless otherwise. */
-  gameActive: boolean;
-}) {
-  const [displayMs, setDisplayMs] = useState(baseMs);
-
-  useEffect(() => {
-    if (!gameActive || !isRunning || !lastSyncAt) {
-      setDisplayMs(baseMs);
-      return;
-    }
-    function tick() {
-      const elapsed = Date.now() - new Date(lastSyncAt!).getTime();
-      setDisplayMs(Math.max(0, baseMs - elapsed));
-    }
-    tick();
-    const id = setInterval(tick, 250);
-    return () => clearInterval(id);
-  }, [baseMs, lastSyncAt, isRunning, gameActive]);
-
+export function LiveChessClock({ baseMs, lastSyncAt, isRunning, gameActive }: ClockSync) {
+  const displayMs = useRemainingMs({ baseMs, lastSyncAt, isRunning, gameActive });
   return <ChessClock ms={displayMs} active={isRunning} />;
 }
