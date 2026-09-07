@@ -98,6 +98,17 @@ export default function OnlineGamePage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  /* The player's live rating, taken straight off the child row resolveActiveChild
+   * already fetched — children.rating IS the current rating. The game row's
+   * host_rating_before/guest_rating_before are null for the whole game (verified
+   * on live active games); apply_match_rating only fills them once the result
+   * settles, so they are a post-game record, not a live value.
+   *
+   * No opponent equivalent exists: the children table's only RLS policy is
+   * "parent can manage own children", so the opponent's row is invisible to this
+   * session and there is no RPC that exposes it. Rather than show a wrong or
+   * invented number, the opponent card simply carries no rating. */
+  const [myRating, setMyRating] = useState<number | null>(null);
   const [game, setGame] = useState<OnlineGame | null | "loading">("loading");
   const [openingMatch, setOpeningMatch] = useState<OpeningMatch | null>(null);
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
@@ -140,6 +151,7 @@ export default function OnlineGamePage() {
       setChildId(resolution.child!.id);
       setBoardSkinId(resolution.child!.board_skin_id);
       setPieceSetId(resolution.child!.piece_set_id);
+      setMyRating(typeof resolution.child!.rating === "number" ? resolution.child!.rating : null);
 
       const initial = await getOnlineGame(supabase, params.gameId);
       if (cancelled) return;
@@ -635,6 +647,22 @@ export default function OnlineGamePage() {
     const opponentColor: Color = myColor === "w" ? "b" : "w";
     const hasClock = game.time_control !== null && game.white_time_ms !== null && game.black_time_ms !== null;
 
+    /* One clock description per side, built once and handed to BOTH the digits
+     * and the progress bar. They are two views of the same server-authoritative
+     * numbers, never two countdowns — see lib/game/useRemainingMs.ts. */
+    const clockFor = (color: Color) =>
+      hasClock
+        ? {
+            baseMs: (color === "w" ? game.white_time_ms : game.black_time_ms)!,
+            lastSyncAt: game.last_move_at,
+            isRunning: game.current_turn === color,
+            gameActive: game.status === "active",
+            totalMs: game.initial_time_ms,
+          }
+        : undefined;
+    const myClock = clockFor(myColor);
+    const opponentClock = clockFor(opponentColor);
+
     async function handleResign() {
       // No winner is sent: the server makes the OPPONENT of whoever resigned
       // the winner, so a resigning player cannot name themselves.
@@ -675,6 +703,7 @@ export default function OnlineGamePage() {
             label="Opponent"
             isOpponent
             isActive={game.current_turn === opponentColor && game.status === "active"}
+            clock={opponentClock}
           >
             <span className="flex items-center gap-2">
               {showSocial && theirReaction && (
@@ -682,14 +711,7 @@ export default function OnlineGamePage() {
                   {theirReaction}
                 </span>
               )}
-              {hasClock && (
-                <LiveChessClock
-                  baseMs={opponentColor === "w" ? game.white_time_ms! : game.black_time_ms!}
-                  lastSyncAt={game.last_move_at}
-                  isRunning={game.current_turn === opponentColor}
-                  gameActive={game.status === "active"}
-                />
-              )}
+              {opponentClock && <LiveChessClock {...opponentClock} />}
             </span>
           </WorldPlayerRow>
         }
@@ -697,16 +719,11 @@ export default function OnlineGamePage() {
           <WorldPlayerRow
             icon="♟️"
             label={`You — ${myColor === "w" ? "White" : "Black"}`}
+            rating={myRating}
             isActive={game.current_turn === myColor && game.status === "active"}
+            clock={myClock}
           >
-            {hasClock && (
-              <LiveChessClock
-                baseMs={myColor === "w" ? game.white_time_ms! : game.black_time_ms!}
-                lastSyncAt={game.last_move_at}
-                isRunning={game.current_turn === myColor}
-                gameActive={game.status === "active"}
-              />
-            )}
+            {myClock && <LiveChessClock {...myClock} />}
           </WorldPlayerRow>
         }
         renderBoard={(boardSize) => (
