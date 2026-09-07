@@ -49,6 +49,16 @@ export function WorldLocationCard({
           </span>
         </span>
       )}
+      {/* Rare by design — see the note on `badge` in the registry. It sits on
+          the artwork rather than beside the name so it reads as a stamp on the
+          place, and it is aria-hidden because the visible text below already
+          names the location; a screen reader gains nothing from "Flagship"
+          announced out of context. */}
+      {playable && location.badge && (
+        <span className="absolute left-2 top-2 rounded-full border border-premium-gold/40 bg-black/55 px-2 py-0.5 font-classic-body text-[10px] uppercase tracking-[0.14em] text-premium-gold backdrop-blur-sm">
+          {location.badge}
+        </span>
+      )}
     </span>
   );
 

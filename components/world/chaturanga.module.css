@@ -1,0 +1,285 @@
+/*
+ * Chaturanga — the scene, drawn entirely in CSS and inline SVG.
+ *
+ * Same rules as the London Eye scene, and for the same reasons: no
+ * photographs, no 3D engine, no external artwork, no image bytes. Every
+ * element here is a gradient, a positioned box or a path this file owns.
+ *
+ * What this is NOT: a reconstruction of any real building. The forms are
+ * abstract — a wide cusped arch, domes on a far horizon, a jali screen — drawn
+ * from the vocabulary of Indian palace architecture without copying a specific
+ * monument, because inventing a plausible-looking "historic palace" and
+ * implying it is real would be worse than making no claim at all.
+ *
+ * Performance rules observed throughout:
+ *   - only `transform` and `opacity` are animated, so nothing here triggers
+ *     layout or paint on the main thread
+ *   - no JavaScript animation loop exists; the browser owns every keyframe
+ *   - the whole scene is `pointer-events: none` and `aria-hidden`, so it can
+ *     never intercept a click meant for the board or confuse a screen reader
+ *   - every animation stops under `prefers-reduced-motion`
+ *
+ * The board is the subject. Everything in this file is deliberately low
+ * contrast and sits behind a scrim, so no piece ever competes with scenery.
+ */
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  /* Warm, but held back. An Indian sunset can be pushed until it glows like a
+     furnace; at that point the board is fighting the wall behind it, so the
+     saturation here stops well short of where it could go. */
+  --sky-top: #1d1030;
+  --sky-rose: #77304c;
+  --sky-warm: #bf5734;
+  --sky-saffron: #e28b3d;
+  --sky-gold: #f4c069;
+  --sun: #ffe2ae;
+  --stone-lit: #4a2a1c;
+  --stone: #2a1510;
+  --stone-deep: #1a0c09;
+  --gold: #ffd28a;
+  --lamp: #ffbe66;
+}
+
+/* ---------------------------------------------------------------- sky ---- */
+.sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--sky-top) 0%,
+    #3a1a44 16%,
+    var(--sky-rose) 34%,
+    #a34440 52%,
+    var(--sky-warm) 66%,
+    var(--sky-saffron) 80%,
+    var(--sky-gold) 92%,
+    #f8d68f 100%
+  );
+}
+
+/* The sun sits low and slightly off-centre. Dead centre would put the
+   brightest part of the frame directly behind the board. */
+.sun {
+  position: absolute;
+  left: 38%;
+  bottom: 30%;
+  height: 30vmax;
+  width: 30vmax;
+  transform: translate(-50%, 50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--sun) 0%,
+    rgba(255, 205, 130, 0.55) 26%,
+    rgba(255, 160, 90, 0.22) 52%,
+    transparent 72%
+  );
+}
+
+/* A warm band along the horizon — what actually sells distance, more than the
+   silhouettes do. */
+.haze {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 26%;
+  height: 26%;
+  background: linear-gradient(to top, rgba(255, 186, 110, 0.42), transparent);
+}
+
+/* ----------------------------------------------------------- horizon ----- */
+/* Distant palace roofline. Sits behind the arch, so it is only ever seen
+   through the opening. */
+.domes {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 28%;
+  height: 22%;
+  opacity: 0.62;
+}
+
+/* Gardens and courtyard below the roofline, kept as a soft mass rather than
+   drawn foliage: at this distance detail reads as noise. */
+.garden {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 32%;
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 100%, rgba(60, 26, 18, 0.55), transparent 70%),
+    linear-gradient(to bottom, transparent, rgba(38, 16, 12, 0.9) 62%, rgba(26, 12, 9, 1) 100%);
+}
+
+/* -------------------------------------------------- palace architecture --- */
+/*
+ * The defining layer: a wall with a wide cusped opening, so the player is
+ * inside looking out.
+ *
+ * `preserveAspectRatio="none"` on the SVG is deliberate. With `slice` the
+ * jambs crop off-screen entirely on a phone and the arch — the whole point of
+ * the scene — disappears at the viewport where the identity matters most.
+ * Stretching instead keeps the arch present at every size: it reads wide and
+ * shallow on a desktop and tall and narrow in portrait, which is how arches
+ * actually vary, so the distortion lands as a different arch rather than a
+ * broken one.
+ */
+.archFrame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Lamplight on the inner faces of the jambs. Two small warm pools are what
+   make the stone read as lit from inside the room rather than flat. */
+.lamp {
+  position: absolute;
+  bottom: 14%;
+  height: 30vmax;
+  width: 22vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 193, 110, 0.4) 0%, rgba(255, 150, 80, 0.12) 45%, transparent 72%);
+}
+/*
+ * Only a sliver of jamb is on screen during a side-by-side game — the board
+ * and panel take the rest — so the pool has to sit ON that sliver. Pushed
+ * further out (it was -30%) the light fell off the edge of the viewport and
+ * the stone that players actually see stayed unlit.
+ */
+.lampLeft {
+  left: 0;
+  transform: translateX(-38%);
+}
+.lampRight {
+  right: 0;
+  transform: translateX(38%);
+}
+
+/* The floor of the room, in front of the arch. A polished-stone sheen, no
+   pattern: a patterned floor directly under the board is exactly the kind of
+   detail that competes with pieces. */
+.terrace {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 16%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(74, 42, 28, 0.5) 40%,
+    rgba(26, 12, 9, 0.95) 100%
+  );
+}
+
+/* ----------------------------------------------------------- ambience ---- */
+/* Dust in the light. Four motes, not forty — enough to suggest air, few enough
+   that nothing is ever moving near the board. */
+.motes {
+  position: absolute;
+  inset: 0;
+}
+.mote {
+  position: absolute;
+  height: 3px;
+  width: 3px;
+  border-radius: 50%;
+  background: rgba(255, 220, 170, 0.55);
+  animation: rise 26s linear infinite;
+}
+.moteA { left: 16%; bottom: 22%; animation-duration: 31s; }
+.moteB { left: 27%; bottom: 14%; animation-duration: 38s; animation-delay: -9s; }
+.moteC { right: 21%; bottom: 19%; animation-duration: 34s; animation-delay: -17s; }
+.moteD { right: 12%; bottom: 27%; animation-duration: 42s; animation-delay: -25s; }
+
+@keyframes rise {
+  0% { opacity: 0; transform: translate3d(0, 0, 0); }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(2vw, -34vh, 0); }
+}
+
+/* ------------------------------------------------------------- scrim ----- */
+/*
+ * The board sits in the middle of the viewport, so the middle of the scene is
+ * darkened hard. Without this the sunset would sit directly behind the pieces
+ * and wreck contrast. Everything above is decoration; this is what keeps the
+ * game readable, and it is why the scene can be as warm as it is.
+ */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 62% 58% at 50% 54%, rgba(10, 5, 4, 0.86) 0%, rgba(10, 5, 4, 0.66) 42%, rgba(10, 5, 4, 0.3) 70%, transparent 100%),
+    linear-gradient(to bottom, rgba(10, 5, 4, 0.55) 0%, transparent 22%, transparent 70%, rgba(10, 5, 4, 0.62) 100%);
+}
+
+/* ------------------------------------------------------------- entrance --- */
+/* One gentle settle on mount. Never repeats — a looping entrance beside a
+   chess clock would be maddening.
+
+   Deliberately NOT `fill: both`. With a fill mode the element adopts the
+   keyframe's `from` state before the animation starts, and a browser freezes
+   animations in a hidden document — so a game opened in a background tab sat
+   at `opacity: 0` and the scene was simply invisible until something forced a
+   restart. Verified: document.visibilityState "hidden" -> currentTime 0,
+   computed opacity 0. Without a fill mode the resting style (fully visible) is
+   what shows before and after, and the entrance is a pure enhancement that
+   cannot hide the scene. */
+.enter {
+  animation: settle 1100ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes settle {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* --------------------------------------------------------------- motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .mote,
+  .enter {
+    animation: none !important;
+  }
+  .enter { opacity: 1; transform: none; }
+  /* Motes are only meaningful in motion; static dots on the glass read as
+     dead pixels, so they go entirely rather than freezing. */
+  .motes { display: none; }
+}
+
+/* ------------------------------------------------------------ responsive -- */
+/*
+ * On a phone the scene simplifies rather than shrinks. Dust and lamp pools go,
+ * the far roofline drops back, and the scrim gets stronger — the board
+ * occupies proportionally more of a small screen, so it needs more protection,
+ * and there is less room for scenery to earn its keep. The arch stays: it is
+ * the one element that has to survive for the place to be recognisable.
+ */
+@media (max-width: 640px) {
+  .motes,
+  .lamp {
+    display: none;
+  }
+  .domes {
+    opacity: 0.45;
+    bottom: 34%;
+  }
+  .scrim {
+    background:
+      radial-gradient(ellipse 78% 52% at 50% 52%, rgba(10, 5, 4, 0.9) 0%, rgba(10, 5, 4, 0.74) 46%, rgba(10, 5, 4, 0.4) 74%, transparent 100%),
+      linear-gradient(to bottom, rgba(10, 5, 4, 0.6) 0%, transparent 20%, transparent 66%, rgba(10, 5, 4, 0.7) 100%);
+  }
+}
+
+/* Landscape phones: the board is height-bound and takes nearly the whole
+   viewport, so the scene recedes further still. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .domes { display: none; }
+  .scrim {
+    background: radial-gradient(ellipse 86% 70% at 50% 50%, rgba(10, 5, 4, 0.92) 0%, rgba(10, 5, 4, 0.8) 50%, rgba(10, 5, 4, 0.5) 80%, transparent 100%);
+  }
+}
