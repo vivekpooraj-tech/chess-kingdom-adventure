@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { PieceSymbol } from "chess.js";
 import { getLesson, DAILY_PREVIEW_LIMIT } from "@/content/lessons";
+import { TOTAL_DAYS } from "@/lib/school/chessSchool";
 import { getMinigameConfigForDay } from "@/content/minigame-configs";
 import { BUDDIES } from "@/content/buddies";
 import { KINGDOM_ZONES, getZoneForDay, isDayFree, KingdomZone } from "@/content/kingdomZones";
@@ -271,6 +272,7 @@ export default function LessonPage() {
           title={lesson.title}
           stepIndex={stepIndex}
           totalSteps={lesson.steps.length}
+          courseTotalDays={TOTAL_DAYS}
         />
 
         <AnimatePresence mode="wait">
