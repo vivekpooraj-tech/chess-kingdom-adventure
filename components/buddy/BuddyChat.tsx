@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BuddyAvatar } from "./BuddyAvatar";
 import { SpeechBubble } from "@/components/ui/SpeechBubble";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 import type { OllieReviewContext } from "@/lib/ollie/reviewContext";
 import type { ExperienceLevel, AgeBand } from "@/lib/learner/experienceLevel";
+import { ChessBoard } from "@/components/board/ChessBoard";
+import { TeachingOverlay } from "@/components/board/TeachingOverlay";
+import { demonstratePiece, describeDemonstration } from "@/lib/board/demonstrate";
+import { useNarration } from "@/lib/voice/useNarration";
+import { prefersNeutralHomeTone } from "@/lib/learner/experienceLevel";
 
 interface BuddyChatProps {
   buddyEmoji: string;
@@ -61,6 +66,19 @@ export function BuddyChat({
   // set/cleared synchronously so the second call always sees the lock.
   const sendingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  const [showingBoard, setShowingBoard] = useState(false);
+
+  const neutralTone = prefersNeutralHomeTone(experienceLevel, ageBand);
+  const narration = useNarration(neutralTone);
+
+  // What Ollie could demonstrate here, if anything. Derived from chess.js in
+  // the REAL position on screen: if the piece is not there, or has no legal
+  // move in this position, there is no offer to show anything. Ollie never
+  // points at a square the rules do not allow.
+  const demo = useMemo(
+    () => (boardFen && lessonTopic ? demonstratePiece(boardFen, lessonTopic) : null),
+    [boardFen, lessonTopic]
+  );
 
   useEffect(() => {
     return () => abortRef.current?.abort();
@@ -124,7 +142,21 @@ export function BuddyChat({
       <div className="flex flex-col gap-3 max-h-72 overflow-y-auto">
         {messages.map((m, i) =>
           m.from === "buddy" ? (
-            <SpeechBubble key={i}>{m.text}</SpeechBubble>
+            <div key={i} className="flex flex-col gap-1 items-start">
+              <SpeechBubble>{m.text}</SpeechBubble>
+              {/* Hear it. Only where the device can speak, and only on a
+                  press — Ollie never starts talking on his own. */}
+              {narration.available && (
+                <button
+                  type="button"
+                  onClick={() => narration.speak(m.text)}
+                  aria-label="Read this answer aloud"
+                  className="font-classic-body text-[11px] text-premium-ivory/50 hover:text-premium-gold min-h-[44px] px-2 flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded"
+                >
+                  <span aria-hidden="true">🔊</span> Read aloud
+                </button>
+              )}
+            </div>
           ) : (
             <div
               key={i}
@@ -150,6 +182,42 @@ export function BuddyChat({
               {q}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* "Would you like me to show you?" — offered only when there is a real
+          demonstration available in this exact position. The board below is
+          read-only and the overlay has pointer events disabled, so nothing
+          here can move a piece, change legality, or touch a clock: the
+          learner plays the move themselves on the real board. */}
+      {demo && (
+        <div className="flex flex-col gap-2">
+          {!showingBoard ? (
+            <button
+              type="button"
+              onClick={() => setShowingBoard(true)}
+              className="self-start inline-flex items-center min-h-[44px] rounded-full border border-premium-gold/40 bg-premium-gold/10 px-4 font-classic-body text-xs font-semibold text-premium-gold hover:bg-premium-gold/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
+            >
+              🎯 Show me on the board
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="relative w-full max-w-[320px] mx-auto">
+                <ChessBoard fen={boardFen} size={320} readOnly />
+                <TeachingOverlay squares={[demo.from, ...demo.targets]} />
+              </div>
+              <p className={`${TEXT.caption} normal-case text-center`}>
+                {describeDemonstration(demo, !neutralTone)}
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowingBoard(false)}
+                className="self-center min-h-[44px] px-4 font-classic-body text-xs text-premium-ivory/60 hover:text-premium-ivory focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded"
+              >
+                Hide the board
+              </button>
+            </div>
+          )}
         </div>
       )}
 
