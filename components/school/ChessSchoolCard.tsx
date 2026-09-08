@@ -92,12 +92,23 @@ export function ChessSchoolCard({
         </div>
       )}
 
-      <Link
-        href={continueHref(progress)}
-        className="self-start mt-auto font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center active:scale-[0.98] transition-transform duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
-      >
-        {continueLabel(progress)}
-      </Link>
+      <div className="flex items-center gap-4 flex-wrap mt-auto">
+        <Link
+          href={continueHref(progress)}
+          className="font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center active:scale-[0.98] transition-transform duration-100 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
+        >
+          {continueLabel(progress)}
+        </Link>
+        {/* The course overview — what the 30 days actually teach, stage by
+            stage. Secondary on purpose: the primary action is always to keep
+            learning, not to go and read about learning. */}
+        <Link
+          href="/chess-school"
+          className="font-classic-body text-xs text-premium-ivory/65 underline underline-offset-4 hover:text-premium-gold min-h-[44px] flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded"
+        >
+          View the course
+        </Link>
+      </div>
     </section>
   );
 }

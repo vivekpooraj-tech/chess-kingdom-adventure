@@ -106,15 +106,16 @@ export default function LearnPage() {
           completed-ids request — the page stays static and unblocked. */}
       <LearningPathPanel lessonIdsByCourse={courseLessonIds} />
 
-      <Link href="/kingdom-map#journey" className="w-full block active:scale-[0.98] transition-transform duration-100">
+      <Link href="/chess-school" className="w-full block active:scale-[0.98] transition-transform duration-100">
         <PrimaryCard className="flex items-center gap-4">
           <span className="text-3xl flex-none">🗺️</span>
           <div className="flex-1">
             {/* Chess School naming, but no progress numbers here: this page is
                 deliberately static with no per-child fetch, and a hardcoded
                 "12 of 30" would be exactly the fake progress that is not
-                allowed. The real figures live on Home, where the data already
-                is — this card only names the course and points at it. */}
+                allowed. The real figures live on Home and on /chess-school,
+                where the data already is — this card only names the course
+                and points at it. */}
             <p className={`${TEXT.meta} text-premium-gold`}>🏫 {COURSE_NAME}</p>
             <p className="font-classic-display text-lg text-premium-ivory mt-1">
               {COURSE_TITLE}

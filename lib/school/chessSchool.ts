@@ -56,6 +56,20 @@ export interface ChessSchoolProgress {
   daysRemaining: number;
   /** True before any day is finished — the "not started yet" state. */
   isNotStarted: boolean;
+  /**
+   * The day "Continue Learning" should actually open.
+   *
+   * Normally children.current_day, which is what the journey advances. But
+   * current_day can point at a day the learner already finished — they
+   * replayed it, or a completion landed out of order — and sending someone
+   * back to a lesson they have done is the one thing a "continue" button must
+   * never do. So: current_day when it is unfinished, otherwise the lowest
+   * unfinished day, otherwise (course complete) the last day.
+   *
+   * Deliberately never SKIPS forward past unfinished days: it can only ever
+   * land on a day the learner has not completed.
+   */
+  resumeDay: number;
 }
 
 /**
@@ -67,14 +81,7 @@ export interface ChessSchoolProgress {
  * are dropped before counting.
  */
 function countCompleted(completedDays: readonly number[], totalDays: number): number {
-  const seen = new Set<number>();
-  for (const raw of completedDays ?? []) {
-    if (!Number.isFinite(raw)) continue;
-    const day = Math.floor(raw);
-    if (day < 1 || day > totalDays) continue;
-    seen.add(day);
-  }
-  return seen.size;
+  return completedSet(completedDays, totalDays).size;
 }
 
 function clampDay(day: number, totalDays: number): number {
@@ -82,10 +89,34 @@ function clampDay(day: number, totalDays: number): number {
   return Math.min(Math.max(Math.floor(day), 1), Math.max(totalDays, 1));
 }
 
+/** Normalised set of genuinely-completed, in-range day numbers. */
+function completedSet(completedDays: readonly number[], totalDays: number): Set<number> {
+  const seen = new Set<number>();
+  for (const raw of completedDays ?? []) {
+    if (!Number.isFinite(raw)) continue;
+    const day = Math.floor(raw);
+    if (day < 1 || day > totalDays) continue;
+    seen.add(day);
+  }
+  return seen;
+}
+
 export function chessSchoolProgress(input: ChessSchoolInput): ChessSchoolProgress {
   const totalDays = Math.max(0, Math.floor(input.totalDays ?? TOTAL_DAYS));
-  const completedCount = countCompleted(input.completedDays, totalDays);
+  const done = completedSet(input.completedDays, totalDays);
+  const completedCount = done.size;
   const currentDay = clampDay(input.currentDay, totalDays);
+
+  let resumeDay = currentDay;
+  if (done.has(currentDay)) {
+    resumeDay = currentDay;
+    for (let day = 1; day <= totalDays; day++) {
+      if (!done.has(day)) {
+        resumeDay = day;
+        break;
+      }
+    }
+  }
 
   return {
     currentDay,
@@ -95,6 +126,7 @@ export function chessSchoolProgress(input: ChessSchoolInput): ChessSchoolProgres
     isComplete: totalDays > 0 && completedCount >= totalDays,
     daysRemaining: Math.max(0, totalDays - completedCount),
     isNotStarted: completedCount === 0,
+    resumeDay,
   };
 }
 
@@ -137,10 +169,14 @@ export function schoolSummary(progress: ChessSchoolProgress, neutralTone: boolea
 export function continueLabel(progress: ChessSchoolProgress): string {
   if (progress.isComplete) return "Review your course →";
   if (progress.isNotStarted) return "Start Day 1 →";
-  return `Continue ${dayOfLabel(progress.currentDay, progress.totalDays)} →`;
+  return `Continue ${dayOfLabel(progress.resumeDay, progress.totalDays)} →`;
 }
 
-/** Where the primary action goes. Always a real lesson route. */
+/**
+ * Where the primary action goes. Always a real lesson route, and always the
+ * day the learner should actually resume — see ChessSchoolProgress.resumeDay,
+ * which is why this is not simply current_day.
+ */
 export function continueHref(progress: ChessSchoolProgress): string {
-  return `/lesson/${progress.currentDay}`;
+  return `/lesson/${progress.resumeDay}`;
 }
