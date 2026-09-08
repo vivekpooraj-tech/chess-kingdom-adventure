@@ -19,6 +19,7 @@ import {
   getOnlineWinsCount,
   getScreenTimeStatus,
   getSkillSignals,
+  localDateString,
 } from "@/lib/supabase/queries";
 import { getUnlockedKingdomBonuses } from "@/lib/chessMind/kingdomUnlocks";
 import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
@@ -31,6 +32,7 @@ import { SkeletonBlock } from "@/components/ui/Skeleton";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { HeroJourneyCard } from "@/components/home/HeroJourneyCard";
 import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
+import { DailyQuestsCard } from "@/components/home/DailyQuestsCard";
 import { DestinationCard } from "@/components/home/DestinationCard";
 import { PlayIcon, AcademyIcon, DiscoverIcon } from "@/components/nav/icons";
 import { StatCardCompact } from "@/components/ui/StatCard";
@@ -38,6 +40,8 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
 import { getHomeLeadRecommendation } from "@/lib/home/getHomeLead";
+import { getDailyQuestActivity } from "@/lib/quests/questQueries";
+import { selectDailyQuests } from "@/lib/quests/dailyQuests";
 import { deriveLearnerProfile } from "@/lib/ollie/learnerContext";
 import { recommendPractice, type PracticeLessonItem } from "@/lib/training/recommendation";
 import { getSkill } from "@/lib/analysis/skills";
@@ -92,6 +96,7 @@ export default async function KingdomMapPage() {
     chessMindStreak,
     screenTimeStatus,
     skillSignals,
+    questActivity,
   ] = await Promise.all([
     getCompletedDays(supabase, child.id),
     parentPromise,
@@ -107,6 +112,10 @@ export default async function KingdomMapPage() {
     // deriveLearnerProfile derives that from signals alone (reviews only feed
     // the accuracy trend, which this card doesn't show).
     getSkillSignals(supabase, child.id).catch(() => ({})),
+    // Three cheap indexed count queries, run as part of this same wave rather
+    // than as a new sequential layer. Never rejects — each source degrades to
+    // null on its own and is then omitted from the card (see questQueries.ts).
+    getDailyQuestActivity(supabase, child.id),
   ]);
   const isPremium = resolvePremiumState(parent).isPremium;
   const kingdomBonuses = getUnlockedKingdomBonuses(chessMindStatsByModule);
@@ -161,6 +170,17 @@ export default async function KingdomMapPage() {
 
   const neutralTone = prefersNeutralHomeTone(child.experience_level, child.age_band);
 
+  // Pure and deterministic for (child, date, level) — the same three quests
+  // all day, with progress read from the activity tables above. No quest state
+  // is stored anywhere; see lib/quests/dailyQuests.ts for why.
+  const questSet = selectDailyQuests({
+    childId: child.id,
+    date: localDateString(),
+    experienceLevel: child.experience_level,
+    ageBand: child.age_band ?? null,
+    activity: questActivity,
+  });
+
   return (
     <>
       <ScreenTimeGate
@@ -195,6 +215,8 @@ export default async function KingdomMapPage() {
             <HeroJourneyCard recommendation={heroRecommendation} />
           </div>
         </div>
+
+        <DailyQuestsCard set={questSet} neutralTone={neutralTone} />
 
         {kingdomBonuses.length > 0 && (
           <Link
