@@ -23,7 +23,7 @@ import type { Difficulty } from "@/lib/chess-engine/stockfishEngine";
 import type { CompletedGameRecord, PlayedMove } from "@/lib/analysis/gameAnalysis";
 import { WorldSceneBackdrop } from "@/components/world/WorldSceneBackdrop";
 import { getWorldLocation, type WorldLocationId } from "@/lib/world/locations";
-import { recordGameStarted } from "@/lib/world/passport";
+import { recordGameStarted, recordGameWon } from "@/lib/world/passport";
 
 const STANDARD_START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -174,6 +174,15 @@ export default function FreePlayPage() {
   }
 
   function handleGameOver(difficulty: Difficulty, result: GameResult) {
+    // Chess Mind World: the child always plays White in Free Play (see
+    // playableColor="w" on the ChessBoard below), so a real checkmate win
+    // for White, in a game that was actually played at a World location, is
+    // exactly the event "First Victory in <location>" should be earned by —
+    // never a fabricated one. See lib/world/passport.ts for why this can be
+    // recorded honestly without a database row Free Play itself doesn't have.
+    if (worldLocationId && result.isCheckmate && result.winner === "w") {
+      recordGameWon(worldLocationId);
+    }
     const difficultyInfo = DIFFICULTY_INFO.find((d) => d.key === difficulty)!;
     const record: CompletedGameRecord = {
       startFen: STANDARD_START_FEN,

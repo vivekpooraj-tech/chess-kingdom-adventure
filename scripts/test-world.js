@@ -101,6 +101,41 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
 
   check("unknown location ids are rejected by withVisit", Object.keys(P.withVisit({}, "atlantis", now())).length === 0);
   check("unknown location ids are rejected by withGame", Object.keys(P.withGame({}, "atlantis", now())).length === 0);
+
+  // Fresh entries start with no win at all.
+  check("a fresh entry has zero wins", p["london-eye"].wins === 0);
+  check("a fresh entry has no firstWinAt", p["london-eye"].firstWinAt === null);
+}
+
+// --- 2b. Wins: real events, never double-counted, never impossible --------
+{
+  const now = () => new Date().toISOString();
+
+  // The normal path: a game is recorded at start (withGame), then won at
+  // end (withWin). The win must NOT double-count the game withGame already
+  // counted.
+  let p = P.withGame({}, "london-eye", now());
+  check("one game started", p["london-eye"].games === 1);
+  p = P.withWin(p, "london-eye", now());
+  check("winning an already-started game does not inflate the game count", p["london-eye"].games === 1);
+  check("the win is recorded", p["london-eye"].wins === 1);
+  check("firstWinAt is set", !!p["london-eye"].firstWinAt);
+
+  const firstWinAt = p["london-eye"].firstWinAt;
+  p = P.withGame(p, "london-eye", "2099-01-01T00:00:00.000Z");
+  p = P.withWin(p, "london-eye", "2099-01-01T00:00:00.000Z");
+  check("a second win increments the count", p["london-eye"].wins === 2);
+  check("a second win does not move the FIRST-win timestamp", p["london-eye"].firstWinAt === firstWinAt);
+  check("wins never exceed games", p["london-eye"].wins <= p["london-eye"].games);
+
+  // Defensive floor: a win reported with no prior game record (should not
+  // happen from real gameplay, but must never produce a contradiction).
+  const noGame = P.withWin({}, "chaturanga", now());
+  check("a win with no prior game still credits at least one game", noGame["chaturanga"].games >= 1);
+  check("a win with no prior game is still recorded as a win", noGame["chaturanga"].wins === 1);
+  check("no contradiction: wins never exceed games even on the defensive path", noGame["chaturanga"].wins <= noGame["chaturanga"].games);
+
+  check("unknown location ids are rejected by withWin", Object.keys(P.withWin({}, "atlantis", now())).length === 0);
 }
 
 // --- 3. Normalisation: junk in, safe passport out --------------------------
@@ -127,6 +162,21 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
 
   check("malformed JSON yields an empty passport", Object.keys(P.parsePassport("{oh no")).length === 0);
   check("null JSON yields an empty passport", Object.keys(P.parsePassport(null)).length === 0);
+
+  // A hand-edited/corrupted passport must never be able to claim more wins
+  // than games — that is the one contradiction this module must refuse to
+  // store, no matter what junk arrives from storage.
+  const impossible = P.normalizePassport({ "london-eye": { visitedAt: "2024-01-01", games: 2, wins: 99 } });
+  check("wins are clamped to never exceed games", impossible["london-eye"].wins === 2);
+
+  const negativeWins = P.normalizePassport({ "london-eye": { visitedAt: "2024-01-01", games: 5, wins: -3 } });
+  check("negative wins collapse to zero", negativeWins["london-eye"].wins === 0);
+
+  const winsNoGames = P.normalizePassport({ "london-eye": { visitedAt: "2024-01-01", games: 0, wins: 4 } });
+  check("wins with zero games clamp to zero", winsNoGames["london-eye"].wins === 0);
+
+  const winsButNoTimestamp = P.normalizePassport({ "london-eye": { visitedAt: "2024-01-01", games: 3, wins: 1 } });
+  check("a real win with no firstWinAt string still gets null, not a fabricated date", winsButNoTimestamp["london-eye"].firstWinAt === null);
 }
 
 // --- 4. Aggregate views are real arithmetic, not guesses -------------------
@@ -148,6 +198,53 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   check("last played is the most recently played, not the most-played", P.lastPlayed(p) === "chaturanga");
 }
 
+// --- 4b. Achievements are derived from the passport, never a separate list -
+{
+  check("no achievements from an empty passport", P.worldAchievements({}).length === 0);
+
+  let p = P.withGame({}, "london-eye", "2024-01-01T00:00:00.000Z");
+  const afterGame = P.worldAchievements(p);
+  check("a first game earns exactly one achievement", afterGame.length === 1);
+  check("it is named after the real location", afterGame[0].title === "First Game in London Eye");
+  check("no win achievement exists yet", !afterGame.some((a) => a.title.includes("Victory")));
+
+  p = P.withWin(p, "london-eye", "2024-01-02T00:00:00.000Z");
+  const afterWin = P.worldAchievements(p);
+  check("a win adds a second achievement, not a replacement", afterWin.length === 2);
+  check("the win achievement is named after the real location", afterWin.some((a) => a.title === "First Victory in London Eye"));
+  check("every achievement key is namespaced by location", afterWin.every((a) => a.key.startsWith("london-eye:")));
+  check("every achievement has a real earned timestamp", afterWin.every((a) => !!a.earnedAt));
+
+  // A visit alone — no game — earns nothing. This is the one case the
+  // brief is explicit about: nothing is awarded for looking.
+  const visitOnly = P.withVisit({}, "chaturanga", "2024-01-01T00:00:00.000Z");
+  check("a visit with no game earns nothing", P.worldAchievements(visitOnly).length === 0);
+
+  // Achievements across two locations are both present and don't collide.
+  // london-eye: one game, no win (1 achievement). chaturanga: won with no
+  // prior game recorded, so the defensive floor in withWin credits both a
+  // game AND a win (2 achievements) — 3 in total, and none of them mixed up
+  // between locations.
+  let both = P.withGame({}, "london-eye", "2024-01-01T00:00:00.000Z");
+  both = P.withWin(both, "chaturanga", "2024-01-02T00:00:00.000Z");
+  const combined = P.worldAchievements(both);
+  check("achievements from two locations coexist", combined.length === 3);
+  check(
+    "each location's achievements stay namespaced to that location",
+    combined.filter((a) => a.locationId === "london-eye").length === 1 &&
+      combined.filter((a) => a.locationId === "chaturanga").length === 2
+  );
+  check(
+    "achievements are ordered oldest first",
+    combined.every((a, i) => i === 0 || Date.parse(combined[i - 1].earnedAt) <= Date.parse(a.earnedAt))
+  );
+
+  // An achievement for a location that no longer exists in the registry
+  // must be dropped, not crash the derivation with an undefined title.
+  const stale = P.worldAchievements({ atlantis: { visitedAt: "x", playedAt: "x", games: 1, firstWinAt: null, wins: 0 } });
+  check("a stale/unknown location produces no achievement rather than throwing", stale.length === 0);
+}
+
 // --- 5. Storage never throws, even with no window --------------------------
 {
   let threw = false;
@@ -156,6 +253,7 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
     P.writePassport({});
     P.recordVisit("london-eye");
     P.recordGameStarted("london-eye");
+    P.recordGameWon("london-eye");
     P.readSelectedLocation();
     P.writeSelectedLocation("london-eye");
     P.writeSelectedLocation(null);
@@ -202,6 +300,14 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   check("the backdrop is rendered only inside the board slot", /renderBoard=\{\(boardSize\)/.test(freePlay));
   check("recording a world game never substitutes for the real credit check", /startAiGame\(/.test(freePlay));
 
+  // A World win is only ever recorded from the SAME real game-over signal
+  // Free Play already uses for everything else, and only for an actual
+  // checkmate win — never merely reaching game-over (which also covers
+  // draws and losses).
+  check("a World win is recorded from the real onGameOver result", /recordGameWon\(worldLocationId\)/.test(freePlay));
+  check("a World win requires a real checkmate", /result\.isCheckmate[\s\S]{0,40}recordGameWon|recordGameWon[\s\S]{0,200}result\.isCheckmate/.test(freePlay) || /if \(worldLocationId && result\.isCheckmate && result\.winner === "w"\)/.test(freePlay));
+  check("a World win checks the child's own colour, not either side", /result\.winner === "w"/.test(freePlay));
+
   // Scenes: decorative only, reduced-motion aware, no photography claims.
   for (const [name, scene] of [["London Eye", eyeScene], ["Chaturanga", chatScene]]) {
     check(`${name} scene is aria-hidden`, /aria-hidden="true"/.test(scene));
@@ -214,6 +320,12 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   check("the World page reads the real passport", /readPassport\(/.test(worldPage));
   check("the World page hardcodes no game count", !/\b\d+\s*games?\s*played\b/i.test(worldPage));
   check("the passport section is conditional on real data", /games > 0 && \(/.test(worldPage));
+
+  // Achievements and favourite location.
+  check("the World page derives achievements from the passport", /worldAchievements\(passport\)/.test(worldPage));
+  check("achievements are only rendered when there are real ones", /achievements\.length > 0 && \(/.test(worldPage));
+  check("the favourite toggle uses per-device storage, same as the rest of the passport", /writeSelectedLocation\(/.test(worldPage) && /readSelectedLocation\(/.test(worldPage));
+  check("the favourite star reports its state to assistive tech", /aria-pressed=\{favourite\}/.test(worldPage));
 }
 
 console.log(`\n=== CHESS MIND WORLD: ${pass} passed, ${failures.length} failed ===`);
