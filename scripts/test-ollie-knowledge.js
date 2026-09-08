@@ -204,17 +204,28 @@ const idOf = (q, history = []) => (ask(q, history) || {}).id ?? null;
   );
   check("the course length really is 30", LESSONS.length === 30);
 
-  // Chess Mind World does not exist in this repository yet. Ollie must not
-  // pretend it does — this is the single easiest place for the app to lie to
-  // a child, and the test is here to keep it honest as the code grows.
+  // Chess Mind World is real now — this is the single easiest place for the
+  // app to lie to a child, so the test checks Ollie's claim against the
+  // actual location registry rather than trusting the prose. If a location
+  // is ever added or removed from lib/world/locations.ts without this
+  // answer being touched, one of the two checks below fails.
   const world = ask("what is chess mind world?");
-  check("world is not claimed as available", /isn't available|still being built|coming|not.*yet/i.test(world.text));
   const worldCodeExists =
     fs.existsSync(path.join(process.cwd(), "app", "world")) ||
     fs.existsSync(path.join(process.cwd(), "lib", "world"));
+  check("World has shipped, so this test's assumptions must match", worldCodeExists === true);
   check(
-    "if World ships, this answer must be updated",
-    worldCodeExists === false || !/isn't available/i.test(world.text)
+    "Ollie no longer claims World is unavailable now that it exists",
+    !/isn't available|still being built/i.test(world.text)
+  );
+  const { WORLD_LOCATIONS } = require(path.join(process.cwd(), "lib", "world", "locations.ts"));
+  check("the World registry is not empty", WORLD_LOCATIONS.length > 0);
+  for (const loc of WORLD_LOCATIONS) {
+    check(`Ollie's World answer names ${loc.title}`, world.text.includes(loc.title));
+  }
+  check(
+    "Ollie names only real locations, not extra invented ones",
+    WORLD_LOCATIONS.length === 2 // if this changes, the two lines above must be revisited too
   );
 
   check("puzzles are described", idOf("what are puzzles?") === "product.puzzles");

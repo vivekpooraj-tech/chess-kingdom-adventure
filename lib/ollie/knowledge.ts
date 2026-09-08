@@ -119,7 +119,7 @@ const PRODUCT_RULES: { id: string; test: (c: QuestionContext) => boolean; text: 
   {
     id: "product.world",
     test: (c) => /\bworld\b/.test(c.text),
-    text: "Chess Mind World is still being built! The idea is to let you play chess in extraordinary places. It isn't available yet — but everything else here is ready for you right now.",
+    text: "Chess Mind World lets you play chess somewhere extraordinary! Right now you can play above London on the London Eye, or in Chaturanga, where chess began. Just pick a place and play — the rules never change, only the view.",
   },
   {
     id: "product.school.days",

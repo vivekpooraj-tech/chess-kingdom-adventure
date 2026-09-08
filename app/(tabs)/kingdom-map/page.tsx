@@ -35,7 +35,7 @@ import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
 import { DailyQuestsCard } from "@/components/home/DailyQuestsCard";
 import { ChessSchoolCard } from "@/components/school/ChessSchoolCard";
 import { DestinationCard } from "@/components/home/DestinationCard";
-import { PlayIcon, AcademyIcon, DiscoverIcon } from "@/components/nav/icons";
+import { PlayIcon, AcademyIcon, DiscoverIcon, WorldIcon } from "@/components/nav/icons";
 import { StatCardCompact } from "@/components/ui/StatCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TabPageShell } from "@/components/nav/TabPageShell";
@@ -265,6 +265,12 @@ export default async function KingdomMapPage() {
               description="The pieces and the history of chess"
               icon={DiscoverIcon}
               accent="emerald"
+            />
+            <DestinationCard
+              href="/world"
+              title="Explore World"
+              description="Play the same game somewhere extraordinary"
+              icon={WorldIcon}
             />
           </div>
         </section>

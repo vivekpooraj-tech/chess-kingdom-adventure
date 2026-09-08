@@ -7,6 +7,7 @@ import {
   ChessMindIcon,
   DiscoverIcon,
   ProfileIcon,
+  WorldIcon,
 } from "./icons";
 
 /**
@@ -77,6 +78,7 @@ export const NAV_ITEMS: NavItem[] = [
 export const SECONDARY_NAV_ITEMS: NavItem[] = [
   { label: "Academy", href: "/academy", icon: AcademyIcon },
   { label: "Chess Mind", href: "/chess-mind", icon: ChessMindIcon },
+  { label: "World", href: "/world", icon: WorldIcon },
   { label: "Profile", href: "/profile", icon: ProfileIcon },
   { label: "Discover", href: "/discover", icon: DiscoverIcon },
 ];
@@ -105,6 +107,8 @@ const APP_PREFIXES = [
   "/discover",
   "/piece-library",
   "/parent-dashboard",
+  "/world",
+  "/chess-school",
 ];
 
 /** Full-screen sub-routes that never showed the nav even though their
