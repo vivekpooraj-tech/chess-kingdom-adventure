@@ -24,6 +24,8 @@ import { ChessBoard } from "@/components/board/ChessBoard";
 import { ChessFocusLayout } from "@/components/chess/ChessFocusLayout";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { MoveFeedback } from "@/components/game/MoveFeedback";
+import { prefersNeutralHomeTone } from "@/lib/learner/experienceLevel";
+import { encourageAfterMiss, celebrateSolve, progressNudge } from "@/lib/puzzles/encouragement";
 import { SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
@@ -83,6 +85,13 @@ function PuzzlesPageInner() {
   // reports genuine unaided runs rather than counting retried puzzles.
   const [streakCount, setStreakCount] = useState(0);
   const [dailyAttempts, setDailyAttempts] = useState(0);
+  // Misses on the CURRENT puzzle. Survives "Try Again" (that's the same
+  // puzzle, so the encouragement ladder should keep getting more helpful) and
+  // resets only when a different puzzle loads. See lib/puzzles/encouragement.ts.
+  const [missCount, setMissCount] = useState(0);
+  // Warm child copy vs. neutral adult copy, from the child profile the page
+  // already resolves — no extra query.
+  const [neutralTone, setNeutralTone] = useState(false);
 
   // The Daily Challenge is a separate free daily activity — it never counts
   // against the 3/day Puzzle Trainer allowance and is always playable, even
@@ -127,6 +136,7 @@ function PuzzlesPageInner() {
       setChildId(child.id);
       setBoardSkinId(child.board_skin_id);
       setPieceSetId(child.piece_set_id);
+      setNeutralTone(prefersNeutralHomeTone(child.experience_level, child.age_band));
 
       // Independent of each other (all only need user/child ids already in
       // hand) — run together instead of one after the other. The puzzle fetch
@@ -189,6 +199,7 @@ function PuzzlesPageInner() {
       const data = (await res.json()) as MatePuzzleResponse;
       if (!data.puzzle) return;
       setPuzzle(data.puzzle);
+      setMissCount(0); // a different puzzle — the ladder starts over
       rememberPuzzleShown(data.puzzle.id);
     } catch {
       // Network blip: keep the current puzzle rather than blanking the board.
@@ -266,6 +277,7 @@ function PuzzlesPageInner() {
     setStatus("incorrect");
     setStreakCount(0);
     setDailyAttempts((n) => n + 1);
+    setMissCount((n) => n + 1);
     if (isDaily && childId) {
       const supabase = createClient();
       recordDailyChallengeResult(supabase, childId, localDateString(), false).catch(() => {});
@@ -367,9 +379,11 @@ function PuzzlesPageInner() {
             {status === "correct" && !isDaily && (
               <div className="flex flex-col gap-2">
                 <MoveFeedback tone="correct">
-                  {streakCount >= 2
-                    ? `Checkmate — that's ${streakCount} in a row, first try.`
-                    : "Checkmate — you found it."}
+                  {celebrateSolve({
+                    firstTry: missCount === 0,
+                    streak: streakCount,
+                    neutralTone,
+                  })}
                 </MoveFeedback>
                 {/* Naming the pattern is what makes a solved puzzle reusable on
                     a real board. Omitted entirely for themes we cannot describe
@@ -388,7 +402,16 @@ function PuzzlesPageInner() {
             )}
             {status === "incorrect" && (
               <div className="flex flex-col gap-2">
-                <MoveFeedback tone="incorrect">Not quite — that isn&apos;t mate. Take another look.</MoveFeedback>
+                {/* Gets more helpful with each attempt, never sterner — and
+                    only ever names the puzzle's own stored theme, never a
+                    generated explanation of why the move works. */}
+                <MoveFeedback tone="incorrect">
+                  {encourageAfterMiss({
+                    attempt: missCount,
+                    neutralTone,
+                    hint: puzzle.theme,
+                  })}
+                </MoveFeedback>
                 <Button tone="premium" variant="ghost" onClick={resetPuzzle} className="w-full">
                   Try Again
                 </Button>
@@ -396,9 +419,7 @@ function PuzzlesPageInner() {
             )}
             {status === "playing" && moveCount > 0 && (
               <MoveFeedback tone="neutral">
-                {movesRemaining === 1
-                  ? "Good move — now find the checkmate."
-                  : `Good move — ${movesRemaining} to go.`}
+                {progressNudge(movesRemaining, neutralTone)}
               </MoveFeedback>
             )}
 

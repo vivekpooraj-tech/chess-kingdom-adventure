@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { loadCompletedLessonIds, countCompleted } from "@/lib/learner/academyProgressClient";
 
 /**
  * Real completion status for one course, shown on the Learn page.
@@ -12,22 +13,10 @@ import { useEffect, useState } from "react";
  * There are no percentages here. A lesson is either complete or it is not, so
  * the chip counts completed lessons and says so.
  *
- * All instances share one request. Several chips render on the Learn page and
- * each firing its own fetch would put the page straight back into the
- * per-visit request pattern an earlier performance pass removed.
+ * The shared fetch these chips (and the learning path panel) all wait on lives
+ * in lib/learner/academyProgressClient.ts — one request per page visit, no
+ * matter how many islands render.
  */
-
-let inflight: Promise<Set<string>> | null = null;
-
-function loadCompleted(): Promise<Set<string>> {
-  if (!inflight) {
-    inflight = fetch("/api/academy/progress")
-      .then((r) => (r.ok ? r.json() : { completed: [] }))
-      .then((j: { completed?: string[] }) => new Set(j.completed ?? []))
-      .catch(() => new Set<string>());
-  }
-  return inflight;
-}
 
 export function CourseStatusChip({
   courseId,
@@ -40,9 +29,9 @@ export function CourseStatusChip({
 
   useEffect(() => {
     let cancelled = false;
-    loadCompleted().then((completed) => {
+    loadCompletedLessonIds().then((completed) => {
       if (cancelled) return;
-      setDone(lessonIds.filter((id) => completed.has(`${courseId}:${id}`)).length);
+      setDone(countCompleted(completed, courseId, lessonIds));
     });
     return () => {
       cancelled = true;

@@ -5,6 +5,7 @@ import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
 import { NextLessonCard } from "@/components/learner/NextLessonCard";
 import { CourseStatusChip } from "@/components/learner/CourseStatusChip";
+import { LearningPathPanel } from "@/components/learner/LearningPathPanel";
 import { getCourse } from "@/lib/academy/courses.server";
 
 /**
@@ -99,6 +100,10 @@ export default function LearnPage() {
           fills in only when the child has a real recurring weakness with a
           lesson that teaches it. See NextLessonCard. */}
       <NextLessonCard />
+
+      {/* Another client island, sharing the status chips' single
+          completed-ids request — the page stays static and unblocked. */}
+      <LearningPathPanel lessonIdsByCourse={courseLessonIds} />
 
       <Link href="/kingdom-map#journey" className="w-full block active:scale-[0.98] transition-transform duration-100">
         <PrimaryCard className="flex items-center gap-4">
