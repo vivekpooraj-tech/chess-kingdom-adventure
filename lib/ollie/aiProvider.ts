@@ -2,6 +2,7 @@ import type { ChatTurn } from "./types";
 import { localFallbackReply } from "./localFallback";
 import { callAnthropic, hasUsableAnthropicKey } from "./providers/anthropic";
 import { callGemini, hasUsableGeminiKey } from "./providers/gemini";
+import { recordOllieOutcome } from "./observability";
 
 export type OllieProviderName = "anthropic" | "development" | "fallback";
 
@@ -45,9 +46,13 @@ export async function generateOllieResponse(params: {
   if (provider === "anthropic") {
     const text = await callAnthropic(params);
     if (text) return { text, provider: "anthropic", usedFallback: false };
+    recordOllieOutcome({ kind: "fallback_used", reason: "provider_failed" });
   } else if (provider === "development") {
     const text = await callGemini(params);
     if (text) return { text, provider: "development", usedFallback: false };
+    recordOllieOutcome({ kind: "fallback_used", reason: "provider_failed" });
+  } else {
+    recordOllieOutcome({ kind: "fallback_used", reason: "provider_not_configured" });
   }
 
   return {

@@ -1,4 +1,5 @@
 import type { ProviderCall } from "./types";
+import { classifyFailure, recordOllieOutcome } from "../observability";
 
 // A real Anthropic key is a long opaque token (100+ chars) -- anything
 // shorter (an unfilled ".env" placeholder) can never be valid, and sending
@@ -20,7 +21,16 @@ export function hasUsableAnthropicKey(): boolean {
 
 export const callAnthropic: ProviderCall = async ({ systemPrompt, message, history }) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey.length < MIN_PLAUSIBLE_KEY_LENGTH) return null;
+  if (!apiKey || apiKey.length < MIN_PLAUSIBLE_KEY_LENGTH) {
+    // Never logs the key itself, or whether one was merely short vs absent
+    // beyond that one boolean pair — see FailureShape.
+    recordOllieOutcome({
+      kind: "provider_failure",
+      provider: "anthropic",
+      category: classifyFailure({ hasKey: !!apiKey, keyLooksPlausible: false }),
+    });
+    return null;
+  }
 
   const messages = [
     ...history.map((turn) => ({
@@ -53,9 +63,32 @@ export const callAnthropic: ProviderCall = async ({ systemPrompt, message, histo
     const data = await res.json();
     const text = data?.content?.find((c: { type: string }) => c.type === "text")?.text?.trim();
 
-    if (!res.ok || !text) return null;
+    if (!res.ok || !text) {
+      recordOllieOutcome({
+        kind: "provider_failure",
+        provider: "anthropic",
+        category: classifyFailure({
+          hasKey: true,
+          keyLooksPlausible: true,
+          httpStatus: res.status,
+          emptyText: res.ok && !text,
+        }),
+      });
+      return null;
+    }
+    recordOllieOutcome({ kind: "provider_success", provider: "anthropic" });
     return text;
-  } catch {
+  } catch (err) {
+    recordOllieOutcome({
+      kind: "provider_failure",
+      provider: "anthropic",
+      category: classifyFailure({
+        hasKey: true,
+        keyLooksPlausible: true,
+        wasAborted: (err as { name?: string })?.name === "AbortError",
+        threw: true,
+      }),
+    });
     return null;
   } finally {
     clearTimeout(timeout);
