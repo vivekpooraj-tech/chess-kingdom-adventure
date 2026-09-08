@@ -2,12 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
-import { resolveActiveChild, getSolvedPuzzleIds } from "@/lib/supabase/queries";
+import { resolveActiveChild, getSolvedPuzzleIds, getPuzzleSolveHistory, localDateString } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { getTacticsLibrary } from "@/lib/puzzles/tacticsLibrary.server";
 import { themeProgress, totalThemesSolved, startedThemeCount } from "@/lib/puzzles/tacticsProgress";
+import { computePuzzleStats, recentSolves } from "@/lib/puzzles/puzzleStats";
+import { labelForSolvedPuzzle } from "@/lib/puzzles/solveLabels.server";
 import { getSkill } from "@/lib/analysis/skills";
 import { TabPageShell } from "@/components/nav/TabPageShell";
+import { PuzzleProgressPanel } from "@/components/puzzles/PuzzleProgressPanel";
 import { TEXT } from "@/lib/designSystem";
 
 export const metadata = {
@@ -40,14 +43,32 @@ export default async function PuzzleThemesPage() {
   if (resolution.needsSelection) redirect("/choose-child");
   const child = resolution.child!;
 
-  const [library, solvedIds] = await Promise.all([
+  const [library, solvedIds, solveHistory] = await Promise.all([
     Promise.resolve(getTacticsLibrary()),
     getSolvedPuzzleIds(supabase, child.id),
+    getPuzzleSolveHistory(supabase, child.id),
   ]);
 
   const progress = themeProgress(library, solvedIds);
   const solved = totalThemesSolved(progress);
   const started = startedThemeCount(progress);
+
+  const stats = computePuzzleStats(
+    solveHistory.map((r) => ({ puzzleId: r.puzzleId, solvedAt: r.solvedAt, firstTry: r.firstTry, source: r.source })),
+    localDateString()
+  );
+  // Only the puzzles we can actually still label — a puzzle_id from a
+  // library that has since changed shape returns null and is dropped
+  // rather than shown as a blank/mystery row.
+  const recentDisplay = recentSolves(
+    solveHistory.map((r) => ({ puzzleId: r.puzzleId, solvedAt: r.solvedAt, firstTry: r.firstTry, source: r.source })),
+    6
+  )
+    .map((r) => {
+      const label = labelForSolvedPuzzle(r.puzzleId);
+      return label ? { theme: label.theme, emoji: label.emoji, firstTry: r.firstTry, solvedAt: r.solvedAt } : null;
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
 
   return (
     <TabPageShell maxWidth="wide">
@@ -64,6 +85,8 @@ export default async function PuzzleThemesPage() {
           </p>
         )}
       </header>
+
+      <PuzzleProgressPanel stats={stats} recent={recentDisplay} />
 
       <div
         className="auto-grid w-full"
