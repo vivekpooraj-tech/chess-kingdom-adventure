@@ -163,6 +163,14 @@ const prog = (currentDay, completedDays, totalDays) =>
   check("Home renders the Chess School card", /<ChessSchoolCard/.test(home));
   check("the card is fed real current_day", /currentDay=\{child\.current_day\}/.test(home));
   check("the card is fed real completedDays", /completedDays=\{completedDays\}/.test(home));
+  check("there is exactly one Chess School card on Home, not a duplicate", (home.match(/<ChessSchoolCard/g) || []).length === 1);
+  // Phase D: Chess School leads Home — "what's next" should default to
+  // "keep going" before a learner scrolls past the daily challenge/hero
+  // recommendation row to find it.
+  check(
+    "the Chess School card appears before the Daily Challenge card",
+    home.indexOf("<ChessSchoolCard") < home.indexOf("<DailyChallengeCard")
+  );
   check("the card computes, never hardcodes", /chessSchoolProgress\(/.test(card));
   check("no hardcoded progress fraction in the card", !/\b\d+\s*\/\s*30\b/.test(card));
 

@@ -214,6 +214,20 @@ export default async function KingdomMapPage() {
           </div>
         </div>
 
+        {/* Chess School leads Home (Phase D) — it's the flagship 30-day
+            course, and "what should I do next" should default to "keep
+            going" rather than making a learner scroll past three other
+            cards to find it. Same currentDay/completedDays/currentLesson
+            already computed above for the journey section below; moving
+            this here removed its old spot rather than duplicating it, so
+            there is exactly one Chess School progress card on the page. */}
+        <ChessSchoolCard
+          currentDay={child.current_day}
+          completedDays={completedDays}
+          currentLessonTitle={currentLesson?.title ?? null}
+          neutralTone={neutralTone}
+        />
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <DailyChallengeCard childId={child.id} />
           <div className="xl:col-span-2">
@@ -307,18 +321,6 @@ export default async function KingdomMapPage() {
             <h2 id="journey" className={`${TEXT.heading} scroll-mt-8 mb-4`}>
               Your Kingdom Journey {currentZone.emoji}
             </h2>
-            {/* The course header above the day cards. Drawn from the SAME
-                current_day and completedDays the cards below use, so the
-                "12 of 30" and the ticks can never disagree — and it costs no
-                extra query, since Home already has both. */}
-            <div className="mb-4">
-              <ChessSchoolCard
-                currentDay={child.current_day}
-                completedDays={completedDays}
-                currentLessonTitle={currentLesson?.title ?? null}
-                neutralTone={neutralTone}
-              />
-            </div>
             <KingdomMapCards
               lessons={LESSONS}
               currentDay={child.current_day}
