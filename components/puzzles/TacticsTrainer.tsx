@@ -14,6 +14,8 @@ import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChildCached, recordPuzzleLibrarySolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import type { TacticsPuzzle, TacticsPuzzleResponse } from "@/lib/puzzles/tacticsTypes";
+import { prefersNeutralHomeTone } from "@/lib/learner/experienceLevel";
+import { encourageAfterMiss, celebrateSolve } from "@/lib/puzzles/encouragement";
 
 /**
  * Tactics Trainer — the client for the 5,000-puzzle server-side library.
@@ -56,6 +58,7 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
   const [streak, setStreak] = useState(0);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>();
   const [pieceSetId, setPieceSetId] = useState<string | undefined>();
+  const [neutralTone, setNeutralTone] = useState(false);
 
   const childIdRef = useRef<string | null>(null);
   const seenRef = useRef<string[]>([]);
@@ -78,6 +81,12 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
         childIdRef.current = resolution.child?.id ?? null;
         setBoardSkinId(resolution.child?.board_skin_id ?? undefined);
         setPieceSetId(resolution.child?.piece_set_id ?? undefined);
+        setNeutralTone(
+          prefersNeutralHomeTone(
+            resolution.child?.experience_level,
+            resolution.child?.age_band
+          )
+        );
       } catch {
         /* non-fatal */
       }
@@ -270,8 +279,10 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
 
           {status === "wrong" && (
             <div className="flex flex-col gap-2">
+              {/* The hint is the skill this puzzle is actually filed under —
+                  real stored data, not a generated explanation. */}
               <MoveFeedback tone="incorrect">
-                Not the move this position needs. Look again — {skill.name.toLowerCase()}.
+                {encourageAfterMiss({ attempt: attempts, neutralTone, hint: skill.name })}
               </MoveFeedback>
               <Button tone="premium" variant="ghost" onClick={retry} className="w-full">
                 Try Again
@@ -282,7 +293,7 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
           {status === "solved" && (
             <div className="flex flex-col gap-2">
               <MoveFeedback tone="correct">
-                {streak >= 2 ? `Solved — that's ${streak} in a row, first try.` : "Solved."}
+                {celebrateSolve({ firstTry: attempts === 0, streak, neutralTone })}
               </MoveFeedback>
               <div className="rounded-premiumBtn border border-premium-gold/20 bg-premium-navy/70 p-3 flex flex-col gap-1">
                 <p className={`${TEXT.meta} text-premium-gold`}>The line</p>
