@@ -33,6 +33,7 @@ import { HomeHeader } from "@/components/home/HomeHeader";
 import { HeroJourneyCard } from "@/components/home/HeroJourneyCard";
 import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
 import { DailyQuestsCard } from "@/components/home/DailyQuestsCard";
+import { ChessSchoolCard } from "@/components/school/ChessSchoolCard";
 import { DestinationCard } from "@/components/home/DestinationCard";
 import { PlayIcon, AcademyIcon, DiscoverIcon } from "@/components/nav/icons";
 import { StatCardCompact } from "@/components/ui/StatCard";
@@ -139,6 +140,10 @@ export default async function KingdomMapPage() {
 
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
   const currentZone = getZoneForDay(Math.min(child.current_day, LESSONS.length));
+  // The lesson the learner is actually on, so Chess School can name it
+  // ("Day 12 of 30 · The Knight's Secret Outpost") rather than showing a bare
+  // number. Looked up from the already-imported LESSONS — no query.
+  const currentLesson = LESSONS.find((l) => l.dayNumber === child.current_day) ?? null;
 
   // Turn a recurring weakness into a concrete destination, reusing the Game
   // Review's skill-to-lesson mapping so Home, Learn and the review all point
@@ -296,6 +301,18 @@ export default async function KingdomMapPage() {
             <h2 id="journey" className={`${TEXT.heading} scroll-mt-8 mb-4`}>
               Your Kingdom Journey {currentZone.emoji}
             </h2>
+            {/* The course header above the day cards. Drawn from the SAME
+                current_day and completedDays the cards below use, so the
+                "12 of 30" and the ticks can never disagree — and it costs no
+                extra query, since Home already has both. */}
+            <div className="mb-4">
+              <ChessSchoolCard
+                currentDay={child.current_day}
+                completedDays={completedDays}
+                currentLessonTitle={currentLesson?.title ?? null}
+                neutralTone={neutralTone}
+              />
+            </div>
             <KingdomMapCards
               lessons={LESSONS}
               currentDay={child.current_day}

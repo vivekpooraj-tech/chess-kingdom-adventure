@@ -7,6 +7,7 @@ import { NextLessonCard } from "@/components/learner/NextLessonCard";
 import { CourseStatusChip } from "@/components/learner/CourseStatusChip";
 import { LearningPathPanel } from "@/components/learner/LearningPathPanel";
 import { getCourse } from "@/lib/academy/courses.server";
+import { COURSE_NAME, COURSE_TITLE, COURSE_TAGLINE } from "@/lib/school/chessSchool";
 
 /**
  * Learn (Phase 19) — a single combined index over the existing Academy and
@@ -109,10 +110,16 @@ export default function LearnPage() {
         <PrimaryCard className="flex items-center gap-4">
           <span className="text-3xl flex-none">🗺️</span>
           <div className="flex-1">
-            <p className={`${TEXT.meta} text-premium-gold`}>Kingdom Journey</p>
+            {/* Chess School naming, but no progress numbers here: this page is
+                deliberately static with no per-child fetch, and a hardcoded
+                "12 of 30" would be exactly the fake progress that is not
+                allowed. The real figures live on Home, where the data already
+                is — this card only names the course and points at it. */}
+            <p className={`${TEXT.meta} text-premium-gold`}>🏫 {COURSE_NAME}</p>
             <p className="font-classic-display text-lg text-premium-ivory mt-1">
-              Story-based lessons and guided chess basics
+              {COURSE_TITLE}
             </p>
+            <p className={`${TEXT.caption} normal-case mt-1`}>{COURSE_TAGLINE}</p>
           </div>
         </PrimaryCard>
       </Link>
