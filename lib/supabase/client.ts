@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { isAuthRetryableFetchError, type SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseConfig } from "./env";
 
 /**
  * Use this in Client Components ("use client"). It reads/writes the auth
@@ -7,10 +8,12 @@ import { isAuthRetryableFetchError, type SupabaseClient } from "@supabase/supaba
  * below by middleware.ts.
  */
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // NEXT_PUBLIC_ values are inlined at BUILD time, so if these were unset when
+  // the bundle was built, no amount of fixing them afterwards helps until a
+  // redeploy. The thrown message says which variable is wrong, which is the
+  // difference between a five-minute fix and an afternoon.
+  const { url, anonKey } = getSupabaseConfig();
+  return createBrowserClient(url, anonKey);
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

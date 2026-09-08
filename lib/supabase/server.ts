@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
 import { isAuthRetryableFetchError, type SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseConfig } from "./env";
 
 /**
  * Use this in Server Components, Route Handlers, and Server Actions.
@@ -10,10 +11,16 @@ import { isAuthRetryableFetchError, type SupabaseClient } from "@supabase/supaba
  */
 export function createClient() {
   const cookieStore = cookies();
+  // Validated first, so a misconfiguration throws a message naming the exact
+  // variable rather than the SDK's context-free "Invalid supabaseUrl". Unlike
+  // middleware this does throw: a Server Component that cannot reach the
+  // database has nothing honest to render, and failing loudly on one route
+  // beats rendering a page that silently looks empty.
+  const { url, anonKey } = getSupabaseConfig();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anonKey,
     {
       cookies: {
         get(name: string) {

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { BRAND } from "@/lib/brand";
 import { NextRequest, NextResponse } from "next/server";
+import { readSupabaseConfig, describeSupabaseConfigProblem, logSupabaseConfigOnce } from "@/lib/supabase/env";
 
 const ANDROID_PACKAGE_ID = "com.chesskingdom.adventure";
 
@@ -121,10 +122,20 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
+    // A misconfiguration here would otherwise throw mid-exchange and show the
+    // user a raw 500 at the end of a Google sign-in. Send them back to the
+    // sign-in screen with the normal failure state instead, and log the real
+    // cause for whoever has to fix it.
+    const configResult = readSupabaseConfig();
+    if (!configResult.ok) {
+      logSupabaseConfigOnce(describeSupabaseConfigProblem(configResult.problems));
+      return NextResponse.redirect(new URL(failureUrl, request.url));
+    }
+
     const response = NextResponse.redirect(new URL(safeNext, request.url));
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      configResult.config.url,
+      configResult.config.anonKey,
       {
         cookies: {
           get(name: string) {
