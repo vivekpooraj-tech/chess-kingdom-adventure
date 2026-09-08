@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Chess } from "chess.js";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { ChessFocusLayout } from "@/components/chess/ChessFocusLayout";
@@ -259,6 +260,13 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
             </span>
             <SideToMoveIndicator color={puzzle.sideToMove} tone="premium" />
           </div>
+
+          <Link
+            href="/puzzles/tactics/themes"
+            className="self-start font-classic-body text-[11px] text-premium-ivory/50 hover:text-premium-gold underline underline-offset-2 min-h-[44px] flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded"
+          >
+            🎯 Browse all themes
+          </Link>
 
           {/* Only shown when the server actually chose this puzzle for a
               recorded weakness — never as generic encouragement. */}
