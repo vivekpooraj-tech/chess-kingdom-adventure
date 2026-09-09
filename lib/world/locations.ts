@@ -117,18 +117,25 @@ export const WORLD_LOCATIONS: readonly WorldLocation[] = [
       /*
        * FRAMED AGAINST THE LAYOUT, NOT AGAINST TASTE.
        *
-       * Produced from the original 841x1870 illustration by:
+       * Produced from the original 787x1998 illustration by:
        *
-       *   node scripts/encode-world-art.js london-eye <source> 679:1510:105:360
+       *   node scripts/encode-world-art.js london-eye <source> 787:1750:0:185
        *
        * The crop is not cosmetic. The board covers roughly 17%-65% of the
        * screen's height, so the opponent's face has to clear the TOP of that
-       * band or the child is playing against an empty chair. In the original
-       * the table's edge sits at 42% of the frame and the boy's face at
-       * 21%-33% -- both squarely behind the board. Lifting the window by 360
-       * source pixels puts his whole face in the strip above the board while
-       * keeping the wheel on the left and Big Ben on the right, which are the
-       * two things that say London at a glance.
+       * band or the child is playing against an empty chair. Measured on the
+       * original, his chin sits at 21.8% and the table's edge at 33.5%, so
+       * the face would have been behind the board. Lifting the window 185
+       * source pixels puts his chin at 14.3% -- clear of the board's 16.6%
+       * with room to spare -- and his hair at 4.9%.
+       *
+       * Note the width: 787 is the FULL width of the original, because
+       * 787 x 1750 is already exactly 9:20. Nothing is cropped sideways, so
+       * the wheel keeps its capsules on the left and Big Ben keeps its clock
+       * face on the right. An earlier illustration framed lower and had to be
+       * narrowed by a fifth to lift the face, which cost most of the wheel;
+       * getting the framing right in the generator is worth more than any
+       * amount of cropping afterwards.
        *
        * The plate is cut to the phone's own 9:20 so it maps almost 1:1 and
        * nothing important is cropped away at run time. "top" is what keeps
