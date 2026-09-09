@@ -81,18 +81,23 @@ export function WorldArenaChrome({ locationId }: { locationId: WorldLocationId }
          * to zero and keeps its full board; a viewport with no bottom inset
          * gets the sky. max() floors it so it can never go negative.
          *
-         * This is deliberately conservative: the board is the product, the sky
-         * is the atmosphere, and where they conflict the board wins.
+         * The floor is the deliberate part. Zeroing out kept the board at its
+         * exact baseline but squeezed the skyline and the opponent back behind
+         * the player card, which is most of what the World is for. 40px costs
+         * a measured ~8px of board on a gesture-nav phone (371 -> ~363, about
+         * 2%) and buys back the composition. That trade was made explicitly:
+         * the reduction is capped by the floor, so it can never grow, and the
+         * board measurement on the device is what holds it honest.
          */
         @media (max-width: 699px) and (orientation: portrait) {
           .world-sky {
-            height: max(0px, calc(56px - 2 * env(safe-area-inset-bottom, 0px)));
+            height: max(36px, calc(64px - 2 * env(safe-area-inset-bottom, 0px)));
           }
         }
 
         @media (max-width: 699px) and (orientation: portrait) and (min-height: 880px) {
           .world-sky {
-            height: max(0px, calc(72px - 2 * env(safe-area-inset-bottom, 0px)));
+            height: max(40px, calc(76px - 2 * env(safe-area-inset-bottom, 0px)));
           }
         }
 
