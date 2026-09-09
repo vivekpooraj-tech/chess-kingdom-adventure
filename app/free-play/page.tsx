@@ -319,6 +319,29 @@ export default function FreePlayPage() {
       <GameArenaLayout
         title={`${difficultyInfo.label} Match`}
         onExit={() => setView({ status: "picking-difficulty" })}
+        /*
+         * Chess Mind World, full-bleed behind the whole arena.
+         *
+         * It used to render inside the board slot, which meant the scene was
+         * scoped to the board's own bounding box — and the board's opaque skin
+         * then covered 83% of it. Measured on a 411x914 phone: 50% of the
+         * screen allocated to the scene, 42% of it hidden under the board,
+         * leaving 8% visible. That is why a location read as a coloured border.
+         *
+         * `boardMeta` is used because it is a free slot rendered inside the
+         * arena shell, and a `fixed inset-0` child of it escapes to the
+         * viewport. `-z-10` puts it above the shell's own background but below
+         * every piece of UI in the shell, so nothing is covered and no
+         * protected layout file has to change. The board's geometry is
+         * untouched: this renders no space and takes none.
+         */
+        boardMeta={
+          worldLocationId ? (
+            <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
+              <WorldSceneBackdrop locationId={worldLocationId} scrim={0.5} />
+            </div>
+          ) : undefined
+        }
         opponentRow={
           <div className="flex items-center gap-2 font-classic-body text-sm text-premium-ivory/70">
             <span className="text-xl">{difficultyInfo.emoji}</span>
@@ -332,19 +355,6 @@ export default function FreePlayPage() {
         }
         renderBoard={(boardSize) => (
           <div className="relative w-full flex flex-col items-center gap-2">
-            {/* Chess Mind World: a decorative backdrop rendered behind the
-                board within this slot only — it never wraps the header, the
-                captured-piece row or the difficulty controls, and the board
-                itself (with its own opaque skin) sits above it at a higher
-                stacking context, so the scene frames the board without ever
-                being underneath the pieces. Absent entirely when no world
-                location was chosen. */}
-            {worldLocationId && (
-              <WorldSceneBackdrop
-                locationId={worldLocationId}
-                className="rounded-2xl -m-3 sm:-m-4"
-              />
-            )}
             {/*
               This is a VIEW-ONLY history control, not a takeback/undo. The
               live `game` chess.js instance inside ChessBoard is keyed only

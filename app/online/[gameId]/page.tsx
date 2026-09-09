@@ -708,6 +708,20 @@ export default function OnlineGamePage() {
       <>
       <GameArenaLayout
         title={arenaTitle}
+        /* Chess Mind World, full-bleed behind the arena — the same mount Free
+         * Play uses, for the same reason: rendered inside the board slot the
+         * scene was scoped to the board's own box and the opaque board covered
+         * 83% of it. `boardMeta` is a free slot inside the shell; a fixed
+         * child of it escapes to the viewport, and -z-10 keeps it above the
+         * shell's background but below every piece of UI. Renders no space,
+         * takes none, and the board's geometry is untouched. */
+        boardMeta={
+          worldLocationId ? (
+            <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
+              <WorldSceneBackdrop locationId={worldLocationId} scrim={0.5} />
+            </div>
+          ) : undefined
+        }
         onExit={() =>
           router.push(game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map")
         }
@@ -748,17 +762,6 @@ export default function OnlineGamePage() {
              wrapper the column's width breaks the circularity, which is why
              Free Play's wrapper is w-full too. */
           <div className="relative w-full flex flex-col items-center">
-            {/* Behind the board within this slot only — never the header, the
-                player cards or the side panel. The board paints above it (later
-                sibling, own opaque skin), and the backdrop is pointer-events
-                none and aria-hidden, so it can neither cover a piece nor
-                swallow a tap. Absent entirely when no location is chosen. */}
-            {worldLocationId && (
-              <WorldSceneBackdrop
-                locationId={worldLocationId}
-                className="rounded-2xl -m-3 sm:-m-4"
-              />
-            )}
             <ChessBoard
               fen={game.fen}
               playableColor={myColor}

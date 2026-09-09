@@ -47,6 +47,7 @@ export function WorldSceneBackdrop({
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  const s = Math.min(Math.max(scrim, 0), 0.9);
   const location = getWorldLocation(locationId);
   if (!location) return null;
 
@@ -59,9 +60,23 @@ export function WorldSceneBackdrop({
       data-world-location={location.id}
     >
       <Scene simplify={simplify} />
+      {/*
+        Readability scrim, concentrated where the pieces are rather than
+        spread flat over everything.
+
+        A flat fill dimmed the horizon, the sky and the landmark just as hard
+        as the squares, which is most of why the World read as a muddy border
+        instead of a place. This keeps the same protection under the board —
+        the ellipse is centred on the board band — and lets the scene keep its
+        contrast everywhere the eye is not reading a piece.
+      */}
       <div
-        className="absolute inset-0 bg-premium-midnight"
-        style={{ opacity: Math.min(Math.max(scrim, 0), 0.9) }}
+        className="absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse 92% 46% at 50% 34%, rgba(8,6,18,${s}) 0%, rgba(8,6,18,${(
+            s * 0.72
+          ).toFixed(3)}) 52%, rgba(8,6,18,${(s * 0.22).toFixed(3)}) 100%)`,
+        }}
       />
     </div>
   );

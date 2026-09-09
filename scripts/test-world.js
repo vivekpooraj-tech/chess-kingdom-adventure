@@ -399,16 +399,33 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   );
   check(
     "the online backdrop renders only when a location resolved",
-    /\{worldLocationId && \(\s*<WorldSceneBackdrop/.test(onlinePage)
+    /worldLocationId \? \([\s\S]{0,300}<WorldSceneBackdrop/.test(onlinePage) &&
+      /\) : undefined/.test(onlinePage)
   );
   check("the online backdrop is passed that id", /locationId=\{worldLocationId\}/.test(onlinePage));
   check(
     "the online page never branches on a specific location id",
     !/"london-eye"|"chaturanga"/.test(onlinePage)
   );
+  // The backdrop is deliberately full-bleed now, not scoped to the board slot:
+  // inside the slot it was covered by the board's own opaque skin (measured:
+  // 8% of the screen visible). What has to stay true is that going full-bleed
+  // cannot cover or capture any UI.
   check(
-    "the online backdrop is contained in the board slot, not the page root",
-    onlinePage.indexOf("<WorldSceneBackdrop") > onlinePage.indexOf("renderBoard={(boardSize)")
+    "the online backdrop is mounted full-bleed",
+    /boardMeta=\{[\s\S]{0,400}fixed inset-0/.test(onlinePage)
+  );
+  check(
+    "the full-bleed backdrop sits below every piece of UI",
+    /fixed inset-0 -z-10/.test(onlinePage)
+  );
+  check(
+    "the full-bleed backdrop cannot capture a tap",
+    /pointer-events-none fixed inset-0/.test(onlinePage)
+  );
+  check(
+    "free play mounts it the same way",
+    /pointer-events-none fixed inset-0 -z-10/.test(freePlay)
   );
 
   // 5. One backdrop architecture, still.
