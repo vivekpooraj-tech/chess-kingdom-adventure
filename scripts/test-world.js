@@ -394,15 +394,15 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
     /setWorldLocationId\(readSelectedLocation\(\)\)/.test(onlinePage)
   );
   check(
-    "the online page imports the canonical backdrop",
-    /import \{ WorldSceneBackdrop \} from "@\/components\/world\/WorldSceneBackdrop"/.test(onlinePage)
+    "the online page reaches the backdrop only through the World chrome",
+    /import \{ WorldArenaChrome \} from "@\/components\/world\/WorldArenaChrome"/.test(onlinePage)
   );
   check(
-    "the online backdrop renders only when a location resolved",
-    /worldLocationId \? \([\s\S]{0,300}<WorldSceneBackdrop/.test(onlinePage) &&
-      /\) : undefined/.test(onlinePage)
+    "World chrome renders only when a location resolved",
+    /worldLocationId \? <WorldArenaChrome/.test(onlinePage) &&
+      /worldLocationId \? <WorldArenaChrome/.test(freePlay)
   );
-  check("the online backdrop is passed that id", /locationId=\{worldLocationId\}/.test(onlinePage));
+  check("the chrome is passed that id", /locationId=\{worldLocationId\}/.test(onlinePage));
   check(
     "the online page never branches on a specific location id",
     !/"london-eye"|"chaturanga"/.test(onlinePage)
@@ -412,20 +412,13 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   // 8% of the screen visible). What has to stay true is that going full-bleed
   // cannot cover or capture any UI.
   check(
-    "the online backdrop is mounted full-bleed",
-    /boardMeta=\{[\s\S]{0,400}fixed inset-0/.test(onlinePage)
+    "the backdrop is mounted full-bleed, below all UI, and cannot capture a tap",
+    /pointer-events-none fixed inset-0 -z-10/.test(readSrc("components", "world", "WorldArenaChrome.tsx"))
   );
   check(
-    "the full-bleed backdrop sits below every piece of UI",
-    /fixed inset-0 -z-10/.test(onlinePage)
-  );
-  check(
-    "the full-bleed backdrop cannot capture a tap",
-    /pointer-events-none fixed inset-0/.test(onlinePage)
-  );
-  check(
-    "free play mounts it the same way",
-    /pointer-events-none fixed inset-0 -z-10/.test(freePlay)
+    "both game routes mount it through boardMeta",
+    /boardMeta=\{[\s\S]{0,200}WorldArenaChrome/.test(onlinePage) &&
+      /boardMeta=\{[\s\S]{0,200}WorldArenaChrome/.test(freePlay)
   );
 
   // 5. One backdrop architecture, still.
@@ -442,10 +435,24 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
     fs.existsSync(path.join(process.cwd(), "components", "world", "scenes", "ChaturangaScene.tsx")) &&
       !fs.existsSync(path.join(process.cwd(), "components", "world", "ChaturangaScene.tsx"))
   );
+  // Both game routes now go through WorldArenaChrome, which is the single
+  // consumer of the single backdrop — so "one backdrop architecture" is
+  // asserted one level up rather than at each page.
+  const chrome = readSrc("components", "world", "WorldArenaChrome.tsx");
   check(
-    "free play and the online game use the same backdrop component",
-    /from "@\/components\/world\/WorldSceneBackdrop"/.test(freePlay) &&
-      /from "@\/components\/world\/WorldSceneBackdrop"/.test(onlinePage)
+    "free play and the online game mount the same World chrome",
+    /from "@\/components\/world\/WorldArenaChrome"/.test(freePlay) &&
+      /from "@\/components\/world\/WorldArenaChrome"/.test(onlinePage)
+  );
+  check(
+    "that chrome is the one thing that renders the backdrop",
+    /from "\.\/WorldSceneBackdrop"/.test(chrome) &&
+      !/WorldSceneBackdrop/.test(freePlay) &&
+      !/WorldSceneBackdrop/.test(onlinePage)
+  );
+  check(
+    "the World chrome never touches board geometry",
+    !/boardSize|renderBoard|data-square|\.board-outer|chess-focus-board/.test(chrome)
   );
   check("the backdrop cannot swallow a tap", /pointer-events-none/.test(backdrop));
   check("the backdrop is hidden from assistive tech", /aria-hidden="true"/.test(backdrop));

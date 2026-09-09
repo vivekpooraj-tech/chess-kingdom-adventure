@@ -21,7 +21,7 @@ import { TEXT } from "@/lib/designSystem";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import type { Difficulty } from "@/lib/chess-engine/stockfishEngine";
 import type { CompletedGameRecord, PlayedMove } from "@/lib/analysis/gameAnalysis";
-import { WorldSceneBackdrop } from "@/components/world/WorldSceneBackdrop";
+import { WorldArenaChrome } from "@/components/world/WorldArenaChrome";
 import { getWorldLocation, type WorldLocationId } from "@/lib/world/locations";
 import { recordGameStarted, recordGameWon } from "@/lib/world/passport";
 
@@ -336,11 +336,7 @@ export default function FreePlayPage() {
          * untouched: this renders no space and takes none.
          */
         boardMeta={
-          worldLocationId ? (
-            <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
-              <WorldSceneBackdrop locationId={worldLocationId} scrim={0.5} />
-            </div>
-          ) : undefined
+          worldLocationId ? <WorldArenaChrome locationId={worldLocationId} /> : undefined
         }
         opponentRow={
           <div className="flex items-center gap-2 font-classic-body text-sm text-premium-ivory/70">

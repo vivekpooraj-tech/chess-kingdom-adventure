@@ -29,7 +29,7 @@ import {
 } from "@/lib/online/rematch";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
 import { PlayerCard } from "@/components/game/PlayerCard";
-import { WorldSceneBackdrop } from "@/components/world/WorldSceneBackdrop";
+import { WorldArenaChrome } from "@/components/world/WorldArenaChrome";
 import { readSelectedLocation } from "@/lib/world/passport";
 import type { WorldLocationId } from "@/lib/world/locations";
 import { LiveChessClock } from "@/components/game/ChessClock";
@@ -716,11 +716,7 @@ export default function OnlineGamePage() {
          * shell's background but below every piece of UI. Renders no space,
          * takes none, and the board's geometry is untouched. */
         boardMeta={
-          worldLocationId ? (
-            <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
-              <WorldSceneBackdrop locationId={worldLocationId} scrim={0.5} />
-            </div>
-          ) : undefined
+          worldLocationId ? <WorldArenaChrome locationId={worldLocationId} /> : undefined
         }
         onExit={() =>
           router.push(game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map")

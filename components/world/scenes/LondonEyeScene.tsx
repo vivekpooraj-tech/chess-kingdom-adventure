@@ -83,13 +83,18 @@ export default function LondonEyeScene({ simplify = false }: { simplify?: boolea
       />
 
       {/*
-        THE WHEEL. Large enough to be a landmark rather than a motif: the hub
-        sits behind the opponent's head and the rim runs off both edges of the
-        screen, so the player is inside the structure instead of looking at a
-        picture of it. Drawn in its own square viewBox and sized in vw, so it
-        keeps its circle at every aspect ratio instead of being squashed.
+        THE WHEEL. Sized so the rim actually crosses the sky.
+
+        The first attempt made it enormous — 185vw — on the theory that bigger
+        reads as more monumental. It read as nothing at all: at that size the
+        circle's top and sides all fell outside the viewport and the only part
+        on screen was the lower arc, hidden behind the board. A landmark you
+        cannot see is not a landmark. This diameter puts the crown of the rim
+        in the upper sky and both shoulders of the arc near the screen edges,
+        with the hub behind the opponent, which is what makes the wheel read
+        as something you are sitting inside.
       */}
-      <div className="absolute left-1/2 top-[26%] h-[210vw] w-[210vw] -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute left-1/2 top-[15%] h-[108vw] w-[108vw] -translate-x-1/2 -translate-y-1/2">
         <svg viewBox="-100 -100 200 200" className="h-full w-full">
           <circle r={86} className="fill-none stroke-[#dce3f2]/60" strokeWidth={1.1} />
           <circle r={80} className="fill-none stroke-[#dce3f2]/28" strokeWidth={0.5} />
@@ -117,7 +122,7 @@ export default function LondonEyeScene({ simplify = false }: { simplify?: boolea
       <svg
         viewBox="0 0 400 120"
         preserveAspectRatio="none"
-        className="absolute inset-x-0 top-[41%] h-[15%] w-full"
+        className="absolute inset-x-0 top-[24%] h-[13%] w-full"
       >
         <g className="fill-[#150f28]">
           {Array.from({ length: 26 }).map((_, i) => {
@@ -174,17 +179,17 @@ export default function LondonEyeScene({ simplify = false }: { simplify?: boolea
       <svg
         viewBox="0 0 200 120"
         preserveAspectRatio="xMidYMax meet"
-        className="world-opponent absolute left-1/2 top-0 h-[15%] w-[62%] -translate-x-1/2"
+        className="world-opponent absolute left-1/2 top-[7%] h-[19%] w-[54%] -translate-x-1/2"
       >
         <defs>
           <linearGradient id="cmLeRim" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#ffcf9a" stopOpacity="0.55" />
-            <stop offset="55%" stopColor="#ff9d6e" stopOpacity="0.18" />
+            <stop offset="0%" stopColor="#ffd9ae" stopOpacity="0.95" />
+            <stop offset="45%" stopColor="#ff9d6e" stopOpacity="0.45" />
             <stop offset="100%" stopColor="#ff9d6e" stopOpacity="0" />
           </linearGradient>
         </defs>
         {/* Rim light: the same silhouette, slightly larger, behind. */}
-        <g transform="translate(100 120) scale(1.06) translate(-100 -120)">
+        <g transform="translate(100 120) scale(1.1) translate(-100 -120)">
           <path
             d="M100 26 c14 0 24 11 24 25 c0 9-4 16-9 20 c19 6 33 18 39 33 c3 7 5 11 5 16 H41 c0-5 2-9 5-16 c6-15 20-27 39-33 c-5-4-9-11-9-20 c0-14 10-25 24-25 Z"
             fill="url(#cmLeRim)"
@@ -281,24 +286,14 @@ export default function LondonEyeScene({ simplify = false }: { simplify?: boolea
           }
         }
         /*
-         * The opponent is only drawn where there is room for them.
+         * The opponent is drawn wherever there is sky to seat them in.
          *
-         * Measured on a 411x914 phone: the board runs 8%-52% of the screen and
-         * the 76px above it is already the arena header and the opponent row.
-         * A head-and-shoulders silhouette in that strip does not read as a
-         * person seated across a table — it reads as a smudge behind the
-         * title, which is worse than no figure at all. Landscape and tablet
-         * layouts put the board in a column and leave real space, so the
-         * figure appears there.
+         * The first attempt hid them on phones, because the 76px above the
+         * board was already the arena header and there was nowhere to put a
+         * person. WorldArenaChrome now opens real canvas there (a spacer above
+         * the board, free because the board is width-limited in portrait), so
+         * the figure has somewhere to be and is shown.
          */
-        .world-opponent {
-          display: none;
-        }
-        @media (min-width: 700px), (orientation: landscape) {
-          .world-opponent {
-            display: block;
-          }
-        }
         @media (prefers-reduced-motion: reduce) {
           .world-wheel,
           .world-river {
