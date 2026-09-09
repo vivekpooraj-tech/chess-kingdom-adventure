@@ -116,30 +116,98 @@ export default function LondonEyeScene({ simplify = false }: { simplify?: boolea
       </div>
 
       {/*
-        THE CITY, along the horizon at 56%. Deliberately low contrast: it is
-        the furthest plane and must never pull the eye off the board.
+        ATMOSPHERIC HAZE at the horizon. Warm, low-contrast, and drawn before
+        the skyline so the buildings sit IN it rather than on top of it — this
+        is the layer that separates "far away" from "near", and it is what lets
+        the near-black opponent read as much closer than the city.
+      */}
+      <div
+        className="absolute inset-x-0 top-[3%] h-[14%]"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(255,176,124,0.34) 0%, rgba(255,150,110,0.14) 45%, transparent 100%)",
+        }}
+      />
+
+      {/*
+        THE SKYLINE. Original silhouettes in the architectural language of the
+        city — a clock tower, a domed cathedral, a tapering glass spire, a
+        bridge — rather than traced outlines of specific buildings, which is
+        the same line every other element in this scene holds.
+
+        Placed in the band that is actually on screen, which is narrower than
+        it looks: measured at 411x914 the header takes 0-48, the sky spacer
+        gives 48-152, and the opponent's card starts at 152. Everything below
+        that is card and board. A first attempt at 146-256 was invisible for
+        exactly that reason. Kept low-contrast on purpose: it is the furthest
+        plane and must never pull the eye off the squares. Scale is the point
+        of it — set against buildings, the wheel stops being an abstract circle
+        and becomes something enormous.
       */}
       <svg
-        viewBox="0 0 400 120"
-        preserveAspectRatio="none"
-        className="absolute inset-x-0 top-[24%] h-[13%] w-full"
+        viewBox="0 0 400 100"
+        preserveAspectRatio="xMidYMax slice"
+        className="absolute inset-x-0 top-[5.5%] h-[11%] w-full"
       >
-        <g className="fill-[#150f28]">
-          {Array.from({ length: 26 }).map((_, i) => {
-            const w = 8 + ((i * 7) % 13);
-            const h = 26 + ((i * 31) % 54);
-            return <rect key={i} x={i * 16 - 6} y={120 - h} width={w} height={h} rx={1} />;
+        <g className="fill-[#1a1230]">
+          {/* Ordinary blocks, so the landmarks have a city to stand in. */}
+          {Array.from({ length: 22 }).map((_, i) => {
+            const w = 9 + ((i * 7) % 14);
+            // The middle of the horizon is kept low so the opponent reads
+            // against sky rather than against a wall of rooftops.
+            const centreDip = i >= 8 && i <= 13 ? 0.45 : 1;
+            const h = (14 + ((i * 31) % 30)) * centreDip;
+            return <rect key={i} x={i * 19 - 8} y={100 - h} width={w} height={h} rx={0.8} />;
           })}
-          <rect x={54} y={28} width={11} height={92} rx={2} />
-          <polygon points="300,120 310,44 320,120" />
+
+          {/* A clock tower: square shaft, belfry, pitched spire. */}
+          <rect x={28} y={34} width={15} height={66} />
+          <rect x={25} y={30} width={21} height={7} rx={1} />
+          <polygon points="25,30 35.5,8 46,30" />
+          <rect x={34.5} y={2} width={2} height={7} />
+
+          {/*
+            A dome on a drum, with a lantern — moved off-centre deliberately.
+            Centred, it sat directly behind the opponent's head and the two
+            silhouettes merged into one shape: the person disappeared into the
+            architecture. The middle of the frame belongs to the player.
+          */}
+          <rect x={96} y={70} width={50} height={30} />
+          <path d="M96 72 C 96 46 146 46 146 72 Z" />
+          <rect x={118} y={32} width={6} height={12} />
+          <circle cx={121} cy={30} r={3.6} />
+
+          {/* A tapering glass spire. */}
+          <polygon points="300,100 309,18 318,100" />
+
+          {/* A second, blunter tower for rhythm. */}
+          <rect x={344} y={48} width={18} height={52} rx={1} />
         </g>
-        <g className="fill-[#ffca7a]/55">
+
+        {/* The clock face — the one warm point in the far plane, and the
+            cheapest possible "this is that city" cue. */}
+        <circle cx={35.5} cy={44} r={4.6} className="fill-[#ffd9a0]/85" />
+        <circle cx={35.5} cy={44} r={4.6} className="fill-none stroke-[#1a1230]" strokeWidth={0.8} />
+
+        {/* Lit windows, deterministic. */}
+        <g className="fill-[#ffca7a]/45">
           {Array.from({ length: windows }).map((_, i) => {
             if (i % 4 !== 0) return null;
-            const x = ((i * 29) % 384) + 6;
-            const y = 74 + ((i * 13) % 40);
-            return <rect key={i} x={x} y={y} width={1.6} height={2.4} />;
+            const x = ((i * 29) % 388) + 4;
+            const y = 74 + ((i * 13) % 22);
+            return <rect key={i} x={x} y={y} width={1.5} height={2} />;
           })}
+        </g>
+
+        {/* A bridge crossing the water, with its lamps. */}
+        <g>
+          <rect x={0} y={92} width={400} height={3} className="fill-[#241839]" />
+          {Array.from({ length: simplify ? 7 : 13 }).map((_, i) => (
+            <g key={i}>
+              <rect x={i * 32 + 6} y={95} width={1.4} height={5} className="fill-[#241839]" />
+              <circle cx={i * 32 + 6.7} cy={90} r={1.1} className="fill-[#ffd9a0]/70" />
+            </g>
+          ))}
         </g>
       </svg>
 
@@ -179,7 +247,7 @@ export default function LondonEyeScene({ simplify = false }: { simplify?: boolea
       <svg
         viewBox="0 0 200 120"
         preserveAspectRatio="xMidYMax meet"
-        className="world-opponent absolute left-1/2 top-[7%] h-[19%] w-[54%] -translate-x-1/2"
+        className="world-opponent absolute left-1/2 top-[7%] h-[19%] w-[42%] -translate-x-1/2"
       >
         <defs>
           <linearGradient id="cmLeRim" x1="0" y1="0" x2="0" y2="1">
