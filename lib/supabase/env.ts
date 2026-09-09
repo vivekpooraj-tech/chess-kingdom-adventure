@@ -161,8 +161,33 @@ export function normalizeSupabaseAnonKey(
  * callers decide what a bad config means for them, which is the whole point:
  * middleware degrades, everything else fails loudly.
  */
+/**
+ * The two public values, named LITERALLY.
+ *
+ * This function is the difference between a working browser bundle and a dead
+ * one. Next.js replaces `process.env.NEXT_PUBLIC_FOO` with the value at build
+ * time, but only where the source says exactly that — a dynamic lookup like
+ * `env[SUPABASE_URL_VAR]` is left alone, and in the browser `process.env`
+ * carries nothing else. Defaulting straight to `process.env` therefore handed
+ * readSupabaseConfig an empty object on the client, every caller threw
+ * "Configuration invalid", and the whole app failed to hydrate while the
+ * server was perfectly configured.
+ *
+ * Naming both variables here is what puts their values in the bundle. The
+ * dynamic reads below are then reading from this object, not from the stub.
+ *
+ * Evaluated per call rather than hoisted to a module constant so the server,
+ * where process.env is real and mutable, is never served a stale snapshot.
+ */
+function publicSupabaseEnv(): Record<string, string | undefined> {
+  return {
+    [SUPABASE_URL_VAR]: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    [SUPABASE_ANON_KEY_VAR]: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  };
+}
+
 export function readSupabaseConfig(
-  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>
+  env: Record<string, string | undefined> = publicSupabaseEnv()
 ): SupabaseConfigResult {
   const problems: string[] = [];
   const warnings: string[] = [];
@@ -212,7 +237,7 @@ export function logSupabaseConfigOnce(message: string): void {
  * Middleware deliberately does NOT use this — see middleware.ts.
  */
 export function getSupabaseConfig(
-  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>
+  env: Record<string, string | undefined> = publicSupabaseEnv()
 ): SupabaseConfig {
   const result = readSupabaseConfig(env);
   if (!result.ok) {

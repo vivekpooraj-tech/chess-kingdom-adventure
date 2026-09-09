@@ -240,6 +240,85 @@ const env = (url, key) => ({
   );
 }
 
+// --- Inlining: the values must actually reach the browser bundle ----------
+//
+// The bug this catches, in full: readSupabaseConfig defaulted to `process.env`
+// and then read it dynamically (env[SUPABASE_URL_VAR]). Next.js substitutes
+// NEXT_PUBLIC_* only where the source literally says
+// `process.env.NEXT_PUBLIC_FOO`, so a dynamic read is never inlined and the
+// browser's `process.env` stub carried neither value. Every createClient()
+// threw "Configuration invalid" and the app could not hydrate — while the
+// server, reading a real process.env, was perfectly happy. Every assertion in
+// this file that passes an explicit env object still passed throughout, which
+// is exactly why this section reads the source and the build output instead.
+{
+  const envSrc = fs.readFileSync(path.join(process.cwd(), "lib", "supabase", "env.ts"), "utf8");
+  const code = envSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+  check(
+    "both public variables are named literally, so Next can inline them",
+    /process\.env\.NEXT_PUBLIC_SUPABASE_URL/.test(code) &&
+      /process\.env\.NEXT_PUBLIC_SUPABASE_ANON_KEY/.test(code)
+  );
+  check(
+    "no accessor defaults straight to process.env (that is the stub in a browser)",
+    !/=\s*process\.env\s+as\s+Record/.test(code)
+  );
+  check(
+    "the defaults go through the literal-naming helper",
+    (code.match(/=\s*publicSupabaseEnv\(\)/g) || []).length === 2
+  );
+
+  // The real proof: a production build's client chunks must contain the
+  // values. Skipped rather than failed when there is no build to inspect, so
+  // this suite stays runnable without one.
+  const staticDir = path.join(process.cwd(), ".next", "static");
+  if (!fs.existsSync(staticDir)) {
+    console.log("  (skipped bundle scan: no .next/static — run `npm run build` first)");
+  } else {
+    const envFile = path.join(process.cwd(), ".env.local");
+    if (!fs.existsSync(envFile)) {
+      console.log("  (skipped bundle scan: no .env.local)");
+    } else {
+      const parsed = Object.fromEntries(
+        fs
+          .readFileSync(envFile, "utf8")
+          .split(/\r?\n/)
+          .filter((l) => l.includes("=") && !l.trim().startsWith("#"))
+          .map((l) => [l.slice(0, l.indexOf("=")).trim(), l.slice(l.indexOf("=") + 1).trim()])
+      );
+      const rawUrl = parsed.NEXT_PUBLIC_SUPABASE_URL;
+      const rawKey = parsed.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!rawUrl || !rawKey) {
+        console.log("  (skipped bundle scan: public vars not set locally)");
+      } else {
+        const host = new URL(rawUrl).host;
+        // A slice, never the whole key, so a failure message cannot print it.
+        const keyFragment = rawKey.slice(10, 40);
+        const chunks = [];
+        (function walk(dir) {
+          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            const full = path.join(dir, entry.name);
+            if (entry.isDirectory()) walk(full);
+            else if (full.endsWith(".js")) chunks.push(full);
+          }
+        })(staticDir);
+
+        let hostChunks = 0;
+        let keyChunks = 0;
+        for (const file of chunks) {
+          const text = fs.readFileSync(file, "utf8");
+          if (text.includes(host)) hostChunks++;
+          if (text.includes(keyFragment)) keyChunks++;
+        }
+        check("the build produced client chunks to scan", chunks.length > 0);
+        check("the Supabase host reached the browser bundle", hostChunks > 0);
+        check("the anon key reached the browser bundle", keyChunks > 0);
+      }
+    }
+  }
+}
+
 console.log(`\n=== SUPABASE ENV: ${pass} passed, ${failures.length} failed ===`);
 if (failures.length) {
   console.error("Failures:\n" + failures.map((f) => " - " + f).join("\n"));
