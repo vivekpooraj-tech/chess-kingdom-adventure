@@ -46,6 +46,53 @@ export interface WorldLocation {
   cardGradient: string;
   /** Accent colour for chips and rings, as a CSS colour. */
   accent: string;
+  /**
+   * Painted environment art, when this location has any.
+   *
+   * OPTIONAL ON PURPOSE. A location without it falls back to its drawn CSS/SVG
+   * scene, so art can land one location at a time without a flag day and
+   * without a half-migrated World in between. When every location has art, the
+   * drawn scenes and this fallback go together.
+   *
+   * The art is composed against the app's real geometry, not against taste:
+   * measured on a 411x914 phone the board occupies 21.4%-64.7% of the screen
+   * height and 1.9%-98.1% of its width, so that band of the image has to be
+   * empty table. Everything the player should actually see — the landmark, the
+   * opponent — lives above 22%.
+   */
+  art?: WorldArt;
+}
+
+export interface WorldArt {
+  /** Portrait plate, shown on phones. Tall (9:20 preferred). */
+  portrait: WorldArtPlate;
+  /** Wide plate for tablets and landscape. Falls back to portrait if absent. */
+  wide?: WorldArtPlate;
+  /**
+   * A handful of bytes of blurred base64, painted instantly under the real
+   * plate so a slow connection shows the location's colour rather than a black
+   * rectangle. The Capacitor app loads over the network, so this is the
+   * difference between "loading" and "broken" on a cold cellular start.
+   */
+  lqip?: string;
+  /**
+   * object-position for the plate. Only matters when the device aspect differs
+   * from the art's: cover then crops, and the default centre crop would slide
+   * the empty-table band away from the board. Anchor it here instead.
+   */
+  objectPosition?: string;
+}
+
+export interface WorldArtPlate {
+  /** AVIF first — roughly half the bytes of WebP at this kind of content. */
+  avif: string;
+  /** WebP fallback. Every Android WebView in range supports at least this. */
+  webp: string;
+  /**
+   * Optional near-table layer with transparency, drawn IN FRONT of the board
+   * so the board sits into the scene instead of on top of a photograph.
+   */
+  foreground?: { webp: string };
 }
 
 export const WORLD_NAME = "Chess Mind World";

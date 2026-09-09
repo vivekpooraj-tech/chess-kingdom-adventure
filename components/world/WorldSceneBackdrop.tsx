@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { getWorldLocation, type WorldLocationId } from "@/lib/world/locations";
+import { WorldArtScene } from "./WorldArtScene";
 
 /**
  * Renders a World location behind whatever is on top of it.
@@ -51,6 +52,15 @@ export function WorldSceneBackdrop({
   const location = getWorldLocation(locationId);
   if (!location) return null;
 
+  /*
+   * Painted art wins when the location has it; otherwise the drawn scene.
+   *
+   * This is what lets artwork land one location at a time. A location with an
+   * `art` entry renders its plates through the single WorldArtScene; one
+   * without keeps the CSS/SVG scene it has today, unchanged. There is no flag,
+   * no migration state and no moment where half the World is broken — and when
+   * the last location gets art, SCENES and this branch delete together.
+   */
   const Scene = SCENES[location.id];
 
   return (
@@ -59,7 +69,11 @@ export function WorldSceneBackdrop({
       aria-hidden="true"
       data-world-location={location.id}
     >
-      <Scene simplify={simplify} />
+      {location.art ? (
+        <WorldArtScene art={location.art} simplify={simplify} />
+      ) : (
+        <Scene simplify={simplify} />
+      )}
       {/*
         Readability scrim, concentrated where the pieces are rather than
         spread flat over everything.

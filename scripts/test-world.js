@@ -471,6 +471,77 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   );
 }
 
+// --- 9. The painted-art pipeline -----------------------------------------
+//
+// Artwork lands one location at a time, so the property that matters most
+// during the migration is that a location WITHOUT art is completely
+// unaffected. These hold that, and hold the boundaries the art layer must not
+// cross once it is carrying real plates.
+{
+  const readSrc = (...parts) => fs.readFileSync(path.join(process.cwd(), ...parts), "utf8");
+  const backdrop = readSrc("components", "world", "WorldSceneBackdrop.tsx");
+  const artScene = readSrc("components", "world", "WorldArtScene.tsx");
+  const registry = readSrc("lib", "world", "locations.ts");
+
+  check("art is optional on a location", /art\?: WorldArt/.test(registry));
+  check(
+    "every location without art still renders its drawn scene",
+    L.WORLD_LOCATIONS.every((l) => l.art === undefined)
+  );
+  check(
+    "the backdrop prefers art when a location has it",
+    /location\.art \? \([\s\S]{0,200}WorldArtScene/.test(backdrop)
+  );
+  check(
+    "and falls back to the drawn scene when it does not",
+    /<Scene simplify=\{simplify\} \/>/.test(backdrop)
+  );
+
+  check("the art layer is hidden from assistive tech", /aria-hidden="true"/.test(artScene));
+  check("art plates carry empty alt, not a description", /alt=""/.test(artScene));
+  check(
+    "AVIF is offered before WebP, with a plain <img> fallback",
+    artScene.indexOf('type="image/avif"') !== -1 &&
+      artScene.indexOf('type="image/avif"') < artScene.indexOf('type="image/webp"') &&
+      /<img[\s\S]{0,200}src=\{plate\.webp\}/.test(artScene)
+  );
+  check(
+    "the plate covers the viewport without distorting",
+    /object-cover/.test(artScene) && /objectPosition/.test(artScene)
+  );
+  check("phones get the portrait plate", /simplify \? art\.portrait/.test(artScene));
+  check(
+    "a location with no wide plate reuses its portrait one",
+    /art\.wide \?\? art\.portrait/.test(artScene)
+  );
+  // Same boundary the drawn scenes are held to: art is decoration, never game.
+  check(
+    "the art layer never touches board geometry",
+    !/boardSize|renderBoard|data-square|chess-focus-board/.test(artScene)
+  );
+
+  // A budget that is only a good intention gets blown by the first mis-exported
+  // PNG, so it has to be enforceable and it has to fail the run.
+  const budgetPath = path.join(process.cwd(), "scripts", "check-world-art.js");
+  check("there is a size budget for World art", fs.existsSync(budgetPath));
+  const budget = fs.readFileSync(budgetPath, "utf8");
+  check("going over budget fails the run rather than warning", /process\.exitCode = 1/.test(budget));
+  check(
+    "the portrait background is budgeted at 180KB",
+    /"bg-portrait\.avif": 180 \* 1024/.test(budget)
+  );
+
+  // And it is actually enforced HERE, not just available to be run: whatever
+  // art is on disk has to be inside its budget for the World suite to pass.
+  const enforced = require("child_process").spawnSync(
+    process.execPath,
+    [budgetPath],
+    { encoding: "utf8" }
+  );
+  check("art on disk is inside its size budget", enforced.status === 0);
+  if (enforced.status !== 0) console.error(enforced.stdout + enforced.stderr);
+}
+
 console.log(`\n=== CHESS MIND WORLD: ${pass} passed, ${failures.length} failed ===`);
 if (failures.length) {
   console.error("Failures:\n" + failures.map((f) => " - " + f).join("\n"));
