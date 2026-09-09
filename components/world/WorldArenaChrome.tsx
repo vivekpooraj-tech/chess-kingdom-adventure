@@ -64,37 +64,35 @@ export function WorldArenaChrome({ locationId }: { locationId: WorldLocationId }
           height: 0;
         }
 
-        /* Portrait phones and small tablets: open real sky above the board.
-           The board is width-limited here, so this costs it nothing. */
+        /*
+         * Sky above the board — but only out of slack that genuinely exists.
+         *
+         * The hard rule is that the board may not shrink, and on real hardware
+         * there is far less room than a browser at the same CSS size suggests.
+         * Measured on a moto g34 (411x914, gesture navigation): the board is
+         * 371px with no World, and it is HEIGHT-limited even then, so every
+         * pixel of spacer costs it. 104px cost 65px of board; 48px still cost
+         * 9px. In a desktop browser at the identical 411x914 the same spacer
+         * cost nothing, because the browser has no safe-area inset eating the
+         * column.
+         *
+         * So the spacer is written as slack minus the inset that predicts how
+         * little of it is real. A phone with gesture navigation resolves this
+         * to zero and keeps its full board; a viewport with no bottom inset
+         * gets the sky. max() floors it so it can never go negative.
+         *
+         * This is deliberately conservative: the board is the product, the sky
+         * is the atmosphere, and where they conflict the board wins.
+         */
         @media (max-width: 699px) and (orientation: portrait) {
           .world-sky {
-            /*
-             * Tuned by measurement, not by taste. The board is width-limited
-             * only until the column runs out of height, and at 411x914 there
-             * turned out to be ~129px of genuine slack, not the ~560px the
-             * raw arithmetic suggested — the panel reserve and the two player
-             * rows claim most of it. 176px here cost the board 45px
-             * (371 -> 326), which is exactly the regression this must not
-             * cause. This value stays inside the slack, and the board
-             * measurement in the verification step is what proves it.
-             */
-            height: 72px;
+            height: max(0px, calc(56px - 2 * env(safe-area-inset-bottom, 0px)));
           }
+        }
 
-          /*
-           * How much sky is safe depends on the viewport's HEIGHT, not a
-           * single percentage. Measured: at 411x914 a 110px sky left the board
-           * at its full 371px, but the same 12vh on a 390x844 screen (101px)
-           * pushed it to 337 — a regression. The slack is whatever the column
-           * has left after the header, both player rows and the fixed panel
-           * reserve, and that does not scale with vh. So the value is banded
-           * by height and each band is verified by measuring the board, which
-           * is the only check that actually means anything here.
-           */
-          @media (min-height: 880px) {
-            .world-sky {
-              height: 104px;
-            }
+        @media (max-width: 699px) and (orientation: portrait) and (min-height: 880px) {
+          .world-sky {
+            height: max(0px, calc(72px - 2 * env(safe-area-inset-bottom, 0px)));
           }
         }
 
