@@ -109,6 +109,35 @@ export const WORLD_LOCATIONS: readonly WorldLocation[] = [
     atmosphere: "Sunset over the river",
     cardGradient: "from-[#2a1a3e] via-[#5b3a5f] to-[#c76b4a]",
     accent: "#e8a56b",
+    art: {
+      portrait: {
+        avif: "/world/london-eye/bg-portrait.avif",
+        webp: "/world/london-eye/bg-portrait.webp",
+      },
+      /*
+       * FRAMED AGAINST THE LAYOUT, NOT AGAINST TASTE.
+       *
+       * Produced from the original 841x1870 illustration by:
+       *
+       *   node scripts/encode-world-art.js london-eye <source> 679:1510:105:360
+       *
+       * The crop is not cosmetic. The board covers roughly 17%-65% of the
+       * screen's height, so the opponent's face has to clear the TOP of that
+       * band or the child is playing against an empty chair. In the original
+       * the table's edge sits at 42% of the frame and the boy's face at
+       * 21%-33% -- both squarely behind the board. Lifting the window by 360
+       * source pixels puts his whole face in the strip above the board while
+       * keeping the wheel on the left and Big Ben on the right, which are the
+       * two things that say London at a glance.
+       *
+       * The plate is cut to the phone's own 9:20 so it maps almost 1:1 and
+       * nothing important is cropped away at run time. "top" is what keeps
+       * the sky and the opponent when the aspect does differ -- a shorter
+       * viewport, or the 16/9 preview card on the World page -- and spends
+       * the overflow on table, which is the part the board covers anyway.
+       */
+      objectPosition: "center top",
+    },
   },
   {
     id: "chaturanga",

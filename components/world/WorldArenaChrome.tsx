@@ -1,7 +1,7 @@
 "use client";
 
 import { WorldSceneBackdrop } from "./WorldSceneBackdrop";
-import type { WorldLocationId } from "@/lib/world/locations";
+import { getWorldLocation, type WorldLocationId } from "@/lib/world/locations";
 
 /**
  * Everything a World game needs the arena to do differently — and nothing
@@ -44,11 +44,18 @@ import type { WorldLocationId } from "@/lib/world/locations";
  * The board is never touched: no width, no height, no padding, no geometry.
  */
 export function WorldArenaChrome({ locationId }: { locationId: WorldLocationId }) {
+  // Only a PAINTED location has a table for the board to sit on. A drawn
+  // scene gets none of the contact lighting below, because there is nothing
+  // there for the board to make contact with.
+  const painted = getWorldLocation(locationId)?.art !== undefined;
+
   return (
     <>
       <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
         <WorldSceneBackdrop locationId={locationId} scrim={0.42} />
       </div>
+
+      {painted && <div className="world-painted hidden" aria-hidden="true" />}
 
       {/* The sky. Height only — it draws nothing itself; the scene behind it
           shows through. */}
@@ -146,6 +153,34 @@ export function WorldArenaChrome({ locationId }: { locationId: WorldLocationId }
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
           border-radius: 1rem;
+        }
+
+        /*
+         * THE BOARD, SITTING ON THE TABLE.
+         *
+         * The artwork paints a wooden table with an empty top; the board is a
+         * separate element floating in front of it, and without contact
+         * lighting that is exactly what it reads as -- a rectangle pasted onto
+         * a photograph. What sells contact is a shadow the board casts DOWN
+         * onto the surface behind it, plus a thin warm edge where the scene's
+         * light catches its rim.
+         *
+         * Paint only. box-shadow occupies no layout space, so the board's
+         * width, height, square size and hit areas are bit-for-bit what they
+         * are without this rule -- verified by measuring both.
+         *
+         * Scoped by the world-painted marker, which is rendered only for a
+         * painted location -- so a drawn scene like Chaturanga never picks it
+         * up. The marker is used rather than wrapping this rule in a second
+         * conditional style element because the styled-jsx SWC transform
+         * panics outright on a style tag inside a conditional expression.
+         */
+        body:has(.world-painted) .board-outer {
+          box-shadow:
+            0 24px 48px -16px rgba(0, 0, 0, 0.72),
+            0 8px 16px -8px rgba(0, 0, 0, 0.55),
+            0 0 0 1px rgba(255, 214, 164, 0.14),
+            0 0 42px -6px rgba(255, 176, 92, 0.18);
         }
 
         @media (prefers-reduced-transparency: reduce) {

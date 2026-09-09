@@ -450,10 +450,29 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
       !/WorldSceneBackdrop/.test(freePlay) &&
       !/WorldSceneBackdrop/.test(onlinePage)
   );
+  // The chrome now DOES name the board, to light it so it reads as sitting on
+  // the painted table. So the invariant can no longer be "never mentions the
+  // board" -- it has to be the thing that assertion was standing in for:
+  // whatever the chrome says about the board must be PAINT, never geometry.
+  // A box-shadow occupies no layout space; a width or a padding would move a
+  // square out from under a child's finger.
   check(
-    "the World chrome never touches board geometry",
-    !/boardSize|renderBoard|data-square|\.board-outer|chess-focus-board/.test(chrome)
+    "the World chrome never reads the board's size or its squares",
+    !/boardSize|renderBoard|data-square/.test(chrome)
   );
+  {
+    const GEOMETRY =
+      /\b(width|height|padding|margin|inset|top|right|bottom|left|transform|scale|zoom|font-size|gap|grid|flex|aspect-ratio|box-sizing|border)\s*:/;
+    const boardRules = chrome.match(/[^{}]*\.board-outer[^{}]*\{[^}]*\}/g) || [];
+    check("the World chrome does say something about the board", boardRules.length > 0);
+    for (const rule of boardRules) {
+      const body = rule.slice(rule.indexOf("{") + 1);
+      check(
+        "what the chrome says about the board is paint, not geometry",
+        !GEOMETRY.test(body)
+      );
+    }
+  }
   check("the backdrop cannot swallow a tap", /pointer-events-none/.test(backdrop));
   check("the backdrop is hidden from assistive tech", /aria-hidden="true"/.test(backdrop));
 
@@ -484,10 +503,26 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   const registry = readSrc("lib", "world", "locations.ts");
 
   check("art is optional on a location", /art\?: WorldArt/.test(registry));
-  check(
-    "every location without art still renders its drawn scene",
-    L.WORLD_LOCATIONS.every((l) => l.art === undefined)
-  );
+  // Art lands one location at a time, so BOTH halves have to stay true: a
+  // painted location must have real files behind its paths (a registry entry
+  // pointing at nothing renders a black hole, not a fallback), and an
+  // unpainted one must still have a drawn scene to fall back to.
+  for (const loc of L.WORLD_LOCATIONS) {
+    if (loc.art) {
+      for (const [fmt, url] of Object.entries(loc.art.portrait)) {
+        if (typeof url !== "string") continue;
+        check(
+          `${loc.id}: the ${fmt} plate exists on disk at the path the registry claims`,
+          fs.existsSync(path.join(process.cwd(), "public", ...url.split("/").filter(Boolean)))
+        );
+      }
+    } else {
+      check(
+        `${loc.id}: has a drawn scene to fall back to`,
+        /<Scene simplify/.test(backdrop)
+      );
+    }
+  }
   check(
     "the backdrop prefers art when a location has it",
     /location\.art \? \([\s\S]{0,200}WorldArtScene/.test(backdrop)
