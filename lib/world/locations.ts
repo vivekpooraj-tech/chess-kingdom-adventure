@@ -156,6 +156,29 @@ export const WORLD_LOCATIONS: readonly WorldLocation[] = [
     atmosphere: "Afternoon in the courtyard",
     cardGradient: "from-[#3a2313] via-[#8a5a2b] to-[#d9a441]",
     accent: "#d9a441",
+    art: {
+      portrait: {
+        avif: "/world/chaturanga/bg-portrait.avif",
+        webp: "/world/chaturanga/bg-portrait.webp",
+      },
+      /*
+       * Produced from the original 841x1870 illustration by:
+       *
+       *   node scripts/encode-world-art.js chaturanga <source> 729:1620:56:250
+       *
+       * This is the first illustration composed against the zones rather than
+       * rescued afterwards, and the numbers show it: the court table's far
+       * edge lands at 21.0% against a board that starts at 17.5%, so the board
+       * sits almost entirely ON the table instead of floating over the
+       * opponent's chest the way London Eye's does. The prince's chin is at
+       * 14.2% and his hair at 8.6%.
+       *
+       * The 250-pixel lift costs 13% of the width, taken evenly from both
+       * sides, which the composition can afford: the carved pillars that frame
+       * the arch both survive it, and what goes is curtain.
+       */
+      objectPosition: "center top",
+    },
   },
 ];
 
