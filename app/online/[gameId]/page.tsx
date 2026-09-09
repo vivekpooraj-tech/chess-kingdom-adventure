@@ -29,6 +29,9 @@ import {
 } from "@/lib/online/rematch";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
 import { PlayerCard } from "@/components/game/PlayerCard";
+import { WorldSceneBackdrop } from "@/components/world/WorldSceneBackdrop";
+import { readSelectedLocation } from "@/lib/world/passport";
+import type { WorldLocationId } from "@/lib/world/locations";
 import { LiveChessClock } from "@/components/game/ChessClock";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -107,6 +110,27 @@ export default function OnlineGamePage() {
    * session and there is no RPC that exposes it. Rather than show a wrong or
    * invented number, the opponent card simply carries no rating. */
   const [myRating, setMyRating] = useState<number | null>(null);
+
+  /*
+   * Chess Mind World — decorative only.
+   *
+   * The location is the per-device choice the player already made on the World
+   * hub (passport's selected location). Free Play takes it from `?world=`
+   * because it is entered through playHereHref; an online game arrives from an
+   * invite link or from matchmaking, so there is no URL of ours to carry it.
+   * Reusing the stored choice means no new storage, no new registry and no new
+   * URL contract.
+   *
+   * It is read once, on the client, and never leaves this component: it is not
+   * sent to the server, not part of game state, and not a dependency of any
+   * effect that moves, clocks, rates or settles a game. readSelectedLocation()
+   * validates against the registry and returns null for anything unknown, so a
+   * stale or hand-edited id renders no World rather than a broken one.
+   */
+  const [worldLocationId, setWorldLocationId] = useState<WorldLocationId | null>(null);
+  useEffect(() => {
+    setWorldLocationId(readSelectedLocation());
+  }, []);
   const [game, setGame] = useState<OnlineGame | null | "loading">("loading");
   const [openingMatch, setOpeningMatch] = useState<OpeningMatch | null>(null);
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
@@ -717,16 +741,29 @@ export default function OnlineGamePage() {
           </PlayerCard>
         }
         renderBoard={(boardSize) => (
-          <ChessBoard
-            fen={game.fen}
-            playableColor={myColor}
-            size={boardSize}
-            focusMode
-            boardSkinId={boardSkinId}
-            pieceSetId={pieceSetId}
-            onMove={(opts) => handleMove(opts.from, opts.to)}
-            onGameOver={handleGameOver}
-          />
+          <div className="relative">
+            {/* Behind the board within this slot only — never the header, the
+                player cards or the side panel. The board paints above it (later
+                sibling, own opaque skin), and the backdrop is pointer-events
+                none and aria-hidden, so it can neither cover a piece nor
+                swallow a tap. Absent entirely when no location is chosen. */}
+            {worldLocationId && (
+              <WorldSceneBackdrop
+                locationId={worldLocationId}
+                className="rounded-2xl -m-3 sm:-m-4"
+              />
+            )}
+            <ChessBoard
+              fen={game.fen}
+              playableColor={myColor}
+              size={boardSize}
+              focusMode
+              boardSkinId={boardSkinId}
+              pieceSetId={pieceSetId}
+              onMove={(opts) => handleMove(opts.from, opts.to)}
+              onGameOver={handleGameOver}
+            />
+          </div>
         )}
         sidePanel={
           <>

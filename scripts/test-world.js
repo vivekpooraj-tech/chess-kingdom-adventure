@@ -328,6 +328,125 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   check("the favourite star reports its state to assistive tech", /aria-pressed=\{favourite\}/.test(worldPage));
 }
 
+// --- 8. Online games render the World through the canonical backdrop ------
+//
+// Free Play takes its location from `?world=`; an online game arrives from an
+// invite link or from matchmaking, so it reuses the per-device choice the
+// player already made on the World hub. readSelectedLocation() is therefore
+// the gate that decides whether an online game shows a World at all, and it
+// is exercised here for real against a fake store rather than described.
+{
+  const readSrc = (...parts) => fs.readFileSync(path.join(process.cwd(), ...parts), "utf8");
+  const onlinePage = readSrc("app", "online", "[gameId]", "page.tsx");
+  const freePlay = readSrc("app", "free-play", "page.tsx");
+  const backdrop = readSrc("components", "world", "WorldSceneBackdrop.tsx");
+
+  const store = {};
+  const hadWindow = "window" in global;
+  const previousWindow = global.window;
+  global.window = {
+    localStorage: {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => {
+        store[k] = String(v);
+      },
+      removeItem: (k) => {
+        delete store[k];
+      },
+    },
+  };
+
+  // 1. An online game with no location chosen.
+  delete store[P.SELECTED_LOCATION_KEY];
+  check("no chosen location resolves to null, so no backdrop renders", P.readSelectedLocation() === null);
+
+  // 2 & 3. Each real location.
+  store[P.SELECTED_LOCATION_KEY] = "london-eye";
+  check("london-eye resolves for an online game", P.readSelectedLocation() === "london-eye");
+  store[P.SELECTED_LOCATION_KEY] = "chaturanga";
+  check("chaturanga resolves for an online game", P.readSelectedLocation() === "chaturanga");
+
+  // 4. Anything else fails safe — no World, never a broken one.
+  for (const bad of ["atlantis", "", "LONDON-EYE", "london-eye ", "../../etc/passwd", "null", "{}", "0"]) {
+    store[P.SELECTED_LOCATION_KEY] = bad;
+    check(
+      "invalid stored location " + JSON.stringify(bad) + " yields null, not a broken World",
+      P.readSelectedLocation() === null
+    );
+  }
+
+  // A storage that throws must not take a live game down with it.
+  global.window = {
+    localStorage: {
+      getItem() {
+        throw new Error("blocked");
+      },
+    },
+  };
+  check("a throwing localStorage yields null rather than an exception", P.readSelectedLocation() === null);
+
+  if (hadWindow) global.window = previousWindow;
+  else delete global.window;
+
+  // The online page wires exactly that gate to exactly that backdrop.
+  check(
+    "the online page takes its location from the passport's selected location",
+    /setWorldLocationId\(readSelectedLocation\(\)\)/.test(onlinePage)
+  );
+  check(
+    "the online page imports the canonical backdrop",
+    /import \{ WorldSceneBackdrop \} from "@\/components\/world\/WorldSceneBackdrop"/.test(onlinePage)
+  );
+  check(
+    "the online backdrop renders only when a location resolved",
+    /\{worldLocationId && \(\s*<WorldSceneBackdrop/.test(onlinePage)
+  );
+  check("the online backdrop is passed that id", /locationId=\{worldLocationId\}/.test(onlinePage));
+  check(
+    "the online page never branches on a specific location id",
+    !/"london-eye"|"chaturanga"/.test(onlinePage)
+  );
+  check(
+    "the online backdrop is contained in the board slot, not the page root",
+    onlinePage.indexOf("<WorldSceneBackdrop") > onlinePage.indexOf("renderBoard={(boardSize)")
+  );
+
+  // 5. One backdrop architecture, still.
+  check(
+    "the retired scene registry has not come back",
+    !fs.existsSync(path.join(process.cwd(), "components", "world", "sceneRegistry.ts"))
+  );
+  check(
+    "the retired overlay stylesheet has not come back",
+    !fs.existsSync(path.join(process.cwd(), "components", "world", "worldOverlay.css"))
+  );
+  check(
+    "there is exactly one Chaturanga scene",
+    fs.existsSync(path.join(process.cwd(), "components", "world", "scenes", "ChaturangaScene.tsx")) &&
+      !fs.existsSync(path.join(process.cwd(), "components", "world", "ChaturangaScene.tsx"))
+  );
+  check(
+    "free play and the online game use the same backdrop component",
+    /from "@\/components\/world\/WorldSceneBackdrop"/.test(freePlay) &&
+      /from "@\/components\/world\/WorldSceneBackdrop"/.test(onlinePage)
+  );
+  check("the backdrop cannot swallow a tap", /pointer-events-none/.test(backdrop));
+  check("the backdrop is hidden from assistive tech", /aria-hidden="true"/.test(backdrop));
+
+  // The boundary: the World must not be able to reach the game.
+  const worldImports = (onlinePage.match(/import[^;]*from "@\/(lib|components)\/world\/[^"]*";/g) || []).join("\n");
+  check(
+    "the online page imports nothing from the World but the backdrop, the id type and the reader",
+    !/recordGameWon|recordGameStarted|recordVisit|writePassport|writeSelectedLocation/.test(worldImports)
+  );
+  check(
+    "the World never becomes a dependency of a move, clock or settlement call",
+    !/worldLocationId/.test(
+      (onlinePage.match(/(submitMove|claimTimeout|applyMatchRating|requestCompletion)\([^)]*\)/g) || []).join("")
+    )
+  );
+}
+
 console.log(`\n=== CHESS MIND WORLD: ${pass} passed, ${failures.length} failed ===`);
 if (failures.length) {
   console.error("Failures:\n" + failures.map((f) => " - " + f).join("\n"));
