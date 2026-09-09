@@ -741,7 +741,13 @@ export default function OnlineGamePage() {
           </PlayerCard>
         }
         renderBoard={(boardSize) => (
-          <div className="relative">
+          /* `w-full` is load-bearing, not decoration. ChessBoard in focusMode is
+             `min(size, 100%)`, so a shrink-to-fit wrapper makes the parent's
+             width depend on the child while the child's 100% depends on the
+             parent — the board collapsed to 101px at 1024x768. Giving the
+             wrapper the column's width breaks the circularity, which is why
+             Free Play's wrapper is w-full too. */
+          <div className="relative w-full flex flex-col items-center">
             {/* Behind the board within this slot only — never the header, the
                 player cards or the side panel. The board paints above it (later
                 sibling, own opaque skin), and the backdrop is pointer-events
