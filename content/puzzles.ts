@@ -1049,6 +1049,12 @@ export const PUZZLES: ChessPuzzle[] = [
   { id: "lichess-RRLe5", fen: "8/8/2k5/7R/6R1/2p3p1/r4b2/3K4 w - - 0 52"             , sideToMove: "w", mateIn: 3, theme: "Checkmate in 3"        , level: 6 }, // lichess RRLe5 · r1297 · pop100
   { id: "lichess-S8SFh", fen: "6N1/8/8/8/2p5/2k5/1p6/1K6 b - - 1 49"                 , sideToMove: "b", mateIn: 3, theme: "Checkmate in 3"        , level: 6 }, // lichess S8SFh · r1145 · pop100
   { id: "lichess-wRUsa", fen: "Q7/8/5kpK/7p/7P/8/2p5/8 b - - 0 49"                   , sideToMove: "b", mateIn: 3, theme: "Checkmate in 3"        , level: 6 }, // lichess wRUsa · r1014 · pop94
+
+  // Daily puzzle batch — 2026-09-08. Hand-composed, verified via
+  // `node scripts/verify-puzzles.js <candidates.json>` before being added here.
+  { id: "m1-discovered-mate-rook", fen: "k7/2K5/8/8/B7/8/8/R7 w - - 0 1",   sideToMove: "w", mateIn: 1, theme: "Discovered Mate",    level: 1 },
+  { id: "m1-guarded-rook-mate",    fen: "7k/6R1/5K2/8/8/8/8/R7 w - - 0 1",  sideToMove: "w", mateIn: 1, theme: "Guarded Rook Mate",  level: 1 },
+  { id: "m1-rook-bishop-mate",     fen: "7k/8/6KB/8/8/8/8/R7 w - - 0 1",    sideToMove: "w", mateIn: 1, theme: "Rook & Bishop Mate", level: 1 },
 ];
 
 export function getPuzzleById(id: string | null | undefined): ChessPuzzle | undefined {

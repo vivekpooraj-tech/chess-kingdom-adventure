@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { PieceSymbol } from "chess.js";
 import { getLesson, DAILY_PREVIEW_LIMIT } from "@/content/lessons";
+import { TOTAL_DAYS } from "@/lib/school/chessSchool";
 import { getMinigameConfigForDay } from "@/content/minigame-configs";
 import { BUDDIES } from "@/content/buddies";
 import { KINGDOM_ZONES, getZoneForDay, isDayFree, KingdomZone } from "@/content/kingdomZones";
@@ -40,6 +41,10 @@ import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entit
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
 import { getAcademyRecommendation } from "@/lib/chessMind/academyRecommendations";
+import { prefersNeutralHomeTone } from "@/lib/learner/experienceLevel";
+import { useNarration } from "@/lib/voice/useNarration";
+import { narrate } from "@/lib/voice/script";
+import { LearningModeBar } from "@/components/voice/LearningModeBar";
 
 type ViewMode = "loading" | "locked" | "full" | "preview";
 
@@ -70,7 +75,14 @@ export default function LessonPage() {
   const [previewDone, setPreviewDone] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [rewardData, setRewardData] = useState<RewardData | null>(null);
+  const [neutralTone, setNeutralTone] = useState(false);
   const rewardEvaluatedRef = useRef(false);
+
+  // Narration + the fewer-words mode. One instance for the whole lesson:
+  // speech synthesis is a single global resource, and two hooks would cancel
+  // each other's utterances. Nothing here speaks on its own — see
+  // useNarration; `speak` is only ever reached from a button press.
+  const narration = useNarration(neutralTone);
 
   useEffect(() => {
     async function load() {
@@ -91,6 +103,9 @@ export default function LessonPage() {
       setPieceSetId(child.piece_set_id);
       const matchedBuddy = BUDDIES.find((b) => b.id === child.buddy_id);
       if (matchedBuddy) setBuddy(matchedBuddy);
+      // Same rule Home uses: an adult learner is narrated to precisely, a
+      // child warmly. Words differ, not just the voice.
+      setNeutralTone(prefersNeutralHomeTone(child.experience_level, child.age_band));
 
       const dayNumber = Number(params.dayId);
       if (isDayFree(dayNumber)) {
@@ -173,6 +188,14 @@ export default function LessonPage() {
     }
     evaluate();
   }, [lesson, childId, step, isPremium]);
+
+  // Moving to the next step silences the previous one. Without this, a
+  // learner who presses Continue mid-sentence hears the old step narrated
+  // over the new one — the single most confusing thing narration can do.
+  const stopNarration = narration.stop;
+  useEffect(() => {
+    stopNarration();
+  }, [stepIndex, stopNarration]);
 
   if (!lesson) {
     return (
@@ -260,6 +283,55 @@ export default function LessonPage() {
 
   // mode === "full"
   const zone = getZoneForDay(lesson.dayNumber);
+  const simpleMode = narration.prefs.simpleMode;
+
+  // What "Listen" would say for the step on screen. Built from the lesson's
+  // own content — story beat, objective, puzzle prompt — never from anything
+  // invented for the voice, so hearing the lesson and reading it give the
+  // same lesson. "" for steps that are pure interaction (a mini-game speaks
+  // for itself), and the control then says so rather than playing silence.
+  const narrationText = (() => {
+    switch (step!.type) {
+      case "story":
+        return narrate(
+          {
+            kind: "story",
+            title: lesson.title,
+            storyBeat: lesson.storyBeat,
+            objective: lesson.puzzle.prompt,
+          },
+          narration.register
+        );
+      case "piece_intro":
+        return narrate(
+          { kind: "piece_intro", title: step!.title, piece: lesson.crystal },
+          narration.register
+        );
+      case "puzzle":
+        return narrate({ kind: "puzzle", prompt: lesson.puzzle.prompt }, narration.register);
+      case "mini_match":
+        return narrate(
+          {
+            kind: "mini_match",
+            prompt: lesson.miniMatch.prompt,
+            movesRequired: lesson.miniMatch.movesRequired,
+          },
+          narration.register
+        );
+      case "reward":
+        return narrate(
+          {
+            kind: "reward",
+            dayNumber: lesson.dayNumber,
+            totalDays: TOTAL_DAYS,
+            title: lesson.title,
+          },
+          narration.register
+        );
+      default:
+        return "";
+    }
+  })();
 
   return (
     <ScreenTimeGate childId={childId}>
@@ -271,6 +343,22 @@ export default function LessonPage() {
           title={lesson.title}
           stepIndex={stepIndex}
           totalSteps={lesson.steps.length}
+          courseTotalDays={TOTAL_DAYS}
+        />
+
+        {/* Listen + fewer-words. Renders the listen control only where the
+            device can actually speak; every word it would say is already on
+            the screen below, so a learner without narration loses nothing. */}
+        <LearningModeBar
+          available={narration.available}
+          state={narration.state}
+          prefs={narration.prefs}
+          onChange={narration.setPreferences}
+          onPlay={() => narration.speak(narrationText)}
+          onPause={narration.pause}
+          onResume={narration.resume}
+          onStop={narration.stop}
+          listenLabel={narrationText ? "Listen" : "Nothing to read"}
         />
 
         <AnimatePresence mode="wait">
@@ -291,6 +379,7 @@ export default function LessonPage() {
                 objective={lesson.puzzle.prompt}
                 skillTags={lesson.skillTags}
                 buddy={buddy}
+                simpleMode={simpleMode}
                 onNext={next}
               />
             )}
@@ -320,6 +409,7 @@ export default function LessonPage() {
                 childId={childId}
                 boardSkinId={boardSkinId}
                 pieceSetId={pieceSetId}
+                simpleMode={simpleMode}
                 onNext={next}
               />
             )}
@@ -372,6 +462,7 @@ function StoryStep({
   objective,
   skillTags,
   buddy,
+  simpleMode,
   onNext,
 }: {
   title: string;
@@ -379,20 +470,38 @@ function StoryStep({
   objective: string;
   skillTags: string[];
   buddy: (typeof BUDDIES)[number];
+  /**
+   * Fewer-words mode, for a learner who cannot read comfortably yet. It drops
+   * the story paragraph and the skill list and states the goal large. It does
+   * NOT remove anything a learner needs to act: the goal, the buddy and the
+   * Continue button are all still here, and narration reads the full story
+   * aloud regardless of this setting.
+   */
+  simpleMode: boolean;
   onNext: () => void;
 }) {
   return (
     <PrimaryCard className="flex flex-col items-center gap-5 text-center">
       <BuddyAvatar emoji={buddy.emoji} size="lg" />
       <h2 className={TEXT.heading}>{title}</h2>
-      <p className="font-classic-body text-base text-premium-ivory/80 leading-relaxed">
-        {storyBeat}
-      </p>
+      {!simpleMode && (
+        <p className="font-classic-body text-base text-premium-ivory/80 leading-relaxed">
+          {storyBeat}
+        </p>
+      )}
 
       <div className="w-full rounded-premiumBtn bg-premium-midnightDeep border border-premium-gold/15 p-4 text-left">
         <p className={`${TEXT.meta} text-premium-gold mb-1`}>Today's Goal</p>
-        <p className="font-classic-body text-sm text-premium-ivory/90">{objective}</p>
-        {skillTags.length > 0 && (
+        <p
+          className={
+            simpleMode
+              ? "font-classic-body text-lg text-premium-ivory leading-relaxed"
+              : "font-classic-body text-sm text-premium-ivory/90"
+          }
+        >
+          {objective}
+        </p>
+        {!simpleMode && skillTags.length > 0 && (
           <ul className="mt-3 flex flex-col gap-1">
             {skillTags.map((tag) => (
               <li key={tag} className="font-classic-body text-xs text-premium-ivory/60 flex gap-2">
@@ -515,6 +624,7 @@ function PuzzleStep({
   childId,
   boardSkinId,
   pieceSetId,
+  simpleMode,
   onNext,
 }: {
   fen: string;
@@ -525,6 +635,9 @@ function PuzzleStep({
   childId: string;
   boardSkinId?: string;
   pieceSetId?: string;
+  /** Fewer-words mode: the instruction is set larger. Nothing is removed —
+   *  a puzzle prompt IS the instruction, so it can only grow, never go. */
+  simpleMode?: boolean;
   onNext: () => void;
 }) {
   const [moved, setMoved] = useState(false);
@@ -561,7 +674,15 @@ function PuzzleStep({
 
   return (
     <SecondaryCard className="flex flex-col items-center gap-5 w-full">
-      <p className="font-classic-body text-base text-premium-ivory text-center">{prompt}</p>
+      <p
+        className={
+          simpleMode
+            ? "font-classic-body text-xl text-premium-ivory text-center leading-relaxed"
+            : "font-classic-body text-base text-premium-ivory text-center"
+        }
+      >
+        {prompt}
+      </p>
       <ChessBoard
         key={boardKey}
         fen={fen}

@@ -2,6 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCAL_TEST_MODE } from "@/lib/devTestMode";
+import {
+  readSupabaseConfig,
+  describeSupabaseConfigProblem,
+  logSupabaseConfigOnce,
+} from "@/lib/supabase/env";
 
 // Routes a child/parent can reach without an active session. The Stripe
 // webhook is here too — Stripe calls it server-to-server with no session
@@ -34,7 +39,34 @@ const PUBLIC_PATHS = [
 ];
 const DEV_AUTO_SIGNIN_PATH = "/api/dev/auto-signin";
 
+/**
+ * Last line of defence.
+ *
+ * Anything that escapes handleRequest() below becomes Vercel's
+ * MIDDLEWARE_INVOCATION_FAILED — a 500 on every matched route, which is the
+ * whole site rather than the one thing that actually broke. No session concern
+ * is worth that blast radius: middleware's only privileged output is the
+ * verified `x-user-id` header, and the fallback here simply does not set it,
+ * leaving every page to do its own auth check exactly as if the request had
+ * arrived outside the matcher.
+ *
+ * The error is logged in full so the cause is visible in the Vercel logs
+ * instead of being replaced by a platform crash page.
+ */
 export async function middleware(request: NextRequest) {
+  try {
+    return await handleRequest(request);
+  } catch (error) {
+    console.error(
+      "[middleware] Unexpected error — passing the request through unauthenticated. " +
+        "Protected pages still enforce their own auth check.",
+      error
+    );
+    return NextResponse.next();
+  }
+}
+
+async function handleRequest(request: NextRequest) {
   // Never trust a client-supplied identity header — this gets set for real
   // further down, only after middleware itself has verified the session
   // against Supabase Auth. Stripping it first means a forged header on the
@@ -43,9 +75,31 @@ export async function middleware(request: NextRequest) {
 
   let response = NextResponse.next({ request: { headers: request.headers } });
 
+  // The Supabase settings are validated BEFORE the SDK sees them, because a
+  // throw inside createServerClient() here is not a failed request — it is
+  // 500 MIDDLEWARE_INVOCATION_FAILED on every path this matcher covers, i.e.
+  // the entire site, marketing page and sign-in screen included. That is what
+  // "Your project's URL and Key are required to create a Supabase client!"
+  // and "Invalid supabaseUrl" did in production.
+  //
+  // A missing config is an operator mistake, never a signed-in user's fault,
+  // so this degrades instead of failing: pass the request through WITHOUT the
+  // verified `x-user-id` header. Nothing is granted by doing so — that header
+  // is the ONLY thing downstream code trusts from middleware, and without it
+  // getSessionUser() falls back to a real Supabase check (lib/supabase/server.ts).
+  // Protected pages therefore still gate themselves; public pages, which need
+  // no session at all, keep rendering. The failure stays visible in the logs
+  // and names the exact variable rather than surfacing as a platform crash.
+  const configResult = readSupabaseConfig();
+  if (!configResult.ok) {
+    logSupabaseConfigOnce(describeSupabaseConfigProblem(configResult.problems));
+    return response;
+  }
+  configResult.warnings.forEach((w) => logSupabaseConfigOnce(`[supabase] ${w}`));
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    configResult.config.url,
+    configResult.config.anonKey,
     {
       cookies: {
         getAll() {

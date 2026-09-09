@@ -9,7 +9,6 @@ import { resolveActiveChild, recordOpeningEncounter, getFreeGameStatus, startAiG
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
-import { WorldSceneBackdrop } from "@/components/world/WorldSceneBackdrop";
 import { GameChrome } from "@/components/game/GameChrome";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
@@ -22,6 +21,9 @@ import { TEXT } from "@/lib/designSystem";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import type { Difficulty } from "@/lib/chess-engine/stockfishEngine";
 import type { CompletedGameRecord, PlayedMove } from "@/lib/analysis/gameAnalysis";
+import { WorldSceneBackdrop } from "@/components/world/WorldSceneBackdrop";
+import { getWorldLocation, type WorldLocationId } from "@/lib/world/locations";
+import { recordGameStarted, recordGameWon } from "@/lib/world/passport";
 
 const STANDARD_START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -95,6 +97,11 @@ export default function FreePlayPage() {
   // A historical ply shown on the board while the live game remains safely
   // in memory. null means the board is showing the current position.
   const [reviewPly, setReviewPly] = useState<number | null>(null);
+  // Chess Mind World: a decorative backdrop only. Read once from the URL on
+  // mount — never from a server prop, never affecting eligibility, moves,
+  // the clock or the free-game limit below. See lib/world/locations.ts for
+  // why this is a query param on Free Play rather than a second game route.
+  const [worldLocationId, setWorldLocationId] = useState<WorldLocationId | null>(null);
   // Ply-by-ply log captured live during play — the source of truth for the
   // post-game analysis screen (section 14: "preserve the complete move
   // history"). A ref, not state: it's written on every ply but only ever
@@ -103,6 +110,10 @@ export default function FreePlayPage() {
   const gameStartedAtRef = useRef<string>("");
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const location = getWorldLocation(params.get("world"));
+    if (location) setWorldLocationId(location.id);
+
     async function load() {
       const supabase = createClient();
       const user = await getVerifiedUser(supabase);
@@ -155,6 +166,7 @@ export default function FreePlayPage() {
       setReviewPly(null);
       moveLogRef.current = [];
       gameStartedAtRef.current = new Date().toISOString();
+      if (worldLocationId) recordGameStarted(worldLocationId);
       setView({ status: "playing", difficulty });
     } finally {
       setStartingGame(false);
@@ -162,6 +174,15 @@ export default function FreePlayPage() {
   }
 
   function handleGameOver(difficulty: Difficulty, result: GameResult) {
+    // Chess Mind World: the child always plays White in Free Play (see
+    // playableColor="w" on the ChessBoard below), so a real checkmate win
+    // for White, in a game that was actually played at a World location, is
+    // exactly the event "First Victory in <location>" should be earned by —
+    // never a fabricated one. See lib/world/passport.ts for why this can be
+    // recorded honestly without a database row Free Play itself doesn't have.
+    if (worldLocationId && result.isCheckmate && result.winner === "w") {
+      recordGameWon(worldLocationId);
+    }
     const difficultyInfo = DIFFICULTY_INFO.find((d) => d.key === difficulty)!;
     const record: CompletedGameRecord = {
       startFen: STANDARD_START_FEN,
@@ -295,7 +316,6 @@ export default function FreePlayPage() {
     const reviewPlies = Array.from({ length: totalPlies - minReviewPly + 1 }, (_, i) => minReviewPly + i);
     return (
       <>
-      <WorldSceneBackdrop />
       <GameArenaLayout
         title={`${difficultyInfo.label} Match`}
         onExit={() => setView({ status: "picking-difficulty" })}
@@ -311,7 +331,20 @@ export default function FreePlayPage() {
           </div>
         }
         renderBoard={(boardSize) => (
-          <div className="w-full flex flex-col items-center gap-2">
+          <div className="relative w-full flex flex-col items-center gap-2">
+            {/* Chess Mind World: a decorative backdrop rendered behind the
+                board within this slot only — it never wraps the header, the
+                captured-piece row or the difficulty controls, and the board
+                itself (with its own opaque skin) sits above it at a higher
+                stacking context, so the scene frames the board without ever
+                being underneath the pieces. Absent entirely when no world
+                location was chosen. */}
+            {worldLocationId && (
+              <WorldSceneBackdrop
+                locationId={worldLocationId}
+                className="rounded-2xl -m-3 sm:-m-4"
+              />
+            )}
             {/*
               This is a VIEW-ONLY history control, not a takeback/undo. The
               live `game` chess.js instance inside ChessBoard is keyed only

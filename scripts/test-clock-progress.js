@@ -123,7 +123,7 @@ check("the digits have no interval of their own", /setInterval/.test(clockSrc), 
 const hookSrc = stripComments(read("lib/game/useRemainingMs.ts"));
 check("exactly one setInterval backs both", (hookSrc.match(/setInterval/g) || []).length, 1);
 check("the shared hook floors at zero", hookSrc.includes("Math.max(0,"), true);
-const cardSrc = stripComments(read("components/world/WorldPlayerRow.tsx"));
+const cardSrc = stripComments(read("components/game/PlayerCard.tsx"));
 check("the card itself does no clock arithmetic", /Date\.now|setInterval|getTime/.test(cardSrc), false);
 
 console.log("\n--- Rating comes from the live source ---");
@@ -132,7 +132,7 @@ const liveField = "resolution.child!." + "rating";
 const staleField = "host_rating_" + "before";
 check("the card's rating is read off the child row", pageSrc.includes(liveField), true);
 check("the card is given that value", /rating=\{myRating\}/.test(pageSrc), true);
-const cardCallSites = pageSrc.slice(pageSrc.indexOf("<WorldPlayerRow"));
+const cardCallSites = pageSrc.slice(pageSrc.indexOf("<PlayerCard"));
 check(
   "the stale post-game column is never the card's rating",
   new RegExp("rating=\\{[^}]*" + staleField).test(cardCallSites),
@@ -168,6 +168,14 @@ for (const side of ["myClock", "opponentClock"]) {
   check(`${side} feeds the card's bar`, new RegExp("clock=\{" + side + "\}").test(pageSrc), true);
   check(`${side} feeds the digits too`, new RegExp("LiveChessClock \{\.\.\." + side + "\}").test(pageSrc), true);
 }
+
+console.log("");
+console.log("--- The card is unconditional, not gated on a World location ---");
+check("the card does not consult the World", /useWorldLocation/.test(cardSrc), false);
+check("the card does not import from lib/world", /lib\/world/.test(cardSrc), false);
+check("the card has no location-dependent early return", /if \(!location\)/.test(cardSrc), false);
+check("the online page renders the card directly", /<PlayerCard/.test(pageSrc), true);
+check("no stale WorldPlayerRow reference survives", /WorldPlayerRow/.test(pageSrc), false);
 
 console.log("\n--- Card layout survives without optional data ---");
 check("clock block is conditional", /\{clock && \(/.test(cardSrc), true);

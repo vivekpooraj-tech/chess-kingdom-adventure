@@ -1,75 +1,68 @@
 "use client";
 
-import { useEffect } from "react";
-import { useWorldLocation } from "@/lib/world/useWorldLocation";
-import { LocationBadge, LocationSwitcherChip } from "./LocationBadge";
-import { getScene } from "./sceneRegistry";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
+import { getWorldLocation, type WorldLocationId } from "@/lib/world/locations";
 
 /**
- * Mounts the active location's scene behind a game screen, or renders nothing.
+ * Renders a World location behind whatever is on top of it.
  *
- * This is the ONE integration point between Chess Mind World and gameplay. A
- * game page adds this component and nothing else: no props to thread, no state
- * to own, no change to how the board, clocks or controls work. Delete the line
- * and the page is exactly what it was before.
+ * CODE SPLITTING IS THE POINT. Scenes are `dynamic(..., { ssr: false })`, so
+ * a scene's markup ships only to someone who actually opens that location.
+ * A learner who never visits the World never downloads a pixel of it, and
+ * Free Play's bundle does not grow for a feature it is not using. This is
+ * also why lib/world/locations.ts holds no React: importing the registry to
+ * list two cards must not pull in two scenes.
  *
- * Scenes are code-split in sceneRegistry, so neither a scene component nor its
- * stylesheet is in any bundle a player downloads until they have actually
- * chosen a location. Someone who never opens World pays nothing for it.
+ * MOBILE SIMPLIFICATION. Below 640px the scene is told to simplify: fewer
+ * generated elements, no ambient motion. Measured once on mount and on
+ * resize, never per frame.
+ *
+ * WHAT IT CANNOT DO. Every node is pointer-events-none and aria-hidden. It
+ * never receives the game, a move handler or a clock; it is a sibling behind
+ * the board, and the scrim below keeps the pieces legible over any scene.
  */
-export function WorldSceneBackdrop() {
-  const { location, ready } = useWorldLocation();
-  const Scene = getScene(location?.id);
-  const active = Boolean(ready && location && Scene);
+const SCENES: Record<WorldLocationId, React.ComponentType<{ simplify?: boolean }>> = {
+  "london-eye": dynamic(() => import("./scenes/LondonEyeScene"), { ssr: false }),
+  chaturanga: dynamic(() => import("./scenes/ChaturangaScene"), { ssr: false }),
+};
 
-  /**
-   * The root flag that lets the scene show through the game shell.
-   *
-   * ChessFocusLayout owns the board-sizing contract for every board screen and
-   * paints an opaque background; it is not modified by this feature. So the
-   * shell is made transparent from the outside, exactly the way
-   * lib/chessFocus/focusMode.ts already toggles `html.chess-focus-active` —
-   * see worldOverlay.module.css.
-   *
-   * Removed on unmount, so navigating away from a game can never leave a
-   * transparent shell behind on a normal page.
-   */
+export function WorldSceneBackdrop({
+  locationId,
+  /** How much to dim the scene. The board sits on top of this, so it is the
+   *  single knob that keeps pieces readable against any artwork. */
+  scrim = 0.45,
+  className = "",
+}: {
+  locationId: WorldLocationId | null | undefined;
+  scrim?: number;
+  className?: string;
+}) {
+  const [simplify, setSimplify] = useState(true);
+
   useEffect(() => {
-    if (!active) return;
-    const root = document.documentElement;
-    root.classList.add("cm-world-active");
+    const check = () => setSimplify(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
-    /*
-     * The location's own UI tokens, set as custom properties beside the flag.
-     *
-     * Set here rather than in each scene's stylesheet because the surfaces
-     * they colour (.chess-focus-panel and friends) are rendered by the game,
-     * outside the scene's subtree. Every rule in worldOverlay.css falls back
-     * to London's value, so a location with no theme is unchanged.
-     */
-    const theme = location?.theme;
-    const vars: [string, string | undefined][] = [
-      ["--cm-world-glass", theme?.glass],
-      ["--cm-world-glass-solid", theme?.glassSolid],
-      ["--cm-world-board-shadow", theme?.boardShadow],
-    ];
-    for (const [name, value] of vars) if (value) root.style.setProperty(name, value);
+  const location = getWorldLocation(locationId);
+  if (!location) return null;
 
-    return () => {
-      root.classList.remove("cm-world-active");
-      for (const [name] of vars) root.style.removeProperty(name);
-    };
-  }, [active, location]);
-
-  if (!active || !location || !Scene) return null;
+  const Scene = SCENES[location.id];
 
   return (
-    <>
-      <Scene />
-      <LocationBadge />
-      <LocationSwitcherChip />
-    </>
+    <div
+      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
+      aria-hidden="true"
+      data-world-location={location.id}
+    >
+      <Scene simplify={simplify} />
+      <div
+        className="absolute inset-0 bg-premium-midnight"
+        style={{ opacity: Math.min(Math.max(scrim, 0), 0.9) }}
+      />
+    </div>
   );
 }
-
-export default WorldSceneBackdrop;

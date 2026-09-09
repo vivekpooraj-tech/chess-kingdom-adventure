@@ -1,4 +1,5 @@
 import type { ProviderCall } from "./types";
+import { classifyFailure, recordOllieOutcome } from "../observability";
 
 // Development-only provider: Google's Gemini API via AI Studio. Chosen
 // over alternatives (Groq, OpenAI, etc.) because Google's own docs
@@ -32,7 +33,14 @@ export function hasUsableGeminiKey(): boolean {
 
 export const callGemini: ProviderCall = async ({ systemPrompt, message, history }) => {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey.length < MIN_PLAUSIBLE_KEY_LENGTH) return null;
+  if (!apiKey || apiKey.length < MIN_PLAUSIBLE_KEY_LENGTH) {
+    recordOllieOutcome({
+      kind: "provider_failure",
+      provider: "development",
+      category: classifyFailure({ hasKey: !!apiKey, keyLooksPlausible: false }),
+    });
+    return null;
+  }
 
   // Gemini uses "model" instead of "assistant" for the AI's own turns, and
   // has no separate system-role message -- system instructions go in their
@@ -66,9 +74,32 @@ export const callGemini: ProviderCall = async ({ systemPrompt, message, history 
     const data = await res.json();
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-    if (!res.ok || !text) return null;
+    if (!res.ok || !text) {
+      recordOllieOutcome({
+        kind: "provider_failure",
+        provider: "development",
+        category: classifyFailure({
+          hasKey: true,
+          keyLooksPlausible: true,
+          httpStatus: res.status,
+          emptyText: res.ok && !text,
+        }),
+      });
+      return null;
+    }
+    recordOllieOutcome({ kind: "provider_success", provider: "development" });
     return text;
-  } catch {
+  } catch (err) {
+    recordOllieOutcome({
+      kind: "provider_failure",
+      provider: "development",
+      category: classifyFailure({
+        hasKey: true,
+        keyLooksPlausible: true,
+        wasAborted: (err as { name?: string })?.name === "AbortError",
+        threw: true,
+      }),
+    });
     return null;
   } finally {
     clearTimeout(timeout);

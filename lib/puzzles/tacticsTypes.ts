@@ -29,6 +29,24 @@ export type TacticsSkill =
 
 export type TacticsTier = "beginner" | "intermediate" | "advanced";
 
+/** Runtime companion to TacticsSkill — every value the type allows, in a
+ *  fixed display order, so a theme browser can enumerate them without a
+ *  hardcoded duplicate list drifting from the type. */
+export const TACTICS_SKILLS: readonly TacticsSkill[] = [
+  "forks",
+  "pins",
+  "skewers",
+  "discovered_attacks",
+  "piece_safety",
+  "king_safety",
+  "checks",
+  "tactical_awareness",
+  "calculation",
+  "endgame",
+];
+
+export const TACTICS_TIERS: readonly TacticsTier[] = ["beginner", "intermediate", "advanced"];
+
 export interface TacticsPuzzle {
   /** Namespaced (`lc-<lichessId>`) so it can never collide with an id from
    *  content/puzzles.ts — both share the puzzle_library_solves table. */

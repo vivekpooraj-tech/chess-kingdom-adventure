@@ -28,9 +28,7 @@ import {
   type RematchContext,
 } from "@/lib/online/rematch";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
-import { WorldSceneBackdrop } from "@/components/world/WorldSceneBackdrop";
-import { WorldPlayerRow } from "@/components/world/WorldPlayerRow";
-import { WorldControlBar } from "@/components/world/WorldControlBar";
+import { PlayerCard } from "@/components/game/PlayerCard";
 import { LiveChessClock } from "@/components/game/ChessClock";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -684,21 +682,13 @@ export default function OnlineGamePage() {
 
     return (
       <>
-      <WorldSceneBackdrop />
-      {/* Shortcuts to the page's OWN handlers — Resign opens the same
-          confirmation in the panel below, so the two can never disagree. */}
-      <WorldControlBar
-        onResign={() => setResignConfirm(true)}
-        onOfferDraw={handleOfferDraw}
-        disabled={game.status !== "active"}
-      />
       <GameArenaLayout
         title={arenaTitle}
         onExit={() =>
           router.push(game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map")
         }
         opponentRow={
-          <WorldPlayerRow
+          <PlayerCard
             icon="⚔️"
             label="Opponent"
             isOpponent
@@ -713,10 +703,10 @@ export default function OnlineGamePage() {
               )}
               {opponentClock && <LiveChessClock {...opponentClock} />}
             </span>
-          </WorldPlayerRow>
+          </PlayerCard>
         }
         playerRow={
-          <WorldPlayerRow
+          <PlayerCard
             icon="♟️"
             label={`You — ${myColor === "w" ? "White" : "Black"}`}
             rating={myRating}
@@ -724,7 +714,7 @@ export default function OnlineGamePage() {
             clock={myClock}
           >
             {myClock && <LiveChessClock {...myClock} />}
-          </WorldPlayerRow>
+          </PlayerCard>
         }
         renderBoard={(boardSize) => (
           <ChessBoard

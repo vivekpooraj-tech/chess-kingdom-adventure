@@ -19,6 +19,7 @@ import {
   getOnlineWinsCount,
   getScreenTimeStatus,
   getSkillSignals,
+  localDateString,
 } from "@/lib/supabase/queries";
 import { getUnlockedKingdomBonuses } from "@/lib/chessMind/kingdomUnlocks";
 import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
@@ -31,13 +32,17 @@ import { SkeletonBlock } from "@/components/ui/Skeleton";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { HeroJourneyCard } from "@/components/home/HeroJourneyCard";
 import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
+import { DailyQuestsCard } from "@/components/home/DailyQuestsCard";
+import { ChessSchoolCard } from "@/components/school/ChessSchoolCard";
 import { DestinationCard } from "@/components/home/DestinationCard";
-import { PlayIcon, AcademyIcon, DiscoverIcon } from "@/components/nav/icons";
+import { PlayIcon, AcademyIcon, DiscoverIcon, WorldIcon } from "@/components/nav/icons";
 import { StatCardCompact } from "@/components/ui/StatCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
 import { getHomeLeadRecommendation } from "@/lib/home/getHomeLead";
+import { getDailyQuestActivity } from "@/lib/quests/questQueries";
+import { selectDailyQuests } from "@/lib/quests/dailyQuests";
 import { deriveLearnerProfile } from "@/lib/ollie/learnerContext";
 import { recommendPractice, type PracticeLessonItem } from "@/lib/training/recommendation";
 import { getSkill } from "@/lib/analysis/skills";
@@ -92,6 +97,7 @@ export default async function KingdomMapPage() {
     chessMindStreak,
     screenTimeStatus,
     skillSignals,
+    questActivity,
   ] = await Promise.all([
     getCompletedDays(supabase, child.id),
     parentPromise,
@@ -107,6 +113,10 @@ export default async function KingdomMapPage() {
     // deriveLearnerProfile derives that from signals alone (reviews only feed
     // the accuracy trend, which this card doesn't show).
     getSkillSignals(supabase, child.id).catch(() => ({})),
+    // Three cheap indexed count queries, run as part of this same wave rather
+    // than as a new sequential layer. Never rejects — each source degrades to
+    // null on its own and is then omitted from the card (see questQueries.ts).
+    getDailyQuestActivity(supabase, child.id),
   ]);
   const isPremium = resolvePremiumState(parent).isPremium;
   const kingdomBonuses = getUnlockedKingdomBonuses(chessMindStatsByModule);
@@ -130,6 +140,10 @@ export default async function KingdomMapPage() {
 
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
   const currentZone = getZoneForDay(Math.min(child.current_day, LESSONS.length));
+  // The lesson the learner is actually on, so Chess School can name it
+  // ("Day 12 of 30 · The Knight's Secret Outpost") rather than showing a bare
+  // number. Looked up from the already-imported LESSONS — no query.
+  const currentLesson = LESSONS.find((l) => l.dayNumber === child.current_day) ?? null;
 
   // Turn a recurring weakness into a concrete destination, reusing the Game
   // Review's skill-to-lesson mapping so Home, Learn and the review all point
@@ -161,6 +175,17 @@ export default async function KingdomMapPage() {
 
   const neutralTone = prefersNeutralHomeTone(child.experience_level, child.age_band);
 
+  // Pure and deterministic for (child, date, level) — the same three quests
+  // all day, with progress read from the activity tables above. No quest state
+  // is stored anywhere; see lib/quests/dailyQuests.ts for why.
+  const questSet = selectDailyQuests({
+    childId: child.id,
+    date: localDateString(),
+    experienceLevel: child.experience_level,
+    ageBand: child.age_band ?? null,
+    activity: questActivity,
+  });
+
   return (
     <>
       <ScreenTimeGate
@@ -189,12 +214,28 @@ export default async function KingdomMapPage() {
           </div>
         </div>
 
+        {/* Chess School leads Home (Phase D) — it's the flagship 30-day
+            course, and "what should I do next" should default to "keep
+            going" rather than making a learner scroll past three other
+            cards to find it. Same currentDay/completedDays/currentLesson
+            already computed above for the journey section below; moving
+            this here removed its old spot rather than duplicating it, so
+            there is exactly one Chess School progress card on the page. */}
+        <ChessSchoolCard
+          currentDay={child.current_day}
+          completedDays={completedDays}
+          currentLessonTitle={currentLesson?.title ?? null}
+          neutralTone={neutralTone}
+        />
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <DailyChallengeCard childId={child.id} />
           <div className="xl:col-span-2">
             <HeroJourneyCard recommendation={heroRecommendation} />
           </div>
         </div>
+
+        <DailyQuestsCard set={questSet} neutralTone={neutralTone} />
 
         {kingdomBonuses.length > 0 && (
           <Link
@@ -238,6 +279,12 @@ export default async function KingdomMapPage() {
               description="The pieces and the history of chess"
               icon={DiscoverIcon}
               accent="emerald"
+            />
+            <DestinationCard
+              href="/world"
+              title="Explore World"
+              description="Play the same game somewhere extraordinary"
+              icon={WorldIcon}
             />
           </div>
         </section>

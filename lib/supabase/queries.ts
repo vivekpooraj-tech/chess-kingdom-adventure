@@ -993,6 +993,41 @@ export async function getSolvedPuzzleIds(
   return (data ?? []).map((r) => r.puzzle_id as string);
 }
 
+/**
+ * The full solve history — id, source, first-try, and WHEN — for the
+ * puzzle history / personal-best / streak surfaces (Phase E, Priority 4).
+ * Same table as getSolvedPuzzleIds, same RLS, just more columns; capped at
+ * `limit` most recent rows via the table's existing (child_id, solved_at
+ * desc) index, since a personal-best/streak view needs recency, not the
+ * entire lifetime history of a heavy solver.
+ */
+export interface PuzzleSolveRecord {
+  puzzleId: string;
+  solvedAt: string;
+  firstTry: boolean;
+  source: "trainer" | "daily";
+}
+
+export async function getPuzzleSolveHistory(
+  supabase: SupabaseClient,
+  childId: string,
+  limit = 500
+): Promise<PuzzleSolveRecord[]> {
+  const { data, error } = await supabase
+    .from("puzzle_library_solves")
+    .select("puzzle_id, solved_at, first_try, source")
+    .eq("child_id", childId)
+    .order("solved_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    puzzleId: r.puzzle_id as string,
+    solvedAt: r.solved_at as string,
+    firstTry: !!r.first_try,
+    source: r.source as "trainer" | "daily",
+  }));
+}
+
 // --- Puzzle previews (free-tier daily sample of locked-day content) -----
 
 export async function getTodayPreviewCount(
