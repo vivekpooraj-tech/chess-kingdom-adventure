@@ -24,7 +24,7 @@ import { AVATARS } from "@/content/avatars";
 import { getAchievement } from "@/content/achievements";
 import { HISTORY_OF_CHESS } from "@/content/academyVideos";
 import { CHESS_MIND_CATEGORIES } from "@/content/chessMindCategories";
-import { SecondaryCard } from "@/components/ui/Card";
+import { ListItemRow, SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
 import { ScreenTimeSettings } from "./ScreenTimeSettings";
 import { PremiumStatusCard } from "@/components/premium/PremiumStatusCard";
@@ -185,6 +185,25 @@ export default async function ParentDashboardPage() {
       <h1 className={TEXT.display}>Parent Dashboard</h1>
 
       <ManageChildren initialChildren={allChildren} activeChildId={child?.id ?? ""} />
+
+      <section className="w-full flex flex-col gap-2">
+        <p className={`${TEXT.caption} uppercase tracking-wide`}>Parent Controls</p>
+        <ListItemRow href="/parent-gate?next=/parent-dashboard/parent-lock">
+          <span className="text-2xl flex-none" aria-hidden>
+            🔐
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-classic-display text-base text-premium-ivory">Parent Lock</p>
+            <p className={`${TEXT.caption} normal-case text-premium-gold`}>Chess Time</p>
+            <p className={`${TEXT.caption} normal-case`}>
+              Help your child stay focused on chess.
+            </p>
+          </div>
+          <span className="text-premium-gold text-lg flex-none" aria-hidden>
+            →
+          </span>
+        </ListItemRow>
+      </section>
 
       {child && (
         <>

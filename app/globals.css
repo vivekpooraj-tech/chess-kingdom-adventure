@@ -704,6 +704,11 @@ html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) body {
   overflow: hidden;
 }
 
+/* Chess Time (Parent Lock) — completion state hides bottom nav via component logic. */
+html[data-chess-time-expired] .layout-bottom-nav {
+  display: none !important;
+}
+
 .text-gold-sheen {
   background: linear-gradient(135deg, #F3D98B 0%, #D4AF37 45%, #B8944A 100%);
   -webkit-background-clip: text;

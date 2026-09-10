@@ -5,6 +5,13 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/branding/Logo";
 import { ChevronRightIcon } from "./icons";
 import { NAV_ITEMS, SECONDARY_NAV_ITEMS, isNavItemActive, type NavItem } from "./navConfig";
+import { useChessTimeOptional } from "@/components/parentLock/ChessTimeProvider";
+import { filterNavItemsForChessTime } from "@/lib/parentLock/navFilter";
+import {
+  chessTimeNavActivities,
+  isChessTimeLocked,
+  shouldHideAppNavDuringLock,
+} from "@/lib/parentLock/sessionLock";
 
 // Labels + the brand wordmark are ALWAYS in the DOM and hidden purely by
 // CSS off `html[data-sidenav="collapsed"]` (set pre-paint by
@@ -75,6 +82,15 @@ export function SideNav({
   onToggleCollapsed: () => void;
 }) {
   const pathname = usePathname();
+  const chessTime = useChessTimeOptional();
+  const session = chessTime?.session ?? null;
+  const expired = chessTime?.expired ?? false;
+  const locked = isChessTimeLocked(session);
+  const hideNav = shouldHideAppNavDuringLock(session, expired);
+  const activities = chessTimeNavActivities(session, expired);
+  const primaryItems = hideNav ? [] : filterNavItemsForChessTime(NAV_ITEMS, activities);
+  const secondaryItems = locked ? [] : SECONDARY_NAV_ITEMS;
+  const homeHref = locked ? "/chess-time" : "/kingdom-map";
 
   return (
     <nav
@@ -82,7 +98,7 @@ export function SideNav({
       className="app-sidenav fixed inset-y-0 left-0 z-40 w-[var(--app-sidenav-w)] flex-col border-r border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
     >
       <div className="flex h-14 flex-none items-center px-4">
-        <Link href="/kingdom-map" aria-label="Chess Mind — Home" className="inline-flex items-center">
+        <Link href={homeHref} aria-label="Chess Mind — Home" className="inline-flex items-center">
           <span className="app-sidenav-crest">
             <Logo variant="compact" size={28} />
           </span>
@@ -93,20 +109,17 @@ export function SideNav({
       </div>
 
       <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
-        {NAV_ITEMS.map((item) => (
+        {primaryItems.map((item) => (
           <SideNavLink key={item.label} item={item} active={isNavItemActive(pathname, item)} />
         ))}
 
-        {/* Secondary destinations. Desktop only (this whole component is), and
-            purely a shortcut layer — see SECONDARY_NAV_ITEMS. The heading is
-            hidden along with the labels when collapsed, so the group reads as
-            icons under a divider rather than an unexplained second block. */}
+        {secondaryItems.length > 0 && (
         <div className="mt-3 border-t border-white/5 pt-3">
           <p className="app-sidenav-label px-3 pb-1 font-classic-body text-[10px] font-semibold uppercase tracking-wider text-premium-ivory/35">
             Explore
           </p>
           <div className="flex flex-col gap-1">
-            {SECONDARY_NAV_ITEMS.map((item) => (
+            {secondaryItems.map((item) => (
               <SideNavLink
                 key={item.label}
                 item={item}
@@ -116,6 +129,7 @@ export function SideNav({
             ))}
           </div>
         </div>
+        )}
       </div>
 
       <div className="flex-none border-t border-white/5 px-2 py-2">

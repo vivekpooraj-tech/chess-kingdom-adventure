@@ -14,6 +14,7 @@ import { ShellBootstrapScript } from "@/components/nav/ShellBootstrapScript";
 import { ThemeBootstrapScript } from "@/components/theme/ThemeBootstrapScript";
 import { AppShell } from "@/components/nav/AppShell";
 import { ScreenTimeTracker } from "@/components/screen-time/ScreenTimeTracker";
+import { ParentLockShell } from "@/components/parentLock/ParentLockShell";
 import { BRAND } from "@/lib/brand";
 
 // Adventure Mode faces. These were referenced in tailwind.config.ts as bare
@@ -112,7 +113,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 independent of whether nav chrome is shown, and the root layout
                 keeps it mounted across every navigation. */}
             <ScreenTimeTracker />
-            <AppShell>{children}</AppShell>
+            <ParentLockShell>
+              <AppShell>{children}</AppShell>
+            </ParentLockShell>
           </MotionProvider>
           {/* Renders nothing unless LOCAL_TEST_MODE is on (lib/devTestMode.ts) —
               see that file for why a production build can't activate it. */}

@@ -3,16 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS, isNavItemActive } from "./navConfig";
+import { useChessTimeOptional } from "@/components/parentLock/ChessTimeProvider";
+import { filterNavItemsForChessTime } from "@/lib/parentLock/navFilter";
+import {
+  chessTimeNavActivities,
+  shouldHideAppNavDuringLock,
+} from "@/lib/parentLock/sessionLock";
 
-/**
- * Bottom navigation, on every device. The bar spans the full width and is
- * safe-area aware (--bottom-nav-h + env(safe-area-inset-bottom)); the tap
- * targets sit in a centred, width-capped group so on a wide desktop they
- * read as an intentional bar rather than five icons stretched across
- * 1900px. No is-phone / is-tablet gating — sizing is viewport-driven.
- */
 export function PrimaryNav() {
   const pathname = usePathname();
+  const chessTime = useChessTimeOptional();
+  const session = chessTime?.session ?? null;
+  const expired = chessTime?.expired ?? false;
+
+  if (shouldHideAppNavDuringLock(session, expired)) {
+    return null;
+  }
+
+  const activities = chessTimeNavActivities(session, expired);
+  const items = filterNavItemsForChessTime(NAV_ITEMS, activities);
+
+  if (activities && items.length === 0) return null;
 
   return (
     <nav
@@ -21,7 +32,7 @@ export function PrimaryNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="mx-auto flex w-full max-w-lg items-stretch justify-between px-1 sm:px-2">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const isActive = isNavItemActive(pathname, item);
           const Icon = item.icon;
 

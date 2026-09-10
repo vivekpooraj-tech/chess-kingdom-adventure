@@ -109,6 +109,7 @@ const APP_PREFIXES = [
   "/parent-dashboard",
   "/world",
   "/chess-school",
+  "/chess-time",
 ];
 
 /** Full-screen sub-routes that never showed the nav even though their
