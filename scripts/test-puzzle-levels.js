@@ -37,12 +37,16 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   const expected = [
     [0, "easy"],
     [1, "easy"],
+    [9, "easy"],
     [10, "easy"],
     [11, "medium"],
+    [29, "medium"],
     [30, "medium"],
     [31, "hard"],
+    [59, "hard"],
     [60, "hard"],
     [61, "expert"],
+    [99, "expert"],
     [100, "expert"],
     [101, "master"],
   ];
@@ -107,11 +111,24 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   check("Master still has no next level far beyond it", L.nextPuzzleLevel(5000) === null);
 }
 
-// --- 7. Gauge caps at 100 regardless of how far past Master ---------------
+// --- 7. progressToNextLevel: real progress within the CURRENT band, not a
+// flat lifetime percentage (which would misrepresent every band but Easy) --
 {
-  check("gauge under 100 passes through unchanged", L.puzzleGaugeProgress(42).solved === 42);
-  check("gauge caps at 100 past Master", L.puzzleGaugeProgress(250).solved === 100);
-  check("gauge never negative", L.puzzleGaugeProgress(-10).solved === 0);
+  check("0 solved is 0% toward Medium (an 11-puzzle band)", L.progressToNextLevel(0).percent === 0);
+  check(
+    "5 solved is roughly mid-way through Easy's 11-wide band (0-10)",
+    L.progressToNextLevel(5).percent === Math.round((5 / 11) * 100)
+  );
+  check("10 solved (Easy's last puzzle) is not yet 100% — Medium is the next real step", L.progressToNextLevel(10).percent < 100);
+  check("11 solved (just crossed into Medium) resets to a fresh 0% toward Hard", L.progressToNextLevel(11).percent === 0);
+  check("Master (101+) always reports 100% — the bar reads as full, not stuck", L.progressToNextLevel(101).percent === 100);
+  check("far past Master still reports 100%, never over", L.progressToNextLevel(9999).percent === 100);
+  check("Master's bandSize is null (nothing left to measure toward)", L.progressToNextLevel(150).bandSize === null);
+  check("percent never negative for a defensive negative input", L.progressToNextLevel(-20).percent === 0);
+  check(
+    "solvedInBand is the count relative to the CURRENT band's own start, not the lifetime total",
+    L.progressToNextLevel(35).solvedInBand === 35 - L.PUZZLE_LEVELS[2].min
+  );
 }
 
 // --- 8. Motivational copy: deterministic, varied, never throws ----------
@@ -131,7 +148,12 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
     check(`${level.id} has a tagline`, typeof level.tagline === "string" && level.tagline.length > 0);
     check(`${level.id} has an Ollie line`, typeof level.ollieLine === "string" && level.ollieLine.length > 0);
     check(`${level.id} has an achievement title`, typeof level.achievement === "string" && level.achievement.length > 0);
+    check(`${level.id} has a brain-stage label`, typeof level.brainStageLabel === "string" && level.brainStageLabel.length > 0);
   }
+  check(
+    "every level's brain-stage label is unique (five distinct stages, not one reused)",
+    new Set(L.PUZZLE_LEVELS.map((l) => l.brainStageLabel)).size === L.PUZZLE_LEVELS.length
+  );
   // Achievements are meant to be distinct badges, not one label reused five times.
   check(
     "every level's achievement title is unique",

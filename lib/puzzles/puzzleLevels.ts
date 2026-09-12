@@ -30,6 +30,11 @@ export interface PuzzleLevel {
    * becomes the child's current or a past level. Never claims anything the
    * solved count doesn't actually support. */
   achievement: string;
+  /** Label for this level's stage in the "brain grows stronger" panel —
+   * the same five-stage progression as the tower floors, described from
+   * the child's own head rather than the tower's, so the two panels read
+   * as one story instead of two separate mechanics. */
+  brainStageLabel: string;
 }
 
 export const PUZZLE_LEVELS: readonly PuzzleLevel[] = [
@@ -43,6 +48,7 @@ export const PUZZLE_LEVELS: readonly PuzzleLevel[] = [
     tagline: "Learn to spot ideas",
     ollieLine: "Every master started with one move.",
     achievement: "Puzzle Explorer",
+    brainStageLabel: "Curious Mind",
   },
   {
     id: "medium",
@@ -54,6 +60,7 @@ export const PUZZLE_LEVELS: readonly PuzzleLevel[] = [
     tagline: "See deeper",
     ollieLine: "You're starting to see patterns!",
     achievement: "Pattern Hunter",
+    brainStageLabel: "Growing Sharp",
   },
   {
     id: "hard",
@@ -65,6 +72,7 @@ export const PUZZLE_LEVELS: readonly PuzzleLevel[] = [
     tagline: "Calculate carefully",
     ollieLine: "Slow down. Calculate deeper.",
     achievement: "Calculation Climber",
+    brainStageLabel: "Wired for Tactics",
   },
   {
     id: "expert",
@@ -76,6 +84,7 @@ export const PUZZLE_LEVELS: readonly PuzzleLevel[] = [
     tagline: "Think like a tactician",
     ollieLine: "Now you're thinking ahead.",
     achievement: "First Tactician",
+    brainStageLabel: "Deep Thinker",
   },
   {
     id: "master",
@@ -87,6 +96,7 @@ export const PUZZLE_LEVELS: readonly PuzzleLevel[] = [
     tagline: "See what others miss",
     ollieLine: "Welcome to the sharpest floor in the tower.",
     achievement: "Tower Master",
+    brainStageLabel: "Grandmaster Mind",
   },
 ];
 
@@ -125,10 +135,29 @@ export function nextPuzzleLevel(solvedCount: number): PuzzleLevel | null {
   return PUZZLE_LEVELS[idx + 1] ?? null;
 }
 
-/** Progress toward the milestone gauge, capped at 100 — matches the "X / 100
- * puzzles solved" framing regardless of how far past Master a child gets. */
-export function puzzleGaugeProgress(solvedCount: number): { solved: number; cap: number } {
-  return { solved: Math.min(Math.max(0, solvedCount), 100), cap: 100 };
+/**
+ * Progress within the CURRENT band, toward the next real threshold — what
+ * the progress bar on the Puzzle Tower actually draws. Deliberately not a
+ * flat 0–100 "lifetime" gauge: a child at 62 solved should see themselves
+ * two puzzles into Expert's 40-puzzle span, not "62%", which would silently
+ * misrepresent every band except the first.
+ *
+ * Master has no next threshold, so it always reports 100% — the bar reads
+ * as "full" rather than stuck at some arbitrary fraction.
+ */
+export function progressToNextLevel(solvedCount: number): {
+  percent: number;
+  solvedInBand: number;
+  bandSize: number | null;
+} {
+  const count = Math.max(0, solvedCount);
+  const current = currentPuzzleLevel(count);
+  const next = nextPuzzleLevel(count);
+  const solvedInBand = count - current.min;
+  if (!next) return { percent: 100, solvedInBand, bandSize: null };
+  const bandSize = next.min - current.min;
+  const percent = Math.min(100, Math.round((solvedInBand / bandSize) * 100));
+  return { percent, solvedInBand, bandSize };
 }
 
 /**
