@@ -118,6 +118,8 @@ const FORCE_BARE_PREFIXES = [
   "/kingdom-map/customize",
   "/kingdom-map/board-skin",
   "/kingdom-map/piece-set",
+  // Chess School V2 session runner: a board-first screen, bare like /lesson.
+  "/chess-school/session",
 ];
 
 export function isAppChromeRoute(pathname: string): boolean {

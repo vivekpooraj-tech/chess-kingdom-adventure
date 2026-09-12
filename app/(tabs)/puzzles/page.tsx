@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -32,6 +32,7 @@ import { UpgradeButton } from "@/components/upgrade/UpgradeButton";
 import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 import { TEXT } from "@/lib/designSystem";
 import { getMatePattern } from "@/content/matePatterns";
+import { PuzzleTower } from "@/components/puzzles/PuzzleTower";
 
 type Status = "playing" | "correct" | "incorrect";
 
@@ -52,6 +53,24 @@ export default function PuzzlesPage() {
 
 function PuzzlesPageInner() {
   const router = useRouter();
+
+  // AppShell stamps html[data-puzzle-trainer] on /puzzles, and globals.css
+  // reads it as "this is a normal tab page, keep the tab bar visible" — twice,
+  // both times with !important, even in chess-focus mode. That was right
+  // when solving stayed docked in portrait, but the trainer now goes
+  // full-screen in every orientation (the bar is `fixed bottom-0 z-50`, the
+  // same z-index as the focus shell and later in the DOM, so it would paint
+  // straight over the bottom rank), so the flag is withdrawn for as long as
+  // this screen is mounted, not just in landscape. Restored on the way out;
+  // if the user navigates away instead, AppShell's own effect owns it again.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const had = root.dataset.puzzleTrainer;
+    delete root.dataset.puzzleTrainer;
+    return () => {
+      if (had !== undefined) root.dataset.puzzleTrainer = had;
+    };
+  }, []);
   const searchParams = useSearchParams();
 
   // A puzzle id in the URL (the Daily Challenge card links here with
@@ -92,6 +111,10 @@ function PuzzlesPageInner() {
   // Warm child copy vs. neutral adult copy, from the child profile the page
   // already resolves — no extra query.
   const [neutralTone, setNeutralTone] = useState(false);
+  // The tower is the arrival screen for an ordinary tab visit. A Daily
+  // Challenge link or a direct puzzle id promises to land straight on that
+  // exact puzzle, so both skip it entirely rather than adding a detour.
+  const [showTower, setShowTower] = useState(() => !requestedId && !isDaily);
 
   // The Daily Challenge is a separate free daily activity — it never counts
   // against the 3/day Puzzle Trainer allowance and is always playable, even
@@ -307,6 +330,20 @@ function PuzzlesPageInner() {
     }
   }
 
+  // Shown first, ahead of the loading skeleton below — the puzzle itself
+  // keeps loading in the background via the effect above, so by the time
+  // the child taps "Solve a Puzzle" it's usually already there.
+  if (showTower) {
+    return (
+      <PuzzleTower
+        solvedCount={solvedIds.size}
+        isPremium={isPremium}
+        freePuzzlesLeft={isPremium ? null : Math.max(0, DAILY_PREVIEW_LIMIT - todayCount)}
+        onStart={() => setShowTower(false)}
+      />
+    );
+  }
+
   if (!loaded || !selectionReady || !puzzle) {
     // A real skeleton, not a blank screen — this page is a client component
     // (needs the puzzle id from the URL before it knows what to render), so
@@ -331,7 +368,15 @@ function PuzzlesPageInner() {
     return (
       <ChessFocusLayout
         title="Puzzle Trainer"
-        preserveBottomNav
+        // Full-screen hides the tab bar, so the shell's own Exit button is
+        // the only way out. It must go somewhere — without this it renders
+        // and does nothing, which is a trap.
+        onExit={() => router.push("/kingdom-map")}
+        // Solving is a board-first moment in any orientation: the board gets
+        // the whole viewport and the panel sits beside/below it, rather than
+        // sharing the screen with the tab bar the way an ordinary tab page
+        // does.
+        preserveBottomNav={false}
         renderBoard={(boardSize) => (
           <div className="board-feedback flex w-full items-center justify-center" data-feedback={status}>
             <ChessBoard

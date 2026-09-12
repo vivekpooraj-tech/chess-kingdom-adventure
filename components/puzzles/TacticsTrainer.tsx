@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Chess } from "chess.js";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { ChessFocusLayout } from "@/components/chess/ChessFocusLayout";
@@ -48,6 +49,7 @@ type Status = "loading" | "playing" | "wrong" | "solved" | "empty";
  * The API already accepted the parameter; only this hand-off was missing.
  */
 export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = {}) {
+  const router = useRouter();
   const [puzzle, setPuzzle] = useState<TacticsPuzzle | null>(null);
   const [reason, setReason] = useState<TacticsPuzzleResponse["reason"]>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -233,7 +235,10 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
   return (
     <ChessFocusLayout
       title="Tactics Trainer"
-      preserveBottomNav
+      // Full-screen in every orientation, so this is the only way back to
+      // the puzzle hub.
+      onExit={() => router.push("/puzzles")}
+      preserveBottomNav={false}
       renderBoard={(boardSize) => (
         <div className="board-feedback flex w-full items-center justify-center" data-feedback={status}>
           <ChessBoard

@@ -84,6 +84,24 @@ export default async function ChessSchoolPage() {
         <p className={`${TEXT.body} mt-2`}>{COURSE_TAGLINE}</p>
       </header>
 
+      {/* Entry to the new classroom (Chess School V2). Additive only: the
+          course below is the live V1 experience and is untouched. */}
+      <Link
+        href="/chess-school/classroom"
+        className="w-full rounded-premiumCard border border-premium-gold/35 bg-gradient-to-br from-premium-gold/[0.10] to-transparent p-5 flex items-center justify-between gap-3 hover:border-premium-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
+      >
+        <div className="min-w-0">
+          <p className={`${TEXT.meta} text-premium-gold`}>NEW · THE CLASSROOM</p>
+          <p className="font-classic-display text-lg text-premium-ivory mt-1">
+            From zero to playing real people
+          </p>
+          <p className={`${TEXT.caption} normal-case mt-1`}>
+            30 sessions with Ollie as your coach. Your own pace, no streaks.
+          </p>
+        </div>
+        <span aria-hidden="true" className="text-premium-gold text-xl flex-none">→</span>
+      </Link>
+
       <section
         aria-label="Your progress"
         className="w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy border border-premium-gold/25 p-5 sm:p-6 flex flex-col gap-4 shadow-premiumCard"

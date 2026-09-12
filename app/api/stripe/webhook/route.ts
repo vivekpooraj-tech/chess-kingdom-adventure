@@ -3,6 +3,7 @@ import { getStripe } from "@/lib/stripe/client";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type Stripe from "stripe";
 import { PREMIUM_ENTITLEMENT_YEARS } from "@/lib/premium/entitlement";
+import { SCHOOL_CHECKOUT_PRODUCT } from "@/lib/pricing/school";
 
 /**
  * The durable source of truth for granting Premium. Stripe calls this
@@ -44,6 +45,36 @@ export async function POST(request: NextRequest) {
       const session = event.data.object as Stripe.Checkout.Session;
       const parentId = session.metadata?.parent_id;
 
+      // Chess School — Lifetime Access (app/api/stripe/checkout-school). Its
+      // sessions identify the parent as `school_parent_id`, never `parent_id`,
+      // so the Premium branch below (and /upgrade/success) cannot mistake a
+      // ₹199 School sale for a Premium purchase. Checked first and returned
+      // from, so a School session never reaches the Premium grant.
+      if (session.metadata?.product === SCHOOL_CHECKOUT_PRODUCT) {
+        const schoolParentId = session.metadata?.school_parent_id;
+        if (schoolParentId && session.payment_status === "paid") {
+          const admin = getSupabaseAdmin();
+          const { error } = await admin.rpc("grant_school_entitlement", {
+            p_parent_id: schoolParentId,
+            p_checkout_session_id: session.id,
+            p_payment_intent_id:
+              typeof session.payment_intent === "string" ? session.payment_intent : null,
+            p_amount_minor: session.amount_total ?? null,
+            p_currency: session.currency ?? null,
+            p_provider: "stripe",
+          });
+          if (error) {
+            console.error("Stripe webhook: grant_school_entitlement failed", schoolParentId, error);
+          }
+        } else {
+          console.warn("Stripe webhook: chess_school session missing school_parent_id or not paid.", {
+            schoolParentId,
+            paymentStatus: session.payment_status,
+          });
+        }
+        return NextResponse.json({ received: true });
+      }
+
       if (parentId && session.payment_status === "paid") {
         const admin = getSupabaseAdmin();
         const { error } = await admin.rpc("grant_premium_entitlement", {
@@ -78,6 +109,15 @@ export async function POST(request: NextRequest) {
         });
         if (error) {
           console.error("Stripe webhook: revoke_premium_entitlement failed", paymentIntentId, error);
+        }
+        // A refund of a Chess School sale. Both revokes are idempotent and
+        // keyed on the payment intent, so calling each for every refund is
+        // safe: the one that does not match the intent updates nothing.
+        const { error: schoolError } = await admin.rpc("revoke_school_entitlement", {
+          p_payment_intent_id: paymentIntentId,
+        });
+        if (schoolError) {
+          console.error("Stripe webhook: revoke_school_entitlement failed", paymentIntentId, schoolError);
         }
       }
     }
