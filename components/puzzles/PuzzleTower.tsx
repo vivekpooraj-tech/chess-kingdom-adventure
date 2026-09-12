@@ -20,6 +20,7 @@ import { PuzzleRewards } from "./PuzzleRewards";
 import { PuzzleUnlockCelebration } from "./PuzzleUnlockCelebration";
 import { OllieNote } from "@/components/ollie/OllieNote";
 import { PuzzleTierPath } from "./PuzzleTierPath";
+import { PuzzleTowerScene } from "./PuzzleTowerScene";
 
 /** Remembers the last level this device saw, purely to detect "you just
  * crossed a threshold" for the unlock celebration. A shared device with
@@ -48,9 +49,8 @@ type CelebrationPhase = "none" | "look-up" | "climbing" | "modal";
  * PUZZLE_TOWER_V2_HANDOFF.md) — the leveling data and thresholds are
  * unchanged from both; only the presentation grew.
  *
- * Pure CSS/SVG — no illustrated art assets, no animation library — same
- * performance discipline as the rest of the app on mid-range Android
- * hardware.
+ * Phase 2 adds an illustrated SVG backdrop + isometric tier path — still no
+ * raster art assets, same performance discipline on mid-range Android.
  */
 export function PuzzleTower({
   solvedCount,
@@ -152,21 +152,20 @@ export function PuzzleTower({
   }, []);
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-premium-midnight px-4 pt-6 pb-nav-safe">
-      {/* Scoped atmosphere — no globals.css changes. */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(255,197,61,0.12),transparent_55%),radial-gradient(ellipse_60%_40%_at_100%_100%,rgba(56,189,248,0.08),transparent_50%)]"
-        aria-hidden
-      />
-
-      <div className="relative mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-5xl md:grid md:grid-cols-[minmax(0,1.15fr)_minmax(280px,360px)] md:items-start md:gap-6 lg:gap-8">
-        {/* ── Left: story + tower + tiers ─────────────────────────────── */}
+    <main className="relative min-h-screen overflow-x-hidden bg-[#080c18] px-4 pt-6 pb-nav-safe">
+      <div className="relative mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-6xl md:grid md:grid-cols-[minmax(0,1.2fr)_minmax(280px,360px)] md:items-start md:gap-6 lg:gap-8">
+        {/* ── Left: story + illustrated hero + tiers ──────────────────── */}
         <div className="flex min-w-0 flex-col gap-5">
           <div className="flex flex-col items-center gap-1 text-center md:items-start md:text-left">
             <p className={`${TEXT.meta} text-premium-gold`}>🧩 PUZZLES</p>
             <h1 className={TEXT.display}>The Puzzle Tower</h1>
-            <p className={`${TEXT.body} normal-case`}>{motivationalLine(solvedCount)}</p>
-            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-premium-gold/30 bg-premium-gold/10 px-4 py-1.5">
+            <p className={`${TEXT.body} normal-case text-premium-ivory/85`}>
+              Solve today. Climb higher. Grow sharper.
+            </p>
+            <p className={`${TEXT.caption} normal-case text-premium-ivory/55`}>
+              {motivationalLine(solvedCount)}
+            </p>
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-premium-gold/30 bg-premium-gold/10 px-4 py-1.5 backdrop-blur-sm">
               <span aria-hidden="true">🧩</span>
               <span className="font-classic-display text-sm text-premium-gold tabular-nums">
                 {solvedCount} Puzzle{solvedCount === 1 ? "" : "s"} Solved
@@ -174,11 +173,21 @@ export function PuzzleTower({
             </div>
           </div>
 
-          <OllieNote className="md:max-w-lg">{current.ollieLine}</OllieNote>
+          <OllieNote className="md:max-w-lg border-premium-gold/25 bg-premium-navy/60 backdrop-blur-sm">
+            {current.ollieLine}
+          </OllieNote>
 
-          <TowerHero displayLevelId={displayLevelId} climbing={climbing} entered={entered} />
-
-          <PuzzleTierPath solvedCount={solvedCount} entered={entered} />
+          {/* Illustrated hero frame — sunset kingdom + tower + meadow path */}
+          <section className="relative overflow-hidden rounded-premiumCard border border-premium-gold/25 shadow-premiumGlow">
+            <PuzzleTowerScene />
+            <div className="relative z-10 flex flex-col gap-4 px-3 pb-4 pt-6 sm:px-5">
+              <TowerHero displayLevelId={displayLevelId} climbing={climbing} entered={entered} />
+              <PuzzleTierPath solvedCount={solvedCount} entered={entered} />
+              <p className="text-center font-classic-display text-sm italic text-premium-ivory/50">
+                Small puzzles. Big minds.
+              </p>
+            </div>
+          </section>
 
           <ol className="flex flex-col gap-3" aria-label="Puzzle Tower levels">
             {floors.map((level, i) => (
@@ -194,8 +203,8 @@ export function PuzzleTower({
           </ol>
         </div>
 
-        {/* ── Right: progress sidebar (tablet/desktop) ─────────────────── */}
-        <div className="flex flex-col gap-4 md:sticky md:top-[calc(var(--topbar-h,3.5rem)+1rem)]">
+        {/* ── Right: glass sidebar ───────────────────────────────────── */}
+        <div className="flex flex-col gap-4 md:sticky md:top-[calc(var(--topbar-h,3.5rem)+1rem)] [&_.rounded-premiumCard]:border-white/10 [&_.rounded-premiumCard]:bg-premium-navy/55 [&_.rounded-premiumCard]:backdrop-blur-md">
           <BrainGrowth displayLevelId={displayLevelId} realLevelId={current.id} />
 
           <PuzzleTowerProgress
@@ -253,8 +262,6 @@ function TowerHero({
   climbing: boolean;
   entered: boolean;
 }) {
-  // Bottom to top, widest to narrowest — five trapezoid rings plus a spire
-  // finial. Coordinates are hand-placed for a 220x260 viewBox.
   const rings = [
     { id: "easy", y: 210, w: 170 },
     { id: "medium", y: 168, w: 142 },
@@ -268,19 +275,37 @@ function TowerHero({
   return (
     <div className="relative flex justify-center py-2" aria-hidden="true">
       <svg
-        viewBox="0 0 220 260"
-        className={`h-56 w-auto md:h-[17rem] transition-opacity duration-700 motion-reduce:transition-none ${
+        viewBox="0 0 220 280"
+        className={`h-60 w-auto md:h-[19rem] transition-opacity duration-700 motion-reduce:transition-none ${
           entered ? "opacity-100" : "opacity-0"
         }`}
       >
         <defs>
           <radialGradient id="towerGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={FLOOR_ACCENT[displayLevelId].ring} stopOpacity="0.55" />
+            <stop offset="0%" stopColor={FLOOR_ACCENT[displayLevelId].ring} stopOpacity="0.65" />
             <stop offset="100%" stopColor={FLOOR_ACCENT[displayLevelId].ring} stopOpacity="0" />
           </radialGradient>
+          <linearGradient id="towerStone" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#4a5568" />
+            <stop offset="50%" stopColor="#2d3748" />
+            <stop offset="100%" stopColor="#1a202c" />
+          </linearGradient>
+          <filter id="towerShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.45" />
+          </filter>
         </defs>
 
-        {/* Glow behind the ring the climber is heading to / standing on. */}
+        {/* Ground shadow */}
+        <ellipse cx="110" cy="252" rx="78" ry="12" fill="rgba(0,0,0,0.35)" />
+
+        {/* Stone base platform */}
+        <path
+          d="M52 248 L168 248 L158 262 L62 262 Z"
+          fill="#1e293b"
+          stroke="rgba(255,255,255,0.12)"
+          filter="url(#towerShadow)"
+        />
+
         {rings
           .filter((r) => r.id === displayLevelId)
           .map((r) => (
@@ -288,7 +313,7 @@ function TowerHero({
               key={`glow-${r.id}`}
               cx="110"
               cy={r.y + ringHeight / 2}
-              r="70"
+              r="78"
               fill="url(#towerGlow)"
               className="motion-safe:animate-pulse"
             />
@@ -296,37 +321,73 @@ function TowerHero({
 
         {rings.map((r) => {
           const isDisplay = r.id === displayLevelId;
+          const isPast =
+            rings.findIndex((x) => x.id === r.id) <
+            rings.findIndex((x) => x.id === displayLevelId);
           const accent = FLOOR_ACCENT[r.id];
           const half = r.w / 2;
           const topHalf = half - 12;
+          const fill = isDisplay
+            ? accent.ring
+            : isPast
+              ? "rgba(255,255,255,0.14)"
+              : "rgba(255,255,255,0.05)";
           return (
-            <g key={r.id}>
+            <g key={r.id} filter="url(#towerShadow)">
+              {/* Battlements */}
+              <path
+                d={`M${110 - half},${r.y + 6} h8 v-6 h${Math.max(8, topHalf - 8)} v6 h8 v-6 h${Math.max(8, topHalf - 16)} v6 h8 v-6 h${Math.max(8, half - 24)} v6 h8 v-6 h8`}
+                fill="none"
+                stroke={isDisplay ? accent.ring : "rgba(255,255,255,0.1)"}
+                strokeWidth="1"
+                opacity="0.5"
+              />
               <polygon
                 points={`${110 - half},${r.y + ringHeight} ${110 + half},${r.y + ringHeight} ${110 + topHalf},${r.y} ${110 - topHalf},${r.y}`}
-                fill={isDisplay ? accent.ring : "rgba(255,255,255,0.06)"}
-                fillOpacity={isDisplay ? 0.85 : 1}
-                stroke={isDisplay ? accent.ring : "rgba(255,255,255,0.14)"}
-                strokeWidth={isDisplay ? 2 : 1}
+                fill={fill}
+                fillOpacity={isDisplay ? 0.92 : 1}
+                stroke={isDisplay ? accent.ring : "rgba(255,255,255,0.16)"}
+                strokeWidth={isDisplay ? 2.5 : 1}
               />
-              {/* A couple of small lit windows per ring. */}
-              <rect x={110 - topHalf / 2 - 6} y={r.y + 12} width="6" height="10" rx="1" fill={isDisplay ? "#1b2452" : "rgba(255,255,255,0.15)"} />
-              <rect x={110 + topHalf / 2} y={r.y + 12} width="6" height="10" rx="1" fill={isDisplay ? "#1b2452" : "rgba(255,255,255,0.15)"} />
+              <polygon
+                points={`${110 - topHalf + 8},${r.y + 8} ${110 + topHalf - 8},${r.y + 8} ${110 + topHalf - 14},${r.y + ringHeight - 6} ${110 - topHalf + 14},${r.y + ringHeight - 6}`}
+                fill="rgba(0,0,0,0.15)"
+                opacity={isDisplay ? 0.35 : 0.2}
+              />
+              <rect
+                x={110 - topHalf / 2 - 6}
+                y={r.y + 14}
+                width="6"
+                height="10"
+                rx="1"
+                fill={isDisplay ? "#fef08a" : "rgba(255,255,255,0.12)"}
+                opacity={isDisplay ? 0.85 : 1}
+              />
+              <rect
+                x={110 + topHalf / 2}
+                y={r.y + 14}
+                width="6"
+                height="10"
+                rx="1"
+                fill={isDisplay ? "#fef08a" : "rgba(255,255,255,0.12)"}
+                opacity={isDisplay ? 0.85 : 1}
+              />
             </g>
           );
         })}
 
-        {/* Spire + crown finial above the Master ring. */}
-        <polygon points="110,18 122,52 98,52" fill={FLOOR_ACCENT.master.ring} fillOpacity="0.9" />
-        <text x="110" y="16" textAnchor="middle" fontSize="16">
+        <polygon points="110,14 126,54 94,54" fill={FLOOR_ACCENT.master.ring} fillOpacity="0.95" />
+        <text x="110" y="12" textAnchor="middle" fontSize="18">
           👑
         </text>
 
-        {/* A pair of small banners for chess-set flavor, low on the tower. */}
-        <text x="30" y="236" fontSize="18">🚩</text>
-        <text x="182" y="236" fontSize="18">🚩</text>
+        <text x="24" y="242" fontSize="16">
+          🚩
+        </text>
+        <text x="188" y="242" fontSize="16">
+          🚩
+        </text>
 
-        {/* The climbing adventurer — glides between rings via its own
-            transition when displayLevelId changes underneath it. */}
         <PuzzleClimber
           x={110}
           y={displayRing.y + ringHeight / 2 + 14}
