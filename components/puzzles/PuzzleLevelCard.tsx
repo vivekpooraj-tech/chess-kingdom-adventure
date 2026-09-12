@@ -10,7 +10,7 @@ import type { LevelStatus, PuzzleLevel } from "@/lib/puzzles/puzzleLevels";
 export const FLOOR_ACCENT: Record<string, { border: string; glow: string; ring: string }> = {
   easy: { border: "border-emerald-400/40", glow: "rgba(52,211,153,0.35)", ring: "#34d399" },
   medium: { border: "border-sky-400/40", glow: "rgba(56,189,248,0.35)", ring: "#38bdf8" },
-  hard: { border: "border-violet-400/40", glow: "rgba(167,139,250,0.35)", ring: "#a78bfa" },
+  hard: { border: "border-orange-400/40", glow: "rgba(251,146,60,0.35)", ring: "#fb923c" },
   expert: { border: "border-rose-400/40", glow: "rgba(251,113,133,0.35)", ring: "#fb7185" },
   master: { border: "border-premium-gold/60", glow: "rgba(255,197,61,0.55)", ring: "#FFC53D" },
 };

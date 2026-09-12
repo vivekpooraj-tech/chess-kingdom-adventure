@@ -18,6 +18,8 @@ import { BrainGrowth } from "./BrainGrowth";
 import { PuzzleTowerProgress } from "./PuzzleTowerProgress";
 import { PuzzleRewards } from "./PuzzleRewards";
 import { PuzzleUnlockCelebration } from "./PuzzleUnlockCelebration";
+import { OllieNote } from "@/components/ollie/OllieNote";
+import { PuzzleTierPath } from "./PuzzleTierPath";
 
 /** Remembers the last level this device saw, purely to detect "you just
  * crossed a threshold" for the unlock celebration. A shared device with
@@ -150,59 +152,74 @@ export function PuzzleTower({
   }, []);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-premium-midnight px-4 pt-6 pb-nav-safe">
-      <div className="relative mx-auto flex w-full max-w-md flex-col gap-5">
-        {/* ── Header / puzzle identity ───────────────────────────────── */}
-        <div className="flex flex-col items-center gap-1 text-center">
-          <p className={`${TEXT.meta} text-premium-gold`}>🧩 PUZZLES</p>
-          <h1 className={TEXT.display}>The Puzzle Tower</h1>
-          <p className={`${TEXT.body} normal-case`}>{motivationalLine(solvedCount)}</p>
-          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-premium-gold/30 bg-premium-gold/10 px-4 py-1.5">
-            <span aria-hidden="true">🧩</span>
-            <span className="font-classic-display text-sm text-premium-gold tabular-nums">
-              {solvedCount} Puzzle{solvedCount === 1 ? "" : "s"} Solved
-            </span>
+    <main className="relative min-h-screen overflow-x-hidden bg-premium-midnight px-4 pt-6 pb-nav-safe">
+      {/* Scoped atmosphere — no globals.css changes. */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(255,197,61,0.12),transparent_55%),radial-gradient(ellipse_60%_40%_at_100%_100%,rgba(56,189,248,0.08),transparent_50%)]"
+        aria-hidden
+      />
+
+      <div className="relative mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-5xl md:grid md:grid-cols-[minmax(0,1.15fr)_minmax(280px,360px)] md:items-start md:gap-6 lg:gap-8">
+        {/* ── Left: story + tower + tiers ─────────────────────────────── */}
+        <div className="flex min-w-0 flex-col gap-5">
+          <div className="flex flex-col items-center gap-1 text-center md:items-start md:text-left">
+            <p className={`${TEXT.meta} text-premium-gold`}>🧩 PUZZLES</p>
+            <h1 className={TEXT.display}>The Puzzle Tower</h1>
+            <p className={`${TEXT.body} normal-case`}>{motivationalLine(solvedCount)}</p>
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-premium-gold/30 bg-premium-gold/10 px-4 py-1.5">
+              <span aria-hidden="true">🧩</span>
+              <span className="font-classic-display text-sm text-premium-gold tabular-nums">
+                {solvedCount} Puzzle{solvedCount === 1 ? "" : "s"} Solved
+              </span>
+            </div>
           </div>
+
+          <OllieNote className="md:max-w-lg">{current.ollieLine}</OllieNote>
+
+          <TowerHero displayLevelId={displayLevelId} climbing={climbing} entered={entered} />
+
+          <PuzzleTierPath solvedCount={solvedCount} entered={entered} />
+
+          <ol className="flex flex-col gap-3" aria-label="Puzzle Tower levels">
+            {floors.map((level, i) => (
+              <PuzzleLevelCard
+                key={level.id}
+                level={level}
+                status={levelStatus(level, solvedCount)}
+                toUnlock={puzzlesUntilLevel(level, solvedCount)}
+                entered={entered}
+                delayMs={i * 70}
+              />
+            ))}
+          </ol>
         </div>
 
-        {/* ── Hero tower + climbing adventurer ──────────────────────── */}
-        <TowerHero displayLevelId={displayLevelId} climbing={climbing} entered={entered} />
+        {/* ── Right: progress sidebar (tablet/desktop) ─────────────────── */}
+        <div className="flex flex-col gap-4 md:sticky md:top-[calc(var(--topbar-h,3.5rem)+1rem)]">
+          <BrainGrowth displayLevelId={displayLevelId} realLevelId={current.id} />
 
-        {/* ── The floors, Master at the top down to Easy at the bottom ─ */}
-        <ol className="flex flex-col gap-3" aria-label="Puzzle Tower levels">
-          {floors.map((level, i) => (
-            <PuzzleLevelCard
-              key={level.id}
-              level={level}
-              status={levelStatus(level, solvedCount)}
-              toUnlock={puzzlesUntilLevel(level, solvedCount)}
-              entered={entered}
-              delayMs={i * 70}
-            />
-          ))}
-        </ol>
+          <PuzzleTowerProgress
+            solvedCount={solvedCount}
+            current={current}
+            next={next}
+            toNext={toNext}
+            entered={entered}
+          />
 
-        <BrainGrowth displayLevelId={displayLevelId} realLevelId={current.id} />
+          <PuzzleRewards />
 
-        <PuzzleTowerProgress
-          solvedCount={solvedCount}
-          current={current}
-          next={next}
-          toNext={toNext}
-          entered={entered}
-        />
+          <div className="flex flex-col items-center gap-1 text-center md:items-stretch">
+            {!isPremium && freePuzzlesLeft !== null && (
+              <p className={`${TEXT.caption} text-center md:text-left`}>
+                {freePuzzlesLeft} of your free puzzles left today
+              </p>
+            )}
+          </div>
 
-        <PuzzleRewards />
-
-        <div className="flex flex-col items-center gap-1 text-center">
-          {!isPremium && freePuzzlesLeft !== null && (
-            <p className={`${TEXT.caption}`}>{freePuzzlesLeft} of your free puzzles left today</p>
-          )}
+          <Button tone="premium" block onClick={onStart} className="mb-2">
+            🧩 Solve a Puzzle
+          </Button>
         </div>
-
-        <Button tone="premium" block onClick={onStart} className="mb-2">
-          🧩 Solve a Puzzle
-        </Button>
       </div>
 
       {celebration === "modal" && pendingLevel && (
@@ -252,7 +269,7 @@ function TowerHero({
     <div className="relative flex justify-center py-2" aria-hidden="true">
       <svg
         viewBox="0 0 220 260"
-        className={`h-56 w-auto transition-opacity duration-700 motion-reduce:transition-none ${
+        className={`h-56 w-auto md:h-[17rem] transition-opacity duration-700 motion-reduce:transition-none ${
           entered ? "opacity-100" : "opacity-0"
         }`}
       >

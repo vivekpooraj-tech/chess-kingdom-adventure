@@ -371,7 +371,13 @@ function PuzzlesPageInner() {
         // Full-screen hides the tab bar, so the shell's own Exit button is
         // the only way out. It must go somewhere — without this it renders
         // and does nothing, which is a trap.
-        onExit={() => router.push("/kingdom-map")}
+        onExit={() => {
+          if (!isDaily) {
+            setShowTower(true);
+            return;
+          }
+          router.push("/kingdom-map");
+        }}
         // Solving is a board-first moment in any orientation: the board gets
         // the whole viewport and the panel sits beside/below it, rather than
         // sharing the screen with the tab bar the way an ordinary tab page
