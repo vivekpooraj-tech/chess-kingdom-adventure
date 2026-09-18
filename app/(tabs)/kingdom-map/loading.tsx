@@ -2,32 +2,51 @@ import { Screen } from "@/components/layout/Screen";
 import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 
 /**
- * Home (mobile UI/UX redesign) — kingdom-map is the app's post-login
- * landing route and the heaviest single query load in the app (10 parallel
- * reads + an achievement-award write), so it was the single biggest
- * contributor to "navigation feels laggy" with no loading.tsx at all
- * (confirmed: this was the only route in the whole app missing one before
- * Profile got fixed in an earlier phase — every OTHER heavy route,
- * including this one, still had nothing). Mirrors the real dashboard shape
- * (header, hero card, daily challenge, destination grid, stats, journey
- * list) so nothing jumps when real content swaps in.
+ * Home loading skeleton — mirrors the redesigned kingdom-map layout so
+ * content does not jump when the real dashboard streams in.
  */
 export default function HomeLoading() {
   return (
     <Screen maxWidth="full">
-      <div className="h-9 w-40 rounded bg-premium-navy/70 animate-pulse" />
-      <SkeletonBlock className="w-full h-28" />
-      <SkeletonBlock className="w-full h-32" />
-      <SkeletonBlock className="w-full h-20" />
-      <div className="w-full grid grid-cols-2 gap-3">
-        <SkeletonBlock className="h-24" />
-        <SkeletonBlock className="h-24" />
-      </div>
-      <SkeletonRow className="w-full h-16" />
-      <div className="w-full flex flex-col gap-2">
-        <SkeletonRow className="h-16" />
-        <SkeletonRow className="h-16" />
-        <SkeletonRow className="h-16" />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <SkeletonRow className="h-7 w-36" />
+            <SkeletonRow className="h-4 w-48" />
+          </div>
+          <SkeletonBlock className="h-14 w-full sm:w-56" />
+        </div>
+
+        <div className="home-hero-grid">
+          <div className="flex flex-col gap-3">
+            <SkeletonBlock className="h-16 w-full" />
+            <SkeletonBlock className="h-44 w-full" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <SkeletonBlock className="h-24" />
+            <SkeletonBlock className="h-24" />
+            <SkeletonBlock className="h-24" />
+            <SkeletonBlock className="h-24" />
+          </div>
+        </div>
+
+        <SkeletonRow className="h-4 w-16" />
+        <SkeletonBlock className="h-24 w-full" />
+        <SkeletonBlock className="h-36 w-full" />
+
+        <SkeletonRow className="h-4 w-20" />
+        <SkeletonBlock className="h-28 w-full" />
+
+        <SkeletonRow className="h-4 w-28" />
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <SkeletonBlock className="h-16" />
+          <SkeletonBlock className="h-16" />
+          <SkeletonBlock className="h-16" />
+          <SkeletonBlock className="h-16" />
+        </div>
+
+        <SkeletonBlock className="h-28 w-full" />
+        <SkeletonRow className="h-4 w-24" />
       </div>
     </Screen>
   );

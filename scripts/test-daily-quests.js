@@ -252,10 +252,25 @@ const build = (over = {}, opts = {}) =>
     path.join(process.cwd(), "app", "(tabs)", "kingdom-map", "page.tsx"),
     "utf8"
   );
-  check("Home still imports DailyChallengeCard", /DailyChallengeCard/.test(home));
-  check("Home still renders <DailyChallengeCard", /<DailyChallengeCard/.test(home));
-  check("Home renders the new quests card", /<DailyQuestsCard/.test(home));
-  check("Home still renders HeroJourneyCard (Continue Your Journey)", /<HeroJourneyCard/.test(home));
+  const homeToday = fs.readFileSync(
+    path.join(process.cwd(), "components", "home", "HomeTodaySection.tsx"),
+    "utf8"
+  );
+  const homeHero = fs.readFileSync(
+    path.join(process.cwd(), "components", "home", "HomeHeroSection.tsx"),
+    "utf8"
+  );
+  check("Home still routes Today through HomeTodaySection", /<HomeTodaySection/.test(home));
+  check("HomeTodaySection still imports DailyChallengeCard", /DailyChallengeCard/.test(homeToday));
+  check("HomeTodaySection still renders <DailyChallengeCard", /<DailyChallengeCard/.test(homeToday));
+  check("HomeTodaySection renders the quests card", /<DailyQuestsCard/.test(homeToday));
+  // Phase 3: HeroJourneyCard (and the old ChessSchoolCard it shared the page
+  // with) were replaced by a single PrimaryActionCard — one obvious primary
+  // action instead of two competing cards. Daily Challenge is still present,
+  // just grouped under HomeTodaySection beside quests.
+  check("Home routes the hero through HomeHeroSection", /<HomeHeroSection/.test(home));
+  check("HomeHeroSection renders the single primary action card", /<PrimaryActionCard/.test(homeHero));
+  check("the old two-card hero grid is gone", !/<HeroJourneyCard/.test(home));
 
   // The dedupe rationale: counting daily_challenge_history on top of
   // puzzle_library_solves would double-count the Daily Challenge each day.
