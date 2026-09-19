@@ -41,11 +41,18 @@ export function primeCinematicAudio(): void {
 }
 
 /**
- * Subtle: ~20% volume, well under normal app audio (chess move sounds,
- * opening/login-welcome video audio) so it never competes with them.
+ * Raised from 0.6 after physical tablet testing reported the London Eye
+ * and Chaturanga cinematic music as too quiet — the source MP3s themselves
+ * are recorded quietly (~-40dB mean, ~-32dB peak, verified via ffmpeg
+ * volumedetect), well under 0dBFS, so this HTMLAudioElement.volume
+ * multiplier is the only lever available without touching the audio files
+ * (explicitly out of scope for this change) or introducing a Web Audio API
+ * gain stage. 0.8 leaves real headroom below the source's peak, so no
+ * clipping/distortion risk; the source's own quietness — not this
+ * multiplier — remains the limiting factor if 0.8 still isn't enough.
  * Never loops — the cinematic itself plays exactly once.
  */
-const MUSIC_VOLUME = 0.6;
+const MUSIC_VOLUME = 0.8;
 
 export function playCinematicMusic(url: string): void {
   stopCinematicMusic();
