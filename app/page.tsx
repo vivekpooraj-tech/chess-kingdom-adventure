@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/branding/Logo";
 import { createClient, getAuthState } from "@/lib/supabase/client";
+import { hasShownLoginWelcomeThisSession } from "@/lib/loginWelcome";
 import { TEXT } from "@/lib/designSystem";
 
 /**
@@ -67,7 +68,18 @@ export default function SplashPage() {
 
       if (state.status === "authed") {
         attemptsRef.current = 0;
-        router.replace("/kingdom-map");
+        // Trigger B (Video 2 — the returning-user welcome animation): "/" is
+        // Capacitor's fixed launch URL (server.url has no path), so this is
+        // the one JS entry point every native cold launch hits — but it's
+        // ALSO hit by nothing else, since an authenticated visit here only
+        // happens on a true app open, never a background/foreground resume
+        // (Android doesn't re-navigate to "/" on resume; the WebView stays
+        // wherever it was). The sessionStorage guard (see lib/loginWelcome.ts)
+        // then does the rest: it survives exactly a resume/reload/remount,
+        // and is only ever empty again after the process was genuinely
+        // killed and relaunched — never on merely reaching this branch
+        // twice within the same still-alive session.
+        router.replace(hasShownLoginWelcomeThisSession() ? "/kingdom-map" : "/login-welcome");
         return;
       }
       if (state.status === "unauthenticated") {

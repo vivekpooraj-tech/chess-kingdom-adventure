@@ -24,12 +24,16 @@ import type { CompletedGameRecord, PlayedMove } from "@/lib/analysis/gameAnalysi
 import { WorldArenaChrome } from "@/components/world/WorldArenaChrome";
 import { getWorldLocation, type WorldLocationId } from "@/lib/world/locations";
 import { recordGameStarted, recordGameWon } from "@/lib/world/passport";
+import { getWorldCinematic } from "@/content/worldCinematics";
+import { LocationCinematic } from "@/components/world/LocationCinematic";
+import { primeCinematicAudio } from "@/lib/world/cinematicMusic";
 
 const STANDARD_START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 type ViewState =
   | { status: "loading" }
   | { status: "picking-difficulty" }
+  | { status: "cinematic"; difficulty: Difficulty; cinematicUrl: string; musicUrl?: string }
   | { status: "playing"; difficulty: Difficulty }
   | { status: "game-over"; record: CompletedGameRecord }
   | { status: "analysis"; record: CompletedGameRecord };
@@ -146,6 +150,13 @@ export default function FreePlayPage() {
   // exactly where eligibility has to be enforced, not after.
   async function startGame(difficulty: Difficulty) {
     if (!childId || startingGame) return;
+    // Runs synchronously, before this function's first `await` — i.e. still
+    // inside the real click that called startGame(), whichever of the three
+    // buttons it was. Establishes the page's audio-autoplay allowance now,
+    // in time for the cinematic's (non-gesture) music playback a moment
+    // later. See lib/world/cinematicMusic.ts for why this has to happen
+    // here rather than inside LocationCinematic itself.
+    primeCinematicAudio();
     setStartingGame(true);
     try {
       const supabase = createClient();
@@ -167,7 +178,16 @@ export default function FreePlayPage() {
       moveLogRef.current = [];
       gameStartedAtRef.current = new Date().toISOString();
       if (worldLocationId) recordGameStarted(worldLocationId);
-      setView({ status: "playing", difficulty });
+      // A location with a pre-game cinematic (see content/worldCinematics.ts)
+      // gets one short full-screen clip here, between difficulty selection
+      // and the board — every other location (and plain, non-World Free
+      // Play) falls straight through to "playing" exactly as before.
+      const cinematic = getWorldCinematic(worldLocationId);
+      setView(
+        cinematic
+          ? { status: "cinematic", difficulty, cinematicUrl: cinematic.video, musicUrl: cinematic.music }
+          : { status: "playing", difficulty }
+      );
     } finally {
       setStartingGame(false);
     }
@@ -294,6 +314,16 @@ export default function FreePlayPage() {
         </Link>
         {showPaywall && <GameLimitPaywall gameType="ai" onDismiss={() => setShowPaywall(false)} />}
       </Screen>
+    );
+  }
+
+  if (view.status === "cinematic") {
+    return (
+      <LocationCinematic
+        src={view.cinematicUrl}
+        musicSrc={view.musicUrl}
+        onDone={() => setView({ status: "playing", difficulty: view.difficulty })}
+      />
     );
   }
 

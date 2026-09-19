@@ -8,7 +8,7 @@ import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSessi
 import { Button } from "@/components/ui/Button";
 import { LOCAL_TEST_MODE } from "@/lib/devTestMode";
 import { TEXT } from "@/lib/designSystem";
-import { postAuthDestination } from "@/lib/auth/postAuthDestination";
+import { postAuthDestination, DASHBOARD } from "@/lib/auth/postAuthDestination";
 
 /**
  * Per docs/04-user-flows.md: a lightweight "is an adult here" check before
@@ -132,6 +132,22 @@ function ParentGateInner() {
       // the one case the challenge exists for.
       if (deciding && requiresParentGate) {
         setPhase("challenge");
+        return;
+      }
+
+      // Trigger A (Video 2 — the returning-user welcome animation): this
+      // branch is ONLY reached right after a genuine auth event (see the
+      // file-level comment above) for a child who has already completed
+      // onboarding (has_seen_opening_video true) — i.e. a real returning
+      // login, never a mere reopen/refresh (those never reach /parent-gate
+      // at all; app/page.tsx sends an already-authenticated session
+      // straight to DASHBOARD). A child that reaches DASHBOARD without ever
+      // having completed the first-time video (the one pre-existing edge
+      // case: onboarding abandoned after avatar/buddy but before reaching
+      // it) goes straight to DASHBOARD exactly as before — never the wrong
+      // video, never a video for someone who hasn't finished onboarding.
+      if (href === DASHBOARD && resolution.child?.has_seen_opening_video) {
+        router.replace("/login-welcome");
         return;
       }
 

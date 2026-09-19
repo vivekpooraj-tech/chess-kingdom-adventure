@@ -13,6 +13,7 @@ export interface ChildProfile {
   current_day: number;
   experience_level: ExperienceLevel | null;
   age_band: AgeBand | null;
+  has_seen_opening_video: boolean;
 }
 
 /**
@@ -103,7 +104,7 @@ export async function getChildProfileById(
   const { data, error } = await supabase
     .from("children")
     .select(
-      "id, display_name, avatar_id, buddy_id, board_skin_id, piece_set_id, rating, current_day, experience_level, age_band"
+      "id, display_name, avatar_id, buddy_id, board_skin_id, piece_set_id, rating, current_day, experience_level, age_band, has_seen_opening_video"
     )
     .eq("id", childId)
     .maybeSingle();
@@ -240,6 +241,19 @@ export async function updateChildExperienceProfile(
   const { error } = await supabase
     .from("children")
     .update({ experience_level: experienceLevel, age_band: ageBand })
+    .eq("id", childId);
+  if (error) throw error;
+}
+
+/**
+ * Marks the first-time cinematic opening video as seen for this child.
+ * Never resets — called exactly once, from app/onboarding/opening/page.tsx,
+ * only on a genuine onEnded/onError, never speculatively.
+ */
+export async function markOpeningVideoSeen(supabase: SupabaseClient, childId: string) {
+  const { error } = await supabase
+    .from("children")
+    .update({ has_seen_opening_video: true })
     .eq("id", childId);
   if (error) throw error;
 }
