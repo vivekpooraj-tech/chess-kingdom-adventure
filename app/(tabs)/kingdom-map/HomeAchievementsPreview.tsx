@@ -54,7 +54,7 @@ export async function HomeAchievementsPreview({
   return (
     <section
       aria-labelledby="home-achievements-heading"
-      className="flex w-full flex-col gap-3 rounded-premiumCard border border-white/5 bg-premium-navy/70 p-4 sm:p-5"
+      className="home-surface-card flex w-full flex-col gap-3 rounded-premiumCard border border-white/5 bg-premium-navy/70 p-4 sm:p-5"
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="home-achievements-heading" className={TEXT.heading}>
@@ -79,7 +79,7 @@ export async function HomeAchievementsPreview({
               title={achievement.description}
               className="flex min-w-[4.5rem] flex-col items-center gap-1 text-center"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-premium-gold/50 bg-premium-gold/15 text-xl">
+              <div className="home-achievement-badge flex h-12 w-12 items-center justify-center rounded-full border border-premium-gold/50 bg-premium-gold/15 text-xl">
                 {achievement.emoji}
               </div>
               <span className="w-full break-words font-classic-body text-[11px] leading-tight text-premium-ivory/60">
