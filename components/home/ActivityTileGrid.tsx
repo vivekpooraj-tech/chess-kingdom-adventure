@@ -52,9 +52,11 @@ export function ActivityTileGrid() {
         <Link
           key={href}
           href={href}
-          className={`flex min-h-[104px] flex-col items-center justify-center gap-2 rounded-premiumCard border bg-premium-navy/70 px-3 py-3 transition-[border-color,transform] duration-100 active:scale-[0.98] lg:min-h-[124px] tablet:min-h-[132px] tablet:py-5 ${tileClass}`}
+          className={`home-activity-tile flex min-h-[104px] flex-col items-center justify-center gap-2 rounded-premiumCard border bg-premium-navy/70 px-3 py-3 transition-[border-color,transform] duration-100 active:scale-[0.98] lg:min-h-[124px] tablet:min-h-[132px] tablet:py-5 ${tileClass}`}
         >
-          <Icon className={`h-6 w-6 tablet:h-8 tablet:w-8 ${iconClass}`} />
+          <span className="home-activity-icon-wrap flex h-10 w-10 items-center justify-center rounded-full tablet:h-12 tablet:w-12">
+            <Icon className={`h-6 w-6 tablet:h-8 tablet:w-8 ${iconClass}`} />
+          </span>
           <span className="font-classic-body text-sm text-premium-ivory/90 tablet:text-base">{label}</span>
         </Link>
       ))}

@@ -156,7 +156,7 @@ export default async function KingdomMapPage() {
         initialLimitMinutes={screenTimeStatus.limitMinutes}
         initialUsedMinutes={screenTimeStatus.usedMinutes}
       >
-        <TabPageShell>
+        <TabPageShell contentClassName="home-mode-scope">
           <header className="flex w-full flex-col gap-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div className="min-w-0 text-left">
@@ -179,14 +179,19 @@ export default async function KingdomMapPage() {
           </header>
 
           <div className="home-hero-grid">
-            <HomeHeroSection action={primaryAction} buddy={buddy} ollieLine={ollieLine} />
+            <HomeHeroSection
+              action={primaryAction}
+              buddy={buddy}
+              ollieLine={ollieLine}
+              neutralTone={neutralTone}
+            />
             <ActivityTileGrid />
           </div>
 
           <HomeTodaySection childId={child.id} set={questSet} neutralTone={neutralTone} />
 
           <section className="flex w-full flex-col gap-2">
-            <SectionHeader title="Discover" />
+            <SectionHeader title="Discover" className="home-section-heading" />
             <div
               className="auto-grid"
               style={{ "--grid-min": "13.5rem", "--grid-gap": "0.75rem" } as React.CSSProperties}
@@ -218,10 +223,10 @@ export default async function KingdomMapPage() {
           </section>
 
           <section className="flex w-full flex-col gap-2">
-            <SectionHeader title="Your Progress" />
+            <SectionHeader title="Your Progress" className="home-section-heading" />
             <Link
               href="/profile"
-              className="grid grid-cols-2 gap-2 rounded-premiumCard border border-white/5 bg-premium-navy/70 p-3 transition-[border-color,transform] duration-100 hover:border-premium-gold/20 active:scale-[0.98] sm:grid-cols-4"
+              className="home-surface-card grid grid-cols-2 gap-2 rounded-premiumCard border border-white/5 bg-premium-navy/70 p-3 transition-[border-color,transform] duration-100 hover:border-premium-gold/20 active:scale-[0.98] sm:grid-cols-4"
             >
               <StatCardCompact value={onlineWinsCount} label="Online Wins" />
               <Suspense fallback={<StatCardCompact value="…" label="Achievements" />}>

@@ -10,8 +10,12 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
   if (action.kind === "school") {
     const percent = Math.round((action.startedCount / action.totalSessions) * 100);
     return (
-      <section className="w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy border border-premium-gold/25 p-5 sm:p-6 flex flex-col gap-4 shadow-premiumCard">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
+      <section className="home-primary-card relative w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy border border-premium-gold/25 p-5 sm:p-6 flex flex-col gap-4 shadow-premiumCard overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="home-kingdom-glow pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgb(var(--mode-accent)/0.35),transparent_70%)]"
+        />
+        <div className="relative flex items-start justify-between gap-3 flex-wrap">
           <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
             🏫 Chess School
           </p>
@@ -67,7 +71,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href={action.href}
-        className="w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/25 active:scale-[0.99] transition-transform duration-100"
+        className="home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/25 active:scale-[0.99] transition-transform duration-100"
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
           Your focus
@@ -89,7 +93,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href="/puzzles"
-        className="w-full rounded-premiumCard bg-gradient-to-br from-premium-emerald to-premium-emeraldDeep p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard active:scale-[0.99] transition-transform duration-100"
+        className="home-surface-card w-full rounded-premiumCard border border-transparent bg-gradient-to-br from-premium-emerald to-premium-emeraldDeep p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard active:scale-[0.99] transition-transform duration-100"
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-ivory/80">
           Puzzle Trainer
@@ -108,7 +112,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href="/puzzles"
-        className="w-full rounded-premiumCard bg-gradient-to-br from-premium-emerald to-premium-emeraldDeep p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard active:scale-[0.99] transition-transform duration-100"
+        className="home-surface-card w-full rounded-premiumCard border border-transparent bg-gradient-to-br from-premium-emerald to-premium-emeraldDeep p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard active:scale-[0.99] transition-transform duration-100"
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-ivory/80">
           Recommended
@@ -128,7 +132,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href={action.href}
-        className="w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
+        className="home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
           Academy
@@ -147,7 +151,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
   return (
     <Link
       href="/play"
-      className="w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
+      className="home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
     >
       <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
         Play

@@ -22,7 +22,7 @@ export function HomeProfileStrip({
     <Link
       href="/profile"
       aria-label={`${displayName} — open profile`}
-      className="flex w-full min-w-0 items-center gap-2.5 rounded-premiumCard border border-white/5 bg-premium-midnight/60 px-3 py-2 shadow-premiumCard transition-[border-color,transform] duration-100 hover:border-premium-gold/20 active:scale-[0.98] sm:w-auto"
+      className="home-profile-strip flex w-full min-w-0 items-center gap-2.5 rounded-premiumCard border border-white/5 bg-premium-midnight/60 px-3 py-2 shadow-premiumCard transition-[border-color,transform] duration-100 hover:border-premium-gold/20 active:scale-[0.98] sm:w-auto"
     >
       <div
         className="flex h-10 w-10 flex-none items-center justify-center rounded-full text-xl"
