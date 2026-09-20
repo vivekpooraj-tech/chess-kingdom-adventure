@@ -1,0 +1,120 @@
+/* ==========================================================================
+   CHESS MIND — MODE LAYER (Phase 1: infrastructure only)
+   ==========================================================================
+
+   Three presentation modes for ONE application, on a SEPARATE axis from
+   app/themes.css's [data-theme]. Theme is the app's colour identity; mode is
+   which Chess Mind presentation experience (Kids / Adult / Classic-Pro) is
+   active. The two attributes are independently settable — [data-theme] and
+   [data-mode] never read or depend on each other, and can be combined in any
+   pairing (e.g. [data-theme="royal-classic"][data-mode="kids"]).
+
+   PHASE 1 SCOPE: this file defines the mode CHANNELS only. No existing
+   component references any --mode-* variable yet, so activating any mode
+   right now produces ZERO visible change anywhere in the app — Home, Chess
+   School, Puzzles, Play, gameplay and every other screen are byte-for-byte
+   unaffected. Later phases will migrate individual screens to read these
+   tokens; until then this file is purely additive plumbing, safe to ship
+   ahead of any visual migration.
+
+   WHY CLASSIC-PRO HAS NO BLOCK OF ITS OWN
+   Exactly mirroring chess-kingdom's role in app/themes.css: classic-pro IS
+   the app's current, already-shipping presentation, so its values live on
+   :root (see the "no attribute = default" convention in
+   ModeBootstrapScript/useMode) rather than under a [data-mode="classic-pro"]
+   selector — there is nothing to override, only a baseline to declare once.
+
+   WHY TYPOGRAPHY IS HERE
+   The prior audit found typography wasn't yet part of any CSS-variable
+   system — font-classic-display/font-classic-body and font-display/font-body
+   are separate Tailwind fontFamily keys tied to distinct next/font
+   variables, with no swappable indirection between them. --mode-font-heading
+   / --mode-font-body close that gap the same way --cm-* channels did for
+   colour: tailwind.config.ts's new `font-mode-heading`/`font-mode-body` keys
+   resolve through these variables, so a future component can opt into
+   mode-aware type with one Tailwind class, no per-mode component variant.
+
+   ADDING TO A MODE
+   Add channels to the relevant [data-mode="..."] block (or to :root for
+   classic-pro's baseline). Nothing else — Tailwind classes and any component
+   that later opts in follow automatically, same discipline as themes.css.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CLASSIC / PRO — the default, and the app's existing appearance.
+   Values are byte-for-byte the current typography pairing (Fraunces /
+   Source Sans 3, already the app's "Classic Mode / premium chrome" faces)
+   and the current premiumCard/premiumBtn radii from tailwind.config.ts.
+   -------------------------------------------------------------------------- */
+:root {
+  --mode-font-heading: var(--font-fraunces);
+  --mode-font-body: var(--font-source-sans);
+  --mode-radius-card: 12px;
+  --mode-radius-btn: 10px;
+  --mode-touch-target-min: 44px;
+}
+
+/* --------------------------------------------------------------------------
+   KIDS — "Enchanted Kingdom". Adventurous, colorful, friendly, magical —
+   the existing Adventure Mode type pairing (Baloo 2 / Nunito), looser
+   rounding (the existing `card`/`btn` Tailwind radii), and a larger minimum
+   touch target for younger hands. Not babyish: no new colour channels are
+   introduced here in Phase 1 — that is a later, deliberate visual-design
+   pass, not an infrastructure decision.
+   -------------------------------------------------------------------------- */
+[data-mode="kids"] {
+  --mode-font-heading: var(--font-baloo);
+  --mode-font-body: var(--font-nunito);
+  --mode-radius-card: 20px;
+  --mode-radius-btn: 24px;
+  --mode-touch-target-min: 52px;
+}
+
+/* --------------------------------------------------------------------------
+   ADULT — "Master Training Atelier". Premium and sophisticated, restrained
+   rather than playful: keeps the Classic/Pro type pairing (this is a
+   training-focused adult experience, not a second colourful mode) with a
+   moderate rounding between Kids' playfulness and Classic/Pro's tight,
+   competitive chrome.
+   -------------------------------------------------------------------------- */
+[data-mode="adult"] {
+  --mode-font-heading: var(--font-fraunces);
+  --mode-font-body: var(--font-source-sans);
+  --mode-radius-card: 14px;
+  --mode-radius-btn: 12px;
+  --mode-touch-target-min: 44px;
+}
+
+/* ==========================================================================
+   MODE TRANSITION
+   Independent of app/themes.css's cm-theme-switching class, so changing mode
+   and changing theme never interfere with or extend each other's transition
+   window. Also transitions font-family, since mode (unlike theme) can change
+   the active typeface.
+   ========================================================================== */
+html.cm-mode-switching,
+html.cm-mode-switching body,
+html.cm-mode-switching main,
+html.cm-mode-switching header,
+html.cm-mode-switching nav,
+html.cm-mode-switching section,
+html.cm-mode-switching aside,
+html.cm-mode-switching a,
+html.cm-mode-switching button,
+html.cm-mode-switching p,
+html.cm-mode-switching span,
+html.cm-mode-switching div {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    border-radius 200ms ease,
+    color 200ms ease,
+    font-family 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.cm-mode-switching,
+  html.cm-mode-switching * {
+    transition: none !important;
+  }
+}

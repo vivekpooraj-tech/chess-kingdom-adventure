@@ -5,6 +5,12 @@ import "./globals.css";
 // :root tokens from the active theme's channels, and later wins at equal
 // specificity. See app/themes.css.
 import "./themes.css";
+// After themes.css, on a separate axis: mode (Kids/Adult/Classic-Pro
+// presentation) never overrides or depends on theme (colour identity) — see
+// app/modes.css's header comment. Import order relative to themes.css does
+// not matter for correctness (the two files touch disjoint selectors/vars),
+// but is kept after it to mirror themes.css's own "after globals.css" story.
+import "./modes.css";
 import { CapacitorDeepLinkHandler } from "@/components/CapacitorDeepLinkHandler";
 import { MotionProvider } from "@/components/MotionProvider";
 import { DevTestModeBar } from "@/components/dev/DevTestModeBar";
@@ -12,6 +18,7 @@ import { NativeLayoutProvider } from "@/components/nav/NativeLayoutProvider";
 import { LayoutBootstrapScript } from "@/components/nav/LayoutBootstrapScript";
 import { ShellBootstrapScript } from "@/components/nav/ShellBootstrapScript";
 import { ThemeBootstrapScript } from "@/components/theme/ThemeBootstrapScript";
+import { ModeBootstrapScript } from "@/components/mode/ModeBootstrapScript";
 import { AppShell } from "@/components/nav/AppShell";
 import { ScreenTimeTracker } from "@/components/screen-time/ScreenTimeTracker";
 import { ParentLockShell } from "@/components/parentLock/ParentLockShell";
@@ -90,6 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <LayoutBootstrapScript />
         <ShellBootstrapScript />
         <ThemeBootstrapScript />
+        <ModeBootstrapScript />
         <NativeLayoutProvider>
           <CapacitorDeepLinkHandler />
           {/* Every framer-motion animation in the app (lesson transitions,

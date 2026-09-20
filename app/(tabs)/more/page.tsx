@@ -11,6 +11,7 @@ import { SignOutRow } from "@/components/more/SignOutRow";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
 import { ThemePicker } from "@/components/theme/ThemePicker";
+import { ModePicker } from "@/components/mode/ModePicker";
 
 /**
  * More (mobile UI/UX redesign) — the 5th primary tab. Chess Kingdom moved
@@ -134,6 +135,14 @@ export default async function MorePage() {
               is the only part of the app that needs to be interactive for
               theming to work. */}
           <ThemePicker />
+        </section>
+
+        <section className="w-full flex flex-col gap-2">
+          {/* ModePicker draws its own "Chess Mind Worlds" label/explanation
+              (a different concern from the plain "Appearance" caption above),
+              so no duplicate section heading here. Same client-island
+              reasoning as ThemePicker — mode lives on <html> + localStorage. */}
+          <ModePicker />
         </section>
 
         <section className="w-full flex flex-col gap-2">
