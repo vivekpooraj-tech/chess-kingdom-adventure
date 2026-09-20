@@ -132,6 +132,14 @@ const config: Config = {
         // Classic Mode / premium chrome.
         "classic-display": ["var(--font-fraunces)", "Georgia", "serif"],
         "classic-body": ["var(--font-source-sans)", "system-ui", "sans-serif"],
+        // Mode-aware indirection (Phase 1 infrastructure — see
+        // app/modes.css). Resolves through --mode-font-heading/-body, which
+        // each [data-mode] block redefines, so a future component can opt
+        // into typography that follows Kids/Adult/Classic-Pro with one
+        // Tailwind class instead of a per-mode component variant. Unused by
+        // any component today; adding these keys changes nothing visible.
+        "mode-heading": ["var(--mode-font-heading)", "Georgia", "serif"],
+        "mode-body": ["var(--mode-font-body)", "system-ui", "sans-serif"],
       },
       boxShadow: {
         toy: "0 8px 0 0 rgba(0,0,0,0.15)",
