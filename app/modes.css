@@ -528,3 +528,135 @@ html:not([data-mode]) .play-mode-scope .play-primary-card:hover {
 [data-mode="kids"] .play-mode-scope .play-primary-card:hover {
   border-color: rgb(var(--kingdom-hairline) / 0.4);
 }
+
+/* ==========================================================================
+   GAMES MODE PRESENTATION (Phase 2.2-L)
+   Own scope (.games-mode-scope), independent of .home-mode-scope and
+   .play-mode-scope above — nothing here can affect Home or Play, and
+   nothing in those scopes affects this one. Re-declares the same cp/at/
+   kingdom token VALUES already used in those scopes (values only).
+
+   Unlike Home/Play, the game LIST is rendered once (see components/games/
+   GameRow.tsx) — only the header and empty-state blocks are small enough
+   to triple safely, via the same games-mode-panel-* display switch. Each
+   row's per-mode WORDING (result label, review call-to-action) uses a
+   second, smaller switch — game-result-variant-* / game-review-variant-* —
+   keyed off the same [data-mode] attribute, so one row stays one <Link>.
+   ========================================================================== */
+.games-mode-scope .games-mode-panel {
+  display: none;
+}
+
+html:not([data-mode]) .games-mode-scope .games-mode-panel-classic-pro {
+  display: block;
+}
+
+[data-mode="adult"] .games-mode-scope .games-mode-panel-adult {
+  display: block;
+}
+
+[data-mode="kids"] .games-mode-scope .games-mode-panel-kids {
+  display: block;
+}
+
+html:not([data-mode]) .games-mode-scope {
+  --cp-accent: 56 189 248;
+}
+
+[data-mode="adult"] .games-mode-scope {
+  --at-accent: 212 175 133;
+}
+
+[data-mode="kids"] .games-mode-scope {
+  --kingdom-hairline: 255 197 61;
+}
+
+.games-mode-scope .game-result-variant {
+  display: none;
+}
+
+html:not([data-mode]) .games-mode-scope .game-result-variant-classic-pro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+[data-mode="adult"] .games-mode-scope .game-result-variant-adult {
+  display: block;
+}
+
+[data-mode="kids"] .games-mode-scope .game-result-variant-kids {
+  display: block;
+  max-width: 6.5rem;
+  text-align: left;
+  white-space: normal;
+}
+
+.games-mode-scope .game-review-variant {
+  display: none;
+}
+
+html:not([data-mode]) .games-mode-scope .game-review-variant-classic-pro {
+  display: inline;
+  font-weight: 700;
+  color: rgb(var(--cp-accent));
+}
+
+[data-mode="adult"] .games-mode-scope .game-review-variant-adult {
+  display: inline;
+  font-weight: 700;
+  color: rgb(var(--at-accent));
+}
+
+[data-mode="kids"] .games-mode-scope .game-review-variant-kids {
+  display: inline;
+  font-weight: 700;
+  color: rgb(var(--kingdom-hairline));
+}
+
+/* Classic/Pro: dense rows, sharp geometry, rating delta stays prominent (no override needed — it already reads as the loudest number in the row). */
+html:not([data-mode]) .games-mode-scope .game-row {
+  border-radius: 10px;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
+html:not([data-mode]) .games-mode-scope .game-row:hover {
+  border-color: rgb(var(--cp-accent) / 0.4);
+}
+
+/* Adult: more breathing room, review action is the loudest element, rating delta demoted to quiet secondary text. */
+[data-mode="adult"] .games-mode-scope .game-row {
+  border-radius: 14px;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+[data-mode="adult"] .games-mode-scope .game-row:hover {
+  border-color: rgb(var(--at-accent) / 0.4);
+}
+
+[data-mode="adult"] .games-mode-scope .game-rating-delta {
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+
+/* Kids: rounder cards, bigger touch target, no rating-delta emphasis. */
+[data-mode="kids"] .games-mode-scope .game-row {
+  border-radius: 18px;
+  min-height: 72px;
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
+}
+
+[data-mode="kids"] .games-mode-scope .game-row:hover {
+  border-color: rgb(var(--kingdom-hairline) / 0.4);
+}
+
+[data-mode="kids"] .games-mode-scope .game-rating-delta {
+  display: none;
+}
+
+[data-mode="kids"] .games-mode-scope .game-result {
+  width: auto;
+}
