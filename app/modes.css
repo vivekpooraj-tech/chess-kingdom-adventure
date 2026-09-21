@@ -1033,3 +1033,150 @@ html:not([data-mode]) .chess-school-mode-scope .chess-school-row:hover {
   color: rgb(var(--kingdom-hairline) / 0.95);
   font-weight: 700;
 }
+
+/* Puzzles — single client render tree, no panel switch: additive
+   presentation hooks only. Copy/state/logic are identical across modes. */
+
+html:not([data-mode]) .puzzles-mode-scope {
+  --cp-accent: 56 189 248;
+}
+
+[data-mode="adult"] .puzzles-mode-scope {
+  --at-accent: 212 175 133;
+}
+
+[data-mode="kids"] .puzzles-mode-scope {
+  --kingdom-hairline: 255 197 61;
+}
+
+/* Classic/Pro: compact, dense, cyan accent, board stays dominant. */
+
+html:not([data-mode]) .puzzles-mode-scope .puzzles-badge {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+}
+
+html:not([data-mode]) .puzzles-mode-scope .puzzles-badge-mate {
+  background-color: rgb(var(--cp-accent) / 0.18);
+  color: rgb(var(--cp-accent));
+}
+
+html:not([data-mode]) .puzzles-mode-scope .puzzles-objective {
+  font-size: 0.8rem;
+}
+
+html:not([data-mode]) .puzzles-mode-scope .puzzles-pattern-card {
+  padding: 0.6rem;
+  border-radius: 10px;
+}
+
+html:not([data-mode]) .puzzles-mode-scope .puzzles-cta-primary {
+  background-color: rgb(var(--cp-accent));
+  border-radius: 10px;
+}
+
+html:not([data-mode]) .puzzles-mode-scope .puzzles-cta-secondary {
+  color: rgb(var(--cp-accent));
+  border-radius: 10px;
+}
+
+html:not([data-mode]) .puzzles-mode-scope .puzzles-session-line {
+  font-size: 0.7rem;
+}
+
+/* Adult: calmer, roomier, champagne/gold accent, restrained feedback. */
+
+[data-mode="adult"] .puzzles-mode-scope .puzzles-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .puzzles-mode-scope .puzzles-badge-mate {
+  background-color: rgb(var(--at-accent) / 0.15);
+  color: rgb(var(--at-accent));
+}
+
+[data-mode="adult"] .puzzles-mode-scope .puzzles-objective {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+[data-mode="adult"] .puzzles-mode-scope .puzzles-pattern-card {
+  padding: 0.85rem;
+  border-radius: 16px;
+  border-color: rgb(var(--at-accent) / 0.25);
+}
+
+[data-mode="adult"] .puzzles-mode-scope .puzzles-cta-primary {
+  background-color: rgb(var(--at-accent));
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .puzzles-mode-scope .puzzles-cta-secondary {
+  color: rgb(var(--at-accent));
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .puzzles-mode-scope .puzzles-feedback {
+  font-weight: 400;
+}
+
+[data-mode="adult"] .puzzles-mode-scope .puzzles-paywall-card {
+  border-radius: 20px;
+  border-color: rgb(var(--at-accent) / 0.25);
+}
+
+/* Kids: warm purple/gold, rounded, generous spacing, large touch targets. */
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-badge {
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-badge-mate {
+  background-color: rgb(var(--kingdom-hairline) / 0.22);
+  color: rgb(var(--kingdom-hairline));
+}
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-objective {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-pattern-card {
+  padding: 1rem;
+  border-radius: 22px;
+  border-color: rgb(var(--kingdom-hairline) / 0.3);
+}
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-cta-primary {
+  background-color: rgb(var(--kingdom-hairline));
+  border-radius: 20px;
+  min-height: 52px;
+  font-weight: 700;
+}
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-cta-secondary {
+  color: rgb(var(--kingdom-hairline));
+  border-radius: 20px;
+  min-height: 52px;
+  font-weight: 700;
+}
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-feedback {
+  font-weight: 600;
+}
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-session-line {
+  font-weight: 600;
+}
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-paywall-card {
+  border-radius: 26px;
+  border-color: rgb(var(--kingdom-hairline) / 0.3);
+}
+
+[data-mode="kids"] .puzzles-mode-scope .puzzles-link {
+  font-weight: 600;
+}

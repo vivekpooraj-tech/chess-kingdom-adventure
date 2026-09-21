@@ -401,35 +401,37 @@ function PuzzlesPageInner() {
           </div>
         )}
         sidePanel={
-          <div className="flex flex-col gap-3">
+          <div className="puzzles-mode-scope flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-classic-body text-xs bg-premium-emerald/25 text-emerald-300 rounded-full px-3 py-1 font-semibold">
+              <span className="puzzles-badge puzzles-badge-mate font-classic-body text-xs bg-premium-emerald/25 text-emerald-300 rounded-full px-3 py-1 font-semibold">
                 Checkmate in {puzzle.mateIn}
               </span>
-              <span className="font-classic-body text-xs bg-premium-gold/15 text-premium-gold rounded-full px-3 py-1">
+              <span className="puzzles-badge puzzles-badge-theme font-classic-body text-xs bg-premium-gold/15 text-premium-gold rounded-full px-3 py-1">
                 {puzzle.theme}
               </span>
               <SideToMoveIndicator color={puzzle.sideToMove} tone="premium" />
             </div>
 
             {status === "playing" && moveCount === 0 && (
-              <p className={`${TEXT.caption} normal-case`}>{OBJECTIVE_TEXT[puzzle.mateIn]}</p>
+              <p className={`puzzles-objective ${TEXT.caption} normal-case`}>{OBJECTIVE_TEXT[puzzle.mateIn]}</p>
             )}
 
             {status === "correct" && isDaily && (
               <div className="flex flex-col gap-2">
-                <MoveFeedback tone="correct">
+                <MoveFeedback tone="correct" className="puzzles-feedback">
                   Daily Challenge complete ✓ — Checkmate in {puzzle.mateIn} · Accuracy{" "}
                   {Math.round(100 / (dailyAttempts + 1))}%
                 </MoveFeedback>
                 <Link href="/kingdom-map">
-                  <Button tone="premium" className="w-full">Back to the Kingdom →</Button>
+                  <Button tone="premium" className="puzzles-cta puzzles-cta-primary w-full">
+                    Back to the Kingdom →
+                  </Button>
                 </Link>
               </div>
             )}
             {status === "correct" && !isDaily && (
               <div className="flex flex-col gap-2">
-                <MoveFeedback tone="correct">
+                <MoveFeedback tone="correct" className="puzzles-feedback">
                   {celebrateSolve({
                     firstTry: missCount === 0,
                     streak: streakCount,
@@ -440,13 +442,13 @@ function PuzzlesPageInner() {
                     a real board. Omitted entirely for themes we cannot describe
                     accurately — see content/matePatterns.ts. */}
                 {matePattern && (
-                  <div className="rounded-premiumBtn border border-premium-gold/20 bg-premium-navy/70 p-3 flex flex-col gap-1">
+                  <div className="puzzles-pattern-card rounded-premiumBtn border border-premium-gold/20 bg-premium-navy/70 p-3 flex flex-col gap-1">
                     <p className={`${TEXT.meta} text-premium-gold`}>{puzzle.theme}</p>
                     <p className={TEXT.body}>{matePattern.description}</p>
                     <p className={`${TEXT.caption} normal-case`}>{matePattern.recognise}</p>
                   </div>
                 )}
-                <Button tone="premium" onClick={nextPuzzle} className="w-full">
+                <Button tone="premium" onClick={nextPuzzle} className="puzzles-cta puzzles-cta-primary w-full">
                   Next Puzzle →
                 </Button>
               </div>
@@ -456,26 +458,31 @@ function PuzzlesPageInner() {
                 {/* Gets more helpful with each attempt, never sterner — and
                     only ever names the puzzle's own stored theme, never a
                     generated explanation of why the move works. */}
-                <MoveFeedback tone="incorrect">
+                <MoveFeedback tone="incorrect" className="puzzles-feedback">
                   {encourageAfterMiss({
                     attempt: missCount,
                     neutralTone,
                     hint: puzzle.theme,
                   })}
                 </MoveFeedback>
-                <Button tone="premium" variant="ghost" onClick={resetPuzzle} className="w-full">
+                <Button
+                  tone="premium"
+                  variant="ghost"
+                  onClick={resetPuzzle}
+                  className="puzzles-cta puzzles-cta-secondary w-full"
+                >
                   Try Again
                 </Button>
               </div>
             )}
             {status === "playing" && moveCount > 0 && (
-              <MoveFeedback tone="neutral">
+              <MoveFeedback tone="neutral" className="puzzles-feedback">
                 {progressNudge(movesRemaining, neutralTone)}
               </MoveFeedback>
             )}
 
             {!isDaily && (
-              <p className={`${TEXT.caption} mt-auto pt-2 border-t border-white/5`}>
+              <p className={`puzzles-session-line ${TEXT.caption} mt-auto pt-2 border-t border-white/5`}>
                 {isPremium
                   ? `Solved this session: ${solvedCount}`
                   : `${Math.max(0, DAILY_PREVIEW_LIMIT - todayCount)} of ${DAILY_PREVIEW_LIMIT} free puzzles left today`}
@@ -488,9 +495,9 @@ function PuzzlesPageInner() {
   }
 
   return (
-    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-4 sm:px-6 pt-8 pb-nav-safe">
+    <main className="puzzles-mode-scope min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-4 sm:px-6 pt-8 pb-nav-safe">
       <h1 className={`${TEXT.display} text-center`}>Puzzle Trainer</h1>
-      <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
+      <SecondaryCard className="puzzles-paywall-card max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
         <span className="text-5xl">🔒</span>
         <h2 className={TEXT.heading}>Today&apos;s free puzzles are used up</h2>
         <p className={TEXT.body}>
@@ -501,7 +508,7 @@ function PuzzlesPageInner() {
       </SecondaryCard>
       <Link
         href="/kingdom-map"
-        className="font-body text-sm text-premium-ivory/65 underline underline-offset-2 min-h-[44px] flex items-center"
+        className="puzzles-link font-body text-sm text-premium-ivory/65 underline underline-offset-2 min-h-[44px] flex items-center"
       >
         Back to Home
       </Link>
