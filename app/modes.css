@@ -741,3 +741,107 @@ html:not([data-mode]) .discover-mode-scope .discover-cta {
 [data-mode="kids"] .discover-mode-scope .discover-soon-badge {
   color: rgb(var(--kingdom-hairline) / 0.9);
 }
+
+/* ==========================================================================
+   PROFILE MODE PRESENTATION (Phase 2.2)
+   Own scope (.profile-mode-scope), independent of .home-mode-scope,
+   .play-mode-scope, .games-mode-scope and .discover-mode-scope above.
+   Profile's three compositions (components/profile/*) each consume the
+   SAME ProfileData object computed once in app/profile/page.tsx — this
+   file only styles accent color/spacing/visibility, it never affects what
+   data is fetched or how it is derived. Shared components used inside each
+   composition (HomeHeader, ChessJourneyPanel, AchievementBadges, StatCard,
+   ListItemRow) are consumed as-is and are not targeted by any selector
+   here beyond the generic hook classes their CALLERS apply around them.
+   ========================================================================== */
+.profile-mode-scope .profile-mode-panel {
+  display: none;
+}
+
+html:not([data-mode]) .profile-mode-scope .profile-mode-panel-classic-pro {
+  display: contents;
+}
+
+[data-mode="adult"] .profile-mode-scope .profile-mode-panel-adult {
+  display: contents;
+}
+
+[data-mode="kids"] .profile-mode-scope .profile-mode-panel-kids {
+  display: contents;
+}
+
+html:not([data-mode]) .profile-mode-scope {
+  --cp-accent: 56 189 248;
+}
+
+[data-mode="adult"] .profile-mode-scope {
+  --at-accent: 212 175 133;
+}
+
+[data-mode="kids"] .profile-mode-scope {
+  --kingdom-hairline: 255 197 61;
+}
+
+.profile-mode-scope .profile-rating-value,
+.profile-mode-scope .profile-cta,
+.profile-mode-scope .profile-chip {
+  color: rgb(var(--cm-gold));
+}
+
+.profile-mode-scope .profile-chip {
+  border-color: rgb(var(--cm-gold) / 0.3);
+}
+
+html:not([data-mode]) .profile-mode-scope .profile-rating-value,
+html:not([data-mode]) .profile-mode-scope .profile-cta {
+  color: rgb(var(--cp-accent));
+}
+
+html:not([data-mode]) .profile-mode-scope .profile-chip {
+  color: rgb(var(--cp-accent));
+  border-color: rgb(var(--cp-accent) / 0.3);
+}
+
+html:not([data-mode]) .profile-mode-scope .profile-rating-card,
+html:not([data-mode]) .profile-mode-scope .profile-openings-card {
+  border-radius: 10px;
+}
+
+[data-mode="adult"] .profile-mode-scope .profile-rating-value,
+[data-mode="adult"] .profile-mode-scope .profile-cta {
+  color: rgb(var(--at-accent));
+}
+
+[data-mode="adult"] .profile-mode-scope .profile-chip {
+  color: rgb(var(--at-accent));
+  border-color: rgb(var(--at-accent) / 0.3);
+}
+
+[data-mode="adult"] .profile-mode-scope .profile-rating-card,
+[data-mode="adult"] .profile-mode-scope .profile-openings-card {
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .profile-mode-scope .profile-section-eyebrow {
+  color: rgb(var(--at-accent) / 0.9);
+}
+
+[data-mode="kids"] .profile-mode-scope .profile-rating-value,
+[data-mode="kids"] .profile-mode-scope .profile-cta {
+  color: rgb(var(--kingdom-hairline));
+}
+
+[data-mode="kids"] .profile-mode-scope .profile-chip {
+  color: rgb(var(--kingdom-hairline));
+  border-color: rgb(var(--kingdom-hairline) / 0.35);
+}
+
+[data-mode="kids"] .profile-mode-scope .profile-rating-card,
+[data-mode="kids"] .profile-mode-scope .profile-openings-card {
+  border-radius: 20px;
+}
+
+[data-mode="kids"] .profile-mode-scope .profile-section-eyebrow {
+  color: rgb(var(--kingdom-hairline) / 0.95);
+  font-weight: 700;
+}
