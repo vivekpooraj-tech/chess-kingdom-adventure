@@ -930,3 +930,106 @@ html:not([data-mode]) .learn-mode-scope .learn-row:hover {
   color: rgb(var(--kingdom-hairline) / 0.95);
   font-weight: 700;
 }
+
+/* ==========================================================================
+   CHESS SCHOOL MODE PRESENTATION (Phase 2.2)
+   Own scope (.chess-school-mode-scope), independent of every prior page
+   scope above. CourseJourney and GraduationPanel are real, unmodified
+   Server Components rendered inside these panels — this file only styles
+   the NEW markup each mode composition owns (header, classroom promo,
+   progress card, Continue CTA, section eyebrows); it never targets those
+   components' own internals, so their real styling/copy is identical in
+   every mode. The progress bar fill color is styled here (a generic class
+   on markup this page owns), not the bar's real width, which always comes
+   from the single shared progress.percentComplete value.
+   ========================================================================== */
+.chess-school-mode-scope .chess-school-mode-panel {
+  display: none;
+}
+
+html:not([data-mode]) .chess-school-mode-scope .chess-school-mode-panel-classic-pro {
+  display: contents;
+}
+
+[data-mode="adult"] .chess-school-mode-scope .chess-school-mode-panel-adult {
+  display: contents;
+}
+
+[data-mode="kids"] .chess-school-mode-scope .chess-school-mode-panel-kids {
+  display: contents;
+}
+
+html:not([data-mode]) .chess-school-mode-scope {
+  --cp-accent: 56 189 248;
+}
+
+[data-mode="adult"] .chess-school-mode-scope {
+  --at-accent: 212 175 133;
+}
+
+[data-mode="kids"] .chess-school-mode-scope {
+  --kingdom-hairline: 255 197 61;
+}
+
+.chess-school-mode-scope .chess-school-bar-fill,
+.chess-school-mode-scope .chess-school-continue-cta {
+  background-color: rgb(var(--cm-gold));
+}
+
+.chess-school-mode-scope .chess-school-accent-text,
+.chess-school-mode-scope .chess-school-cta {
+  color: rgb(var(--cm-gold));
+}
+
+html:not([data-mode]) .chess-school-mode-scope .chess-school-bar-fill,
+html:not([data-mode]) .chess-school-mode-scope .chess-school-continue-cta {
+  background-color: rgb(var(--cp-accent));
+}
+
+html:not([data-mode]) .chess-school-mode-scope .chess-school-accent-text,
+html:not([data-mode]) .chess-school-mode-scope .chess-school-cta {
+  color: rgb(var(--cp-accent));
+}
+
+html:not([data-mode]) .chess-school-mode-scope .chess-school-row:hover {
+  border-color: rgb(var(--cp-accent) / 0.5);
+}
+
+[data-mode="adult"] .chess-school-mode-scope .chess-school-bar-fill,
+[data-mode="adult"] .chess-school-mode-scope .chess-school-continue-cta {
+  background-color: rgb(var(--at-accent));
+}
+
+[data-mode="adult"] .chess-school-mode-scope .chess-school-accent-text,
+[data-mode="adult"] .chess-school-mode-scope .chess-school-cta {
+  color: rgb(var(--at-accent));
+}
+
+[data-mode="adult"] .chess-school-mode-scope .chess-school-progress-card,
+[data-mode="adult"] .chess-school-mode-scope .chess-school-row {
+  border-radius: 16px;
+}
+
+[data-mode="adult"] .chess-school-mode-scope .chess-school-section-eyebrow {
+  color: rgb(var(--at-accent) / 0.9);
+}
+
+[data-mode="kids"] .chess-school-mode-scope .chess-school-bar-fill,
+[data-mode="kids"] .chess-school-mode-scope .chess-school-continue-cta {
+  background-color: rgb(var(--kingdom-hairline));
+}
+
+[data-mode="kids"] .chess-school-mode-scope .chess-school-accent-text,
+[data-mode="kids"] .chess-school-mode-scope .chess-school-cta {
+  color: rgb(var(--kingdom-hairline));
+}
+
+[data-mode="kids"] .chess-school-mode-scope .chess-school-progress-card,
+[data-mode="kids"] .chess-school-mode-scope .chess-school-row {
+  border-radius: 22px;
+}
+
+[data-mode="kids"] .chess-school-mode-scope .chess-school-section-eyebrow {
+  color: rgb(var(--kingdom-hairline) / 0.95);
+  font-weight: 700;
+}
