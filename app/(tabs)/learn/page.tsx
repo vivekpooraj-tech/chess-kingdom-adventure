@@ -1,13 +1,10 @@
-import Link from "next/link";
-import { PrimaryCard, ListItemRow } from "@/components/ui/Card";
-import { CHESS_MIND_CATEGORIES } from "@/content/chessMindCategories";
 import { TabPageShell } from "@/components/nav/TabPageShell";
-import { TEXT } from "@/lib/designSystem";
-import { NextLessonCard } from "@/components/learner/NextLessonCard";
-import { CourseStatusChip } from "@/components/learner/CourseStatusChip";
-import { LearningPathPanel } from "@/components/learner/LearningPathPanel";
 import { getCourse } from "@/lib/academy/courses.server";
-import { COURSE_NAME, COURSE_TITLE, COURSE_TAGLINE } from "@/lib/school/chessSchool";
+import { LearnModePresentation } from "@/components/learn/LearnModePresentation";
+import { ClassicLearn } from "@/components/learn/classic/ClassicLearn";
+import { AdultLearn } from "@/components/learn/adult/AdultLearn";
+import { KidsLearn } from "@/components/learn/kids/KidsLearn";
+import type { LearnChessEntry } from "@/components/learn/types";
 
 /**
  * Learn (Phase 19) — a single combined index over the existing Academy and
@@ -29,7 +26,7 @@ import { COURSE_NAME, COURSE_TITLE, COURSE_TAGLINE } from "@/lib/school/chessSch
  * client island: this shell still renders and paints exactly as before, and
  * the recommendation fills in afterwards without ever blocking it.
  */
-const LEARN_CHESS = [
+const LEARN_CHESS: LearnChessEntry[] = [
   {
     id: "fundamentals",
     title: "Chess Fundamentals",
@@ -77,8 +74,6 @@ const LEARN_CHESS = [
 ];
 
 export default function LearnPage() {
-  const trainCategories = CHESS_MIND_CATEGORIES;
-
   // Lesson IDS only. getCourse is server-only and this page is a server
   // component, so the course CONTENT never leaves the server — the client
   // island below receives a handful of short strings.
@@ -89,116 +84,12 @@ export default function LearnPage() {
   }
 
   return (
-    <TabPageShell maxWidth="wide">
-      <div>
-        <h1 className={TEXT.display}>Learn</h1>
-        <p className={`${TEXT.body} mt-2`}>
-          Structured lessons on the game, and training for how you think about it.
-        </p>
-      </div>
-
-      {/* Client island: the page stays static and paints unchanged, and this
-          fills in only when the child has a real recurring weakness with a
-          lesson that teaches it. See NextLessonCard. */}
-      <NextLessonCard />
-
-      {/* Another client island, sharing the status chips' single
-          completed-ids request — the page stays static and unblocked. */}
-      <LearningPathPanel lessonIdsByCourse={courseLessonIds} />
-
-      <Link href="/chess-school" className="w-full block active:scale-[0.98] transition-transform duration-100">
-        <PrimaryCard className="flex items-center gap-4">
-          <span className="text-3xl flex-none">🗺️</span>
-          <div className="flex-1">
-            {/* Chess School naming, but no progress numbers here: this page is
-                deliberately static with no per-child fetch, and a hardcoded
-                "12 of 30" would be exactly the fake progress that is not
-                allowed. The real figures live on Home and on /chess-school,
-                where the data already is — this card only names the course
-                and points at it. */}
-            <p className={`${TEXT.meta} text-premium-gold`}>🏫 {COURSE_NAME}</p>
-            <p className="font-classic-display text-lg text-premium-ivory mt-1">
-              {COURSE_TITLE}
-            </p>
-            <p className={`${TEXT.caption} normal-case mt-1`}>{COURSE_TAGLINE}</p>
-          </div>
-        </PrimaryCard>
-      </Link>
-
-      <div
-        className="auto-grid items-start"
-        style={{ "--grid-min": "20rem", "--grid-gap": "clamp(1.25rem, 3vw, 2rem)" } as React.CSSProperties}
-      >
-        <section className="w-full flex flex-col gap-2">
-          <p className={`${TEXT.caption} uppercase tracking-wide`}>Learn Chess</p>
-          <div className="flex flex-col gap-1.5">
-            {LEARN_CHESS.map((item) =>
-              "soon" in item ? (
-                <ListItemRow key={item.id} className="opacity-50 min-h-[64px]">
-                  <span className="text-3xl flex-none">{item.emoji}</span>
-                  <div className="flex-1">
-                    <p className="font-classic-display text-base text-premium-ivory">{item.title}</p>
-                    <p className={TEXT.caption}>{item.description}</p>
-                  </div>
-                  <span className="font-classic-body text-[11px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
-                    SOON
-                  </span>
-                </ListItemRow>
-              ) : (
-                <ListItemRow key={item.id} href={item.href} className="min-h-[64px]">
-                  <span className="text-3xl flex-none">{item.emoji}</span>
-                  <div className="flex-1">
-                    <p className="font-classic-display text-base text-premium-ivory">{item.title}</p>
-                    <p className={TEXT.caption}>{item.description}</p>
-                  </div>
-                  {"courseId" in item && item.courseId ? (
-                    <CourseStatusChip
-                      courseId={item.courseId}
-                      lessonIds={courseLessonIds[item.courseId] ?? []}
-                    />
-                  ) : null}
-                  <span className="text-premium-gold text-lg flex-none">→</span>
-                </ListItemRow>
-              )
-            )}
-          </div>
-        </section>
-
-        <section className="w-full flex flex-col gap-2">
-          <p className={`${TEXT.caption} uppercase tracking-wide`}>Train Your Chess Mind</p>
-          <div className="flex flex-col gap-1.5">
-            {trainCategories.map((cat) =>
-              !cat.href ? (
-                <ListItemRow key={cat.id} className="opacity-50 min-h-[64px]">
-                  <span className="text-3xl flex-none">{cat.emoji}</span>
-                  <div className="flex-1">
-                    <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
-                    <p className={TEXT.caption}>{cat.description}</p>
-                  </div>
-                  <span className="font-classic-body text-[11px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
-                    SOON
-                  </span>
-                </ListItemRow>
-              ) : (
-                <ListItemRow key={cat.id} href={cat.href} className="min-h-[64px]">
-                  <span className="text-3xl flex-none">{cat.emoji}</span>
-                  <div className="flex-1">
-                    <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
-                    <p className={TEXT.caption}>{cat.description}</p>
-                  </div>
-                  {cat.id === "tactical" ? (
-                    <CourseStatusChip
-                      courseId="tactical-thinking"
-                      lessonIds={courseLessonIds["tactical-thinking"] ?? []}
-                    />
-                  ) : null}
-                  <span className="text-premium-gold text-lg flex-none">→</span>
-                </ListItemRow>
-              )
-            )}
-          </div>
-        </section>
-      </div>
+    <TabPageShell maxWidth="wide" contentClassName="learn-mode-scope">
+      <LearnModePresentation
+        classicPro={<ClassicLearn learnChess={LEARN_CHESS} courseLessonIds={courseLessonIds} />}
+        adult={<AdultLearn learnChess={LEARN_CHESS} courseLessonIds={courseLessonIds} />}
+        kids={<KidsLearn learnChess={LEARN_CHESS} courseLessonIds={courseLessonIds} />}
+      />
     </TabPageShell>
   );
 }

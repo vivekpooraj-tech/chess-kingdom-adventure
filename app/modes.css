@@ -845,3 +845,88 @@ html:not([data-mode]) .profile-mode-scope .profile-openings-card {
   color: rgb(var(--kingdom-hairline) / 0.95);
   font-weight: 700;
 }
+
+/* ==========================================================================
+   LEARN MODE PRESENTATION (Phase 2.2)
+   Own scope (.learn-mode-scope), independent of every prior page scope
+   above. NextLessonCard/LearningPathPanel/CourseStatusChip are real,
+   unmodified client islands rendered inside these panels — this file only
+   styles the NEW markup each mode composition owns (rows, eyebrows, the
+   Chess School promo card); it never targets those components' own
+   internals, so their existing gold styling is unchanged in every mode.
+   ========================================================================== */
+.learn-mode-scope .learn-mode-panel {
+  display: none;
+}
+
+html:not([data-mode]) .learn-mode-scope .learn-mode-panel-classic-pro {
+  display: contents;
+}
+
+[data-mode="adult"] .learn-mode-scope .learn-mode-panel-adult {
+  display: contents;
+}
+
+[data-mode="kids"] .learn-mode-scope .learn-mode-panel-kids {
+  display: contents;
+}
+
+html:not([data-mode]) .learn-mode-scope {
+  --cp-accent: 56 189 248;
+}
+
+[data-mode="adult"] .learn-mode-scope {
+  --at-accent: 212 175 133;
+}
+
+[data-mode="kids"] .learn-mode-scope {
+  --kingdom-hairline: 255 197 61;
+}
+
+.learn-mode-scope .learn-row {
+  transition: border-color 150ms ease, border-radius 150ms ease;
+}
+
+html:not([data-mode]) .learn-mode-scope .learn-cta,
+html:not([data-mode]) .learn-mode-scope .learn-accent-text {
+  color: rgb(var(--cp-accent));
+}
+
+html:not([data-mode]) .learn-mode-scope .learn-row:hover {
+  border-color: rgb(var(--cp-accent) / 0.35);
+}
+
+[data-mode="adult"] .learn-mode-scope .learn-cta,
+[data-mode="adult"] .learn-mode-scope .learn-accent-text {
+  color: rgb(var(--at-accent));
+}
+
+[data-mode="adult"] .learn-mode-scope .learn-row {
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .learn-mode-scope .learn-row:hover {
+  border-color: rgb(var(--at-accent) / 0.35);
+}
+
+[data-mode="adult"] .learn-mode-scope .learn-section-eyebrow {
+  color: rgb(var(--at-accent) / 0.9);
+}
+
+[data-mode="kids"] .learn-mode-scope .learn-cta,
+[data-mode="kids"] .learn-mode-scope .learn-accent-text {
+  color: rgb(var(--kingdom-hairline));
+}
+
+[data-mode="kids"] .learn-mode-scope .learn-row {
+  border-radius: 20px;
+}
+
+[data-mode="kids"] .learn-mode-scope .learn-row:hover {
+  border-color: rgb(var(--kingdom-hairline) / 0.35);
+}
+
+[data-mode="kids"] .learn-mode-scope .learn-section-eyebrow {
+  color: rgb(var(--kingdom-hairline) / 0.95);
+  font-weight: 700;
+}
