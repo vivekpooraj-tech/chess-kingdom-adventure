@@ -1055,6 +1055,12 @@ export const PUZZLES: ChessPuzzle[] = [
   { id: "m1-discovered-mate-rook", fen: "k7/2K5/8/8/B7/8/8/R7 w - - 0 1",   sideToMove: "w", mateIn: 1, theme: "Discovered Mate",    level: 1 },
   { id: "m1-guarded-rook-mate",    fen: "7k/6R1/5K2/8/8/8/8/R7 w - - 0 1",  sideToMove: "w", mateIn: 1, theme: "Guarded Rook Mate",  level: 1 },
   { id: "m1-rook-bishop-mate",     fen: "7k/8/6KB/8/8/8/8/R7 w - - 0 1",    sideToMove: "w", mateIn: 1, theme: "Rook & Bishop Mate", level: 1 },
+
+  // Daily puzzle batch — 2026-09-21. Hand-composed, verified via
+  // `node scripts/verify-puzzles.js <candidates.json>` before being added here.
+  { id: "m1-damianos-mate",     fen: "7k/7p/5P2/8/8/8/8/4K1Q1 w - - 0 1",     sideToMove: "w", mateIn: 1, theme: "Damiano's Mate",     level: 1 },
+  { id: "m1-blackburnes-mate",  fen: "5rk1/5p1p/8/8/6N1/8/1B6/4K3 w - - 0 1", sideToMove: "w", mateIn: 1, theme: "Blackburne's Mate",  level: 1 },
+  { id: "m2-rook-corner-drive", fen: "7k/8/5K2/8/8/8/8/R7 w - - 0 1",         sideToMove: "w", mateIn: 2, theme: "King & Rook Mate",   level: 3 },
 ];
 
 export function getPuzzleById(id: string | null | undefined): ChessPuzzle | undefined {
