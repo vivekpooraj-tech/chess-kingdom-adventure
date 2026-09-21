@@ -450,3 +450,81 @@ html.cm-mode-switching div {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   PLAY MODE PRESENTATION (Phase 2.2-C)
+   Own scope (.play-mode-scope), independent of Home's .home-mode-scope
+   above, so nothing here can ever affect Home or any other page. Re-declares
+   the same cp/at/kingdom token VALUES already used inside .home-mode-scope
+   (values only — this block does not read or write anything from that
+   scope) so Play can speak the same accent language without being
+   structurally coupled to Home's markup.
+   ========================================================================== */
+.play-mode-scope .play-mode-panel {
+  display: none;
+}
+
+html:not([data-mode]) .play-mode-scope .play-mode-panel-classic-pro {
+  display: contents;
+}
+
+[data-mode="adult"] .play-mode-scope .play-mode-panel-adult {
+  display: contents;
+}
+
+[data-mode="kids"] .play-mode-scope .play-mode-panel-kids {
+  display: contents;
+}
+
+html:not([data-mode]) .play-mode-scope {
+  --cp-accent: 56 189 248; /* sky-400, same value as .home-mode-scope's Classic/Pro accent */
+}
+
+[data-mode="adult"] .play-mode-scope {
+  --at-accent: 212 175 133; /* warm champagne-gold, same value as .home-mode-scope's Adult accent */
+}
+
+[data-mode="kids"] .play-mode-scope {
+  --kingdom-hairline: 255 197 61; /* kingdom.gold, same value as .home-mode-scope's Kids hairline */
+}
+
+.play-mode-scope .play-section-eyebrow {
+  transition: color 200ms ease;
+}
+
+html:not([data-mode]) .play-mode-scope .play-section-eyebrow {
+  color: rgb(var(--cp-accent) / 0.85);
+}
+
+[data-mode="adult"] .play-mode-scope .play-section-eyebrow {
+  color: rgb(var(--at-accent) / 0.9);
+}
+
+[data-mode="kids"] .play-mode-scope .play-section-eyebrow {
+  color: rgb(var(--kingdom-hairline) / 0.95);
+  font-weight: 700;
+}
+
+.play-mode-scope .play-primary-card {
+  transition: border-color 150ms ease, border-radius 150ms ease;
+}
+
+html:not([data-mode]) .play-mode-scope .play-primary-card:hover {
+  border-color: rgb(var(--cp-accent) / 0.4);
+}
+
+[data-mode="adult"] .play-mode-scope .play-primary-card {
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .play-mode-scope .play-primary-card:hover {
+  border-color: rgb(var(--at-accent) / 0.4);
+}
+
+[data-mode="kids"] .play-mode-scope .play-primary-card {
+  border-radius: 22px;
+}
+
+[data-mode="kids"] .play-mode-scope .play-primary-card:hover {
+  border-color: rgb(var(--kingdom-hairline) / 0.4);
+}
