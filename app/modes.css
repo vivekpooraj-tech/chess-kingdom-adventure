@@ -86,6 +86,36 @@
 }
 
 /* --------------------------------------------------------------------------
+   PHASE 2.1-F — HOME MODE COMPOSITION SWITCH (CSS-only, no client JS)
+
+   HomeModePresentation now server-renders all three Home compositions on
+   every request, each wrapped in one of the three panels below. Exactly
+   one is shown, chosen by the same [data-mode] attribute
+   ModeBootstrapScript already writes onto <html> before this content is
+   ever painted (see app/layout.tsx / components/mode/ModeBootstrapScript.tsx)
+   — so this selection is resolved before first paint, not after
+   hydration, and there is no composition-level flash. See
+   components/home/HomeModePresentation.tsx for the full reasoning.
+
+   `display: contents` on the visible panel keeps its wrapper div out of
+   layout entirely, so TabPageShell's .screen-stack flex `gap` still
+   applies directly to Home's own top-level sections, exactly as if the
+   wrapper didn't exist.
+   -------------------------------------------------------------------------- */
+.home-mode-scope .home-mode-panel {
+  display: none;
+}
+html:not([data-mode]) .home-mode-scope .home-mode-panel-classic-pro {
+  display: contents;
+}
+[data-mode="adult"] .home-mode-scope .home-mode-panel-adult {
+  display: contents;
+}
+[data-mode="kids"] .home-mode-scope .home-mode-panel-kids {
+  display: contents;
+}
+
+/* --------------------------------------------------------------------------
    PHASE 2 — HOME PRESENTATION TOKENS
 
    Channels consumed only inside `.home-mode-scope` (the Home page's content
@@ -241,6 +271,150 @@
 [data-mode="kids"] .home-mode-scope .home-section-heading,
 [data-mode="adult"] .home-mode-scope .home-section-heading {
   color: rgb(var(--mode-accent) / 0.8);
+}
+
+/* ==========================================================================
+   PHASE 2.1-B.1 — CLASSIC/PRO "COMPETITIVE DASHBOARD" IDENTITY
+
+   Classic/Pro has no [data-mode] attribute of its own (it's the default —
+   see the Phase 1 comment at the top of this file), so these rules are
+   gated with `html:not([data-mode])` instead of a `[data-mode="..."]`
+   selector — the one reliable way to say "classic-pro specifically, not
+   kids, not adult" given that topology. Scoped inside `.home-mode-scope`
+   as usual, so nothing outside Home is touched, and Kids/Adult are
+   completely unaffected by every rule below (confirmed by construction:
+   the selector simply never matches while [data-mode] is present).
+
+   This is deliberately a cooler, tighter, more "competitive dashboard"
+   register than the shared premium/gold chrome used everywhere else in the
+   app — darker panel fills, a cyan/blue accent instead of gold, tighter
+   corners, uppercase eyebrow labels — without touching app/themes.css or
+   any global token, per "do not change the global application theme."
+   ========================================================================== */
+html:not([data-mode]) .home-mode-scope {
+  --cp-accent: 56 189 248; /* sky-400 — a cooler, competitive accent distinct from premium gold */
+  --cp-panel-bg: 15 20 32; /* near-black navy, darker than premium-navy */
+  --cp-panel-border: 148 163 184; /* slate-400, for a crisper hairline than the app's soft white/5 */
+}
+
+html:not([data-mode]) .home-mode-scope .cp-hero {
+  border-radius: 10px;
+  border-color: rgb(var(--cp-accent) / 0.35);
+  background-image: linear-gradient(to bottom right, rgb(var(--cp-panel-bg)), rgb(9 12 20));
+}
+
+html:not([data-mode]) .home-mode-scope .cp-panel {
+  border-radius: 8px;
+  border-color: rgb(var(--cp-panel-border) / 0.15);
+  background-color: rgb(var(--cp-panel-bg) / 0.9);
+}
+
+html:not([data-mode]) .home-mode-scope .cp-eyebrow {
+  color: rgb(var(--cp-accent) / 0.9);
+}
+
+html:not([data-mode]) .home-mode-scope .cp-badge-win {
+  color: rgb(74 222 128 / 1); /* emerald-400 — a real result colour, not the shared gold */
+  background-color: rgb(74 222 128 / 0.12);
+}
+
+html:not([data-mode]) .home-mode-scope .cp-badge-loss {
+  color: rgb(248 113 113 / 1); /* red-400 */
+  background-color: rgb(248 113 113 / 0.12);
+}
+
+html:not([data-mode]) .home-mode-scope .cp-badge-draw {
+  color: rgb(var(--cp-panel-border));
+  background-color: rgb(var(--cp-panel-border) / 0.12);
+}
+
+html:not([data-mode]) .home-mode-scope .cp-secondary {
+  opacity: 0.85;
+}
+
+/* ==========================================================================
+   PHASE 2.1-C — ADULT "MASTER TRAINING ATELIER" IDENTITY
+
+   Adult has its own real [data-mode="adult"] attribute, so these rules are
+   gated normally (no :not() trick needed, unlike classic-pro's block
+   above). Deliberately NOT the cyan cp-* competitive-dashboard register:
+   this is warm, curated, and restrained — a deep charcoal-and-gold study
+   rather than either Classic/Pro's cool dashboard or Kids' bright purple.
+   Namespaced `atelier-*` per the Phase 2.1-C brief, entirely separate
+   class names from `cp-*`, so the two can never collide or leak into each
+   other even if a future phase composes them on the same element by
+   accident.
+   ========================================================================== */
+[data-mode="adult"] .home-mode-scope {
+  --at-accent: 212 175 133; /* warm champagne-gold, distinct from cp's cyan and the shared premium gold */
+  --at-panel-bg: 26 22 18; /* warm charcoal, not navy — Adult is not "Classic/Pro in gold" */
+  --at-hairline: 212 175 133; /* same family as the accent, used only at low alpha for hairlines */
+}
+
+[data-mode="adult"] .home-mode-scope .atelier-hero {
+  border-radius: 6px;
+  border-color: rgb(var(--at-accent) / 0.3);
+  background-image: linear-gradient(to bottom right, rgb(var(--at-panel-bg)), rgb(15 12 10));
+}
+
+[data-mode="adult"] .home-mode-scope .atelier-panel {
+  border-radius: 6px;
+  border-color: rgb(var(--at-hairline) / 0.14);
+  background-color: rgb(var(--at-panel-bg) / 0.92);
+}
+
+[data-mode="adult"] .home-mode-scope .atelier-eyebrow {
+  color: rgb(var(--at-accent) / 0.85);
+  letter-spacing: 0.08em;
+}
+
+[data-mode="adult"] .home-mode-scope .atelier-divider {
+  border-color: rgb(var(--at-hairline) / 0.14);
+}
+
+[data-mode="adult"] .home-mode-scope .atelier-secondary {
+  opacity: 0.82;
+}
+
+/* ==========================================================================
+   PHASE 2.1-D — KIDS "ENCHANTED KINGDOM" IDENTITY
+
+   Real [data-mode="kids"] attribute, gated normally like Adult's block
+   above. Namespaced `kingdom-*` — entirely separate from both `cp-*` and
+   `atelier-*`, so none of the three can ever collide or leak into each
+   other. Deliberately louder and rounder than either: royal-purple panels
+   with a warm gold accent (reusing the same kingdom.gold/royal palette the
+   Phase 2 hero glow already established for Kids), generous radius, and a
+   playful eyebrow treatment — distinct from Classic/Pro's cool cyan
+   dashboard and Adult's restrained charcoal-and-gold study.
+   ========================================================================== */
+[data-mode="kids"] .home-mode-scope {
+  --kingdom-panel-bg: 51 33 97; /* deep royal-purple, matching the existing hero gradient's --mode-hero-to */
+  --kingdom-hairline: 255 197 61; /* kingdom.gold */
+}
+
+[data-mode="kids"] .home-mode-scope .kingdom-hero {
+  border-radius: 22px;
+}
+
+[data-mode="kids"] .home-mode-scope .kingdom-panel {
+  border-radius: 18px;
+  border-color: rgb(var(--kingdom-hairline) / 0.25);
+  background-image: linear-gradient(to bottom right, rgb(var(--kingdom-panel-bg) / 0.55), rgb(var(--kingdom-panel-bg) / 0.25));
+}
+
+[data-mode="kids"] .home-mode-scope .kingdom-eyebrow {
+  color: rgb(var(--kingdom-hairline) / 0.95);
+  font-weight: 700;
+}
+
+[data-mode="kids"] .home-mode-scope .kingdom-divider {
+  border-radius: 14px;
+  border-color: rgb(var(--kingdom-hairline) / 0.2);
+}
+
+[data-mode="kids"] .home-mode-scope .kingdom-secondary {
+  opacity: 0.88;
 }
 
 /* ==========================================================================

@@ -10,7 +10,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
   if (action.kind === "school") {
     const percent = Math.round((action.startedCount / action.totalSessions) * 100);
     return (
-      <section className="home-primary-card relative w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy border border-premium-gold/25 p-5 sm:p-6 flex flex-col gap-4 shadow-premiumCard overflow-hidden">
+      <section className="cp-hero atelier-hero kingdom-hero home-primary-card relative w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy border border-premium-gold/25 p-5 sm:p-6 flex flex-col gap-4 shadow-premiumCard overflow-hidden">
         <div
           aria-hidden="true"
           className="home-kingdom-glow pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgb(var(--mode-accent)/0.35),transparent_70%)]"
@@ -71,7 +71,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href={action.href}
-        className="home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/25 active:scale-[0.99] transition-transform duration-100"
+        className="cp-hero atelier-hero kingdom-hero home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/25 active:scale-[0.99] transition-transform duration-100"
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
           Your focus
@@ -132,7 +132,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href={action.href}
-        className="home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
+        className="cp-hero atelier-hero kingdom-hero home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
           Academy
@@ -151,7 +151,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
   return (
     <Link
       href="/play"
-      className="home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
+      className="cp-hero atelier-hero kingdom-hero home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
     >
       <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
         Play
