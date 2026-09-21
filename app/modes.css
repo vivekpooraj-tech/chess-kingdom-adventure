@@ -1180,3 +1180,192 @@ html:not([data-mode]) .puzzles-mode-scope .puzzles-session-line {
 [data-mode="kids"] .puzzles-mode-scope .puzzles-link {
   font-weight: 600;
 }
+
+/* World — single client render tree, no panel switch: additive
+   presentation hooks only. Passport/achievement data and location behavior
+   are identical across modes. */
+
+html:not([data-mode]) .world-mode-scope {
+  --cp-accent: 56 189 248;
+}
+
+[data-mode="adult"] .world-mode-scope {
+  --at-accent: 212 175 133;
+}
+
+[data-mode="kids"] .world-mode-scope {
+  --kingdom-hairline: 255 197 61;
+}
+
+/* Classic/Pro: compact, analytical, cyan, tight spacing, ledger-like. */
+
+html:not([data-mode]) .world-mode-scope .world-header {
+  margin-bottom: 0.25rem;
+}
+
+html:not([data-mode]) .world-mode-scope .world-lead {
+  font-size: 0.85rem;
+}
+
+html:not([data-mode]) .world-mode-scope .world-grid {
+  --grid-gap: 0.85rem;
+}
+
+html:not([data-mode]) .world-mode-scope .world-card {
+  border-radius: 10px;
+}
+
+html:not([data-mode]) .world-mode-scope .world-card-body {
+  padding: 0.85rem;
+  gap: 0.5rem;
+}
+
+html:not([data-mode]) .world-mode-scope .world-story {
+  font-size: 0.8rem;
+}
+
+html:not([data-mode]) .world-mode-scope .world-played-line {
+  font-weight: 600;
+}
+
+html:not([data-mode]) .world-mode-scope .world-play-cta {
+  background-color: rgb(var(--cp-accent));
+  border-radius: 8px;
+  color: #04121a;
+}
+
+html:not([data-mode]) .world-mode-scope .world-lookaround-btn {
+  border-radius: 6px;
+}
+
+html:not([data-mode]) .world-mode-scope .world-passport {
+  border-radius: 10px;
+  padding: 0.85rem;
+  border-color: rgb(var(--cp-accent) / 0.25);
+}
+
+html:not([data-mode]) .world-mode-scope .world-passport-heading,
+html:not([data-mode]) .world-mode-scope .world-achievement-chip {
+  color: rgb(var(--cp-accent));
+}
+
+html:not([data-mode]) .world-mode-scope .world-achievement-chip {
+  border-color: rgb(var(--cp-accent) / 0.35);
+  border-radius: 6px;
+  font-size: 0.7rem;
+}
+
+/* Adult: calm, spacious, refined, champagne/gold, journal-like. */
+
+[data-mode="adult"] .world-mode-scope .world-header {
+  margin-bottom: 0.5rem;
+}
+
+[data-mode="adult"] .world-mode-scope .world-lead {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+[data-mode="adult"] .world-mode-scope .world-grid {
+  --grid-gap: clamp(1.25rem, 3vw, 2.25rem);
+}
+
+[data-mode="adult"] .world-mode-scope .world-card {
+  border-radius: 18px;
+}
+
+[data-mode="adult"] .world-mode-scope .world-card-body {
+  padding: 1.25rem;
+  gap: 0.85rem;
+}
+
+[data-mode="adult"] .world-mode-scope .world-story {
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+[data-mode="adult"] .world-mode-scope .world-play-cta {
+  background-color: rgb(var(--at-accent));
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .world-mode-scope .world-lookaround-btn {
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .world-mode-scope .world-passport {
+  border-radius: 20px;
+  padding: 1.5rem;
+  border-color: rgb(var(--at-accent) / 0.25);
+}
+
+[data-mode="adult"] .world-mode-scope .world-passport-heading {
+  color: rgb(var(--at-accent));
+  font-weight: 500;
+}
+
+[data-mode="adult"] .world-mode-scope .world-achievement-chip {
+  border-color: rgb(var(--at-accent) / 0.3);
+  border-radius: 12px;
+}
+
+/* Kids: warm, friendly, purple/gold, rounded, larger touch targets. */
+
+[data-mode="kids"] .world-mode-scope .world-lead {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+[data-mode="kids"] .world-mode-scope .world-grid {
+  --grid-gap: clamp(1.25rem, 4vw, 2rem);
+}
+
+[data-mode="kids"] .world-mode-scope .world-card {
+  border-radius: 26px;
+}
+
+[data-mode="kids"] .world-mode-scope .world-card-body {
+  padding: 1.35rem;
+  gap: 1rem;
+}
+
+[data-mode="kids"] .world-mode-scope .world-story {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+[data-mode="kids"] .world-mode-scope .world-favourite-btn {
+  min-height: 52px;
+  min-width: 52px;
+}
+
+[data-mode="kids"] .world-mode-scope .world-lookaround-btn {
+  min-height: 52px;
+  border-radius: 26px;
+  font-weight: 700;
+}
+
+[data-mode="kids"] .world-mode-scope .world-play-cta {
+  min-height: 52px;
+  border-radius: 26px;
+  background-color: rgb(var(--kingdom-hairline));
+  font-weight: 700;
+}
+
+[data-mode="kids"] .world-mode-scope .world-passport {
+  border-radius: 28px;
+  padding: 1.5rem;
+  border-color: rgb(var(--kingdom-hairline) / 0.35);
+}
+
+[data-mode="kids"] .world-mode-scope .world-passport-heading {
+  color: rgb(var(--kingdom-hairline));
+  font-weight: 700;
+}
+
+[data-mode="kids"] .world-mode-scope .world-achievement-chip {
+  border-radius: 999px;
+  border-color: rgb(var(--kingdom-hairline) / 0.4);
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+}
