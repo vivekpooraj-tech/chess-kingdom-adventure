@@ -37,7 +37,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="chess-kingdom-adventure-opal.vercel.app" />
+                    android:host="www.chessmind.club" />
             </intent-filter>
 
             <!-- Custom scheme for the magic-link sign-in flow specifically.

@@ -10,7 +10,7 @@ import { BRAND } from './lib/brand';
 // because nothing forced it back before the next build. That workflow
 // (edit this file, remember to revert it) is exactly what's being
 // eliminated below.
-const PRODUCTION_URL = 'https://chess-kingdom-adventure-opal.vercel.app';
+const PRODUCTION_URL = 'https://www.chessmind.club';
 
 // Local-device development is opt-in ONLY via `npm run cap:sync:dev`
 // (scripts/cap-sync-dev.js), which sets CAPACITOR_ENV for that one

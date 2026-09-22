@@ -57,7 +57,7 @@ const metaDescription = `${BRAND.name} — ${BRAND.tagline}`;
 export const metadata: Metadata = {
   // Without this, Next.js resolves the relative OG/Twitter image paths
   // below against "http://localhost:3000" even in production builds.
-  metadataBase: new URL("https://chess-kingdom-adventure-opal.vercel.app"),
+  metadataBase: new URL("https://www.chessmind.club"),
   title: BRAND.name,
   description: metaDescription,
   openGraph: {
