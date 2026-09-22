@@ -1,5 +1,34 @@
 apply plugin: 'com.android.application'
 
+// Release signing credentials are loaded from a local, untracked properties
+// file at build time — never hardcoded here. Checked in this order:
+//   1. CHESSMIND_RELEASE_KEYSTORE_PROPERTIES env var (for CI/other machines)
+//   2. android/keystore.properties (the conventional location, gitignored —
+//      see android/.gitignore's "Keystore files" section) IN THIS project
+//   3. the known local checkout that already has both the properties file
+//      and the referenced keystore sitting next to each other correctly
+//   4. a personal backup copy, last resort
+// Required fields inside: storeFile, storePassword, keyAlias, keyPassword.
+// storeFile is a path RELATIVE TO THE PROPERTIES FILE ITSELF (not this
+// project's rootDir) — the properties file and the "app/keystore/..." path
+// it names are authored together as a pair, and only resolve correctly
+// against each other; resolving against whichever project happens to be
+// building would silently look in the wrong place in a second checkout or
+// worktree. If nothing is found (e.g. a contributor's machine without
+// release credentials), release builds simply stay unsigned — exactly
+// today's behaviour — rather than failing every other Gradle task.
+def releaseKeystorePropertiesFile =
+    (System.getenv("CHESSMIND_RELEASE_KEYSTORE_PROPERTIES") ? file(System.getenv("CHESSMIND_RELEASE_KEYSTORE_PROPERTIES")) : null) ?:
+    (file("$rootDir/keystore.properties").exists() ? file("$rootDir/keystore.properties") : null) ?:
+    (file("C:/Users/91990/Downloads/Chess kingdom/android/keystore.properties").exists() ? file("C:/Users/91990/Downloads/Chess kingdom/android/keystore.properties") : null) ?:
+    file("C:/Users/91990/OneDrive/Desktop/Websites/Chess mind/playstore cred/keystore.properties")
+
+def hasReleaseSigning = releaseKeystorePropertiesFile.exists()
+def releaseKeystoreProperties = new Properties()
+if (hasReleaseSigning) {
+    releaseKeystoreProperties.load(new FileInputStream(releaseKeystorePropertiesFile))
+}
+
 android {
     namespace = "com.chesskingdom.adventure"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +45,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(new File(releaseKeystorePropertiesFile.parentFile, releaseKeystoreProperties['storeFile'].toString()))
+                storePassword releaseKeystoreProperties['storePassword']
+                keyAlias releaseKeystoreProperties['keyAlias']
+                keyPassword releaseKeystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
