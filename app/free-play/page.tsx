@@ -98,6 +98,7 @@ export default function FreePlayPage() {
   const [gameStatus, setGameStatus] = useState<FreeGameStatus | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [startingGame, setStartingGame] = useState(false);
+  const [resignConfirm, setResignConfirm] = useState(false);
   // A historical ply shown on the board while the live game remains safely
   // in memory. null means the board is showing the current position.
   const [reviewPly, setReviewPly] = useState<number | null>(null);
@@ -175,6 +176,7 @@ export default function FreePlayPage() {
       setOpeningMatch(null);
       setDismissedOpeningId(null);
       setReviewPly(null);
+      setResignConfirm(false);
       moveLogRef.current = [];
       gameStartedAtRef.current = new Date().toISOString();
       if (worldLocationId) recordGameStarted(worldLocationId);
@@ -216,6 +218,20 @@ export default function FreePlayPage() {
       openingName: openingMatch?.opening.name ?? null,
     };
     setView({ status: "game-over", record });
+  }
+
+  // Player-initiated concession — the counterpart to a checkmate/draw
+  // ending, not a bypass of it. Feeds the exact same handleGameOver()
+  // pipeline a real chess.js result would, with the player (always White
+  // in Free Play) as the loser: isCheckmate/isDraw both false, winner "b".
+  // PostGameAnalysis already derives win/loss/draw from isDraw+winner alone
+  // (never isCheckmate), so this resignation flows into game history and
+  // the analysis screen exactly like a real loss, with no server call —
+  // Free Play has no online_games row and is never rated.
+  function handleResign() {
+    if (view.status !== "playing") return;
+    setResignConfirm(false);
+    handleGameOver(view.difficulty, { isCheckmate: false, isDraw: false, winner: "b" });
   }
 
   function handlePositionChange(pos: PositionState) {
@@ -471,6 +487,42 @@ export default function FreePlayPage() {
               statusText={position.isCheck ? "Check" : position.turn === "w" ? "White to move" : "Black to move"}
               hint={hint}
             />
+            <div className="rounded-premiumCard bg-premium-navy p-3 flex flex-col gap-2 shadow-premiumCard">
+              {resignConfirm ? (
+                <div className="flex flex-col gap-2">
+                  <p className="font-classic-body text-sm text-premium-ivory">Resign this game?</p>
+                  <div className="flex gap-2">
+                    <Button
+                      tone="premium"
+                      variant="danger"
+                      size="md"
+                      className="flex-1"
+                      onClick={handleResign}
+                    >
+                      Yes, Resign
+                    </Button>
+                    <Button
+                      tone="premium"
+                      variant="ghost"
+                      size="md"
+                      className="flex-1"
+                      onClick={() => setResignConfirm(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  tone="premium"
+                  variant="danger"
+                  size="md"
+                  onClick={() => setResignConfirm(true)}
+                >
+                  Resign
+                </Button>
+              )}
+            </div>
             <Button tone="premium" variant="ghost" onClick={() => setView({ status: "picking-difficulty" })}>
               Change Difficulty
             </Button>
@@ -501,8 +553,11 @@ export default function FreePlayPage() {
   // PostGameAnalysis screen, and the game never auto-navigates away on its
   // own (section 1/2 of the brief this implements).
   const { record } = view;
-  const playerWon = record.result.isCheckmate && record.result.winner === record.playerColor;
-  const opponentWon = record.result.isCheckmate && record.result.winner !== record.playerColor && record.result.winner !== null;
+  // Same win/loss/draw semantics PostGameAnalysis already uses (never
+  // gated on isCheckmate, since a resignation is a real loss with
+  // isCheckmate: false) — draw first, then compare winner to playerColor.
+  const playerWon = !record.result.isDraw && record.result.winner === record.playerColor;
+  const opponentWon = !record.result.isDraw && record.result.winner !== null && record.result.winner !== record.playerColor;
   const moveNumber = Math.ceil(record.moves.length / 2);
 
   return (
