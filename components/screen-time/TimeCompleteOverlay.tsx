@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { PrimaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
 
@@ -70,6 +71,21 @@ export function TimeCompleteOverlay({
           Chess time is set by a parent in the Parent Dashboard. Ask them if you need it changed —
           a new limit takes effect straight away.
         </p>
+
+        {/* The overlay covers the whole app, including the bottom nav that
+            normally leads to More → For Parents — without this link, a
+            parent had no way back into the dashboard to change the limit
+            until the next day. Navigates to the Parent Gate exactly like
+            every other entry point (e.g. app/chess-time/page.tsx's "Parent
+            settings" link) — it does not dismiss this overlay or bypass the
+            restriction; the child still sees this screen until the limit
+            actually changes. */}
+        <Link
+          href="/parent-gate?next=/parent-dashboard"
+          className={`${TEXT.caption} normal-case text-center underline underline-offset-4 text-premium-ivory/50`}
+        >
+          Parent settings
+        </Link>
       </PrimaryCard>
     </div>
   );
