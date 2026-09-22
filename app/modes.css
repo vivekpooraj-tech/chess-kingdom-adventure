@@ -1369,3 +1369,151 @@ html:not([data-mode]) .world-mode-scope .world-achievement-chip {
   font-weight: 700;
   padding: 0.4rem 0.85rem;
 }
+
+/* Matchmaking — single client component, live Realtime state machine
+   untouched: additive presentation hooks only. Rating/quota/time-control
+   data and all matchmaking logic are identical across modes. */
+
+html:not([data-mode]) .matchmaking-mode-scope {
+  --cp-accent: 56 189 248;
+}
+
+[data-mode="adult"] .matchmaking-mode-scope {
+  --at-accent: 212 175 133;
+}
+
+[data-mode="kids"] .matchmaking-mode-scope {
+  --kingdom-hairline: 255 197 61;
+}
+
+/* Classic/Pro: compact, analytical, cyan, dense but readable. */
+
+html:not([data-mode]) .matchmaking-mode-scope .matchmaking-card {
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+html:not([data-mode]) .matchmaking-mode-scope .matchmaking-rating-value {
+  color: rgb(var(--cp-accent));
+  font-size: 1.75rem;
+}
+
+html:not([data-mode]) .matchmaking-mode-scope .matchmaking-intro {
+  font-size: 0.85rem;
+}
+
+html:not([data-mode]) .matchmaking-mode-scope .matchmaking-timecontrol-btn {
+  border-radius: 6px;
+  min-height: 44px;
+}
+
+html:not([data-mode]) .matchmaking-mode-scope .matchmaking-timecontrol-btn-active {
+  border-color: rgb(var(--cp-accent));
+  background-color: rgb(var(--cp-accent) / 0.15);
+  color: rgb(var(--cp-accent));
+}
+
+html:not([data-mode]) .matchmaking-mode-scope .matchmaking-cta-primary {
+  background-color: rgb(var(--cp-accent));
+  border-radius: 8px;
+  color: #04121a;
+}
+
+html:not([data-mode]) .matchmaking-mode-scope .matchmaking-cta-secondary {
+  color: rgb(var(--cp-accent));
+  border-radius: 8px;
+}
+
+html:not([data-mode]) .matchmaking-mode-scope .matchmaking-searching-text {
+  font-size: 0.85rem;
+}
+
+/* Adult: calm, spacious, refined, champagne/gold, sophisticated club feel. */
+
+[data-mode="adult"] .matchmaking-mode-scope .matchmaking-card {
+  border-radius: 20px;
+  padding: 2rem;
+}
+
+[data-mode="adult"] .matchmaking-mode-scope .matchmaking-rating-value {
+  color: rgb(var(--at-accent));
+}
+
+[data-mode="adult"] .matchmaking-mode-scope .matchmaking-intro {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+[data-mode="adult"] .matchmaking-mode-scope .matchmaking-timecontrol-btn {
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .matchmaking-mode-scope .matchmaking-timecontrol-btn-active {
+  border-color: rgb(var(--at-accent));
+  background-color: rgb(var(--at-accent) / 0.15);
+  color: rgb(var(--at-accent));
+}
+
+[data-mode="adult"] .matchmaking-mode-scope .matchmaking-cta-primary {
+  background-color: rgb(var(--at-accent));
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .matchmaking-mode-scope .matchmaking-cta-secondary {
+  color: rgb(var(--at-accent));
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .matchmaking-mode-scope .matchmaking-searching-text {
+  font-weight: 400;
+}
+
+/* Kids: warm, friendly, purple/gold, rounded, larger touch targets. */
+
+[data-mode="kids"] .matchmaking-mode-scope .matchmaking-card {
+  border-radius: 28px;
+  padding: 1.5rem;
+}
+
+[data-mode="kids"] .matchmaking-mode-scope .matchmaking-rating-value {
+  color: rgb(var(--kingdom-hairline));
+}
+
+[data-mode="kids"] .matchmaking-mode-scope .matchmaking-intro {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+[data-mode="kids"] .matchmaking-mode-scope .matchmaking-timecontrol-btn {
+  border-radius: 16px;
+  min-height: 52px;
+  font-weight: 700;
+}
+
+[data-mode="kids"] .matchmaking-mode-scope .matchmaking-timecontrol-btn-active {
+  border-color: rgb(var(--kingdom-hairline));
+  background-color: rgb(var(--kingdom-hairline) / 0.2);
+  color: rgb(var(--kingdom-hairline));
+}
+
+[data-mode="kids"] .matchmaking-mode-scope .matchmaking-cta-primary {
+  background-color: rgb(var(--kingdom-hairline));
+  border-radius: 24px;
+  min-height: 52px;
+  font-weight: 700;
+}
+
+[data-mode="kids"] .matchmaking-mode-scope .matchmaking-cta-secondary {
+  color: rgb(var(--kingdom-hairline));
+  border-radius: 24px;
+  min-height: 52px;
+  font-weight: 700;
+}
+
+[data-mode="kids"] .matchmaking-mode-scope .matchmaking-searching-text {
+  font-weight: 600;
+}
+
+[data-mode="kids"] .matchmaking-mode-scope .matchmaking-quota-value {
+  font-weight: 600;
+}

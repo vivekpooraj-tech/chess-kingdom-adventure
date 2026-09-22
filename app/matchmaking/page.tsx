@@ -17,6 +17,7 @@ import { TIME_CONTROLS, DEFAULT_TIME_CONTROL_ID } from "@/content/timeControls";
 const LAUNCH_CONTROLS = ["3+0", "5+0", "10+0", "15+10"];
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
@@ -50,6 +51,19 @@ export default function MatchmakingPage() {
   const [timeControlId, setTimeControlId] = useState<string>(DEFAULT_TIME_CONTROL_ID);
   const [canPickSpeed, setCanPickSpeed] = useState(false);
   const childIdRef = useRef<string | null>(null);
+  // The one active matchmaking Realtime subscription, if any. A ref (not
+  // state) because it's an imperative resource, not something that should
+  // cause a render. Kept so a later search can never collide with a
+  // same-named channel Supabase still considers subscribed — see
+  // clearMatchmakingChannel below.
+  const channelRef = useRef<RealtimeChannel | null>(null);
+
+  function clearMatchmakingChannel(supabase: SupabaseClient) {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -89,6 +103,7 @@ export default function MatchmakingPage() {
       if (view.status === "searching" && childIdRef.current) {
         const supabase = createClient();
         cancelMatchmaking(supabase, childIdRef.current).catch(() => {});
+        clearMatchmakingChannel(supabase);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,6 +141,11 @@ export default function MatchmakingPage() {
 
     setView({ status: "searching", rating });
 
+    // Only one matchmaking channel is ever valid at a time — clear any
+    // leftover reference before opening a fresh one, so this can never try
+    // to add a callback to a channel Supabase still considers subscribed.
+    clearMatchmakingChannel(supabase);
+
     // Not matched yet — wait for someone else's find_or_create_match call
     // to claim our queue row (see the migration for why this is race-safe).
     const channel = supabase
@@ -141,18 +161,20 @@ export default function MatchmakingPage() {
         (payload) => {
           const row = payload.new as { status: string; matched_game_id: string | null };
           if (row.status === "matched" && row.matched_game_id) {
-            supabase.removeChannel(channel);
+            clearMatchmakingChannel(supabase);
             router.push(`/online/${row.matched_game_id}`);
           }
         }
       )
       .subscribe();
+    channelRef.current = channel;
   }
 
   async function cancelSearch() {
     if (view.status !== "searching" || !childIdRef.current) return;
     const supabase = createClient();
     await cancelMatchmaking(supabase, childIdRef.current).catch(() => {});
+    clearMatchmakingChannel(supabase);
     setView({ status: "idle", rating: view.rating });
   }
 
@@ -161,42 +183,48 @@ export default function MatchmakingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-8 px-6 py-12">
-      <h1 className={`${TEXT.display} text-center`}>Play Someone New</h1>
+    <main className="matchmaking-mode-scope min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-8 px-6 py-12">
+      <h1 className={`matchmaking-title ${TEXT.display} text-center`}>Play Someone New</h1>
 
-      <PrimaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center">
-        <div className="flex flex-col items-center gap-1">
-          <p className={TEXT.caption}>Your Rating</p>
-          <p className="font-classic-display text-3xl text-premium-gold">{view.rating.toLocaleString()}</p>
+      <PrimaryCard className="matchmaking-card max-w-sm w-full flex flex-col items-center gap-5 text-center">
+        <div className="matchmaking-rating-block flex flex-col items-center gap-1">
+          <p className={`matchmaking-rating-label ${TEXT.caption}`}>Your Rating</p>
+          <p className="matchmaking-rating-value font-classic-display text-3xl text-premium-gold">
+            {view.rating.toLocaleString()}
+          </p>
           {isFirstTimer && (
-            <p className={`${TEXT.caption} normal-case mt-1 max-w-[220px]`}>
+            <p className={`matchmaking-firsttimer ${TEXT.caption} normal-case mt-1 max-w-[220px]`}>
               You're starting at 400. Win games to climb the ratings.
             </p>
           )}
         </div>
 
         {gameStatus && !gameStatus.isPremium && (
-          <div className="flex flex-col items-center gap-0.5">
-            <p className={TEXT.caption}>Multiplayer</p>
-            <p className={TEXT.body}>{gameStatus.mpRemaining} of 2 free games remaining today</p>
+          <div className="matchmaking-quota-block flex flex-col items-center gap-0.5">
+            <p className={`matchmaking-quota-label ${TEXT.caption}`}>Multiplayer</p>
+            <p className={`matchmaking-quota-value ${TEXT.body}`}>
+              {gameStatus.mpRemaining} of 2 free games remaining today
+            </p>
           </div>
         )}
 
         {view.status === "idle" && (
           <>
-            <p className={TEXT.body}>
+            <p className={`matchmaking-intro ${TEXT.body}`}>
               We&apos;ll find you the closest-rated opponent available, anywhere in the world.
             </p>
 
             {canPickSpeed && (
-              <div className="w-full flex flex-col gap-3">
+              <div className="matchmaking-timecontrol-block w-full flex flex-col gap-3">
                 {(["Blitz", "Rapid"] as const).map((category) => (
                   <div key={category} className="flex flex-col gap-2">
-                    <p className={`${TEXT.meta} text-premium-gold`}>{category}</p>
+                    <p className={`matchmaking-timecontrol-category ${TEXT.meta} text-premium-gold`}>
+                      {category}
+                    </p>
                     <div
                       role="radiogroup"
                       aria-label={`${category} time controls`}
-                      className="grid grid-cols-3 gap-2"
+                      className="matchmaking-timecontrol-group grid grid-cols-3 gap-2"
                     >
                       {TIME_CONTROLS.filter(
                         (t) => t.description === category && LAUNCH_CONTROLS.includes(t.id)
@@ -209,9 +237,9 @@ export default function MatchmakingPage() {
                             role="radio"
                             aria-checked={active}
                             onClick={() => setTimeControlId(t.id)}
-                            className={`min-h-[48px] rounded-premiumBtn border px-2 font-classic-body text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 ${
+                            className={`matchmaking-timecontrol-btn min-h-[48px] rounded-premiumBtn border px-2 font-classic-body text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 ${
                               active
-                                ? "border-premium-gold bg-premium-gold/15 text-premium-ivory"
+                                ? "matchmaking-timecontrol-btn-active border-premium-gold bg-premium-gold/15 text-premium-ivory"
                                 : "border-white/12 bg-premium-navy/70 text-premium-ivory/75 hover:border-premium-gold/30"
                             }`}
                           >
@@ -222,13 +250,13 @@ export default function MatchmakingPage() {
                     </div>
                   </div>
                 ))}
-                <p className={TEXT.caption}>
+                <p className={`matchmaking-timecontrol-hint ${TEXT.caption}`}>
                   You are only matched with players who chose the same time control.
                 </p>
               </div>
             )}
 
-            <Button tone="premium" size="lg" onClick={findOpponent}>
+            <Button tone="premium" size="lg" onClick={findOpponent} className="matchmaking-cta-primary">
               Find Opponent →
             </Button>
           </>
@@ -236,30 +264,35 @@ export default function MatchmakingPage() {
 
         {view.status === "searching" && (
           <>
-            <p className={`${TEXT.body} animate-pulse`}>
+            <p className={`matchmaking-searching-text ${TEXT.body} animate-pulse`}>
               Searching for an opponent
               {canPickSpeed ? ` at ${TIME_CONTROLS.find((t) => t.id === timeControlId)?.label ?? ""}` : ""}
               ...
             </p>
-            <Button tone="premium" variant="ghost" onClick={cancelSearch}>
+            <Button
+              tone="premium"
+              variant="ghost"
+              onClick={cancelSearch}
+              className="matchmaking-cta-secondary"
+            >
               Cancel Search
             </Button>
           </>
         )}
 
         {view.status === "error" && (
-          <p className="font-classic-body text-sm text-red-300">{view.message}</p>
+          <p className="matchmaking-error-text font-classic-body text-sm text-red-300">{view.message}</p>
         )}
       </PrimaryCard>
 
-      <p className={`${TEXT.caption} normal-case max-w-sm text-center`}>
+      <p className={`matchmaking-safety-text ${TEXT.caption} normal-case max-w-sm text-center`}>
         These games are with players you don't know, so chat and emoji reactions are
         turned off here to keep things safe.
       </p>
 
       <Link
         href="/kingdom-map"
-        className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
+        className="matchmaking-link inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
       >
         Back to Home
       </Link>
