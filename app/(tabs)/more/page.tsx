@@ -34,14 +34,14 @@ export default async function MorePage() {
   const avatar = AVATARS.find((a) => a.id === child.avatar_id);
 
   return (
-    <TabPageShell maxWidth="medium">
+    <TabPageShell maxWidth="medium" contentClassName="more-mode-scope">
       <div>
         <h1 className={TEXT.display}>More</h1>
       </div>
 
       <Link
         href="/profile"
-        className="list-row w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center gap-4 border border-white/5 hover:border-premium-gold/30 active:scale-[0.98] transition-[border-color,transform] duration-100"
+        className="more-profile-card list-row w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center gap-4 border border-white/5 hover:border-premium-gold/30 active:scale-[0.98] transition-[border-color,transform] duration-100"
       >
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center text-2xl flex-none"
@@ -57,32 +57,32 @@ export default async function MorePage() {
             <p className="font-classic-display text-lg text-premium-ivory truncate">{child.display_name}</p>
             <RatingBadge rating={child.rating} size="sm" className="mt-1" />
           </div>
-          <span className="text-premium-gold text-lg flex-none">→</span>
+          <span className="more-cta text-premium-gold text-lg flex-none">→</span>
         </Link>
 
       <div className="flex flex-col gap-6">
         <section className="w-full flex flex-col gap-2">
-          <p className={`${TEXT.caption} uppercase tracking-wide`}>Your Chess Mind</p>
+          <p className={`${TEXT.caption} uppercase tracking-wide more-section-eyebrow`}>Your Chess Mind</p>
           <div className="flex flex-col gap-1.5">
-            <ListItemRow href="/stats">
+            <ListItemRow href="/stats" className="more-row">
               <span className="text-2xl flex-none">📈</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">Your Chess</p>
                 <p className={`${TEXT.caption} normal-case`}>What your games show, and what to practise next</p>
               </div>
-              <span className="text-premium-gold text-lg flex-none">→</span>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
-            <ListItemRow href="/friends">
+            <ListItemRow href="/friends" className="more-row">
               <span className="text-2xl flex-none">👥</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">Friends</p>
                 <p className={`${TEXT.caption} normal-case`}>Add by code and challenge them</p>
               </div>
-              <span className="text-premium-gold text-lg flex-none">→</span>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
             {/* World's second route to discovery on a phone, where it is not a
                 bottom tab. The Play hub carries the primary card. */}
-            <ListItemRow href="/world">
+            <ListItemRow href="/world" className="more-row">
               <span className="text-2xl flex-none">🌍</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">
@@ -92,45 +92,45 @@ export default async function MorePage() {
                   Play in extraordinary places around the world
                 </p>
               </div>
-              <span className="text-premium-gold text-lg flex-none">→</span>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
-            <ListItemRow href="/games">
+            <ListItemRow href="/games" className="more-row">
               <span className="text-2xl flex-none">♟️</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">Your Games</p>
                 <p className={`${TEXT.caption} normal-case`}>Every finished game, with its review</p>
               </div>
-              <span className="text-premium-gold text-lg flex-none">→</span>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
-            <ListItemRow href="/profile">
+            <ListItemRow href="/profile" className="more-row">
               <span className="text-2xl flex-none">📊</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">Full Profile & Achievements</p>
                 <p className={`${TEXT.caption} normal-case`}>Stats, badges, openings discovered</p>
               </div>
-              <span className="text-premium-gold text-lg flex-none">→</span>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
-            <ListItemRow href="/kingdom-map#journey">
+            <ListItemRow href="/kingdom-map#journey" className="more-row">
               <span className="text-2xl flex-none">🗺️</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">Chess Kingdom Journey</p>
                 <p className={`${TEXT.caption} normal-case`}>Your 30-day beginner adventure</p>
               </div>
-              <span className="text-premium-gold text-lg flex-none">→</span>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
-            <ListItemRow href="/kingdom-map/customize">
+            <ListItemRow href="/kingdom-map/customize" className="more-row">
               <span className="text-2xl flex-none">🎨</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">Customize Board & Pieces</p>
                 <p className={`${TEXT.caption} normal-case`}>Change your set and board skin</p>
               </div>
-              <span className="text-premium-gold text-lg flex-none">→</span>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
           </div>
         </section>
 
         <section className="w-full flex flex-col gap-2">
-          <p className={`${TEXT.caption} uppercase tracking-wide`}>Appearance</p>
+          <p className={`${TEXT.caption} uppercase tracking-wide more-section-eyebrow`}>Appearance</p>
           {/* Client island: the theme lives on <html> + localStorage, so this
               is the only part of the app that needs to be interactive for
               theming to work. */}
@@ -146,21 +146,41 @@ export default async function MorePage() {
         </section>
 
         <section className="w-full flex flex-col gap-2">
-          <p className={`${TEXT.caption} uppercase tracking-wide`}>Family</p>
+          <p className={`${TEXT.caption} uppercase tracking-wide more-section-eyebrow`}>Family</p>
           <div className="flex flex-col gap-1.5">
-            <ListItemRow href="/parent-gate?next=/parent-dashboard">
+            <ListItemRow href="/parent-gate?next=/parent-dashboard" className="more-row">
               <span className="text-2xl flex-none">👨‍👩‍👧</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">For Parents</p>
                 <p className={`${TEXT.caption} normal-case`}>Screen time, premium, progress reports</p>
               </div>
-              <span className="text-premium-gold text-lg flex-none">→</span>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
           </div>
         </section>
 
         <section className="w-full flex flex-col gap-2">
-          <p className={`${TEXT.caption} uppercase tracking-wide`}>Account</p>
+          <p className={`${TEXT.caption} uppercase tracking-wide more-section-eyebrow`}>Legal</p>
+          <div className="flex flex-col gap-1.5">
+            <ListItemRow href="/privacy" className="more-row">
+              <span className="text-2xl flex-none">🔒</span>
+              <div className="flex-1">
+                <p className="font-classic-display text-base text-premium-ivory">Privacy Policy</p>
+              </div>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
+            </ListItemRow>
+            <ListItemRow href="/terms" className="more-row">
+              <span className="text-2xl flex-none">📄</span>
+              <div className="flex-1">
+                <p className="font-classic-display text-base text-premium-ivory">Terms of Service</p>
+              </div>
+              <span className="more-cta text-premium-gold text-lg flex-none">→</span>
+            </ListItemRow>
+          </div>
+        </section>
+
+        <section className="w-full flex flex-col gap-2">
+          <p className={`${TEXT.caption} uppercase tracking-wide more-section-eyebrow`}>Account</p>
           <SignOutRow />
         </section>
       </div>

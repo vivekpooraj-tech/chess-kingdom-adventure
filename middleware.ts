@@ -24,6 +24,11 @@ const PUBLIC_PATHS = [
   "/forgot-password",
   "/reset-password",
   "/auth/callback",
+  // Legal pages: must be readable without a session — a parent evaluating
+  // the app before signing in, and the Play Store listing itself, both
+  // need these to load with no auth check.
+  "/privacy",
+  "/terms",
   "/api/stripe/webhook",
   "/api/dev/auto-signin",
   // Vercel Cron. Like the Stripe webhook above, this is a machine-to-machine

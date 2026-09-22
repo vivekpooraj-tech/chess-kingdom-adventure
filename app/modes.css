@@ -1517,3 +1517,81 @@ html:not([data-mode]) .matchmaking-mode-scope .matchmaking-searching-text {
 [data-mode="kids"] .matchmaking-mode-scope .matchmaking-quota-value {
   font-weight: 600;
 }
+
+/* ==========================================================================
+   MORE MODE PRESENTATION (Phase 3.6)
+   Own scope (.more-mode-scope), independent of every prior page scope above.
+   More is a single static server component with no per-mode data or async
+   state (account/settings/support/legal rows), so — like Discover — this
+   uses the lighter additive pattern: existing markup kept as-is, with
+   `more-row`/`more-cta`/`more-section-eyebrow`/`more-profile-card` className
+   hooks that only ever affect presentation (color, radius, weight, spacing),
+   never structure, content, routes, or the Legal section's links/text.
+   ========================================================================== */
+html:not([data-mode]) .more-mode-scope {
+  --cp-accent: 56 189 248; /* sky-400, same value as .home-mode-scope's Classic/Pro accent */
+}
+
+[data-mode="adult"] .more-mode-scope {
+  --at-accent: 212 175 133; /* warm champagne-gold, same value as .home-mode-scope's Adult accent */
+}
+
+[data-mode="kids"] .more-mode-scope {
+  --kingdom-hairline: 255 197 61; /* kingdom.gold, same value as .home-mode-scope's Kids hairline */
+}
+
+.more-mode-scope .more-profile-card,
+.more-mode-scope .more-row {
+  transition: border-color 150ms ease, border-radius 150ms ease;
+}
+
+html:not([data-mode]) .more-mode-scope .more-profile-card:hover,
+html:not([data-mode]) .more-mode-scope .more-row:hover {
+  border-color: rgb(var(--cp-accent) / 0.35);
+}
+
+html:not([data-mode]) .more-mode-scope .more-cta {
+  color: rgb(var(--cp-accent));
+}
+
+html:not([data-mode]) .more-mode-scope .more-section-eyebrow {
+  letter-spacing: 0.08em;
+}
+
+[data-mode="adult"] .more-mode-scope .more-profile-card,
+[data-mode="adult"] .more-mode-scope .more-row {
+  border-radius: 14px;
+}
+
+[data-mode="adult"] .more-mode-scope .more-profile-card:hover,
+[data-mode="adult"] .more-mode-scope .more-row:hover {
+  border-color: rgb(var(--at-accent) / 0.35);
+}
+
+[data-mode="adult"] .more-mode-scope .more-cta {
+  color: rgb(var(--at-accent));
+}
+
+[data-mode="adult"] .more-mode-scope .more-section-eyebrow {
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+[data-mode="kids"] .more-mode-scope .more-profile-card,
+[data-mode="kids"] .more-mode-scope .more-row {
+  border-radius: 20px;
+}
+
+[data-mode="kids"] .more-mode-scope .more-profile-card:hover,
+[data-mode="kids"] .more-mode-scope .more-row:hover {
+  border-color: rgb(var(--kingdom-hairline) / 0.35);
+}
+
+[data-mode="kids"] .more-mode-scope .more-cta {
+  color: rgb(var(--kingdom-hairline));
+  font-weight: 700;
+}
+
+[data-mode="kids"] .more-mode-scope .more-section-eyebrow {
+  font-weight: 700;
+}
