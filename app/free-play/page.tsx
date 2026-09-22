@@ -487,10 +487,10 @@ export default function FreePlayPage() {
               statusText={position.isCheck ? "Check" : position.turn === "w" ? "White to move" : "Black to move"}
               hint={hint}
             />
-            <div className="rounded-premiumCard bg-premium-navy p-3 flex flex-col gap-2 shadow-premiumCard">
+            <div className="rounded-premiumCard bg-premium-navy p-2 flex flex-col gap-1.5 shadow-premiumCard">
               {resignConfirm ? (
-                <div className="flex flex-col gap-2">
-                  <p className="font-classic-body text-sm text-premium-ivory">Resign this game?</p>
+                <div className="flex flex-col gap-1.5">
+                  <p className="font-classic-body text-xs text-premium-ivory">Resign this game?</p>
                   <div className="flex gap-2">
                     <Button
                       tone="premium"
