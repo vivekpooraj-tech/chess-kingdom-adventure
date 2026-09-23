@@ -181,6 +181,7 @@ export default async function KingdomMapPage() {
       chessMindTotalSolved={chessMindTotalSolved}
       achievementsProps={achievementsProps}
       recentGames={recentGames}
+      recentReviews={recentReviews}
       tournamentParticipations={tournamentParticipations}
     />
   );

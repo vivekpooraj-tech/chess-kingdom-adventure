@@ -1604,6 +1604,10 @@ export interface RecentReviewRow {
    *  Only reviewed games carry this, so anything computed from it measures
    *  reviewed games rather than all games played. */
   openingName: string | null;
+  /** "free_play" | "online" — which surface the reviewed game was played on.
+   *  Lets a consumer (e.g. Home's Recent Games) distinguish an AI game from
+   *  an online one without a second query. */
+  source: string | null;
 }
 
 /** The child's most recent review records (newest first) — for a future
@@ -1616,7 +1620,7 @@ export async function getRecentGameReviews(
   try {
     const { data, error } = await supabase
       .from("child_game_reviews")
-      .select("accuracy, result, mistakes, blunders, biggest_moment_skill, opening_name, reviewed_at")
+      .select("accuracy, result, mistakes, blunders, biggest_moment_skill, opening_name, reviewed_at, source")
       .eq("child_id", childId)
       .order("reviewed_at", { ascending: false })
       .limit(limit);
@@ -1629,6 +1633,7 @@ export async function getRecentGameReviews(
       biggestMomentSkill: (r.biggest_moment_skill as string | null) ?? null,
       openingName: (r.opening_name as string | null) ?? null,
       reviewedAt: r.reviewed_at as string,
+      source: (r.source as string | null) ?? null,
     }));
   } catch {
     return [];

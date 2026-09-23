@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { OpeningEncounterDetail, PlayedGameRow } from "@/lib/supabase/queries";
+import type { OpeningEncounterDetail, PlayedGameRow, RecentReviewRow } from "@/lib/supabase/queries";
 import type { AvatarOption, BuddyOption } from "@/lib/types";
 import type { PrimaryAction } from "@/lib/home/getPrimaryAction";
 import type { DailyQuestSet } from "@/lib/quests/dailyQuests";
@@ -74,6 +74,7 @@ export function ClassicProHome({
   chessMindTotalSolved,
   achievementsProps,
   recentGames,
+  recentReviews,
   tournamentParticipations,
 }: {
   neutralTone: boolean;
@@ -101,6 +102,7 @@ export function ClassicProHome({
     onlineWinsCount: number;
   };
   recentGames: PlayedGameRow[];
+  recentReviews: RecentReviewRow[];
   tournamentParticipations: TournamentParticipation[];
 }) {
   return (
@@ -144,7 +146,7 @@ export function ClassicProHome({
 
         <div className="grid w-full grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
           <div className="flex flex-col gap-3 lg:col-span-2">
-            <RecentGamesPreview games={recentGames} />
+            <RecentGamesPreview games={recentGames} reviews={recentReviews} />
             <TacticalPuzzlePanel childId={childId} />
           </div>
           <div className="flex flex-col gap-3">
