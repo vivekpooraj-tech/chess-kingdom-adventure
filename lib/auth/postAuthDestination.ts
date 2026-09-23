@@ -80,14 +80,14 @@ export function postAuthDestination(resolution: ChildResolutionLike): PostAuthDe
     return { href: CHOOSE_CHILD, requiresParentGate: false };
   }
 
-  const { experience_level, avatar_id, buddy_id } = resolution.child;
+  const { experience_level } = resolution.child;
 
   if (!experience_level) {
     return { href: ONBOARDING_EXPERIENCE, requiresParentGate: true };
   }
-  if (!avatar_id || !buddy_id) {
-    return { href: ONBOARDING_AVATAR, requiresParentGate: true };
-  }
+  // Avatar/buddy selection is optional (kept in sync with the matching
+  // guard in app/(tabs)/kingdom-map/page.tsx) — a child who hasn't picked
+  // one yet goes straight to the dashboard rather than /onboarding/avatar.
   return { href: DASHBOARD, requiresParentGate: false };
 }
 

@@ -63,7 +63,12 @@ export default async function KingdomMapPage() {
 
   const child = resolution.child!;
   if (!child.experience_level) redirect("/onboarding/experience");
-  if (!child.avatar_id || !child.buddy_id) redirect("/onboarding/avatar");
+  // Avatar/buddy selection is optional — Home already renders correctly
+  // without either (see HomeProfileStrip/HomeHeader's `avatar?.emoji ?? "🧑"`
+  // fallback, and the `?? BUDDIES[0]` fallback immediately below), so a
+  // child who hasn't picked one yet is no longer forced through
+  // /onboarding/avatar before reaching Home. The picker itself is unchanged
+  // and still reachable any time via Customize Board & Pieces.
 
   const buddy = BUDDIES.find((b) => b.id === child.buddy_id) ?? BUDDIES[0];
 
