@@ -2,9 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedActiveChild, setCachedActiveChild } from "./activeChildCache";
 import type { AgeBand, ExperienceLevel } from "@/lib/learner/experienceLevel";
 
+export type ChildGender = "male" | "female" | "unspecified";
+
 export interface ChildProfile {
   id: string;
-  display_name: string;
+  /** NULL means the name step of onboarding hasn't been completed yet — distinct from a user who typed an actual name. See 0047_child_gender_and_profile_completion.sql. */
+  display_name: string | null;
   avatar_id: string | null;
   buddy_id: string | null;
   board_skin_id: string;
@@ -14,6 +17,8 @@ export interface ChildProfile {
   experience_level: ExperienceLevel | null;
   age_band: AgeBand | null;
   has_seen_opening_video: boolean;
+  /** NULL means not yet chosen — never inferred, always an explicit user selection. */
+  gender: ChildGender | null;
 }
 
 /**
@@ -56,7 +61,7 @@ export async function getOrCreateChild(
 
   const { data: newChild, error: insertError } = await supabase
     .from("children")
-    .insert({ parent_id: parent.id })
+    .insert({ parent_id: parent.id, display_name: null })
     .select()
     .single();
 
@@ -104,7 +109,7 @@ export async function getChildProfileById(
   const { data, error } = await supabase
     .from("children")
     .select(
-      "id, display_name, avatar_id, buddy_id, board_skin_id, piece_set_id, rating, current_day, experience_level, age_band, has_seen_opening_video"
+      "id, display_name, avatar_id, buddy_id, board_skin_id, piece_set_id, rating, current_day, experience_level, age_band, has_seen_opening_video, gender"
     )
     .eq("id", childId)
     .maybeSingle();
@@ -206,6 +211,39 @@ export async function resolveActiveChildCached(
   const resolution = await resolveActiveChild(supabase, authUserId, activeChildIdFromCookie);
   setCachedActiveChild(authUserId, activeChildIdFromCookie, resolution);
   return resolution;
+}
+
+/**
+ * Sets the child's chosen display name — the only writer of this column
+ * besides createChild()'s insert. Never called with an empty/whitespace-only
+ * string; app/onboarding/name/page.tsx trims and validates before calling.
+ */
+export async function updateChildName(
+  supabase: SupabaseClient,
+  childId: string,
+  displayName: string
+) {
+  const { error } = await supabase
+    .from("children")
+    .update({ display_name: displayName })
+    .eq("id", childId);
+  if (error) throw error;
+}
+
+/**
+ * Sets the child's explicit gender selection. Always a direct user choice —
+ * never inferred from name, avatar, or anything else.
+ */
+export async function updateChildGender(
+  supabase: SupabaseClient,
+  childId: string,
+  gender: ChildGender
+) {
+  const { error } = await supabase
+    .from("children")
+    .update({ gender })
+    .eq("id", childId);
+  if (error) throw error;
 }
 
 export async function updateChildAvatar(

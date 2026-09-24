@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
-import { resolveActiveChild, updateChildExperienceProfile } from "@/lib/supabase/queries";
+import { resolveActiveChild, updateChildExperienceProfile, type ChildProfile } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import {
   AGE_BAND_OPTIONS,
@@ -13,12 +13,13 @@ import {
   type ExperienceLevel,
 } from "@/lib/learner/experienceLevel";
 import { invalidateActiveChildCache } from "@/lib/supabase/activeChildCache";
+import { nextRequiredOnboardingStep } from "@/lib/auth/postAuthDestination";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 
 export default function ExperienceOnboardingPage() {
   const router = useRouter();
-  const [childId, setChildId] = useState<string | null>(null);
+  const [child, setChild] = useState<ChildProfile | null>(null);
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(null);
   const [ageBand, setAgeBand] = useState<AgeBand | null>(null);
   const [saving, setSaving] = useState(false);
@@ -36,26 +37,26 @@ export default function ExperienceOnboardingPage() {
         router.push("/choose-child");
         return;
       }
-      const child = resolution.child!;
-      setActiveChildIdClient(child.id);
-      setChildId(child.id);
-      if (child.experience_level) {
-        router.replace(child.avatar_id && child.buddy_id ? "/kingdom-map" : "/onboarding/avatar");
+      const resolvedChild = resolution.child!;
+      setActiveChildIdClient(resolvedChild.id);
+      setChild(resolvedChild);
+      if (resolvedChild.experience_level) {
+        router.replace(nextRequiredOnboardingStep(resolvedChild) ?? "/kingdom-map");
       }
     }
     load();
   }, [router]);
 
   async function confirm() {
-    if (!childId || !experienceLevel) return;
+    if (!child || !experienceLevel) return;
     setSaving(true);
     const supabase = createClient();
     const user = await getVerifiedUser(supabase);
     if (!user) return;
-    await updateChildExperienceProfile(supabase, childId, experienceLevel, ageBand);
+    await updateChildExperienceProfile(supabase, child.id, experienceLevel, ageBand);
     invalidateActiveChildCache(user.id);
     setSaving(false);
-    router.push("/onboarding/avatar");
+    router.push(nextRequiredOnboardingStep({ ...child, experience_level: experienceLevel }) ?? "/kingdom-map");
   }
 
   return (

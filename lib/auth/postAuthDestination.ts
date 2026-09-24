@@ -34,6 +34,8 @@
 
 /** The fields of a child profile that decide where its family lands. */
 export interface OnboardingState {
+  display_name: string | null | undefined;
+  gender: string | null | undefined;
   experience_level: string | null | undefined;
   avatar_id: string | null | undefined;
   buddy_id: string | null | undefined;
@@ -56,16 +58,55 @@ export interface PostAuthDestination {
 
 export const CHOOSE_CHILD = "/choose-child";
 export const ONBOARDING_EXPERIENCE = "/onboarding/experience";
+export const ONBOARDING_NAME = "/onboarding/name";
+export const ONBOARDING_GENDER = "/onboarding/gender";
 export const ONBOARDING_AVATAR = "/onboarding/avatar";
 export const DASHBOARD = "/kingdom-map";
 
 /**
+ * SINGLE SOURCE OF TRUTH for "is this child's profile complete enough for
+ * Home" — every place in the app that needs this answer (this file,
+ * app/(tabs)/kingdom-map/page.tsx's guard, app/choose-child/page.tsx's
+ * choose(), app/onboarding/experience/page.tsx's self-redirect) calls this
+ * function rather than re-deriving the rule, so there is exactly one
+ * definition of "incomplete" to keep in sync. If you need a fifth caller,
+ * import this — do not write a sixth copy of the field checks.
+ *
+ * Two different sequences, depending on when the child was created:
+ *
+ * GRANDFATHERED (`avatar_id` already set — the last step of onboarding
+ * before this feature existed): only experience_level is still checked,
+ * exactly as before this feature. name/gender simply didn't exist as
+ * required steps when they onboarded, so existing users are never swept
+ * back into the new screens or have their stored name/avatar touched.
+ *
+ * GENUINELY NEW (`avatar_id` never set): name -> gender -> avatar ->
+ * experience_level, matching the product's required order (Signup -> Name
+ * -> Gender -> Avatar -> the rest of the existing onboarding flow -> Home).
+ * Once avatar is chosen, they rejoin the original chain at
+ * /onboarding/experience exactly like every user before them.
+ */
+export function nextRequiredOnboardingStep(child: OnboardingState): string | null {
+  if (child.avatar_id) {
+    return child.experience_level ? null : ONBOARDING_EXPERIENCE;
+  }
+  if (!child.display_name || !child.display_name.trim()) return ONBOARDING_NAME;
+  if (!child.gender) return ONBOARDING_GENDER;
+  return ONBOARDING_AVATAR;
+}
+
+export function isChildProfileComplete(child: OnboardingState): boolean {
+  return nextRequiredOnboardingStep(child) === null;
+}
+
+/**
  * Resolve the destination.
  *
- * The order matches app/(tabs)/kingdom-map/page.tsx's own guards exactly —
- * needsSelection, then experience_level, then avatar/buddy — which is what
- * keeps the two from disagreeing and bouncing a user back and forth. If you
- * change one, change both.
+ * The order matches app/(tabs)/kingdom-map/page.tsx's own guard exactly —
+ * both call nextRequiredOnboardingStep() — which is what keeps the two from
+ * disagreeing and bouncing a user back and forth. If you change one, change
+ * both (and app/choose-child/page.tsx, and
+ * app/onboarding/experience/page.tsx's self-redirect).
  *
  * A null child with needsSelection false is the "profile temporarily missing"
  * case: resolveActiveChild() normally creates one, so this only happens when a
@@ -80,14 +121,15 @@ export function postAuthDestination(resolution: ChildResolutionLike): PostAuthDe
     return { href: CHOOSE_CHILD, requiresParentGate: false };
   }
 
-  const { experience_level } = resolution.child;
-
-  if (!experience_level) {
-    return { href: ONBOARDING_EXPERIENCE, requiresParentGate: true };
+  const nextStep = nextRequiredOnboardingStep(resolution.child);
+  if (nextStep) {
+    // Only the two "entry" screens (first step for a brand-new profile, or
+    // first step for a grandfathered one) sit behind the parent gate — the
+    // gate's job is to confirm an adult is present before ANY setup starts,
+    // not to re-challenge on every individual step within that setup.
+    const isEntryStep = nextStep === ONBOARDING_NAME || nextStep === ONBOARDING_EXPERIENCE;
+    return { href: nextStep, requiresParentGate: isEntryStep };
   }
-  // Avatar/buddy selection is optional (kept in sync with the matching
-  // guard in app/(tabs)/kingdom-map/page.tsx) — a child who hasn't picked
-  // one yet goes straight to the dashboard rather than /onboarding/avatar.
   return { href: DASHBOARD, requiresParentGate: false };
 }
 

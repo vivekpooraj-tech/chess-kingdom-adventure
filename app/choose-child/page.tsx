@@ -7,6 +7,7 @@ import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { getChildrenForParent, ChildProfile } from "@/lib/supabase/queries";
 import { setActiveChildIdClient } from "@/lib/childSession";
 import { AVATARS } from "@/content/avatars";
+import { nextRequiredOnboardingStep } from "@/lib/auth/postAuthDestination";
 
 export default function ChooseChildPage() {
   const router = useRouter();
@@ -30,13 +31,7 @@ export default function ChooseChildPage() {
 
   function choose(child: ChildProfile) {
     setActiveChildIdClient(child.id);
-    if (!child.experience_level) {
-      router.push("/onboarding/experience");
-    } else if (child.avatar_id && child.buddy_id) {
-      router.push("/kingdom-map");
-    } else {
-      router.push("/onboarding/avatar");
-    }
+    router.push(nextRequiredOnboardingStep(child) ?? "/kingdom-map");
   }
 
   if (loading) {
@@ -61,7 +56,7 @@ export default function ChooseChildPage() {
             >
               <span className="text-6xl">{avatar?.emoji ?? "🧒"}</span>
               <span className="font-display text-lg text-kingdom-night">
-                {child.display_name}
+                {child.display_name ?? "New player"}
               </span>
             </motion.button>
           );

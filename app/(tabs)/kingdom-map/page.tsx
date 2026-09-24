@@ -22,6 +22,7 @@ import {
   localDateString,
 } from "@/lib/supabase/queries";
 import { getUnlockedKingdomBonuses } from "@/lib/chessMind/kingdomUnlocks";
+import { nextRequiredOnboardingStep } from "@/lib/auth/postAuthDestination";
 import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { loadSchoolProgressServer } from "@/lib/school/v2/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
@@ -62,15 +63,19 @@ export default async function KingdomMapPage() {
   if (resolution.needsSelection) redirect("/choose-child");
 
   const child = resolution.child!;
-  if (!child.experience_level) redirect("/onboarding/experience");
-  // Avatar/buddy selection is optional — Home already renders correctly
-  // without either (see HomeProfileStrip/HomeHeader's `avatar?.emoji ?? "🧑"`
-  // fallback, and the `?? BUDDIES[0]` fallback immediately below), so a
-  // child who hasn't picked one yet is no longer forced through
-  // /onboarding/avatar before reaching Home. The picker itself is unchanged
-  // and still reachable any time via Customize Board & Pieces.
+  // Single source of truth for onboarding completeness — see the doc comment
+  // on nextRequiredOnboardingStep() in lib/auth/postAuthDestination.ts.
+  // Grandfathered users (already have an avatar_id from before name/gender
+  // existed as steps) pass straight through even with a null display_name
+  // or gender; only genuinely new profiles get routed to the missing step.
+  const nextStep = nextRequiredOnboardingStep(child);
+  if (nextStep) redirect(nextStep);
 
   const buddy = BUDDIES.find((b) => b.id === child.buddy_id) ?? BUDDIES[0];
+  // Reached here only via the grandfathering path above, where display_name
+  // can theoretically still be null — this fallback is a type-safety net,
+  // not an expected runtime case for any new profile.
+  const displayName = child.display_name ?? "Adventurer";
 
   const [
     completedDays,
@@ -171,7 +176,7 @@ export default async function KingdomMapPage() {
   const classicProHome = (
     <ClassicProHome
       neutralTone={neutralTone}
-      displayName={child.display_name}
+      displayName={displayName}
       avatar={avatar}
       streak={chessMindStreak}
       rating={child.rating}
@@ -201,7 +206,7 @@ export default async function KingdomMapPage() {
   const adultHome = (
     <AdultHome
       neutralTone={neutralTone}
-      displayName={child.display_name}
+      displayName={displayName}
       avatar={avatar}
       streak={chessMindStreak}
       rating={child.rating}
@@ -230,7 +235,7 @@ export default async function KingdomMapPage() {
   const kidsHome = (
     <KidsHome
       neutralTone={neutralTone}
-      displayName={child.display_name}
+      displayName={displayName}
       avatar={avatar}
       streak={chessMindStreak}
       rating={child.rating}

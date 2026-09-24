@@ -59,21 +59,29 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
   check("missing experience level -> experience onboarding", noExp.href === "/onboarding/experience");
   check("missing experience level IS gated", noExp.requiresParentGate === true);
 
-  // Avatar/buddy selection is optional (commit c0e45e8): a child with an
-  // experience level but no avatar or buddy goes straight to the dashboard,
-  // and is NOT sent through the parent gate for it.
-  const noAvatar = D.postAuthDestination(res(child({ avatar_id: null })));
-  check("missing avatar -> dashboard (avatar is optional)", noAvatar.href === "/kingdom-map");
-  check("missing avatar is NOT gated", noAvatar.requiresParentGate === false);
-
+  // Buddy selection remains optional (commit c0e45e8): a child missing only
+  // a buddy goes straight to the dashboard, not gated for it.
   const noBuddy = D.postAuthDestination(res(child({ buddy_id: null })));
   check("missing buddy -> dashboard (buddy is optional)", noBuddy.href === "/kingdom-map");
   check("missing buddy is NOT gated", noBuddy.requiresParentGate === false);
 
+  // Avatar is now required for a genuinely new child (name -> gender ->
+  // avatar -> experience_level — see postAuthDestination's own doc comment).
+  // Once name and gender are already set, a missing avatar routes to avatar
+  // onboarding specifically -- and unlike name/experience, avatar is not an
+  // "entry" step, so it is NOT re-gated.
+  const noAvatar = D.postAuthDestination(
+    res(child({ avatar_id: null, display_name: "Test Child", gender: "unspecified" }))
+  );
+  check("missing avatar (name/gender already set) -> avatar onboarding", noAvatar.href === "/onboarding/avatar");
+  check("missing avatar is NOT gated", noAvatar.requiresParentGate === false);
+
+  // A genuinely brand-new child (no name/gender/avatar/experience at all)
+  // starts at the very first step of the chain: name.
   const brandNew = D.postAuthDestination(
     res(child({ experience_level: null, avatar_id: null, buddy_id: null }))
   );
-  check("a brand-new child starts at experience", brandNew.href === "/onboarding/experience");
+  check("a brand-new child starts at name (name -> gender -> avatar -> experience)", brandNew.href === "/onboarding/name");
   check("a brand-new child IS gated", brandNew.requiresParentGate === true);
 }
 
@@ -128,8 +136,10 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
       D.postAuthDestination(res(child({ experience_level: v }))).href === "/onboarding/experience"
     );
     check(
-      `empty avatar_id (${JSON.stringify(v)}) -> dashboard (avatar is optional)`,
-      D.postAuthDestination(res(child({ avatar_id: v }))).href === "/kingdom-map"
+      `empty avatar_id (${JSON.stringify(v)}, name/gender already set) -> avatar onboarding`,
+      D.postAuthDestination(
+        res(child({ avatar_id: v, display_name: "Test Child", gender: "unspecified" }))
+      ).href === "/onboarding/avatar"
     );
   }
 }
@@ -164,19 +174,26 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
     path.join(process.cwd(), "app", "(tabs)", "kingdom-map", "page.tsx"),
     "utf8"
   );
-  const order = [];
-  if (/needsSelection\)\s*redirect\("\/choose-child"\)/.test(km)) order.push("choose-child");
-  if (/!child\.experience_level\)\s*redirect\("\/onboarding\/experience"\)/.test(km))
-    order.push("experience");
+  // kingdom-map no longer duplicates a hardcoded ladder of its own -- it
+  // delegates directly to the shared nextRequiredOnboardingStep(), which is
+  // what actually keeps the two from disagreeing (rather than two separately
+  // maintained lists of checks that could drift apart).
   check(
-    "kingdom-map guards are in the same order as postAuthDestination",
-    JSON.stringify(order) === JSON.stringify(["choose-child", "experience"])
+    "kingdom-map still redirects needsSelection to /choose-child before resolving nextStep",
+    /needsSelection\)\s*redirect\("\/choose-child"\)/.test(km)
   );
-  // Avatar/buddy is optional on both sides: the dashboard must not bounce a
-  // child without one back to /onboarding/avatar, or it would loop with
-  // postAuthDestination (which now sends that child to the dashboard).
   check(
-    "kingdom-map does not redirect to /onboarding/avatar",
+    "kingdom-map delegates its onboarding guard to the shared postAuthDestination rule, not a duplicated ladder",
+    /nextRequiredOnboardingStep\(child\)/.test(km) && /if \(nextStep\) redirect\(nextStep\)/.test(km)
+  );
+  // Buddy is optional on both sides: the dashboard must not bounce a child
+  // without one back to /onboarding/avatar or /onboarding/anything, or it
+  // would loop with postAuthDestination (which sends that child straight to
+  // the dashboard). Avatar itself is no longer optional for a genuinely new
+  // child, but that redirect is issued generically via `redirect(nextStep)`,
+  // never as a literal "/onboarding/avatar" string in this file.
+  check(
+    "kingdom-map does not hardcode its own /onboarding/avatar redirect",
     !/redirect\("\/onboarding\/avatar"\)/.test(km)
   );
 
@@ -190,9 +207,14 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
     D.postAuthDestination(res(child({ experience_level: null }))).href === "/onboarding/experience"
   );
   check(
-    "missing avatar/buddy agrees (both sides land on the dashboard)",
-    D.postAuthDestination(res(child({ buddy_id: null }))).href === "/kingdom-map" &&
-      D.postAuthDestination(res(child({ avatar_id: null }))).href === "/kingdom-map"
+    "missing buddy agrees (still lands on the dashboard, buddy remains optional)",
+    D.postAuthDestination(res(child({ buddy_id: null }))).href === "/kingdom-map"
+  );
+  check(
+    "missing avatar (name/gender already set) agrees (lands on avatar onboarding, not the dashboard)",
+    D.postAuthDestination(
+      res(child({ avatar_id: null, display_name: "Test Child", gender: "unspecified" }))
+    ).href === "/onboarding/avatar"
   );
 }
 
