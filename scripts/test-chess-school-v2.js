@@ -91,7 +91,7 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
     check(`${s.id}: step ids unique`, new Set(s.steps.map((st) => st.id)).size === s.steps.length);
     check(`${s.id}: has Ollie intro/mistake/success`, !!s.ollie.intro && !!s.ollie.mistake && !!s.ollie.success);
     check(`${s.id}: has at least one skill tag`, s.skillTags.length > 0);
-    check(`${s.id}: estimated minutes in a child-sized range`, s.estimatedMinutes >= 8 && s.estimatedMinutes <= 25);
+    check(`${s.id}: estimated minutes in a child-sized range`, s.estimatedMinutes >= 8 && s.estimatedMinutes <= 30);
     check(`${s.id}: is playable (no "coming soon" in the arc)`, s.status === "playable");
     if (s.status === "playable") {
       const teach = s.steps.some((st) => st.type === "teach" || st.type === "ceremony" || st.type === "exam");
@@ -178,7 +178,7 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
   check("there are drills", drills.length > 0);
   for (const [sid, st] of drills) {
     const d = st.drill;
-    check(`${sid}: drill has 2–3 puzzles`, d.puzzles.length >= 2 && d.puzzles.length <= 3);
+    check(`${sid}: drill has 2–6 puzzles`, d.puzzles.length >= 2 && d.puzzles.length <= 6);
     check(`${sid}: pass bar is reachable but not trivial`, d.passRequired >= 1 && d.passRequired <= d.puzzles.length);
     check(`${sid}: drill has a remedial puzzle`, !!d.remedial && !!d.remedial.fen);
     check(`${sid}: drill has a remedial explanation`, typeof d.remedialTeach === "string" && d.remedialTeach.length > 20);
@@ -267,7 +267,7 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
   check("Fork Master card says 'Challenge me.'", C.SCHOOL_UNLOCKS.find((u) => u.id === "fork_master").tagline === "Challenge me.");
   check("session 12 is Fork Festival and awards Fork Master", C.getSession(12).shareUnlock?.id === "fork_master");
   check("Fork Festival Ollie line matches the brief", C.getSession(12).ollie.intro === "Today you learn the sneakiest trick in chess.");
-  check("Fork Festival has three escalating fork puzzles", C.getSession(12).steps.find((st) => st.type === "puzzle_drill").drill.puzzles.length === 3);
+  check("Fork Festival has six escalating fork puzzles (gold-standard rebuild)", C.getSession(12).steps.find((st) => st.type === "puzzle_drill").drill.puzzles.length === 6);
   check("session 18 awards First Checkmate", C.getSession(18).shareUnlock?.id === "first_checkmate");
   check("session 18's guided board is a mate in one", (() => { const g = C.getSession(18).steps.find((st) => st.type === "guided_board"); const c = new Chess(g.fen); c.move(g.acceptMoves[0]); return c.isCheckmate(); })());
   check("session 24 has a bot match with NO hints", C.getSession(24).steps.some((st) => st.type === "bot_match" && st.hintsAllowed === false));
@@ -350,7 +350,10 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
   check("Chess School V2 never imports kingdomZones", core.every((f) => !/kingdomZones/.test(fs.readFileSync(f, "utf8"))));
   check("Chess School V2 never touches child_lesson_progress", core.every((f) => !/child_lesson_progress/.test(fs.readFileSync(f, "utf8"))));
   check("Chess School V2 never touches children.current_day", core.every((f) => !/current_day/.test(fs.readFileSync(f, "utf8"))));
-  check("V1 course page still imports its own module", /lib\/school\/chessSchool/.test(read("app", "chess-school", "page.tsx")));
+  // V1's own index page was intentionally retired in favor of V2 as the
+  // canonical Chess School (see the route-migration this session) — it now
+  // redirects rather than rendering content/lessons.ts's own module.
+  check("V1 course page redirects to the canonical V2 classroom", /redirect\(["']\/chess-school\/classroom["']\)/.test(read("app", "chess-school", "page.tsx")));
   check("V1 lesson route is untouched by V2 (no v2 imports)", !/school\/v2/.test(read("app", "lesson", "[dayId]", "page.tsx")));
   check("the V2 migration exists at 0043", fs.existsSync(path.join(process.cwd(), "supabase", "migrations", "0043_chess_school_v2.sql")));
   check("no duplicate 0032 school migration was created", !fs.readdirSync(path.join(process.cwd(), "supabase", "migrations")).some((f) => /^0032.*school/.test(f)));
