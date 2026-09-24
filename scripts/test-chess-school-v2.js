@@ -660,7 +660,7 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
   // Prelude / resultLines / montage / epic are all optional and backward
   // compatible: every session that doesn't opt in renders exactly as before.
   {
-    const untouchedBotMatches = [8, 21].map((n) => C.getSession(n).steps.find((st) => st.type === "bot_match"));
+    const untouchedBotMatches = [8].map((n) => C.getSession(n).steps.find((st) => st.type === "bot_match"));
     check("bot_match sessions that were never touched still have no prelude", untouchedBotMatches.every((b) => b.prelude === undefined));
     const untouchedPassAndPlay = [27, 28].map((n) => C.getSession(n).steps.find((st) => st.type === "pass_and_play"));
     check("pass_and_play sessions outside Graduation still use the generic result wording", untouchedPassAndPlay.every((p) => p.resultLines === undefined && p.prelude === undefined));

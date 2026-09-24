@@ -2084,6 +2084,7 @@ export const SCHOOL_SESSIONS: readonly SchoolSession[] = [
         lines: [
           "Same rules as before: middle pawns, then knights and bishops, then castle.",
           "Look for free pieces every single move.",
+          "Once your pieces are out, ask: what's the biggest threat on the board right now — yours or theirs?",
           "Hints are still here if you need them — but try one move without first.",
         ],
       },
@@ -2094,12 +2095,25 @@ export const SCHOOL_SESSIONS: readonly SchoolSession[] = [
         goal: "Play sixteen of your own moves.",
         movesRequired: 16,
         hintsAllowed: true,
+        prelude: {
+          headline: "From guided to your own.",
+          lines: [
+            "Every game before this one, I was right next to you, pointing things out.",
+            "This time you play a longer game and figure most of it out yourself. Hints are still there if you want them.",
+            "Ready?",
+          ],
+          cta: "Play",
+        },
       },
       {
         id: "s21-recap",
         type: "recap",
         title: "You played a full game",
-        learned: ["You played a long game with much less help."],
+        learned: [
+          "You played a longer game, mostly working things out yourself.",
+          "You opened with your center pawns and pieces, then looked for the biggest threat on the board.",
+          "Same habit as Session 20: before every move, check what could take your piece.",
+        ],
         nextTeaser: "Next: how to start a game well, every time.",
       },
     ],
