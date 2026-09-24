@@ -59,13 +59,16 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
   check("missing experience level -> experience onboarding", noExp.href === "/onboarding/experience");
   check("missing experience level IS gated", noExp.requiresParentGate === true);
 
+  // Avatar/buddy selection is optional (commit c0e45e8): a child with an
+  // experience level but no avatar or buddy goes straight to the dashboard,
+  // and is NOT sent through the parent gate for it.
   const noAvatar = D.postAuthDestination(res(child({ avatar_id: null })));
-  check("missing avatar -> avatar onboarding", noAvatar.href === "/onboarding/avatar");
-  check("missing avatar IS gated", noAvatar.requiresParentGate === true);
+  check("missing avatar -> dashboard (avatar is optional)", noAvatar.href === "/kingdom-map");
+  check("missing avatar is NOT gated", noAvatar.requiresParentGate === false);
 
   const noBuddy = D.postAuthDestination(res(child({ buddy_id: null })));
-  check("missing buddy -> avatar onboarding", noBuddy.href === "/onboarding/avatar");
-  check("missing buddy IS gated", noBuddy.requiresParentGate === true);
+  check("missing buddy -> dashboard (buddy is optional)", noBuddy.href === "/kingdom-map");
+  check("missing buddy is NOT gated", noBuddy.requiresParentGate === false);
 
   const brandNew = D.postAuthDestination(
     res(child({ experience_level: null, avatar_id: null, buddy_id: null }))
@@ -125,8 +128,8 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
       D.postAuthDestination(res(child({ experience_level: v }))).href === "/onboarding/experience"
     );
     check(
-      `empty avatar_id (${JSON.stringify(v)}) -> onboarding`,
-      D.postAuthDestination(res(child({ avatar_id: v }))).href === "/onboarding/avatar"
+      `empty avatar_id (${JSON.stringify(v)}) -> dashboard (avatar is optional)`,
+      D.postAuthDestination(res(child({ avatar_id: v }))).href === "/kingdom-map"
     );
   }
 }
@@ -165,11 +168,16 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
   if (/needsSelection\)\s*redirect\("\/choose-child"\)/.test(km)) order.push("choose-child");
   if (/!child\.experience_level\)\s*redirect\("\/onboarding\/experience"\)/.test(km))
     order.push("experience");
-  if (/!child\.avatar_id \|\| !child\.buddy_id\)\s*redirect\("\/onboarding\/avatar"\)/.test(km))
-    order.push("avatar");
   check(
     "kingdom-map guards are in the same order as postAuthDestination",
-    JSON.stringify(order) === JSON.stringify(["choose-child", "experience", "avatar"])
+    JSON.stringify(order) === JSON.stringify(["choose-child", "experience"])
+  );
+  // Avatar/buddy is optional on both sides: the dashboard must not bounce a
+  // child without one back to /onboarding/avatar, or it would loop with
+  // postAuthDestination (which now sends that child to the dashboard).
+  check(
+    "kingdom-map does not redirect to /onboarding/avatar",
+    !/redirect\("\/onboarding\/avatar"\)/.test(km)
   );
 
   // Each of those states must route to the SAME place from both sides.
@@ -182,8 +190,9 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
     D.postAuthDestination(res(child({ experience_level: null }))).href === "/onboarding/experience"
   );
   check(
-    "avatar agrees",
-    D.postAuthDestination(res(child({ buddy_id: null }))).href === "/onboarding/avatar"
+    "missing avatar/buddy agrees (both sides land on the dashboard)",
+    D.postAuthDestination(res(child({ buddy_id: null }))).href === "/kingdom-map" &&
+      D.postAuthDestination(res(child({ avatar_id: null }))).href === "/kingdom-map"
   );
 }
 

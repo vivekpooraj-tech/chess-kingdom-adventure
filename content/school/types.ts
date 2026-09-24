@@ -24,6 +24,7 @@
 /** The kinds of step a session can be built from. */
 export type SchoolStepType =
   | "teach"
+  | "worked_example"
   | "piece_intro"
   | "guided_board"
   | "puzzle_drill"
@@ -162,6 +163,28 @@ export interface TeachStep extends StepBase {
 export interface SchoolTeachingArrow {
   from: string;
   to: string;
+}
+
+/**
+ * One moment of a worked example: a position and what Ollie says while it is
+ * showing. No grading, no acceptMoves — this is `teach` with more than one
+ * position, for the reasoning that only makes sense as a position CHANGING
+ * ("watch the knight jump here... now look what it's attacking"). `teach`
+ * itself renders exactly one `fen` for its whole duration (see TeachStepView
+ * in components/school/v2/steps.tsx) and cannot show this; `guided_board`
+ * requires a graded move from the child, which a demonstration is not.
+ */
+export interface WorkedExampleBeat {
+  fen: string;
+  line: string;
+  highlightSquares?: readonly string[];
+  arrows?: readonly SchoolTeachingArrow[];
+}
+
+export interface WorkedExampleStep extends StepBase {
+  type: "worked_example";
+  /** Shown in order, tap-to-advance, read-only board throughout. */
+  beats: readonly WorkedExampleBeat[];
 }
 
 /** How loudly the board draws attention before the child moves. */
@@ -304,6 +327,7 @@ export interface RecapStep extends StepBase {
 
 export type SchoolStep =
   | TeachStep
+  | WorkedExampleStep
   | PieceIntroStep
   | GuidedBoardStep
   | PuzzleDrillStep

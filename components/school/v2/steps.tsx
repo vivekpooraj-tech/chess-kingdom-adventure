@@ -31,6 +31,7 @@ import type {
   SchoolPuzzle,
   TeachStep,
   VisualGuidanceLevel,
+  WorkedExampleStep,
 } from "@/content/school/types";
 import { MilestoneCard, OllieCoach } from "./Coach";
 
@@ -143,6 +144,46 @@ export function TeachStepView({ step, ollie, onComplete }: StepProps<TeachStep>)
         onClick={() => (last ? onComplete() : setLineIndex((i) => i + 1))}
       >
         {last ? "Got it — let's try" : "Next"}
+      </Button>
+    </div>
+  );
+}
+
+// ───────────────────────────────── worked example ─────────────────────────────
+/**
+ * A narrated demonstration: the position CHANGES as the reasoning unfolds,
+ * with no grading and no move to make. This is what `teach` cannot do (one
+ * static `fen` for the whole step) and `guided_board` should not do (it
+ * grades a real move, which a demonstration is not). One beat = one position
+ * + one line; the child taps through exactly like `teach`.
+ */
+export function WorkedExampleStepView({ step, onComplete }: StepProps<WorkedExampleStep>) {
+  const [beatIndex, setBeatIndex] = useState(0);
+  const beat = step.beats[beatIndex];
+  const last = beatIndex >= step.beats.length - 1;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <OllieCoach line={beat.line} tone={last ? "proud" : "calm"} />
+
+      <SchoolBoardWithOverlay
+        squares={[...(beat.highlightSquares ?? [])]}
+        arrows={[...(beat.arrows ?? [])]}
+        pulse
+      >
+        <ChessBoard key={beatIndex} fen={beat.fen} readOnly focusMode size={BOARD} />
+      </SchoolBoardWithOverlay>
+
+      <p className={`${TEXT.caption} text-center`}>
+        {beatIndex + 1} of {step.beats.length}
+      </p>
+
+      <Button
+        tone="premium"
+        block
+        onClick={() => (last ? onComplete() : setBeatIndex((i) => i + 1))}
+      >
+        {last ? "Now you try" : "Next"}
       </Button>
     </div>
   );

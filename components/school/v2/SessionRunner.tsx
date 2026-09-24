@@ -26,6 +26,7 @@ import {
   PieceIntroStepView,
   RecapStepView,
   TeachStepView,
+  WorkedExampleStepView,
 } from "./steps";
 
 export const CLASSROOM_HREF = "/chess-school/classroom";
@@ -257,6 +258,8 @@ function renderStep(
   switch (step.type) {
     case "teach":
       return <TeachStepView step={step} ollie={ollie} onComplete={onComplete} />;
+    case "worked_example":
+      return <WorkedExampleStepView step={step} ollie={ollie} onComplete={onComplete} />;
     case "piece_intro":
       return <PieceIntroStepView step={step} ollie={ollie} onComplete={onComplete} />;
     case "guided_board":

@@ -171,9 +171,18 @@ const done = (...keys) => new Set(keys);
     path.join(process.cwd(), "app", "(tabs)", "learn", "page.tsx"),
     "utf8"
   );
-  check("Learn renders the path panel", /<LearningPathPanel/.test(learn));
-  check("Learn still renders NextLessonCard", /<NextLessonCard/.test(learn));
-  check("Learn still renders CourseStatusChip", /<CourseStatusChip/.test(learn));
+  // Mode-aware Learn (847bf30): the page hands its static data to one of
+  // three mode views via LearnModePresentation, and each view renders the
+  // personalized islands itself. Check the page wiring, then every view.
+  check("Learn routes through LearnModePresentation", /<LearnModePresentation/.test(learn));
+  for (const [mode, file] of [["classic", "ClassicLearn.tsx"], ["adult", "AdultLearn.tsx"], ["kids", "KidsLearn.tsx"]]) {
+    check(`Learn page renders the ${mode} view`, new RegExp("<" + file.replace(".tsx", "")).test(learn));
+    const view = fs.readFileSync(path.join(process.cwd(), "components", "learn", mode, file), "utf8");
+    check(`${mode} Learn renders the path panel`, /<LearningPathPanel/.test(view));
+    check(`${mode} Learn still renders NextLessonCard`, /<NextLessonCard/.test(view));
+    check(`${mode} Learn still renders CourseStatusChip`, /<CourseStatusChip/.test(view));
+    check(`${mode} Learn view does not import the supabase server client`, !/lib\/supabase\/server/.test(view));
+  }
   check("Learn is still a static server page (no supabase import)",
     !/lib\/supabase\/server/.test(learn));
   check("Learn still has no 'use client'", !/^"use client"/m.test(learn));

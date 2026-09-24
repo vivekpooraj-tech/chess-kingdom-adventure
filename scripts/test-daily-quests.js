@@ -260,15 +260,47 @@ const build = (over = {}, opts = {}) =>
     path.join(process.cwd(), "components", "home", "HomeHeroSection.tsx"),
     "utf8"
   );
-  check("Home still routes Today through HomeTodaySection", /<HomeTodaySection/.test(home));
+  // Mode-aware Home (da109db): the page no longer renders the sections
+  // itself — it hands the data to one of three mode views (Classic Pro /
+  // Adult / Kids) via HomeModePresentation. The wiring checks therefore
+  // look inside each mode view instead of the page.
+  const readHome = (...p) => fs.readFileSync(path.join(process.cwd(), "components", "home", ...p), "utf8");
+  const modeHomes = {
+    classic: readHome("classic", "ClassicProHome.tsx"),
+    adult: readHome("adult", "AdultHome.tsx"),
+    kids: readHome("kids", "KidsHome.tsx"),
+  };
+  check("Home routes through HomeModePresentation", /<HomeModePresentation/.test(home));
+  check("Home renders all three mode views",
+    /<ClassicProHome/.test(home) && /<AdultHome/.test(home) && /<KidsHome/.test(home));
+  // HomeTodaySection is kept intact (and still pairs Daily Challenge with
+  // quests) even though no mode view currently mounts it.
   check("HomeTodaySection still imports DailyChallengeCard", /DailyChallengeCard/.test(homeToday));
   check("HomeTodaySection still renders <DailyChallengeCard", /<DailyChallengeCard/.test(homeToday));
   check("HomeTodaySection renders the quests card", /<DailyQuestsCard/.test(homeToday));
+  // Quests are on Home in every mode (Kids wraps them in its own panel).
+  const kidsQuests = readHome("kids", "DailyKingdomQuestsPanel.tsx");
+  check("Classic Pro Home renders the quests card", /<DailyQuestsCard/.test(modeHomes.classic));
+  check("Adult Home renders the quests card", /<DailyQuestsCard/.test(modeHomes.adult));
+  check("Kids Home renders the quests card (via DailyKingdomQuestsPanel)",
+    /<DailyKingdomQuestsPanel/.test(modeHomes.kids) && /<DailyQuestsCard/.test(kidsQuests));
+  // Daily Challenge: on Classic Pro Home (TacticalPuzzlePanel), and on Play
+  // in every mode. NOTE: Kids and Adult Home do not show it on Home itself —
+  // that is current mode-aware product behavior, asserted here as-is.
+  check("Classic Pro Home renders Daily Challenge (via TacticalPuzzlePanel)",
+    /<TacticalPuzzlePanel/.test(modeHomes.classic) &&
+      /<DailyChallengeCard/.test(readHome("classic", "TacticalPuzzlePanel.tsx")));
+  for (const [mode, file] of [["kids", "KidsPlaySections.tsx"], ["adult", "AdultPlaySections.tsx"], ["classic", "ClassicPlaySections.tsx"]]) {
+    const play = fs.readFileSync(path.join(process.cwd(), "components", "play", mode, file), "utf8");
+    check(`${mode} Play still renders <DailyChallengeCard`, /<DailyChallengeCard/.test(play));
+  }
   // Phase 3: HeroJourneyCard (and the old ChessSchoolCard it shared the page
   // with) were replaced by a single PrimaryActionCard — one obvious primary
-  // action instead of two competing cards. Daily Challenge is still present,
-  // just grouped under HomeTodaySection beside quests.
-  check("Home routes the hero through HomeHeroSection", /<HomeHeroSection/.test(home));
+  // action instead of two competing cards. Every mode view keeps that hero.
+  for (const [mode, src] of Object.entries(modeHomes)) {
+    check(`${mode} Home routes the hero through HomeHeroSection`, /<HomeHeroSection/.test(src));
+    check(`${mode} Home has no old two-card hero grid`, !/<HeroJourneyCard/.test(src));
+  }
   check("HomeHeroSection renders the single primary action card", /<PrimaryActionCard/.test(homeHero));
   check("the old two-card hero grid is gone", !/<HeroJourneyCard/.test(home));
 
