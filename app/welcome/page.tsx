@@ -10,9 +10,11 @@ import {
   getAcademyProgress,
   saveAcademyVideoProgress,
   completeAcademyContent,
+  type ChildProfile,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { shouldSkipWelcome } from "@/lib/learner/experienceLevel";
+import { nextRequiredOnboardingStep } from "@/lib/auth/postAuthDestination";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 import { Button, IconButton } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
@@ -46,9 +48,11 @@ export default function WelcomePage() {
   const content = HISTORY_OF_CHESS;
 
   const [childId, setChildId] = useState<string | null>(null);
+  const [child, setChild] = useState<ChildProfile | null>(null);
   const [stage, setStage] = useState<Stage>("loading");
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [skipVisible, setSkipVisible] = useState(false);
   const [videoUnavailable, setVideoUnavailable] = useState(!content.videoUrl);
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
 
@@ -75,6 +79,7 @@ export default function WelcomePage() {
       }
       const child = resolution.child!;
       setChildId(child.id);
+      setChild(child);
 
       if (shouldSkipWelcome(child.experience_level)) {
         router.replace("/kingdom-map");
@@ -104,8 +109,18 @@ export default function WelcomePage() {
     await completeAcademyContent(createClient(), childId, content.id, null).catch(() => {});
   }
 
+  // Skip Intro stays hidden until 20 seconds of actual playback have
+  // elapsed — driven by the video's own currentTime (not a wall-clock
+  // setTimeout), so a paused/backgrounded/buffering video correctly keeps
+  // it hidden rather than revealing it on a timer that ran regardless.
+  const SKIP_REVEAL_SECONDS = 20;
+
   function handleTimeUpdate() {
-    if (!childId || !videoRef.current) return;
+    if (!videoRef.current) return;
+    if (!skipVisible && videoRef.current.currentTime >= SKIP_REVEAL_SECONDS) {
+      setSkipVisible(true);
+    }
+    if (!childId) return;
     const t = Math.floor(videoRef.current.currentTime);
     if (t > 0 && t % 5 === 0) {
       saveAcademyVideoProgress(createClient(), childId, content.id, t).catch(() => {});
@@ -113,16 +128,25 @@ export default function WelcomePage() {
   }
 
   function handleVideoReady() {
-    if (!videoRef.current) return;
-    // Attempt muted autoplay only — never with sound. Browsers reliably
-    // allow this; if it's still blocked for some reason, the visible
-    // Play control below still works.
-    videoRef.current.muted = true;
-    setMuted(true);
-    videoRef.current
-      .play()
+    const v = videoRef.current;
+    if (!v) return;
+    // Try unmuted first — reaching this video is always the result of the
+    // user's own "Begin ->" tap on the previous stage, which is the closest
+    // thing to a user gesture still in play by the time the video is ready
+    // to autoplay. Browsers that still block unmuted autoplay reject the
+    // play() promise here; fall back to muted rather than showing an error,
+    // and leave the existing speaker control as the way back to sound.
+    v.muted = false;
+    setMuted(false);
+    v.play()
       .then(() => setPlaying(true))
-      .catch(() => setPlaying(false));
+      .catch(() => {
+        v.muted = true;
+        setMuted(true);
+        v.play()
+          .then(() => setPlaying(true))
+          .catch(() => setPlaying(false));
+      });
   }
 
   function togglePlay() {
@@ -166,7 +190,14 @@ export default function WelcomePage() {
   }
 
   function enterKingdom() {
-    router.push("/kingdom-map");
+    // A genuinely new child (mid name/gender/avatar/.../experience chain)
+    // still has a required onboarding step ahead — routing through
+    // /kingdom-map first would show its loading skeleton (a full Home-shaped
+    // layout) for the instant before its own guard redirects onward, which
+    // reads as a flash of Home. Compute the same destination client-side
+    // (the identical rule /kingdom-map's guard uses) and go there directly;
+    // a fully onboarded child still lands on /kingdom-map exactly as before.
+    router.push(child ? nextRequiredOnboardingStep(child) ?? "/kingdom-map" : "/kingdom-map");
   }
 
   if (!childId || stage === "loading") {
@@ -234,13 +265,18 @@ export default function WelcomePage() {
                   </video>
                 )}
 
-                <button
-                  onClick={handleSkip}
-                  aria-label="Skip intro"
-                  className="absolute top-3 right-3 font-classic-body text-xs text-premium-ivory/70 hover:text-premium-ivory bg-black/40 rounded-full px-3 py-1.5 border border-white/15 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
-                >
-                  Skip Intro
-                </button>
+                {skipVisible && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4 }}
+                    onClick={handleSkip}
+                    aria-label="Skip intro"
+                    className="absolute top-3 right-3 font-classic-body text-xs text-premium-ivory/70 hover:text-premium-ivory bg-black/40 rounded-full px-3 py-1.5 border border-white/15 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
+                  >
+                    Skip Intro
+                  </motion.button>
+                )}
 
                 {!videoUnavailable && (
                   <div className="absolute bottom-0 inset-x-0 flex items-center gap-2 p-3 bg-gradient-to-t from-black/80 to-transparent">
