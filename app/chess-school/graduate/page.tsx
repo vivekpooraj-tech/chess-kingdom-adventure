@@ -18,7 +18,7 @@ export default async function GraduatePage() {
   const { child, progress } = await loadSchoolPageContext();
   return (
     <TabPageShell>
-      <CertificateView childId={child.id} childName={child.display_name} initialProgress={progress} />
+      <CertificateView childId={child.id} childName={child.display_name ?? "Adventurer"} initialProgress={progress} />
     </TabPageShell>
   );
 }

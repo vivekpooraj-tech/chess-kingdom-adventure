@@ -29,7 +29,7 @@ export default async function SessionPage({ params }: { params: { sessionId: str
     <SessionRunner
       session={session}
       childId={child.id}
-      childName={child.display_name}
+      childName={child.display_name ?? "Adventurer"}
       initialProgress={progress}
     />
   );

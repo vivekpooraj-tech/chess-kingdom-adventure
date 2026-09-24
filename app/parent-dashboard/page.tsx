@@ -235,7 +235,7 @@ export default async function ParentDashboardPage() {
               activity counts, which say how MUCH they did but not whether any
               of it is working. */}
           {learningView && (
-            <ChildLearningInsight view={learningView} childName={child.display_name} />
+            <ChildLearningInsight view={learningView} childName={child.display_name ?? "Adventurer"} />
           )}
 
           {nextStep && (

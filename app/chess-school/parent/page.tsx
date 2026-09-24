@@ -19,7 +19,7 @@ export default async function SchoolParentPage() {
   const { child, progress } = await loadSchoolPageContext();
   return (
     <TabPageShell>
-      <ParentView childId={child.id} name={child.display_name} initialProgress={progress} />
+      <ParentView childId={child.id} name={child.display_name ?? "Adventurer"} initialProgress={progress} />
     </TabPageShell>
   );
 }

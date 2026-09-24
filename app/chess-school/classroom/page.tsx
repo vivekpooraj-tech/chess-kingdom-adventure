@@ -25,7 +25,7 @@ export default async function ClassroomPage() {
     <TabPageShell>
       <SchoolHome
         childId={child.id}
-        childName={child.display_name}
+        childName={child.display_name ?? "Adventurer"}
         initialProgress={progress}
         access={access}
       />

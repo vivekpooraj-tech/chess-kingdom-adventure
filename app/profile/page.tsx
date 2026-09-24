@@ -92,7 +92,7 @@ export default async function ProfilePage() {
     .filter((o): o is (typeof OPENINGS)[number] => !!o);
 
   const profileData: ProfileData = {
-    displayName: child.display_name,
+    displayName: child.display_name ?? "Adventurer",
     avatar,
     zone: currentZone,
     currentDay: child.current_day,
