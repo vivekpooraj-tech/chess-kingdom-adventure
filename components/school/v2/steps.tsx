@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { TeachingOverlay } from "@/components/board/TeachingOverlay";
 import { Button } from "@/components/ui/Button";
@@ -237,7 +237,8 @@ export function GuidedBoardStepView({
   ollie,
   sessionNumber = 99,
   onComplete,
-}: StepProps<GuidedBoardStep> & { sessionNumber?: number }) {
+  onMeaningfulStruggle,
+}: StepProps<GuidedBoardStep> & { sessionNumber?: number; onMeaningfulStruggle?: () => void }) {
   const [attempts, setAttempts] = useState(0);
   const [illegal, setIllegal] = useState(0);
   const [solved, setSolved] = useState(false);
@@ -252,6 +253,20 @@ export function GuidedBoardStepView({
   const [matePhase, setMatePhase] = useState<"before" | "after">("before");
   const [mateRevealed, setMateRevealed] = useState(false);
   const [replayToken, setReplayToken] = useState(0);
+  const struggleReportedRef = useRef(false);
+
+  // Signal a meaningful struggle exactly once per step instance: only once
+  // the child has exhausted every authored hint rung (attempts has caught up
+  // with hintLadder's length), not on the first miss. This is a report to
+  // the existing weakness-signal system (see SessionRunner), never a gate on
+  // the step itself — the child can keep trying regardless.
+  useEffect(() => {
+    if (struggleReportedRef.current) return;
+    if (step.hintLadder.length > 0 && attempts >= step.hintLadder.length) {
+      struggleReportedRef.current = true;
+      onMeaningfulStruggle?.();
+    }
+  }, [attempts, step.hintLadder.length, onMeaningfulStruggle]);
 
   // The replay itself: show the position BEFORE the mating move, then a beat
   // later swap to the position after it and reveal the word. "Watch it again"
@@ -433,7 +448,8 @@ export function DrillStepView({
   step,
   ollie,
   onComplete,
-}: StepProps<PuzzleDrillStep | ExamStep>) {
+  onPuzzleStruggle,
+}: StepProps<PuzzleDrillStep | ExamStep> & { onPuzzleStruggle?: (puzzleId: string) => void }) {
   const { drill } = step;
   const [index, setIndex] = useState(0);
   const [correct, setCorrect] = useState(0);
@@ -491,6 +507,7 @@ export function DrillStepView({
           // was the point. Nothing in this course says "you may not go on".
           setPhase("done");
         }}
+        onMeaningfulStruggle={() => onPuzzleStruggle?.(drill.remedial.id)}
       />
     );
   }
@@ -531,6 +548,7 @@ export function DrillStepView({
         if (index + 1 < puzzles.length) setIndex(index + 1);
         else finishPuzzles(nextCorrect);
       }}
+      onMeaningfulStruggle={() => onPuzzleStruggle?.(puzzle.id)}
     />
   );
 }
@@ -546,12 +564,14 @@ function SinglePuzzle({
   ollie,
   solvedSoFar = 0,
   onResult,
+  onMeaningfulStruggle,
 }: {
   puzzle: SchoolPuzzle;
   label: string;
   ollie: { mistake: string; success: string };
   solvedSoFar?: number;
   onResult: (correct: boolean) => void;
+  onMeaningfulStruggle?: () => void;
 }) {
   const [attempts, setAttempts] = useState(0);
   const [illegal, setIllegal] = useState(0);
@@ -584,6 +604,10 @@ function SinglePuzzle({
     setAttempts(next);
     if (next >= 2) {
       setState("revealed");
+      // Reached once per puzzle instance (handleMove no-ops once state is no
+      // longer "playing"), on the second miss only — the existing terminal
+      // "answer revealed" moment, never the first miss.
+      onMeaningfulStruggle?.();
       return;
     }
     setTimeout(() => setBoardKey((k) => k + 1), 650);

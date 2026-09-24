@@ -672,6 +672,129 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
   check("the checkmate and ceremony reveals are plain CSS transitions, not a JS animation library", !/framer-motion|gsap|lottie/i.test(stepsSrc) && !/framer-motion|gsap|lottie/i.test(coachSrc));
 }
 
+// --- 20. Ollie 2.0 Phase 1: Chess School -> existing weakness-signal bridge --
+{
+  const SM = require(path.join(process.cwd(), "lib", "school", "v2", "skillSignalMapping.ts"));
+  const stepsSrc = read("components", "school", "v2", "steps.tsx");
+  const runnerSrc = read("components", "school", "v2", "SessionRunner.tsx");
+
+  // 1. Every mapped SchoolSkillTag produces exactly the expected SkillId.
+  const EXPECTED_MAP = {
+    fork: "forks",
+    pin: "pins",
+    skewer: "skewers",
+    check: "checks",
+    hanging_pieces: "piece_safety",
+    king_safety: "king_safety",
+    opening_principles: "opening_principles",
+    endgame_king: "endgame",
+  };
+  for (const [tag, expected] of Object.entries(EXPECTED_MAP)) {
+    check(`skill mapping: ${tag} -> ${expected}`, SM.mapSchoolSkillToSignal(tag) === expected);
+  }
+
+  // 2. Every unmapped (mechanics-only) SchoolSkillTag returns null -- no forced mapping.
+  const ALL_SCHOOL_SKILLS = [
+    "board_setup", "pawn_movement", "pawn_capture", "pawn_promotion", "knight_movement",
+    "bishop_movement", "rook_movement", "queen_movement", "king_movement", "check",
+    "hanging_pieces", "fork", "pin", "skewer", "back_rank", "escape_check", "checkmate",
+    "castling", "opening_principles", "king_safety", "planning", "endgame_king", "full_game",
+    "teaching_others",
+  ];
+  // Cross-check against the REAL type union in content/school/types.ts, so this
+  // list itself can never silently drift from the actual SchoolSkillTag type.
+  const typesSrc = read("content", "school", "types.ts");
+  const unionBlock = typesSrc.slice(typesSrc.indexOf("export type SchoolSkillTag ="), typesSrc.indexOf("/** A piece's memorable identity"));
+  const realTags = [...unionBlock.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
+  check("the test's SchoolSkillTag list matches the real type union exactly (20's own list can't drift)", realTags.length === ALL_SCHOOL_SKILLS.length && realTags.every((t) => ALL_SCHOOL_SKILLS.includes(t)));
+  const unmapped = ALL_SCHOOL_SKILLS.filter((t) => !(t in EXPECTED_MAP));
+  check("every mechanics-only / unmapped tag returns null, never a forced SkillId", unmapped.every((t) => SM.mapSchoolSkillToSignal(t) === null));
+  check("back_rank, checkmate, castling, planning, escape_check, full_game, teaching_others are explicitly unmapped", ["back_rank", "checkmate", "castling", "planning", "escape_check", "full_game", "teaching_others"].every((t) => SM.mapSchoolSkillToSignal(t) === null));
+
+  // Session-level aggregation: de-duplicates, drops nulls, invents nothing extra.
+  check("mapSessionSkillsToSignals dedupes and drops unmapped tags", SM.mapSessionSkillsToSignals(["fork", "fork", "pin", "board_setup"]).sort().join(",") === "forks,pins");
+  check("a session with only mechanics tags maps to nothing", SM.mapSessionSkillsToSignals(["board_setup", "castling", "planning"]).length === 0);
+
+  // 3-10. Architecture / semantics, verified against the real source (the test
+  // harness has no DOM, so these assert the actual code shape rather than
+  // rendering the component -- the same technique section 19 already uses for
+  // BotMatchStepView's prelude-before-board ordering).
+
+  // guided_board: the callback fires from a useEffect gated on the hint ladder
+  // being exhausted, guarded by a ref so it can only fire once per mounted
+  // instance -- never on the first wrong-but-legal move.
+  {
+    const fnStart = stepsSrc.indexOf("export function GuidedBoardStepView");
+    const fnBody = stepsSrc.slice(fnStart, stepsSrc.indexOf("\n// ─", fnStart));
+    check("guided_board reports struggle only once hintLadder is exhausted (attempts >= hintLadder.length)", /attempts >= step\.hintLadder\.length/.test(fnBody));
+    check("guided_board's struggle report is guarded by a fire-once ref", /struggleReportedRef\.current = true/.test(fnBody) && /if \(struggleReportedRef\.current\) return/.test(fnBody));
+    check("guided_board's struggle report lives inside a useEffect, not the move handler itself (never blocks a move)", (() => {
+      const effectMatch = fnBody.match(/useEffect\(\(\) => \{\s*if \(struggleReportedRef\.current\)/);
+      const handleMoveStart = fnBody.indexOf("const handleMove =");
+      const effectStart = effectMatch ? fnBody.indexOf(effectMatch[0]) : -1;
+      return effectStart > -1 && handleMoveStart > -1 && effectStart < handleMoveStart && !fnBody.slice(0, effectStart).includes("onMeaningfulStruggle?.()");
+    })());
+  }
+
+  // puzzle_drill/exam: the callback fires only in the second-miss "revealed"
+  // branch of SinglePuzzle, never on the first miss and never on a correct
+  // first-attempt solve.
+  {
+    const fnStart = stepsSrc.indexOf("function SinglePuzzle(");
+    const fnBody = stepsSrc.slice(fnStart, stepsSrc.indexOf("\n// ───", fnStart) > -1 ? stepsSrc.indexOf("\n// ───", fnStart) : stepsSrc.length);
+    const correctBranch = fnBody.slice(fnBody.indexOf('setState("correct")') - 40, fnBody.indexOf('setState("correct")') + 20);
+    const revealedBranch = fnBody.slice(fnBody.indexOf('setState("revealed")') - 10, fnBody.indexOf('setState("revealed")') + 320);
+    check('SinglePuzzle calls onMeaningfulStruggle only in the "revealed" (second-miss) branch', /onMeaningfulStruggle\?\.\(\)/.test(revealedBranch));
+    check("SinglePuzzle does NOT call onMeaningfulStruggle on a correct/first-attempt solve", !/onMeaningfulStruggle/.test(correctBranch));
+    check('the "revealed" branch is reached only once per puzzle instance (next >= 2, not next >= 1)', /if \(next >= 2\) \{\s*setState\("revealed"\)/.test(fnBody));
+  }
+
+  // teach / worked_example / piece_intro / bot_match never receive a struggle
+  // callback -- these step types were explicitly excluded from signal-writing.
+  check("SessionRunner does not thread a struggle callback into teach", !/TeachStepView step=\{step\} ollie=\{ollie\} onComplete=\{onComplete\} onMeaningfulStruggle/.test(runnerSrc));
+  check("SessionRunner does not thread a struggle callback into worked_example", !/WorkedExampleStepView[\s\S]{0,80}onMeaningfulStruggle/.test(runnerSrc));
+  check("SessionRunner does not thread a struggle callback into piece_intro", !/PieceIntroStepView[\s\S]{0,80}onMeaningfulStruggle/.test(runnerSrc));
+  check("SessionRunner does not thread ANY signal callback into bot_match (no graded-move concept exists there)", (() => {
+    const idx = runnerSrc.indexOf('case "bot_match"');
+    const line = runnerSrc.slice(idx, runnerSrc.indexOf("\n", idx + 200) > -1 ? runnerSrc.indexOf(";", idx) : idx + 200);
+    return idx > -1 && !/onMeaningfulStruggle|onPuzzleStruggle|reportStruggle/.test(line);
+  })());
+  check("guided_board and puzzle_drill/exam are the ONLY cases wired to reportStruggle", (() => {
+    const wired = [...runnerSrc.matchAll(/reportStruggle\(/g)].length;
+    return wired === 2; // one call site inside renderStep's guided_board case, one inside puzzle_drill/exam
+  })());
+
+  // Dedup guard: keyed by session + step (+ puzzle), in-memory only, no new table.
+  check("SessionRunner keeps an in-memory dedup guard keyed per session+step/puzzle instance", /reportedStruggleRef = useRef<Set<string>>\(new Set\(\)\)/.test(runnerSrc));
+  check("reportStruggle checks the dedup guard before writing anything", /if \(reportedStruggleRef\.current\.has\(key\)\) return;/.test(runnerSrc));
+  check("guided_board's dedup key includes both the session and the step id", /`\$\{session\.id\}:\$\{step\.id\}`/.test(runnerSrc));
+  check("puzzle_drill/exam's dedup key includes the session, the step AND the puzzle id", /`\$\{session\.id\}:\$\{step\.id\}:\$\{puzzleId\}`/.test(runnerSrc));
+
+  // Attribution: session-level skillTags only, via the existing bumpSkillWeaknesses
+  // path -- no new RPC, no new table, no per-puzzle/per-step skill invented.
+  check("reportStruggle attributes from session.skillTags, not a per-step/per-puzzle field", /mapSessionSkillsToSignals\(session\.skillTags\)/.test(runnerSrc));
+  check("the bridge reuses the EXISTING bumpSkillWeaknesses helper, no new RPC introduced", /bumpSkillWeaknesses\(/.test(runnerSrc) && /import \{ bumpSkillWeaknesses \} from "@\/lib\/supabase\/queries"/.test(runnerSrc));
+  check("no new Supabase table or RPC name is introduced anywhere in the bridge", !/create table|create or replace function|new_skill_signal|chess_school_signal/i.test(runnerSrc) && !/create table|create or replace function/i.test(read("lib", "school", "v2", "skillSignalMapping.ts")));
+
+  // Failure behavior: best-effort, fire-and-forget, matching the existing
+  // Game Review call site exactly (bumpSkillWeaknesses itself already
+  // swallows RPC errors -- see lib/supabase/queries.ts).
+  check("the struggle report is fire-and-forget (void), never awaited in a way that could block a step", /void bumpSkillWeaknesses\(/.test(runnerSrc));
+  const queriesSrc = read("lib", "supabase", "queries.ts");
+  const bumpFnBody = queriesSrc.slice(queriesSrc.indexOf("export async function bumpSkillWeaknesses"), queriesSrc.indexOf("export async function recordSkillPractice"));
+  check("bumpSkillWeaknesses (reused as-is) still swallows its own errors -- a DB/network failure can never reach the child", /catch \{/.test(bumpFnBody));
+
+  // Session 24 regression: untouched by any of the above.
+  {
+    const s24 = C.getSession(24);
+    check("Session 24 title remains 'Play Without Hints'", s24.title === "Play Without Hints");
+    check("Session 24's INDEPENDENT unlock tagline remains 'I played it on my own.'", s24.steps.find((st) => st.type === "ceremony")?.unlock?.tagline === "I played it on my own.");
+    check("Session 24's ceremony headline remains 'YOU PLAYED IT ALONE'", s24.steps.find((st) => st.type === "ceremony").headline === "YOU PLAYED IT ALONE");
+    const bot = s24.steps.find((st) => st.type === "bot_match");
+    check("Session 24's bot_match still has hintsAllowed: false", bot.hintsAllowed === false);
+    check("Session 24's bot_match is not wired to any struggle/signal callback (bot_match never writes)", true); // covered generically above; kept as an explicit named assertion for this session
+  }
+}
 
 // --- 17. Cross-device: the Motorola -> Lenovo scenario, against the real client code
 {

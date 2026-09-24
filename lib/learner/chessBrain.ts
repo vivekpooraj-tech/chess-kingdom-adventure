@@ -102,7 +102,7 @@ function classify(signal: SkillSignal): BrainSkillRow | null {
     detail = `${practiceCorrect} of ${practiceAttempts} right in practice so far.`;
   } else if (weakCount >= RECURRING_SKILL_THRESHOLD) {
     status = "needs_practice";
-    detail = `Came up in ${plural(weakCount, "game", "games")} you reviewed.`;
+    detail = `Came up ${plural(weakCount, "time", "times")} so far.`;
   } else if (rate !== null) {
     status = "working_on_it";
     detail = `${practiceCorrect} of ${practiceAttempts} right in practice so far.`;

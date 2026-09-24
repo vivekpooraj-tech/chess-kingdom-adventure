@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
@@ -13,6 +13,8 @@ import { actTransitionLine, resumedLine } from "@/lib/school/v2/ollieLines";
 import { completeSession, hasGraduated, isSessionUnlocked, nextSessionNumber } from "@/lib/school/v2/progress";
 import { loadSchoolProgress, saveSchoolProgress } from "@/lib/school/v2/queries";
 import { mergeProgress } from "@/lib/school/v2/storage";
+import { mapSessionSkillsToSignals } from "@/lib/school/v2/skillSignalMapping";
+import { bumpSkillWeaknesses } from "@/lib/supabase/queries";
 import { OllieCoach, SchoolChip } from "./Coach";
 import { ParentModePanel } from "./ParentModePanel";
 import {
@@ -63,6 +65,13 @@ export function SessionRunner({
   const [resumedFrom, setResumedFrom] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
   const [savedRemotely, setSavedRemotely] = useState<boolean | null>(null);
+  // In-memory only, for the lifetime of this SessionRunner instance. Keys are
+  // "sessionId:stepId" or "sessionId:stepId:puzzleId" — enough to make one
+  // meaningful-struggle event (exhausted hint ladder, revealed puzzle answer)
+  // write to child_skill_signals at most once, even across a step remount
+  // (e.g. leaving and re-entering the session). This exists purely to dedupe
+  // an additive, non-idempotent RPC — it is not a new telemetry store.
+  const reportedStruggleRef = useRef<Set<string>>(new Set());
 
   // Pick up where this device left off. A refresh, a sleeping tablet or a
   // stray tap on the home button must not send a child back to step one —
@@ -113,6 +122,28 @@ export function SessionRunner({
     clearBookmark(childId, session.id);
     const ok = await saveSchoolProgress(createClient(), childId, next);
     setSavedRemotely(ok);
+  };
+
+  // Bridges a meaningful struggle (guided_board's hint ladder exhausted, or a
+  // puzzle's answer revealed on the second miss) into the EXISTING Ollie
+  // weakness-signal system (child_skill_signals / bump_skill_signal) that
+  // Game Review and Ollie's Practice already write to — see
+  // lib/school/v2/skillSignalMapping.ts for why only some SchoolSkillTags
+  // qualify. Session-level skillTags only: no finer per-step/per-puzzle
+  // attribution is invented. Best-effort and fire-and-forget by design —
+  // bumpSkillWeaknesses already swallows its own errors, so a network/DB
+  // failure here can never block a step, change scoring, or surface to the
+  // child.
+  const reportStruggle = (key: string) => {
+    if (reportedStruggleRef.current.has(key)) return;
+    reportedStruggleRef.current.add(key);
+    const skillIds = mapSessionSkillsToSignals(session.skillTags);
+    if (skillIds.length === 0) return;
+    void bumpSkillWeaknesses(
+      createClient(),
+      childId,
+      Object.fromEntries(skillIds.map((id) => [id, 1]))
+    );
   };
 
   if (session.status === "preview") {
@@ -208,7 +239,7 @@ export function SessionRunner({
           inherits the first one's solved/attempt state. Found by a child-chaos
           pass, not by a type error. */}
       <div key={step.id} className="contents">
-        {renderStep(step, session, childName, advance, stepIndex === steps.length - 1)}
+        {renderStep(step, session, childName, advance, stepIndex === steps.length - 1, reportStruggle)}
       </div>
     </Frame>
   );
@@ -219,7 +250,8 @@ function renderStep(
   session: SchoolSession,
   childName: string,
   onComplete: () => void,
-  isLast: boolean
+  isLast: boolean,
+  reportStruggle: (key: string) => void
 ) {
   const ollie = session.ollie;
   switch (step.type) {
@@ -234,11 +266,19 @@ function renderStep(
           ollie={ollie}
           sessionNumber={session.number}
           onComplete={onComplete}
+          onMeaningfulStruggle={() => reportStruggle(`${session.id}:${step.id}`)}
         />
       );
     case "puzzle_drill":
     case "exam":
-      return <DrillStepView step={step} ollie={ollie} onComplete={onComplete} />;
+      return (
+        <DrillStepView
+          step={step}
+          ollie={ollie}
+          onComplete={onComplete}
+          onPuzzleStruggle={(puzzleId) => reportStruggle(`${session.id}:${step.id}:${puzzleId}`)}
+        />
+      );
     case "bot_match":
       return <BotMatchStepView step={step} ollie={ollie} onComplete={onComplete} />;
     case "parent_mode":
