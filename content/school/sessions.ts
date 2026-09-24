@@ -54,7 +54,7 @@ const REAL_OPPONENT: SchoolUnlock = {
 const INDEPENDENT: SchoolUnlock = {
   id: "independent",
   title: "No Hints Needed",
-  tagline: "I won it on my own.",
+  tagline: "I played it on my own.",
   emoji: "🧠",
 };
 
@@ -2315,7 +2315,7 @@ export const SCHOOL_SESSIONS: readonly SchoolSession[] = [
     id: "s24-win-without-hints",
     number: 24,
     moduleId: "m7-full-game",
-    title: "Win Without Hints",
+    title: "Play Without Hints",
     subtitle: "Just you and the board.",
     skillTags: ["full_game", "planning"],
     starred: true,
@@ -2324,7 +2324,7 @@ export const SCHOOL_SESSIONS: readonly SchoolSession[] = [
     ollie: {
       intro: "NO HINTS. NO RESCUES. Just you. I'll be quiet now — show me what you've learned.",
       mistake: "That's okay. You're on your own here — trust what you know.",
-      success: "You won it on your own. I didn't help once.",
+      success: "You played it through on your own. I didn't help once.",
     },
     steps: [
       {
@@ -2357,7 +2357,7 @@ export const SCHOOL_SESSIONS: readonly SchoolSession[] = [
         id: "s24-ceremony",
         type: "ceremony",
         title: "On your own",
-        headline: "YOU DIDN'T NEED ME",
+        headline: "YOU PLAYED IT ALONE",
         lines: ["You saw it. You chose it. You played it.", "That is what an independent player looks like."],
         unlock: INDEPENDENT,
         epic: true,
@@ -2366,7 +2366,11 @@ export const SCHOOL_SESSIONS: readonly SchoolSession[] = [
         id: "s24-recap",
         type: "recap",
         title: "You played independently",
-        learned: ["You played a whole game with no help."],
+        learned: [
+          "You played a full game from start to finish, on your own.",
+          "You made every decision yourself — no hints, no rescues.",
+          "You used what Sessions 19 to 23 taught you: castle, develop your pieces, and check for free pieces.",
+        ],
         nextTeaser: "Next: thinking a move ahead.",
       },
     ],

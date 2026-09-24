@@ -611,7 +611,7 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
     const bot = s24.steps.find((st) => st.type === "bot_match");
     check("session 24's bot match still sets hintsAllowed: false", bot.hintsAllowed === false);
     check("session 24's prelude states plainly there are no hints, rather than sneaking one in", /NO HINTS/.test(bot.prelude.headline) && !/tap [a-h][1-8]|move your|the answer is/i.test(JSON.stringify(bot.prelude.lines)));
-    check("the independence ceremony uses the brief's own words", /YOU DIDN'T NEED ME/.test(s24.steps.find((st) => st.type === "ceremony").headline));
+    check("the independence ceremony celebrates independent play without claiming a win", /YOU PLAYED IT ALONE/.test(s24.steps.find((st) => st.type === "ceremony").headline));
   }
   check("a bot_match prelude renders before the board mounts (no engine cost while reading)", (() => {
     const fnStart = stepsSrc.indexOf("export function BotMatchStepView");
