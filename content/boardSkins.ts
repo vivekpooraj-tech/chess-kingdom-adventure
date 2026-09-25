@@ -15,11 +15,11 @@ export const BOARD_SKINS: BoardSkinOption[] = [
     coordinateColor: "#F4E7C5",
   },
   {
-    id: "sunset-desert",
-    name: "Sunset Desert",
-    emoji: "🏜️",
-    lightSquare: "rgba(255, 197, 61, 0.3)", // kingdom-gold/30
-    darkSquare: "rgba(255, 159, 28, 0.75)", // kingdom-amber/75
+    id: "green-classic",
+    name: "Green Classic",
+    emoji: "♟️",
+    lightSquare: "#EEEED2",
+    darkSquare: "#769656",
   },
   {
     id: "ocean-ice",

@@ -24,16 +24,6 @@ export const PIECE_SYMBOL_BY_NAME: Record<string, PieceSymbol> = {
 // Independent of board skins — any piece set can pair with any board.
 export const PIECE_SETS: PieceSetOption[] = [
   {
-    id: "wood-classic",
-    name: "Wood Carved",
-    emoji: "🪵",
-    folder: "wood-classic",
-    intrinsicSize: { width: 200, height: 300 },
-    // On-board height as a fraction of one square — tuned for ~88–94% king,
-    // ~86–92% minors, ~80–88% pawn after each SVG's viewBox padding.
-    opticalScale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.88, p: 0.86 },
-  },
-  {
     id: "neostaunton-hand",
     name: "NeoStaunton",
     emoji: "♞",
@@ -42,17 +32,6 @@ export const PIECE_SETS: PieceSetOption[] = [
     // viewBox heights k552 q496 b462 n439 r383 p340 — Staunton hierarchy with
     // extra headroom on tall pieces to offset viewBox padding above crowns.
     opticalScale: { k: 1.0, q: 0.95, b: 0.91, n: 0.90, r: 0.89, p: 0.86 },
-  },
-  {
-    id: "kingdom-characters",
-    name: "Kingdom Characters",
-    emoji: "🛡️",
-    folder: "kingdom-characters",
-    // Every file in this set shares the same "0 0 100 100" viewBox exactly —
-    // stylised standing characters drawn to fill their frame. Keep them
-    // chunky, but still king > … > pawn so the hierarchy reads.
-    intrinsicSize: { width: 100, height: 100 },
-    opticalScale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.89, p: 0.86 },
   },
   {
     id: "royal-legends",
