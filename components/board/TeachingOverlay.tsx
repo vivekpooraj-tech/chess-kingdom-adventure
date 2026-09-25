@@ -28,6 +28,13 @@ import {
  * Reduced motion is respected: the pulse is the only animation and it is
  * disabled outright rather than merely shortened.
  */
+export interface BoardRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
 export function TeachingOverlay({
   squares = [],
   arrows = [],
@@ -36,12 +43,24 @@ export function TeachingOverlay({
    *  who is still scanning the board. Off under prefers-reduced-motion. */
   pulse = true,
   className = "",
+  /**
+   * The playable 8x8 grid's exact pixel box, relative to this overlay's own
+   * positioned ancestor — a caller measures this directly from the real
+   * `.grid` element (ChessBoard's board is not always the same size as its
+   * own root: it can render extra chrome such as a status line, and its
+   * frame padding differs by skin), so this component never has to assume
+   * board geometry. undefined (the default) keeps the original `inset-0`
+   * behaviour — every existing caller that never measures anything (e.g.
+   * BuddyChat's demonstration overlay) is completely unaffected.
+   */
+  boardRect,
 }: {
   squares?: string[];
   arrows?: TeachingArrow[];
   orientation?: BoardOrientation;
   pulse?: boolean;
   className?: string;
+  boardRect?: BoardRect;
 }) {
   const marks = resolveSquares(squares, orientation);
   const lines = resolveArrows(arrows, orientation);
@@ -49,7 +68,12 @@ export function TeachingOverlay({
 
   return (
     <div
-      className={`pointer-events-none absolute inset-0 z-20 ${className}`}
+      className={`pointer-events-none absolute z-20 ${boardRect ? "" : "inset-0"} ${className}`}
+      style={
+        boardRect
+          ? { top: boardRect.top, left: boardRect.left, width: boardRect.width, height: boardRect.height }
+          : undefined
+      }
       aria-hidden="true"
     >
       {marks.map(({ square, position }) => (

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { TeachingOverlay } from "@/components/board/TeachingOverlay";
+import { TeachingOverlay, type BoardRect } from "@/components/board/TeachingOverlay";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 import type { TeachingArrow } from "@/lib/board/teachingOverlay";
@@ -80,6 +80,29 @@ function guidancePulse(level: VisualGuidanceLevel): boolean {
  * Board plus TeachingOverlay sibling. Overlay scales with the board frame and
  * never intercepts taps — the child still plays on the real ChessBoard.
  */
+/**
+ * Finds the actual playable 8x8 grid inside a mounted ChessBoard and returns
+ * its box relative to `container` — never assumed, always measured. ChessBoard
+ * renders extra chrome around that grid (a trailing status line always takes
+ * layout space; the frame padding between the grid and the board's own edge
+ * differs by skin — a flat percentage for colour-frame skins, an entirely
+ * different absolute-position scheme for image-backed skins) so no fixed
+ * offset is correct for every case. Measuring the real element sidesteps all
+ * of that without needing to know which skin is active or how it's built.
+ */
+function measureGridRect(container: HTMLElement): BoardRect | null {
+  const grid = container.querySelector<HTMLElement>(".grid.grid-cols-8");
+  if (!grid) return null;
+  const containerRect = container.getBoundingClientRect();
+  const gridRect = grid.getBoundingClientRect();
+  return {
+    top: gridRect.top - containerRect.top,
+    left: gridRect.left - containerRect.left,
+    width: gridRect.width,
+    height: gridRect.height,
+  };
+}
+
 function SchoolBoardWithOverlay({
   squares = [],
   arrows = [],
@@ -92,10 +115,34 @@ function SchoolBoardWithOverlay({
   children: React.ReactNode;
 }) {
   const hasOverlay = squares.length > 0 || arrows.length > 0;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [boardRect, setBoardRect] = useState<BoardRect | null>(null);
+
+  useLayoutEffect(() => {
+    if (!hasOverlay) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const remeasure = () => setBoardRect(measureGridRect(container));
+    remeasure();
+
+    // Re-measure whenever the grid's own box changes size — the board is
+    // responsive (SchoolBoardFrame's width formula, orientation changes,
+    // viewport resize), and a stale pixel rect would misplace every
+    // highlight exactly the way the original bug did.
+    const grid = container.querySelector(".grid.grid-cols-8");
+    if (!grid || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(remeasure);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, [hasOverlay]);
+
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <SchoolBoardFrame>{children}</SchoolBoardFrame>
-      {hasOverlay ? <TeachingOverlay squares={squares} arrows={arrows} pulse={pulse} /> : null}
+      {hasOverlay && boardRect ? (
+        <TeachingOverlay squares={squares} arrows={arrows} pulse={pulse} boardRect={boardRect} />
+      ) : null}
     </div>
   );
 }
