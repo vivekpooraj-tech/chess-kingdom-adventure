@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { TeachingOverlay, type BoardRect } from "@/components/board/TeachingOverlay";
 import { Button } from "@/components/ui/Button";
@@ -53,16 +53,59 @@ export const BOARD = 720;
  * Sizes the lesson board from available viewport/layout space. ChessBoard uses
  * focusMode inside so width follows this shell instead of the global mobile
  * breakout margins (which assume px-6 parents School does not use).
+ *
+ * WIDTH is capped the same way it always was (mobile breakout minus
+ * safe-area gutters, then 100%, then a 720px ceiling) — that ceiling is
+ * unchanged, just expressed as `max-width` now instead of `width`. That
+ * distinction is what makes shrinking work: `aspect-ratio` only derives a
+ * dimension that is `auto`, so `width` has to stay auto (`max-width` merely
+ * clamps it) for the browser to compute it FROM the flex-resolved height,
+ * instead of the old fixed `88dvh`/`85dvh` HEIGHT ceiling baked into the
+ * same expression — a flat fraction of the whole viewport with no idea how
+ * much of it a step's own coach line, puzzle label, or hint panel had
+ * already used, which is exactly how a puzzle with a longer Ollie line
+ * could push the board (and the Continue button under it) below the fold
+ * on a perfectly normal-height screen.
+ *
+ * Height now comes from `flex: 0 1 auto` + `min-height: 0` + `aspect-ratio`
+ * instead: inside a bounded flex column (see each step view's outer div),
+ * the browser solves "the largest square that fits both my width ceiling
+ * and whatever vertical space my siblings actually left me" on its own,
+ * per step, without this component needing to know anything about what
+ * else is on screen. On a roomy screen the board still simply renders at
+ * its natural width-derived size, identical to before.
  */
-export function SchoolBoardFrame({ children }: { children: React.ReactNode }) {
+export const SchoolBoardFrame = forwardRef<
+  HTMLDivElement,
+  { children: React.ReactNode; className?: string }
+>(function SchoolBoardFrame({ children, className = "" }, ref) {
   return (
     <div
-      className="mx-auto w-full max-w-full [width:min(calc(100vw-1rem),calc(100vw-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)-1rem),88dvh,720px)] md:[width:min(calc(100vw-2rem),min(85dvh,720px),720px)] lg:[width:min(100%,min(88dvh,680px),720px)]"
+      ref={ref}
+      className={`mx-auto min-h-0 min-w-0 grow-0 shrink [aspect-ratio:1/1] [max-width:min(calc(100vw-1rem),calc(100vw-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)-1rem),720px)] md:[max-width:min(calc(100vw-2rem),720px)] lg:[max-width:min(100%,680px)] [flex-basis:min(calc(100vw-1rem),calc(100vw-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)-1rem),720px)] md:[flex-basis:min(calc(100vw-2rem),720px)] lg:[flex-basis:680px] ${className}`}
     >
       {children}
     </div>
   );
-}
+});
+
+/**
+ * Bounds a step's own content column to the real viewport (independent of
+ * the page's own unconstrained `<main>`, since `dvh` is always relative to
+ * the true viewport regardless of ancestor height) — WITHOUT clipping. This
+ * is a `max-height`, not a `height`: content that still doesn't fit even
+ * after the board has shrunk as far as it reasonably can simply extends
+ * past it and the page scrolls exactly as it always could (`overflow` is
+ * left at its default `visible`) — this only ever REMOVES unnecessary
+ * scrolling, never forces content to fit that genuinely cannot.
+ *
+ * The subtracted amount is a deliberately generous, single shared estimate
+ * for the page chrome around a step (Frame's header — module chip, session
+ * title, progress dots — plus its own top/bottom padding), not a per-session
+ * measurement; a session with an unusually tall header still degrades to
+ * ordinary scrolling rather than a wrong number.
+ */
+const STEP_VIEWPORT_CLASS = "min-h-0 max-h-[calc(100dvh-12rem)]";
 
 /** Default overlay intensity by session — strong early, fading by session 7. */
 function defaultGuidanceLevel(sessionNumber: number): VisualGuidanceLevel {
@@ -138,12 +181,12 @@ function SchoolBoardWithOverlay({
   }, [hasOverlay]);
 
   return (
-    <div ref={containerRef} className="relative">
-      <SchoolBoardFrame>{children}</SchoolBoardFrame>
+    <SchoolBoardFrame ref={containerRef} className="relative">
+      {children}
       {hasOverlay && boardRect ? (
         <TeachingOverlay squares={squares} arrows={arrows} pulse={pulse} boardRect={boardRect} />
       ) : null}
-    </div>
+    </SchoolBoardFrame>
   );
 }
 
@@ -210,7 +253,7 @@ export function WorkedExampleStepView({ step, onComplete }: StepProps<WorkedExam
   const last = beatIndex >= step.beats.length - 1;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className={`flex flex-col gap-5 ${STEP_VIEWPORT_CLASS}`}>
       <OllieCoach line={beat.line} tone={last ? "proud" : "calm"} />
 
       <SchoolBoardWithOverlay
@@ -279,7 +322,7 @@ export function PieceIntroStepView({ step, onComplete }: StepProps<PieceIntroSte
     : "Next";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col gap-4 ${STEP_VIEWPORT_CLASS}`}>
       <OllieCoach line={ollieLine} />
 
       <div className="flex items-center gap-4 rounded-premiumCard border border-white/10 bg-white/[0.04] p-4">
@@ -425,7 +468,7 @@ export function GuidedBoardStepView({
   // it is safe to say every time isCheckmate fires, not just this once.
   if (mateAfterFen) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className={`flex flex-col gap-4 ${STEP_VIEWPORT_CLASS}`}>
         <SchoolBoardFrame>
           <ChessBoard
             key={`mate-${matePhase}`}
@@ -465,7 +508,7 @@ export function GuidedBoardStepView({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col gap-4 ${STEP_VIEWPORT_CLASS}`}>
       <OllieCoach line={coachLine} tone={solved ? "proud" : attempts > 0 ? "warm" : "calm"} />
 
       <SchoolBoardWithOverlay
@@ -714,7 +757,7 @@ function SinglePuzzle({
       : puzzle.hint ?? ollie.mistake;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col gap-4 ${STEP_VIEWPORT_CLASS}`}>
       <div className="flex items-center justify-between">
         <p className={`${TEXT.meta}`}>{label}</p>
         {state === "playing" && attempts > 0 ? (
@@ -807,7 +850,7 @@ export function BotMatchStepView({ step, ollie, onComplete }: StepProps<BotMatch
     : gameProgressLine(moves, step.movesRequired);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col gap-4 ${STEP_VIEWPORT_CLASS}`}>
       <OllieCoach line={line} tone={over?.winner === "w" || reached ? "proud" : "calm"} />
 
       <SchoolBoardFrame>
