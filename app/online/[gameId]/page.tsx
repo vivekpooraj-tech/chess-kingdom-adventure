@@ -639,9 +639,9 @@ export default function OnlineGamePage() {
               Review Game →
             </Button>
           )}
-          <Link href={game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map"}>
+          <Link href={game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/play"}>
             <Button tone="premium" variant={game.moves.length > 0 ? "ghost" : "primary"}>
-              {game.tournament_id ? "Back to Tournament →" : "Back to the Kingdom Map →"}
+              {game.tournament_id ? "Back to Tournament →" : "Back to Play →"}
             </Button>
           </Link>
 
