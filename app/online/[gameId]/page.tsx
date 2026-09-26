@@ -16,7 +16,7 @@ import {
   OnlineGame,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { QUICK_CHAT_PHRASES, EMOJI_REACTIONS, DRAW_OFFER_PREFIX } from "@/content/quickChat";
+import { QUICK_CHAT_PHRASES, EMOJI_REACTIONS, DRAW_OFFER_PREFIX, DRAW_DECLINE_PREFIX } from "@/content/quickChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import {
   INITIAL as REMATCH_INITIAL,
@@ -151,6 +151,37 @@ export default function OnlineGamePage() {
   // has already dismissed — each offer is uniquely timestamped, so a new
   // offer after a declined one always compares as different and reappears.
   const [dismissedDrawOffer, setDismissedDrawOffer] = useState<string | null>(null);
+  // The specific offer token (see DRAW_OFFER_PREFIX) I've sent that I've
+  // already stopped showing "Waiting for your opponent…" for, either
+  // because it was declined (see the effect below) or because I sent a
+  // newer one. Mirrors dismissedDrawOffer's pattern on the receiving side.
+  const [dismissedMyDrawOffer, setDismissedMyDrawOffer] = useState<string | null>(null);
+  const [drawDeclinedFeedback, setDrawDeclinedFeedback] = useState(false);
+
+  // Detects the opponent declining MY offer. A decline can't be written to
+  // MY OWN reaction column (I can only read the opponent's), so the
+  // decliner writes DRAW_DECLINE_PREFIX to THEIR OWN column instead — this
+  // effect is what notices it on my side and clears the "waiting" state.
+  // Declared at top level (not inside the "active game" render branch below)
+  // because hooks must run on every render, including before `game` loads.
+  useEffect(() => {
+    if (game === "loading" || !game || !childId) return;
+    const isHostNow = game.host_child_id === childId;
+    const myOffer = isHostNow ? game.host_reaction : game.guest_reaction;
+    const theirReply = isHostNow ? game.guest_reaction : game.host_reaction;
+    if (
+      myOffer &&
+      myOffer.startsWith(DRAW_OFFER_PREFIX) &&
+      myOffer !== dismissedMyDrawOffer &&
+      theirReply &&
+      theirReply.startsWith(DRAW_DECLINE_PREFIX)
+    ) {
+      setDismissedMyDrawOffer(myOffer);
+      setDrawDeclinedFeedback(true);
+      const timer = setTimeout(() => setDrawDeclinedFeedback(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [game, childId, dismissedMyDrawOffer]);
 
   // Load the current child + initial game state, then subscribe to live
   // updates (the opponent's moves and reactions arrive this way).
@@ -651,13 +682,29 @@ export default function OnlineGamePage() {
     // A draw offer rides the same reaction column (see DRAW_OFFER_PREFIX's
     // doc comment) but is an internal signal, not chat — never shown as a
     // plain reaction bubble.
-    const myReaction = myReactionRaw && !myReactionRaw.startsWith(DRAW_OFFER_PREFIX) ? myReactionRaw : null;
-    const theirReaction = theirReactionRaw && !theirReactionRaw.startsWith(DRAW_OFFER_PREFIX) ? theirReactionRaw : null;
+    const myReaction =
+      myReactionRaw && !myReactionRaw.startsWith(DRAW_OFFER_PREFIX) && !myReactionRaw.startsWith(DRAW_DECLINE_PREFIX)
+        ? myReactionRaw
+        : null;
+    const theirReaction =
+      theirReactionRaw &&
+      !theirReactionRaw.startsWith(DRAW_OFFER_PREFIX) &&
+      !theirReactionRaw.startsWith(DRAW_DECLINE_PREFIX)
+        ? theirReactionRaw
+        : null;
     const pendingDrawOffer =
       theirReactionRaw &&
       theirReactionRaw.startsWith(DRAW_OFFER_PREFIX) &&
       theirReactionRaw !== dismissedDrawOffer
         ? theirReactionRaw
+        : null;
+    // My own outstanding offer — drives "Draw Offer Sent / Waiting…" and
+    // hides the Offer Draw button while it's truthy. Cleared (via
+    // dismissedMyDrawOffer) either by the decline-detection effect above or
+    // by sending a newer offer.
+    const myPendingDrawOffer =
+      myReactionRaw && myReactionRaw.startsWith(DRAW_OFFER_PREFIX) && myReactionRaw !== dismissedMyDrawOffer
+        ? myReactionRaw
         : null;
     // Random-match and tournament opponents are strangers, not people the
     // child already knows via an invite link — no chat/emoji there,
@@ -695,6 +742,12 @@ export default function OnlineGamePage() {
     }
     async function handleAcceptDraw() {
       await requestCompletion(params.gameId, "accept_draw");
+    }
+    async function handleDeclineDraw() {
+      if (pendingDrawOffer) setDismissedDrawOffer(pendingDrawOffer);
+      // Mirrors handleOfferDraw: writes to MY OWN column so the offerer's
+      // decline-detection effect (which only reads MY column) can see it.
+      await sendReaction(supabaseRef.current, params.gameId, isHost, `${DRAW_DECLINE_PREFIX}${Date.now()}`);
     }
 
     const arenaTitle =
@@ -784,11 +837,17 @@ export default function OnlineGamePage() {
                     variant="ghost"
                     size="md"
                     className="flex-1"
-                    onClick={() => setDismissedDrawOffer(pendingDrawOffer)}
+                    onClick={handleDeclineDraw}
                   >
                     Decline
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {drawDeclinedFeedback && (
+              <div className="rounded-premiumCard bg-premium-navy/60 border border-white/10 p-3">
+                <p className="font-classic-body text-sm text-premium-ivory/80">Draw offer declined.</p>
               </div>
             )}
 
@@ -816,6 +875,22 @@ export default function OnlineGamePage() {
                       Cancel
                     </Button>
                   </div>
+                </div>
+              ) : myPendingDrawOffer ? (
+                <div className="flex flex-col gap-2">
+                  <div>
+                    <p className="font-classic-body text-sm text-premium-ivory">Draw Offer Sent</p>
+                    <p className="font-classic-body text-xs text-premium-ivory/60">Waiting for your opponent…</p>
+                  </div>
+                  <Button
+                    tone="premium"
+                    variant="danger"
+                    size="md"
+                    className="flex-1"
+                    onClick={() => setResignConfirm(true)}
+                  >
+                    Resign
+                  </Button>
                 </div>
               ) : (
                 <div className="flex gap-2">

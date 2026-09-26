@@ -28,3 +28,14 @@ export const EMOJI_REACTIONS: string[] = ["😊", "😲", "🎉", "😅", "👍"
  * unlike quick chat/emoji, which are hidden for stranger opponents.
  */
 export const DRAW_OFFER_PREFIX = "__draw_offer__:";
+
+/**
+ * A decline rides the SAME mechanism, but on the DECLINING player's own
+ * reaction column — the offering player can only ever read the other
+ * player's column (see theirReactionRaw in OnlineGamePage), never their
+ * own, so there is no way to signal "declined" back through the offerer's
+ * own host_reaction/guest_reaction value. Writing this sentinel to the
+ * decliner's own column is the only round trip that reaches the offerer
+ * without a new table column or RPC.
+ */
+export const DRAW_DECLINE_PREFIX = "__draw_decline__:";
