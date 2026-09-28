@@ -38,6 +38,12 @@
                 <data
                     android:scheme="https"
                     android:host="chess-kingdom-adventure-opal.vercel.app" />
+                <data
+                    android:scheme="https"
+                    android:host="chessmind.club" />
+                <data
+                    android:scheme="https"
+                    android:host="www.chessmind.club" />
             </intent-filter>
 
             <!-- Custom scheme for the magic-link sign-in flow specifically.
