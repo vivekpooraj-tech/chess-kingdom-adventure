@@ -1595,3 +1595,60 @@ html:not([data-mode]) .more-mode-scope .more-section-eyebrow {
 [data-mode="kids"] .more-mode-scope .more-section-eyebrow {
   font-weight: 700;
 }
+
+/* ==========================================================================
+   NAVIGATION MODE PRESENTATION
+   Own scope (.nav-mode-scope), applied to PrimaryNav (phone bottom bar) and
+   SideNav (desktop sidebar) — the one piece of chrome mounted on every app
+   route via AppShell, so this is the single highest-leverage place for a
+   mode's accent to actually be seen everywhere, not just within one page's
+   own content. Unlike every other page scope above, this was never wired at
+   all (zero [data-mode] references in either nav component) — not a
+   deliberate omission with its own rationale, just a genuine gap. Follows
+   the exact same pattern as every scope above: local --cp-accent/--at-accent/
+   --kingdom-hairline redeclaration, additive className hooks on markup the
+   component already owns, no structural or behavioural change. The active
+   tab's resting-state color (text-premium-gold, bg-premium-gold) stays the
+   classic-pro/default value — only Kids and Adult override it, same
+   convention as every other scope in this file. */
+html:not([data-mode]) .nav-mode-scope {
+  --cp-accent: 56 189 248; /* sky-400, same value as every other scope's Classic/Pro accent */
+}
+
+[data-mode="adult"] .nav-mode-scope {
+  --at-accent: 212 175 133; /* warm champagne-gold, same value as every other scope's Adult accent */
+}
+
+[data-mode="kids"] .nav-mode-scope {
+  --kingdom-hairline: 255 197 61; /* kingdom.gold, same value as every other scope's Kids accent */
+}
+
+/* PrimaryNav (phone bottom bar): active tab icon/label color. */
+[data-mode="adult"] .nav-mode-scope .nav-link-active {
+  color: rgb(var(--at-accent));
+}
+
+[data-mode="kids"] .nav-mode-scope .nav-link-active {
+  color: rgb(var(--kingdom-hairline));
+}
+
+/* SideNav (desktop sidebar) only: active row's pill background — the
+   resting bg-premium-navyLight/60 stays classic-pro's own value, only
+   Kids/Adult tint it. Scoped to -pill specifically (not the shared
+   .nav-link-active PrimaryNav also carries) since PrimaryNav's tab has no
+   background/rounding of its own to tint. */
+[data-mode="adult"] .nav-mode-scope .nav-link-active-pill {
+  background-color: rgb(var(--at-accent) / 0.14);
+}
+
+[data-mode="kids"] .nav-mode-scope .nav-link-active-pill {
+  background-color: rgb(var(--kingdom-hairline) / 0.16);
+}
+
+[data-mode="adult"] .nav-mode-scope .nav-active-bar {
+  background-color: rgb(var(--at-accent));
+}
+
+[data-mode="kids"] .nav-mode-scope .nav-active-bar {
+  background-color: rgb(var(--kingdom-hairline));
+}

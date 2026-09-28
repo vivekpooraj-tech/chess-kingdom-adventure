@@ -42,7 +42,7 @@ function SideNavLink({
         subdued ? "min-h-[42px] text-[13px]" : "min-h-[48px] text-sm"
       } ${
         active
-          ? "bg-premium-navyLight/60 text-premium-gold"
+          ? "nav-link-active nav-link-active-pill bg-premium-navyLight/60 text-premium-gold"
           : subdued
             ? "text-premium-ivory/45 hover:bg-premium-navy/60 hover:text-premium-ivory/85"
             : "text-premium-ivory/60 hover:bg-premium-navy/60 hover:text-premium-ivory"
@@ -51,7 +51,7 @@ function SideNavLink({
       {active && (
         <span
           aria-hidden="true"
-          className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-premium-gold"
+          className="nav-active-bar absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-premium-gold"
         />
       )}
       <Icon className={subdued ? "h-[18px] w-[18px] flex-none" : "h-5 w-5 flex-none"} />
@@ -95,7 +95,7 @@ export function SideNav({
   return (
     <nav
       aria-label="Primary"
-      className="app-sidenav fixed inset-y-0 left-0 z-40 w-[var(--app-sidenav-w)] flex-col border-r border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
+      className="nav-mode-scope app-sidenav fixed inset-y-0 left-0 z-40 w-[var(--app-sidenav-w)] flex-col border-r border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
     >
       <div className="flex h-14 flex-none items-center px-4">
         <Link href={homeHref} aria-label="Chess Mind — Home" className="inline-flex items-center">

@@ -28,7 +28,7 @@ export function PrimaryNav() {
   return (
     <nav
       aria-label="Primary"
-      className="layout-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
+      className="nav-mode-scope layout-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="mx-auto flex w-full max-w-lg items-stretch justify-between px-1 sm:px-2">
@@ -42,7 +42,7 @@ export function PrimaryNav() {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={`flex min-h-[var(--bottom-nav-h)] flex-1 flex-col items-center justify-center gap-1 py-2 transition-colors duration-100 active:scale-95 ${
-                isActive ? "text-premium-gold" : "text-premium-ivory/55 hover:text-premium-ivory"
+                isActive ? "nav-link-active text-premium-gold" : "text-premium-ivory/55 hover:text-premium-ivory"
               }`}
             >
               <Icon className="h-6 w-6" />
