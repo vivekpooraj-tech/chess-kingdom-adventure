@@ -571,7 +571,13 @@ export interface OnlineGame {
   guest_child_id: string | null;
   host_color: "w" | "b";
   fen: string;
-  status: "waiting" | "active" | "finished";
+  /** "matched" is random-match-only: the server has paired two players but
+   * is waiting for both clients' mark_game_client_ready() calls before the
+   * clock starts (supabase/migrations/0048_random_match_ready_gate.sql) —
+   * see started_at/host_ready_at/guest_ready_at below. Invite games never
+   * pass through "matched"; they go straight from "waiting" to "active" at
+   * join_online_game time, unchanged. */
+  status: "waiting" | "matched" | "active" | "finished";
   winner: "w" | "b" | "draw" | null;
   host_reaction: string | null;
   guest_reaction: string | null;
@@ -611,6 +617,19 @@ export interface OnlineGame {
    * derive the live remaining time client-side for display only. */
   last_move_at: string | null;
   current_turn: "w" | "b" | null;
+  /** Set once, atomically, by mark_game_client_ready() the moment BOTH
+   * participants have signalled they've loaded the game — the authoritative
+   * clock-start instant, always equal to last_move_at at that moment. Null
+   * until then (including for every game created before 0048, and for every
+   * invite/tournament game, which never use this flow). Never client-writable
+   * (column-level REVOKE, same as last_move_at). */
+  started_at: string | null;
+  /** Per-participant readiness signal, set once by mark_game_client_ready()
+   * and never cleared — null means that side hasn't loaded the game screen
+   * yet. Only meaningful while status="matched"; both irrelevant and always
+   * null for invite/tournament games. Never client-writable. */
+  host_ready_at: string | null;
+  guest_ready_at: string | null;
   /** True once apply_match_rating() has settled this game's rating change
    * (only ever true for match_type="random") — the four *_before/*_after
    * columns below are only meaningful once this is true. */
@@ -690,6 +709,66 @@ export async function joinOnlineGame(
   if (error) throw error;
   const row = data?.[0];
   return { joined: row?.joined ?? false, blocked: row?.blocked ?? false };
+}
+
+/**
+ * Signals that this participant's client has loaded a random-match game and
+ * is ready for the clock to start (0048_random_match_ready_gate.sql). Safe
+ * to call every time /online/[gameId] mounts, including on remount/reconnect
+ * — the RPC itself is idempotent and a no-op on any game that isn't a
+ * match_type="random" game currently status="matched". Once BOTH
+ * participants have called this, the row returned here (and via the existing
+ * Realtime subscription, for whichever side wasn't the second caller) has
+ * status="active" with started_at/last_move_at/the clock fields all set.
+ */
+export interface MarkGameClientReadyResult {
+  status: OnlineGame["status"];
+  startedAt: string | null;
+  lastMoveAt: string | null;
+  whiteTimeMs: number | null;
+  blackTimeMs: number | null;
+  currentTurn: "w" | "b" | null;
+}
+
+export async function markGameClientReady(
+  supabase: SupabaseClient,
+  gameId: string,
+  childId: string
+): Promise<MarkGameClientReadyResult> {
+  const { data, error } = await supabase.rpc("mark_game_client_ready", {
+    p_game_id: gameId,
+    p_child_id: childId,
+  });
+  if (error) throw error;
+  const row = data?.[0];
+  return {
+    status: row?.status ?? "matched",
+    startedAt: row?.started_at ?? null,
+    lastMoveAt: row?.last_move_at ?? null,
+    whiteTimeMs: row?.white_time_ms ?? null,
+    blackTimeMs: row?.black_time_ms ?? null,
+    currentTurn: row?.current_turn ?? null,
+  };
+}
+
+/**
+ * Exits a random match that never actually started — the opponent's client
+ * never loaded, or never signalled ready. Only ever affects a
+ * match_type="random" game currently status="matched"; a no-op on anything
+ * else (including if the game has since become active). Records no
+ * winner/loser and never touches ratings — mirrors cancelMatchmaking's role
+ * for the pre-match queue, one stage later.
+ */
+export async function abandonMatchedGame(
+  supabase: SupabaseClient,
+  gameId: string,
+  childId: string
+): Promise<void> {
+  const { error } = await supabase.rpc("abandon_matched_game", {
+    p_game_id: gameId,
+    p_child_id: childId,
+  });
+  if (error) throw error;
 }
 
 export interface SubmitMoveResult {
