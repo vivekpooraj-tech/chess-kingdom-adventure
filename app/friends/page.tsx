@@ -6,6 +6,7 @@ import {
   resolveActiveChild,
   getFriends,
   getFriendCode,
+  getOpenChallengesForChild,
   type FriendRow,
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
@@ -14,7 +15,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PrimaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
 import { EmptySection } from "@/components/stats/StatBlocks";
-import { AddFriendBox, RespondButtons } from "@/components/community/FriendActions";
+import { AddFriendBox, RespondButtons, ChallengeFriendButton } from "@/components/community/FriendActions";
 
 export const metadata = {
   title: "Friends · Chess Mind",
@@ -59,12 +60,7 @@ function FriendRowItem({
         </span>
       </span>
       {kind === "accepted" && (
-        <Link
-          href="/play"
-          className="flex min-h-[44px] flex-none items-center font-classic-body text-sm text-premium-gold underline underline-offset-4"
-        >
-          Challenge
-        </Link>
+        <ChallengeFriendButton childId={childId} friendChildId={row.friendChildId} friendName={row.friendName} />
       )}
       <RespondButtons childId={childId} friendshipId={row.friendshipId} kind={kind} />
     </li>
@@ -82,9 +78,10 @@ export default async function FriendsPage() {
   const child = resolution.child;
   if (!child) redirect("/choose-child");
 
-  const [friends, myCode] = await Promise.all([
+  const [friends, myCode, openChallenges] = await Promise.all([
     getFriends(supabase, child.id),
     getFriendCode(supabase, child.id),
+    getOpenChallengesForChild(supabase, child.id),
   ]);
 
   if (!friends.enabled) {
@@ -134,6 +131,33 @@ export default async function FriendsPage() {
           <AddFriendBox childId={child.id} />
         </div>
       </PrimaryCard>
+
+      {openChallenges.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <SectionHeader title={`Challenges (${openChallenges.length})`} />
+          <ul className="flex flex-col gap-2">
+            {openChallenges.map((c) => (
+              <li
+                key={c.gameId}
+                className="flex min-h-[64px] items-center gap-3 rounded-premiumBtn border border-premium-gold/25 bg-premium-navy/70 px-4 py-3"
+              >
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="font-classic-body text-sm text-premium-ivory">{c.hostName}</span>
+                  <span className={TEXT.caption}>
+                    {c.timeControl ? `Challenged you — ${c.timeControl}` : "Challenged you"}
+                  </span>
+                </span>
+                <Link
+                  href={`/online/${c.gameId}`}
+                  className="flex min-h-[44px] flex-none items-center font-classic-body text-sm text-premium-gold underline underline-offset-4"
+                >
+                  Accept →
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {friends.incoming.length > 0 && (
         <section className="flex flex-col gap-3">

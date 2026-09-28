@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
 import { createClient } from "@/lib/supabase/client";
-import { sendFriendRequest, respondToFriendRequest } from "@/lib/supabase/queries";
+import { sendFriendRequest, respondToFriendRequest, createFriendChallenge } from "@/lib/supabase/queries";
+import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
+import { getTimeControlsByCategory, TimeControl } from "@/content/timeControls";
 
 /**
  * The interactive parts of the friends page.
@@ -124,5 +126,108 @@ export function RespondButtons({
     >
       {kind === "outgoing" ? "Cancel" : "Remove"}
     </Button>
+  );
+}
+
+const SELECT_CLASS =
+  "w-full rounded-premiumBtn px-3 py-2 text-sm font-classic-body border border-white/15 bg-premium-midnightDeep text-premium-ivory " +
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-premium-midnight " +
+  "hover:border-premium-gold/40 transition-colors";
+
+/**
+ * "Challenge" on an accepted friend row — inline time-control picker
+ * (same options InviteFriendButton uses) instead of a modal, since this
+ * page has no modal system already in use. Unlike InviteFriendButton, this
+ * creates a game only the target friend can join (invited_child_id, see
+ * supabase/migrations/0048_friend_scoped_challenges.sql) — the generic
+ * open-invite flow (InviteFriendButton) is untouched.
+ */
+export function ChallengeFriendButton({
+  childId,
+  friendChildId,
+  friendName,
+}: {
+  childId: string;
+  friendChildId: string;
+  friendName: string;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [category, setCategory] = useState<TimeControl["description"]>("Blitz");
+  const blitzOptions = getTimeControlsByCategory("Blitz");
+  const rapidOptions = getTimeControlsByCategory("Rapid");
+  const [timeControlId, setTimeControlId] = useState(blitzOptions[3]?.id ?? blitzOptions[0].id);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const options = category === "Blitz" ? blitzOptions : rapidOptions;
+
+  function handleCategoryChange(next: TimeControl["description"]) {
+    setCategory(next);
+    const nextOptions = next === "Blitz" ? blitzOptions : rapidOptions;
+    if (!nextOptions.some((tc) => tc.id === timeControlId)) {
+      setTimeControlId(nextOptions[0].id);
+    }
+  }
+
+  async function handleSend() {
+    setLoading(true);
+    try {
+      const result = await createFriendChallenge(createClient(), childId, friendChildId, timeControlId);
+      if (result.blocked || !result.id) {
+        setShowPaywall(true);
+        return;
+      }
+      router.push(`/online/${result.id}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex min-h-[44px] flex-none items-center font-classic-body text-sm text-premium-gold underline underline-offset-4"
+      >
+        Challenge
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-2 rounded-premiumBtn border border-premium-gold/25 bg-premium-navy/60 p-3">
+      <p className={TEXT.caption}>Challenge {friendName}</p>
+      <div className="flex gap-2">
+        <select
+          value={category}
+          onChange={(e) => handleCategoryChange(e.target.value as TimeControl["description"])}
+          className={SELECT_CLASS}
+        >
+          <option value="Blitz">Blitz</option>
+          <option value="Rapid">Rapid</option>
+        </select>
+        <select
+          value={timeControlId}
+          onChange={(e) => setTimeControlId(e.target.value)}
+          className={SELECT_CLASS}
+        >
+          {options.map((tc) => (
+            <option key={tc.id} value={tc.id}>
+              {tc.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex gap-2">
+        <Button tone="premium" size="sm" onClick={handleSend} disabled={loading} className="flex-1">
+          {loading ? "Sending…" : "Send Challenge →"}
+        </Button>
+        <Button tone="premium" variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={loading}>
+          Cancel
+        </Button>
+      </div>
+      {showPaywall && <GameLimitPaywall gameType="multiplayer" onDismiss={() => setShowPaywall(false)} />}
+    </div>
   );
 }

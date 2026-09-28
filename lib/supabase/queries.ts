@@ -702,6 +702,30 @@ export async function createInviteGame(
   return { id: row?.id ?? null, blocked: row?.blocked ?? false };
 }
 
+/**
+ * SECURITY DEFINER RPC (supabase/migrations/0048_friend_scoped_challenges.sql)
+ * — same shape/eligibility check as createInviteGame, plus a server-side
+ * check that friendChildId is an ACCEPTED friend of hostChildId. Unlike
+ * createInviteGame's link (open to anyone who has it), the resulting game's
+ * invited_child_id means only that friend can ever join it — enforced
+ * inside join_online_game, not here or on the client.
+ */
+export async function createFriendChallenge(
+  supabase: SupabaseClient,
+  hostChildId: string,
+  friendChildId: string,
+  timeControlId: string
+): Promise<CreateInviteGameResult> {
+  const { data, error } = await supabase.rpc("create_friend_challenge", {
+    p_host_child_id: hostChildId,
+    p_friend_child_id: friendChildId,
+    p_time_control: timeControlId,
+  });
+  if (error) throw error;
+  const row = data?.[0];
+  return { id: row?.id ?? null, blocked: row?.blocked ?? false };
+}
+
 export async function getOnlineGame(
   supabase: SupabaseClient,
   gameId: string
@@ -1925,6 +1949,62 @@ export async function getFriends(
     };
   } catch {
     return empty;
+  }
+}
+
+export interface OpenChallengeRow {
+  gameId: string;
+  hostChildId: string;
+  hostName: string;
+  timeControl: string | null;
+  createdAt: string;
+}
+
+/**
+ * Open friend challenges waiting for THIS child to accept — rows in
+ * online_games where invited_child_id = childId and status = 'waiting'
+ * (see supabase/migrations/0048_friend_scoped_challenges.sql). Tolerates
+ * the migration not being applied the same way getFriends() does: the
+ * "column does not exist" error also matches isMissingRelation's
+ * does-not-exist check, so this degrades to an empty list rather than
+ * throwing.
+ */
+export async function getOpenChallengesForChild(
+  supabase: SupabaseClient,
+  childId: string
+): Promise<OpenChallengeRow[]> {
+  try {
+    const { data, error } = await supabase
+      .from("online_games")
+      .select("id, host_child_id, time_control, created_at")
+      .eq("invited_child_id", childId)
+      .eq("status", "waiting")
+      .order("created_at", { ascending: false });
+
+    if (isMissingRelation(error)) return [];
+    if (error || !data) return [];
+
+    const hostIds = [...new Set(data.map((r) => r.host_child_id as string))];
+    const names = new Map<string, string>();
+    if (hostIds.length) {
+      const { data: kids } = await supabase
+        .from("children")
+        .select("id, display_name")
+        .in("id", hostIds);
+      for (const k of kids ?? []) {
+        names.set(k.id as string, (k.display_name as string) ?? "Chess Mind player");
+      }
+    }
+
+    return data.map((r) => ({
+      gameId: r.id as string,
+      hostChildId: r.host_child_id as string,
+      hostName: names.get(r.host_child_id as string) ?? "Chess Mind player",
+      timeControl: r.time_control as string | null,
+      createdAt: r.created_at as string,
+    }));
+  } catch {
+    return [];
   }
 }
 
