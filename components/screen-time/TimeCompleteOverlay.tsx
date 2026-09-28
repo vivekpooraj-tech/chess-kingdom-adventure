@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { PrimaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
 
@@ -67,9 +68,21 @@ export function TimeCompleteOverlay({
         </dl>
 
         <p className={`${TEXT.caption} normal-case`}>
-          Chess time is set by a parent in the Parent Dashboard. Ask them if you need it changed —
-          a new limit takes effect straight away.
+          Chess time is set by a parent in the Parent Dashboard. A new limit takes effect straight
+          away.
         </p>
+
+        <div className="flex flex-col items-center gap-2 pt-1">
+          <Link
+            href="/parent-gate?next=/parent-dashboard"
+            className="flex w-full min-h-[48px] items-center justify-center rounded-full bg-premium-gold px-6 font-classic-body text-sm font-semibold text-premium-midnight active:scale-[0.98] transition-transform"
+          >
+            🔐 Parent Login
+          </Link>
+          <p className={`${TEXT.caption} normal-case text-premium-ivory/60`}>
+            Change today&apos;s limit
+          </p>
+        </div>
       </PrimaryCard>
     </div>
   );
