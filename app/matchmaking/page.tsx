@@ -23,6 +23,7 @@ import {
   findOrCreateMatch,
   supportsTimeControlMatchmaking,
   cancelMatchmaking,
+  getMatchmakingQueueStatus,
   getFreeGameStatus,
   hasRatingHistory,
   FreeGameStatus,
@@ -50,6 +51,9 @@ export default function MatchmakingPage() {
   const [timeControlId, setTimeControlId] = useState<string>(DEFAULT_TIME_CONTROL_ID);
   const [canPickSpeed, setCanPickSpeed] = useState(false);
   const childIdRef = useRef<string | null>(null);
+  // Guards against navigating twice if the Realtime event and the
+  // subscribe-time catch-up read both resolve to the same match.
+  const hasNavigatedRef = useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -125,10 +129,19 @@ export default function MatchmakingPage() {
     }
 
     setView({ status: "searching", rating });
+    hasNavigatedRef.current = false;
+
+    const navigateToMatch = (gameId: string) => {
+      if (hasNavigatedRef.current) return;
+      hasNavigatedRef.current = true;
+      supabase.removeChannel(channel);
+      router.push(`/online/${gameId}`);
+    };
 
     // Not matched yet — wait for someone else's find_or_create_match call
     // to claim our queue row (see the migration for why this is race-safe).
-    const channel = supabase
+    let channel: ReturnType<typeof supabase.channel>;
+    channel = supabase
       .channel(`matchmaking_${childIdRef.current}`)
       .on(
         "postgres_changes",
@@ -141,12 +154,25 @@ export default function MatchmakingPage() {
         (payload) => {
           const row = payload.new as { status: string; matched_game_id: string | null };
           if (row.status === "matched" && row.matched_game_id) {
-            supabase.removeChannel(channel);
-            router.push(`/online/${row.matched_game_id}`);
+            navigateToMatch(row.matched_game_id);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        // The queue row was inserted by the RPC call above, before this
+        // subscription existed. Another player's find_or_create_match call
+        // could have claimed it in that gap, and Realtime only delivers
+        // events after this point, so that UPDATE would otherwise never
+        // arrive. One catch-up read of our own row closes the gap.
+        getMatchmakingQueueStatus(supabase, childId)
+          .then((row) => {
+            if (row?.status === "matched" && row.matchedGameId) {
+              navigateToMatch(row.matchedGameId);
+            }
+          })
+          .catch(() => {});
+      });
   }
 
   async function cancelSearch() {

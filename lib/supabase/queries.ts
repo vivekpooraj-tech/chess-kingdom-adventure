@@ -902,6 +902,33 @@ export async function cancelMatchmaking(supabase: SupabaseClient, childId: strin
   if (error) throw error;
 }
 
+/**
+ * Reads the caller's own current matchmaking_queue row, if any.
+ *
+ * find_or_create_match() inserts this row server-side, inside the RPC call —
+ * before the caller's client has had a chance to open a Realtime
+ * subscription on it. Another player's matching RPC call can claim the row
+ * (status -> 'matched') in that gap, and Realtime only delivers events after
+ * a subscription is actually live, so that UPDATE would otherwise never
+ * arrive. Callers use this for a one-time catch-up read right after their
+ * subscription connects — see app/matchmaking/page.tsx.
+ */
+export async function getMatchmakingQueueStatus(
+  supabase: SupabaseClient,
+  childId: string
+): Promise<{ status: string; matchedGameId: string | null } | null> {
+  const { data, error } = await supabase
+    .from("matchmaking_queue")
+    .select("status, matched_game_id")
+    .eq("child_id", childId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return { status: data.status, matchedGameId: data.matched_game_id };
+}
+
 /** Settles ELO-style rating changes for a finished random match — see
  * apply_match_rating() in the same migration for why this is safe to call
  * from either (or both) players' clients. */
