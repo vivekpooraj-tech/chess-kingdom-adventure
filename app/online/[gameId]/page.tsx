@@ -13,6 +13,8 @@ import {
   sendReaction,
   applyMatchRating,
   recordOpeningEncounter,
+  markGameClientReady,
+  abandonMatchedGame,
   OnlineGame,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
@@ -140,6 +142,13 @@ export default function OnlineGamePage() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [resignConfirm, setResignConfirm] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  // "matched" (random-match ready-gate) waiting screen: the cancel option is
+  // deliberately withheld for a bit — showing it immediately would read as
+  // "this is already broken" for the normal case where the opponent's client
+  // is simply a couple of seconds behind. No polling: a single bounded
+  // setTimeout, cleared on unmount/status change.
+  const [showAbandonOption, setShowAbandonOption] = useState(false);
+  const [abandoning, setAbandoning] = useState(false);
   // Rematch lives entirely in an ephemeral Realtime broadcast on the channel
   // this page already opens for moves — no extra subscription, no new table.
   const [rematch, setRematch] = useState<RematchContext>(REMATCH_INITIAL);
@@ -178,6 +187,41 @@ export default function OnlineGamePage() {
       const initial = await getOnlineGame(supabase, params.gameId);
       if (cancelled) return;
       setGame(initial);
+
+      // Random-match readiness gate (0048_random_match_ready_gate.sql):
+      // signal that this client has the game screen open. A no-op on the
+      // server for anything that isn't a match_type="random" game currently
+      // status="matched" — safe to call unconditionally on every mount,
+      // including a remount/reconnect. If this call is the second
+      // participant's (both sides now ready), the RPC's own response already
+      // carries the authoritative active state, so it's applied immediately
+      // here rather than waiting on this client's own Realtime echo of the
+      // change it just caused.
+      if (initial && initial.match_type === "random" && initial.status === "matched") {
+        try {
+          const ready = await markGameClientReady(supabase, params.gameId, resolution.child!.id);
+          if (cancelled) return;
+          if (ready.status === "active") {
+            setGame((prev) =>
+              prev && prev !== "loading"
+                ? {
+                    ...prev,
+                    status: "active",
+                    started_at: ready.startedAt,
+                    last_move_at: ready.lastMoveAt,
+                    white_time_ms: ready.whiteTimeMs,
+                    black_time_ms: ready.blackTimeMs,
+                    current_turn: ready.currentTurn,
+                  }
+                : prev
+            );
+          }
+        } catch {
+          // Never break the page over this — the existing Realtime
+          // subscription below, and a later remount, both give the ready
+          // signal another chance to land.
+        }
+      }
     }
     load();
 
@@ -212,6 +256,42 @@ export default function OnlineGamePage() {
       supabase.removeChannel(channel);
     };
   }, [params.gameId, router]);
+
+  // Bounded wait before offering to abandon a random match stuck in
+  // "matched" (opponent's client hasn't signalled ready yet). One timer, not
+  // a poll: it doesn't re-check anything, it just reveals a button after a
+  // fixed delay. Resets whenever the game leaves "matched" (becomes active,
+  // or this effect re-runs on a fresh "matched" game after a rematch).
+  useEffect(() => {
+    setShowAbandonOption(false);
+    if (game === "loading" || !game || game.match_type !== "random" || game.status !== "matched") {
+      return;
+    }
+    const id = window.setTimeout(() => setShowAbandonOption(true), 20_000);
+    return () => window.clearTimeout(id);
+  }, [game === "loading" || !game ? null : game.status, game === "loading" || !game ? null : game.match_type]);
+
+  // A random match the OTHER player abandoned pre-start (abandon_matched_game,
+  // 0048_random_match_ready_gate.sql) arrives here as status="finished" with
+  // winner=null and started_at=null — a combination that can only mean "this
+  // never started," since every real result (checkmate, resignation, timeout)
+  // sets a winner, and every game whose clock ever ran has a non-null
+  // started_at. The normal finished-game screen has no concept of a
+  // null-winner result and would otherwise read as a loss. Redirect instead of
+  // rendering it, exactly the same way handleAbandonMatched already does for
+  // the player who triggered the abandon.
+  useEffect(() => {
+    if (
+      game !== "loading" &&
+      game &&
+      game.match_type === "random" &&
+      game.status === "finished" &&
+      game.winner === null &&
+      game.started_at === null
+    ) {
+      router.push("/kingdom-map");
+    }
+  }, [game, router]);
 
   // Navigate once the rematch game exists. Both sides run this; whoever is
   // told first simply goes.
@@ -360,6 +440,20 @@ export default function OnlineGamePage() {
     setGame(fresh);
   }
 
+  async function handleAbandonMatched() {
+    if (!childId || abandoning) return;
+    setAbandoning(true);
+    try {
+      await abandonMatchedGame(supabaseRef.current, params.gameId, childId);
+      // No winner is recorded for an abandoned pre-start match, so there's
+      // nothing meaningful for the "finished" screen to show — leave for
+      // Home rather than rendering a null-result game-over state.
+      router.push("/kingdom-map");
+    } catch {
+      setAbandoning(false);
+    }
+  }
+
   /**
    * Send the move INTENT only.
    *
@@ -420,6 +514,27 @@ export default function OnlineGamePage() {
 
   async function handleReaction(text: string) {
     await sendReaction(supabaseRef.current, params.gameId, isHost, text);
+  }
+
+  // --- Random match found, waiting for both clients to be ready ---
+  // (0048_random_match_ready_gate.sql) — invite/tournament games never have
+  // status="matched" at all, so this only ever renders for match_type="random".
+  // No ticking clock here on purpose: the clock genuinely hasn't started yet.
+  if (game.status === "matched") {
+    return (
+      <main className="min-h-screen bg-premium-midnight flex items-center justify-center px-6">
+        <SecondaryCard className="max-w-sm w-full text-center flex flex-col gap-4 items-center">
+          <span className="text-5xl animate-floaty">⏳</span>
+          <h1 className={TEXT.heading}>Waiting for opponent to load...</h1>
+          <p className={TEXT.caption}>The clock starts the moment you're both here.</p>
+          {showAbandonOption && (
+            <Button tone="premium" variant="ghost" onClick={handleAbandonMatched} disabled={abandoning}>
+              {abandoning ? "Leaving..." : "This is taking a while — Leave"}
+            </Button>
+          )}
+        </SecondaryCard>
+      </main>
+    );
   }
 
   // --- Waiting for a friend (host's view) ---
@@ -483,6 +598,18 @@ export default function OnlineGamePage() {
         {showPaywall && <GameLimitPaywall gameType="multiplayer" onDismiss={() => setShowPaywall(false)} />}
       </main>
     );
+  }
+
+  // A pre-start abandon (see the redirect effect above) — render nothing
+  // while that effect's router.push takes effect, rather than flashing the
+  // normal finished-game screen for a result that was never played.
+  if (
+    game.match_type === "random" &&
+    game.status === "finished" &&
+    game.winner === null &&
+    game.started_at === null
+  ) {
+    return <main className="min-h-screen bg-premium-midnight" />;
   }
 
   // --- Finished ---
