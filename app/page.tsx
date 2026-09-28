@@ -62,49 +62,70 @@ export default function SplashPage() {
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     async function check() {
-      const supabase = createClient();
-      const state = await getAuthState(supabase);
-      if (cancelled) return;
+      try {
+        const supabase = createClient();
+        const state = await getAuthState(supabase);
+        if (cancelled) return;
 
-      if (state.status === "authed") {
-        attemptsRef.current = 0;
-        // Trigger B (Video 2 — the returning-user welcome animation): "/" is
-        // Capacitor's fixed launch URL (server.url has no path), so this is
-        // the one JS entry point every native cold launch hits — but it's
-        // ALSO hit by nothing else, since an authenticated visit here only
-        // happens on a true app open, never a background/foreground resume
-        // (Android doesn't re-navigate to "/" on resume; the WebView stays
-        // wherever it was). The sessionStorage guard (see lib/loginWelcome.ts)
-        // then does the rest: it survives exactly a resume/reload/remount,
-        // and is only ever empty again after the process was genuinely
-        // killed and relaunched — never on merely reaching this branch
-        // twice within the same still-alive session.
-        router.replace(hasShownLoginWelcomeThisSession() ? "/kingdom-map" : "/login-welcome");
-        return;
+        if (state.status === "authed") {
+          attemptsRef.current = 0;
+          // Trigger B (Video 2 — the returning-user welcome animation): "/" is
+          // Capacitor's fixed launch URL (server.url has no path), so this is
+          // the one JS entry point every native cold launch hits — but it's
+          // ALSO hit by nothing else, since an authenticated visit here only
+          // happens on a true app open, never a background/foreground resume
+          // (Android doesn't re-navigate to "/" on resume; the WebView stays
+          // wherever it was). The sessionStorage guard (see lib/loginWelcome.ts)
+          // then does the rest: it survives exactly a resume/reload/remount,
+          // and is only ever empty again after the process was genuinely
+          // killed and relaunched — never on merely reaching this branch
+          // twice within the same still-alive session.
+          router.replace(hasShownLoginWelcomeThisSession() ? "/kingdom-map" : "/login-welcome");
+          return;
+        }
+        if (state.status === "unauthenticated") {
+          attemptsRef.current = 0;
+          setPhase("signed-out");
+          return;
+        }
+        // network-error: keep waiting on the neutral screen, retry shortly,
+        // and again when the OS tells us connectivity is back. After a few
+        // failed cycles, fall through to the splash so the user isn't stuck
+        // on a blank screen — but KEEP polling below: this is never a logout,
+        // and the next successful check redirects an authed user home.
+        attemptsRef.current += 1;
+        if (attemptsRef.current >= MAX_NETWORK_ERROR_ATTEMPTS) {
+          setPhase("signed-out");
+        }
+        timer = setTimeout(check, 4000);
+      } catch {
+        // getAuthState()/createClient() are expected to resolve or return a
+        // status, never throw — but some browsers (iOS Safari's storage/
+        // session-lock access under ITP or Private Browsing being the known
+        // real-world case) throw instead of rejecting cleanly through the
+        // normal auth-state machinery above. Whatever the cause, a visitor
+        // must never be stuck on the bare "checking" screen forever: fall
+        // through to the same signed-out splash a genuine signed-out visitor
+        // sees. Worst case an already-authed visitor taps through once more;
+        // far better than a permanent blank screen.
+        if (!cancelled) setPhase("signed-out");
       }
-      if (state.status === "unauthenticated") {
-        attemptsRef.current = 0;
-        setPhase("signed-out");
-        return;
-      }
-      // network-error: keep waiting on the neutral screen, retry shortly,
-      // and again when the OS tells us connectivity is back. After a few
-      // failed cycles, fall through to the splash so the user isn't stuck
-      // on a blank screen — but KEEP polling below: this is never a logout,
-      // and the next successful check redirects an authed user home.
-      attemptsRef.current += 1;
-      if (attemptsRef.current >= MAX_NETWORK_ERROR_ATTEMPTS) {
-        setPhase("signed-out");
-      }
-      timer = setTimeout(check, 4000);
     }
 
     check();
     const onOnline = () => check();
     window.addEventListener("online", onOnline);
+    // Independent hard ceiling: the try/catch above only helps if check()
+    // actually throws or rejects. If auth initialization instead hangs
+    // outright (a promise that never settles), nothing above ever runs —
+    // this is the only thing that can still recover that case.
+    const hardTimeout = setTimeout(() => {
+      if (!cancelled) setPhase((p) => (p === "checking" ? "signed-out" : p));
+    }, 8000);
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
+      clearTimeout(hardTimeout);
       window.removeEventListener("online", onOnline);
     };
   }, [router]);
