@@ -1,3 +1,5 @@
+import type { ThemeId } from "@/lib/theme/themes";
+
 /**
  * The three Chess Mind presentation modes.
  *
@@ -7,9 +9,12 @@
  *
  * Mode is a SEPARATE axis from theme (see app/modes.css vs app/themes.css):
  * theme is the app's colour identity, mode is which of the three Chess Mind
- * presentation experiences (Kids / Adult / Classic-Pro) is active. The two
- * attributes — [data-theme] and [data-mode] — are independently settable and
- * neither reads or depends on the other.
+ * presentation experiences (Kids / Adult / Classic-Pro) is active. The
+ * underlying [data-theme]/[data-mode] attributes remain independently
+ * settable at the CSS/infrastructure level — but user-facing, only mode is
+ * now exposed as a choice; useMode's setMode() applies the corresponding
+ * theme automatically via MODE_TO_THEME below, so the two never appear as
+ * separate decisions to the user. See that mapping's own comment for why.
  */
 
 export const MODE_IDS = ["kids", "adult", "classic-pro"] as const;
@@ -75,3 +80,22 @@ export function isModeId(value: unknown): value is ModeId {
 export function getMode(id: ModeId): ModeDefinition {
   return MODES.find((m) => m.id === id) ?? MODES[2];
 }
+
+/**
+ * Each World's underlying theme — users see one choice (the World); the
+ * matching theme is applied automatically by useMode's setMode(), never
+ * picked separately. The theme system itself (lib/theme/themes.ts,
+ * ThemePicker, ThemeBootstrapScript) is untouched and still fully
+ * functional — this is only a mapping, not a new theme.
+ *
+ * classic-pro -> chess-kingdom preserves the exact current default: both
+ * are already each axis's own "no attribute" baseline, so a
+ * never-customized visitor's experience is byte-for-byte unchanged.
+ * future-arena is deliberately left unmapped (reserved for later, per the
+ * Phase report) — no World currently selects it.
+ */
+export const MODE_TO_THEME: Record<ModeId, ThemeId> = {
+  kids: "royal-classic",
+  adult: "midnight-grandmaster",
+  "classic-pro": "chess-kingdom",
+};

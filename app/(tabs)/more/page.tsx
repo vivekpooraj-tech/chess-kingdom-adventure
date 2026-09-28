@@ -10,7 +10,6 @@ import { ListItemRow } from "@/components/ui/Card";
 import { SignOutRow } from "@/components/more/SignOutRow";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
-import { ThemePicker } from "@/components/theme/ThemePicker";
 import { ModePicker } from "@/components/mode/ModePicker";
 
 /**
@@ -130,18 +129,14 @@ export default async function MorePage() {
         </section>
 
         <section className="w-full flex flex-col gap-2">
-          <p className={`${TEXT.caption} uppercase tracking-wide more-section-eyebrow`}>Appearance</p>
-          {/* Client island: the theme lives on <html> + localStorage, so this
-              is the only part of the app that needs to be interactive for
-              theming to work. */}
-          <ThemePicker />
-        </section>
-
-        <section className="w-full flex flex-col gap-2">
-          {/* ModePicker draws its own "Chess Mind Worlds" label/explanation
-              (a different concern from the plain "Appearance" caption above),
-              so no duplicate section heading here. Same client-island
-              reasoning as ThemePicker — mode lives on <html> + localStorage. */}
+          {/* ModePicker draws its own "Chess Mind Worlds" label/explanation.
+              Client island: mode lives on <html> + localStorage — and, as of
+              the World/Theme unification, setMode() also applies the World's
+              matching theme automatically (see lib/mode/useMode.ts), so
+              there is no separate "Appearance" picker here anymore. The
+              underlying theme system (lib/theme/*, ThemePicker,
+              ThemeBootstrapScript) is untouched and still fully functional,
+              just no longer exposed as its own user-facing choice. */}
           <ModePicker />
         </section>
 

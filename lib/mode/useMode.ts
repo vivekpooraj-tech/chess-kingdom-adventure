@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { DEFAULT_MODE, MODE_STORAGE_KEY, isModeId, type ModeId } from "./modes";
+import { DEFAULT_MODE, MODE_STORAGE_KEY, MODE_TO_THEME, isModeId, type ModeId } from "./modes";
+import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/theme/themes";
 
 /**
  * Read and change the active presentation mode.
@@ -57,6 +58,22 @@ export function useMode() {
     } catch {
       /* storage unavailable — the mode still applies for this session */
     }
+
+    // Each World determines its own theme automatically (see MODE_TO_THEME
+    // in ./modes) — theme is no longer a separate user-facing choice.
+    // useTheme/ThemeBootstrapScript are untouched: this just applies the
+    // same [data-theme] attribute + THEME_STORAGE_KEY they already read,
+    // exactly as ThemePicker's own setTheme would, so on the next load
+    // ThemeBootstrapScript (unmodified) picks up the synced value pre-hydration.
+    const mappedTheme = MODE_TO_THEME[next];
+    if (mappedTheme === DEFAULT_THEME) root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", mappedTheme);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, mappedTheme);
+    } catch {
+      /* storage unavailable — the theme still applies for this session */
+    }
+
     setModeState(next);
   }, []);
 
