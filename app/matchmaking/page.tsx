@@ -51,9 +51,16 @@ export default function MatchmakingPage() {
   const [timeControlId, setTimeControlId] = useState<string>(DEFAULT_TIME_CONTROL_ID);
   const [canPickSpeed, setCanPickSpeed] = useState(false);
   const childIdRef = useRef<string | null>(null);
-  // Guards against navigating twice if the Realtime event and the
-  // subscribe-time catch-up read both resolve to the same match.
+  // Guards against navigating twice when the immediate check, the Realtime
+  // event, and the bounded fallback poll (see findOpponent) could all
+  // independently resolve to the same match.
   const hasNavigatedRef = useRef(false);
+  // Live handles for the two things findOpponent() starts, so cancelSearch()
+  // and the unmount cleanup below can tear them down without needing their
+  // own copies — a single 5s interval and a single channel, never more than
+  // one of either at a time.
+  const fallbackIntervalRef = useRef<number | null>(null);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -87,9 +94,20 @@ export default function MatchmakingPage() {
   }, [router]);
 
   // Leave the queue if the child navigates away mid-search, so they don't
-  // stay matchable after giving up on this screen.
+  // stay matchable after giving up on this screen. Also stops the fallback
+  // poll and drops the Realtime channel — nothing from this search should
+  // keep running once the screen is gone.
   useEffect(() => {
     return () => {
+      if (fallbackIntervalRef.current) {
+        window.clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = null;
+      }
+      if (channelRef.current) {
+        const supabase = createClient();
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
       if (view.status === "searching" && childIdRef.current) {
         const supabase = createClient();
         cancelMatchmaking(supabase, childIdRef.current).catch(() => {});
@@ -131,25 +149,51 @@ export default function MatchmakingPage() {
     setView({ status: "searching", rating });
     hasNavigatedRef.current = false;
 
+    // Single atomic guard shared by all three detection paths below — first
+    // one to find a match wins, the other two become no-ops. Also the one
+    // place that tears down the fallback timer and the Realtime channel, so
+    // neither keeps running past a successful navigation.
     const navigateToMatch = (gameId: string) => {
       if (hasNavigatedRef.current) return;
       hasNavigatedRef.current = true;
-      supabase.removeChannel(channel);
+      if (fallbackIntervalRef.current) {
+        window.clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = null;
+      }
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
       router.push(`/online/${gameId}`);
     };
 
-    // Not matched yet — wait for someone else's find_or_create_match call
-    // to claim our queue row (see the migration for why this is race-safe).
-    let channel: ReturnType<typeof supabase.channel>;
-    channel = supabase
-      .channel(`matchmaking_${childIdRef.current}`)
+    // 1. IMMEDIATE CHECK — closes the startup race without depending on the
+    // Realtime channel ever reaching SUBSCRIBED. Another player's own
+    // find_or_create_match call can claim our queue row in the time between
+    // our RPC call returning and this line running; this reads our row's
+    // current, authoritative state directly, before any Realtime channel
+    // even exists yet.
+    try {
+      const immediate = await getMatchmakingQueueStatus(supabase, childId);
+      if (immediate?.status === "matched" && immediate.matchedGameId) {
+        navigateToMatch(immediate.matchedGameId);
+        return;
+      }
+    } catch {
+      // Realtime and the bounded fallback below still cover us either way.
+    }
+
+    // 2. REALTIME — the primary, low-latency path once matched. Same
+    // channel/filter/event shape as before; not redesigned.
+    const channel = supabase
+      .channel(`matchmaking_${childId}`)
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
           schema: "public",
           table: "matchmaking_queue",
-          filter: `child_id=eq.${childIdRef.current}`,
+          filter: `child_id=eq.${childId}`,
         },
         (payload) => {
           const row = payload.new as { status: string; matched_game_id: string | null };
@@ -159,25 +203,48 @@ export default function MatchmakingPage() {
         }
       )
       .subscribe((status) => {
-        if (status !== "SUBSCRIBED") return;
-        // The queue row was inserted by the RPC call above, before this
-        // subscription existed. Another player's find_or_create_match call
-        // could have claimed it in that gap, and Realtime only delivers
-        // events after this point, so that UPDATE would otherwise never
-        // arrive. One catch-up read of our own row closes the gap.
-        getMatchmakingQueueStatus(supabase, childId)
-          .then((row) => {
-            if (row?.status === "matched" && row.matchedGameId) {
-              navigateToMatch(row.matchedGameId);
-            }
-          })
-          .catch(() => {});
+        // CHANNEL_ERROR / TIMED_OUT / CLOSED are deliberately not handled
+        // with a reconnect here — the bounded fallback below is the
+        // recovery path for a connection that degrades or silently stops
+        // delivering, confirmed necessary by a real two-device production
+        // test where a live, previously-open subscription never delivered
+        // an UPDATE that arrived ~15s after it connected. Nothing to do
+        // here but not throw.
+        void status;
       });
+    channelRef.current = channel;
+
+    // 3. BOUNDED FALLBACK — a single 5s interval, purely a backstop for a
+    // delayed/disconnected/silently-missed Realtime event. Not unbounded
+    // polling: it always stops itself the moment a match is found (via
+    // navigateToMatch's own teardown), the search is cancelled
+    // (cancelSearch), or the component unmounts (the cleanup effect above)
+    // — never more than one interval alive at a time.
+    fallbackIntervalRef.current = window.setInterval(() => {
+      getMatchmakingQueueStatus(supabase, childId)
+        .then((row) => {
+          if (row?.status === "matched" && row.matchedGameId) {
+            navigateToMatch(row.matchedGameId);
+          }
+        })
+        .catch(() => {
+          // A transient failure here isn't fatal — Realtime or the next
+          // tick still cover us.
+        });
+    }, 5000);
   }
 
   async function cancelSearch() {
     if (view.status !== "searching" || !childIdRef.current) return;
+    if (fallbackIntervalRef.current) {
+      window.clearInterval(fallbackIntervalRef.current);
+      fallbackIntervalRef.current = null;
+    }
     const supabase = createClient();
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
     await cancelMatchmaking(supabase, childIdRef.current).catch(() => {});
     setView({ status: "idle", rating: view.rating });
   }
