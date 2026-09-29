@@ -47,7 +47,8 @@ import { buildOnlineGameRecord } from "@/lib/analysis/gameRecord";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import { TEXT } from "@/lib/designSystem";
 import { getTimeControl } from "@/content/timeControls";
-import type { Color } from "chess.js";
+import { Chess } from "chess.js";
+import type { Color, Square } from "chess.js";
 
 /**
  * Numeric-only rating result — no skill labels (Beginner/Intermediate/
@@ -135,6 +136,15 @@ export default function OnlineGamePage() {
     setWorldLocationId(readSelectedLocation());
   }, []);
   const [game, setGame] = useState<OnlineGame | null | "loading">("loading");
+  // The opponent's move that produced the CURRENT `game.fen`, passed to
+  // ChessBoard so it can animate that move instead of jumping straight to
+  // the new position — set only for a genuine opponent move (see the
+  // Realtime handler below, same condition already used for the move
+  // sound), never for our own move's server echo. Purely visual; ChessBoard
+  // itself verifies it against the authoritative fen before trusting it.
+  const [remoteMove, setRemoteMove] = useState<{ from: Square; to: Square; promotion?: string } | null>(
+    null
+  );
   const [openingMatch, setOpeningMatch] = useState<OpeningMatch | null>(null);
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const seenOpeningIdsRef = useRef<Set<string>>(new Set());
@@ -277,6 +287,31 @@ export default function OnlineGamePage() {
               playMoveSound(
                 lastSan.includes("#") ? "checkmate" : lastSan.includes("x") ? "capture" : "move"
               );
+              // Same authoritative data the sound above already trusts —
+              // replay the known-good SAN from the position we had before
+              // this update to recover the from/to/promotion ChessBoard
+              // needs to animate this move, rather than inventing anything.
+              // A replay failure here only costs the animation (ChessBoard
+              // falls back to its normal instant-jump); it can never affect
+              // game state, which `next` (server-authoritative) already is.
+              try {
+                const replay = new Chess(prev.fen);
+                const result = replay.move(lastSan);
+                if (result) {
+                  setRemoteMove({
+                    from: result.from as Square,
+                    to: result.to as Square,
+                    promotion: result.promotion,
+                  });
+                }
+              } catch {
+                setRemoteMove(null);
+              }
+            } else {
+              // This is the server echo of our OWN move — already animated
+              // optimistically the moment we made it, and never re-animated
+              // from a remoteMove that would now be stale.
+              setRemoteMove(null);
             }
           }
           setGame(next);
@@ -938,6 +973,7 @@ export default function OnlineGamePage() {
               pieceSetId={pieceSetId}
               onMove={(opts) => handleMove(opts.from, opts.to)}
               onGameOver={handleGameOver}
+              remoteMove={remoteMove ?? undefined}
             />
           </div>
         )}
