@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, useCallback, useRef, type RefObject } from "react";
 import { Chess, Square, PieceSymbol, Color } from "chess.js";
 import clsx from "clsx";
 import { stockfish, Difficulty } from "@/lib/chess-engine/stockfishEngine";
 import { getBoardSkin } from "@/content/boardSkins";
 import { getPieceSet } from "@/content/pieceSets";
 import { PieceImage } from "@/components/board/PieceImage";
+import { playMoveSound } from "@/lib/sound/moveSound";
 import type { PieceSetOption } from "@/lib/types";
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -30,6 +31,8 @@ const MOVE_EASING = "cubic-bezier(0.33, 0, 0.2, 1)";
 // `transitionend` ever arrives (reduced-motion, backgrounded tab, a
 // same-row/col move that only transitions one property, etc).
 const MOVE_ANIMATION_TIMEOUT_MS = MOVE_ANIMATION_MS + 150;
+/** Fade the slide overlay out over the static grid piece after landing. */
+const HANDOFF_FADE_MS = 80;
 const DEFAULT_GAME_OVER_PAUSE_MS = 1400;
 
 export interface ChessBoardProps {
@@ -182,87 +185,127 @@ type MoveAnim = {
   color: Color;
   /** Position before this ply — drawn while the slide runs. */
   fenBefore: string;
+  phase: "sliding" | "handoff";
 };
 
-function squareGridIndex(
-  square: Square,
-  ranks: readonly string[],
-  files: readonly string[]
-): { col: number; row: number } {
-  return { col: files.indexOf(square[0]), row: ranks.indexOf(square[1]) };
-}
-
 /**
- * Imperative slide — CSS `transform` transitions do not reliably interpolate
- * when the value uses custom properties (`var(--dx)`), which was causing
- * pieces to snap instead of glide. This overlay always starts at the origin
- * square, then transitions to explicit `translate3d(N%, N%, 0)` values.
+ * Imperative slide measured in pixels from the live square cells so the
+ * overlay lines up with the grid piece on landing. After the glide, the
+ * static piece is revealed underneath via a short opacity crossfade.
  */
 function MoveSlideOverlay({
-  from,
-  to,
+  fromSquare,
+  toSquare,
+  gridRef,
   piece,
   color,
   pieceSet,
+  onHandoffStart,
   onComplete,
 }: {
-  from: { col: number; row: number };
-  to: { col: number; row: number };
+  fromSquare: Square;
+  toSquare: Square;
+  gridRef: RefObject<HTMLDivElement | null>;
   piece: PieceSymbol;
   color: Color;
   pieceSet: PieceSetOption;
+  onHandoffStart: () => void;
   onComplete: () => void;
 }) {
   const slideRef = useRef<HTMLDivElement>(null);
+  const onHandoffStartRef = useRef(onHandoffStart);
   const onCompleteRef = useRef(onComplete);
+  onHandoffStartRef.current = onHandoffStart;
   onCompleteRef.current = onComplete;
 
   useLayoutEffect(() => {
     const el = slideRef.current;
-    if (!el) return;
+    const grid = gridRef.current;
+    if (!el || !grid) return;
 
-    const dx = (to.col - from.col) * 100;
-    const dy = (to.row - from.row) * 100;
+    const fromEl = grid.querySelector(
+      `[data-square="${fromSquare}"]`
+    ) as HTMLElement | null;
+    const toEl = grid.querySelector(
+      `[data-square="${toSquare}"]`
+    ) as HTMLElement | null;
+    if (!fromEl || !toEl) {
+      onCompleteRef.current();
+      return;
+    }
+
+    const gridRect = grid.getBoundingClientRect();
+    const fromRect = fromEl.getBoundingClientRect();
+    const toRect = toEl.getBoundingClientRect();
+    const left = fromRect.left - gridRect.left;
+    const top = fromRect.top - gridRect.top;
+    const dx = toRect.left - fromRect.left;
+    const dy = toRect.top - fromRect.top;
+
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+    el.style.width = `${fromRect.width}px`;
+    el.style.height = `${fromRect.height}px`;
+    el.style.opacity = "1";
+
+    let lifecycle: "sliding" | "handoff" | "done" = "sliding";
+    let fadeTimeout = 0;
 
     el.style.transition = "none";
     el.style.transform = "translate3d(0, 0, 0)";
-    // Force the browser to commit the origin transform before animating.
     void el.offsetWidth;
 
     let raf2 = 0;
     const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => {
         el.style.transition = `transform ${MOVE_ANIMATION_MS}ms ${MOVE_EASING}`;
-        el.style.transform = `translate3d(${dx}%, ${dy}%, 0)`;
+        el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
       });
     });
 
-    const finish = () => onCompleteRef.current();
+    const complete = () => {
+      if (lifecycle === "done") return;
+      lifecycle = "done";
+      onCompleteRef.current();
+    };
+
+    const beginHandoff = () => {
+      if (lifecycle !== "sliding") return;
+      lifecycle = "handoff";
+      el.style.transition = "none";
+      el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+      void el.offsetWidth;
+      onHandoffStartRef.current();
+      requestAnimationFrame(() => {
+        el.style.transition = `opacity ${HANDOFF_FADE_MS}ms ease-out`;
+        el.style.opacity = "0";
+      });
+      fadeTimeout = window.setTimeout(complete, HANDOFF_FADE_MS + 40);
+    };
+
     const handleEnd = (e: TransitionEvent) => {
-      if (e.propertyName === "transform") finish();
+      if (e.propertyName === "transform") beginHandoff();
+      if (e.propertyName === "opacity") complete();
     };
     el.addEventListener("transitionend", handleEnd);
-    const timeout = setTimeout(finish, MOVE_ANIMATION_TIMEOUT_MS);
+
+    const slideTimeout = setTimeout(beginHandoff, MOVE_ANIMATION_TIMEOUT_MS);
 
     return () => {
+      lifecycle = "done";
       cancelAnimationFrame(raf1);
       if (raf2) cancelAnimationFrame(raf2);
       el.removeEventListener("transitionend", handleEnd);
-      clearTimeout(timeout);
+      clearTimeout(slideTimeout);
+      clearTimeout(fadeTimeout);
     };
-  }, [from.col, from.row, to.col, to.row]);
+  }, [fromSquare, toSquare, gridRef]);
 
   return (
     <div className="pointer-events-none absolute inset-0 z-30">
       <div
         ref={slideRef}
         className="piece-move-slide absolute motion-reduce:!transition-none"
-        style={{
-          width: "12.5%",
-          height: "12.5%",
-          left: `${from.col * 12.5}%`,
-          top: `${from.row * 12.5}%`,
-        }}
       >
         <PieceImage set={pieceSet} piece={piece} color={color} />
       </div>
@@ -295,13 +338,14 @@ export function ChessBoard({
   // Purely-visual slide overlay. NEVER gates input or move legality.
   const [anim, setAnim] = useState<MoveAnim | null>(null);
   const animSeqRef = useRef(0);
+  const gridRef = useRef<HTMLDivElement>(null);
   const gameOverFiredRef = useRef(false);
 
   // While a slide is running, draw the pre-move position so the piece can
   // visibly leave its origin square instead of snapping to the destination.
   const displayGame = useMemo(() => {
     if (displayFen) return new Chess(displayFen);
-    if (anim?.fenBefore) return new Chess(anim.fenBefore);
+    if (anim?.fenBefore && anim.phase === "sliding") return new Chess(anim.fenBefore);
     return game;
   }, [displayFen, game, anim, renderTick]);
   const [selected, setSelected] = useState<Square | null>(null);
@@ -316,7 +360,12 @@ export function ChessBoard({
    * it happened. */
   const clearAnim = useCallback((seq: number) => {
     setAnim((cur) => (cur && cur.seq === seq ? null : cur));
-    forceRender((n) => n + 1);
+  }, []);
+
+  const startHandoff = useCallback((seq: number) => {
+    setAnim((cur) =>
+      cur && cur.seq === seq ? { ...cur, phase: "handoff" } : cur
+    );
   }, []);
 
   // A live square selection belongs to the current position, never to a
@@ -357,6 +406,14 @@ export function ChessBoard({
       }
       if (!result) return null;
 
+      // Priority: checkmate > capture > normal move — a capturing move that
+      // also delivers checkmate plays ONLY the checkmate sound. game.move()
+      // has already applied the move by this point, so game.isCheckmate()
+      // reflects the resulting position, not the one before this move.
+      playMoveSound(
+        game.isCheckmate() ? "checkmate" : result.captured ? "capture" : "move"
+      );
+
       setSelected(null);
       setLastMove({ from: result.from as Square, to: result.to as Square });
 
@@ -369,6 +426,7 @@ export function ChessBoard({
           piece: (result.promotion ?? result.piece) as PieceSymbol,
           color: result.color,
           fenBefore,
+          phase: "sliding",
         });
       }
 
@@ -559,8 +617,6 @@ export function ChessBoard({
   // Slide overlay geometry. Only shown when NOT reviewing a historical
   // position (a stale slide against `displayFen` would be nonsense).
   const animActive = anim != null && !displayFen;
-  const animFrom = animActive ? squareGridIndex(anim!.from, displayRanks, displayFiles) : null;
-  const animTo = animActive ? squareGridIndex(anim!.to, displayRanks, displayFiles) : null;
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
@@ -615,7 +671,8 @@ export function ChessBoard({
         />
       )}
       <div
-        className="grid grid-cols-8 grid-rows-8 overflow-visible"
+        ref={gridRef}
+        className="relative grid grid-cols-8 grid-rows-8 overflow-visible"
         style={
           skin.boardImageUrl
             ? {
@@ -635,16 +692,24 @@ export function ChessBoard({
             const isDark = (rIdx + fIdx) % 2 === 1;
             const isSelected = selected === square;
             const isLegalTarget = legalTargets.has(square);
-            const isLastMove = !displayFen && lastMove && (lastMove.from === square || lastMove.to === square);
+            const isLastMove =
+              !displayFen &&
+              lastMove &&
+              (lastMove.from === square ||
+                (lastMove.to === square && !animActive));
             const isCheckedKing = checkedKingSquare === square;
-            // While a piece is sliding IN to `to`, suppress the real piece
-            // there so there's never a double image. If the slide is
-            // cleared early for any reason the real piece simply appears —
-            // the board state was already correct underneath.
-            const hideForSlide = animActive && anim!.from === square;
+            // Suppress the origin square and the destination square while the
+            // overlay is in flight so the handoff to the static grid piece
+            // never double-paints or pops on landing.
+            const hideForSlide =
+              animActive &&
+              (anim!.phase === "sliding"
+                ? anim!.from === square || anim!.to === square
+                : anim!.from === square);
             const captureFade =
               animActive &&
               anim!.to === square &&
+              !hideForSlide &&
               piece != null &&
               piece.color !== anim!.color;
             // Inline style always wins over a Tailwind class, so the
@@ -680,6 +745,7 @@ export function ChessBoard({
             return (
               <button
                 key={square}
+                data-square={square}
                 onClick={() => handleSquareClick(square)}
                 className={clsx(
                   "relative flex items-center justify-center transition-colors w-full h-full overflow-visible",
@@ -735,13 +801,15 @@ export function ChessBoard({
             );
           })
         )}
-        {animActive && animFrom && animTo && (
+        {animActive && (
           <MoveSlideOverlay
-            from={animFrom}
-            to={animTo}
+            fromSquare={anim!.from}
+            toSquare={anim!.to}
+            gridRef={gridRef}
             piece={anim!.piece}
             color={anim!.color}
             pieceSet={pieceSet}
+            onHandoffStart={() => startHandoff(anim!.seq)}
             onComplete={() => clearAnim(anim!.seq)}
           />
         )}
