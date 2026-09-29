@@ -134,6 +134,18 @@ export interface ChessBoardProps {
   focusMode?: boolean;
   /** Milliseconds to linger on the final position before `onGameOver`. */
   gameOverPauseMs?: number;
+  /**
+   * Online multiplayer only — the opponent's move that produced the current
+   * `fen`, so it can slide like any other move instead of the board just
+   * jumping straight to the new position (which is what a plain external
+   * `fen` change always does — see the effect below). Purely visual: never
+   * calls `onMove`, never plays a sound (the caller already owns that for
+   * remote moves), and can never itself write anything back to the server.
+   * Verified against the authoritative `fen` before being trusted — a
+   * stale or mismatched value safely falls back to the ordinary instant
+   * jump rather than animating something incorrect.
+   */
+  remoteMove?: { from: Square; to: Square; promotion?: string };
 }
 
 /**
@@ -330,6 +342,7 @@ export function ChessBoard({
   arenaMode = false,
   focusMode = false,
   gameOverPauseMs = DEFAULT_GAME_OVER_PAUSE_MS,
+  remoteMove,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
   const skin = useMemo(() => getBoardSkin(boardSkinId), [boardSkinId]);
@@ -340,6 +353,10 @@ export function ChessBoard({
   const animSeqRef = useRef(0);
   const gridRef = useRef<HTMLDivElement>(null);
   const gameOverFiredRef = useRef(false);
+  // This component's own record of the `fen` it was previously showing —
+  // used only to give a `remoteMove` animation a real "before" position to
+  // slide from (see the effect below). Never used for anything else.
+  const prevFenRef = useRef(fen);
 
   // While a slide is running, draw the pre-move position so the piece can
   // visibly leave its origin square instead of snapping to the destination.
@@ -374,12 +391,53 @@ export function ChessBoard({
     if (displayFen) setSelected(null);
   }, [displayFen]);
 
-  // A new position (new game, online opponent move, puzzle step, review
-  // navigation) makes any in-flight slide stale — drop it immediately so
-  // it can never linger against a position it doesn't belong to.
+  // A new position (new game, puzzle step, review navigation, a settlement
+  // refetch) makes any in-flight slide stale — drop it immediately so it can
+  // never linger against a position it doesn't belong to. That default is
+  // unconditional for every caller except one case: online multiplayer's
+  // `remoteMove` names the specific move that produced this exact `fen`, so
+  // instead of just jumping there it replays that move from the position
+  // this component was PREVIOUSLY showing (`prevFenRef`, this component's
+  // own record — never trusts the caller for the "before" state) and, only
+  // if that replay lands on the exact same `fen` we were just given, animates
+  // it through the normal slide. Any mismatch (stale remoteMove, wrong game,
+  // replay error) falls straight through to the original instant-jump
+  // behavior — never a broken or incorrect-looking animation, worst case is
+  // no animation, which is exactly today's behavior for every other caller.
   useEffect(() => {
+    const fenBefore = prevFenRef.current;
+    prevFenRef.current = fen;
+
+    if (fenBefore && !displayFen && !readOnly && remoteMove && fenBefore !== fen) {
+      try {
+        const replay = new Chess(fenBefore);
+        const result = replay.move({
+          from: remoteMove.from,
+          to: remoteMove.to,
+          promotion: (remoteMove.promotion ?? "q") as "q",
+        });
+        if (result && replay.fen() === fen) {
+          setSelected(null);
+          setLastMove({ from: result.from as Square, to: result.to as Square });
+          const seq = ++animSeqRef.current;
+          setAnim({
+            seq,
+            from: result.from as Square,
+            to: result.to as Square,
+            piece: (result.promotion ?? result.piece) as PieceSymbol,
+            color: result.color,
+            fenBefore,
+            phase: "sliding",
+          });
+          return;
+        }
+      } catch {
+        // Fall through to the instant-jump default below.
+      }
+    }
+
     setAnim(null);
-  }, [fen, displayFen]);
+  }, [fen, displayFen, readOnly, remoteMove]);
 
   useEffect(() => {
     gameOverFiredRef.current = false;
