@@ -42,6 +42,7 @@ import { MoveList } from "@/components/game/MoveList";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
 import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { PostGameAnalysis } from "@/components/game/analysis/PostGameAnalysis";
+import { playMoveSound } from "@/lib/sound/moveSound";
 import { buildOnlineGameRecord } from "@/lib/analysis/gameRecord";
 import { recognizeOpening, OpeningMatch } from "@/lib/openings/recognitionEngine";
 import { TEXT } from "@/lib/designSystem";
@@ -160,6 +161,17 @@ export default function OnlineGamePage() {
   // has already dismissed — each offer is uniquely timestamped, so a new
   // offer after a declined one always compares as different and reappears.
   const [dismissedDrawOffer, setDismissedDrawOffer] = useState<string | null>(null);
+  // Both refs exist solely so the postgres_changes handler below (a stable
+  // closure created once per params.gameId, never re-subscribed on every
+  // render) can read the LATEST game/color without adding them as effect
+  // deps — same pattern already used by rematchRef above. Needed to tell an
+  // opponent's move apart from the server's own echo of our move (which
+  // fires this same UPDATE event) without inventing any new realtime
+  // mechanism: it's the identical row data submit_online_move already
+  // writes, just kept fresh for imperative use inside the handler.
+  const gameRef = useRef<OnlineGame | null | "loading">(game);
+  gameRef.current = game;
+  const myColorRef = useRef<Color | null>(null);
 
   // Load the current child + initial game state, then subscribe to live
   // updates (the opponent's moves and reactions arrive this way).
@@ -236,7 +248,38 @@ export default function OnlineGamePage() {
           filter: `id=eq.${params.gameId}`,
         },
         (payload) => {
-          setGame(payload.new as OnlineGame);
+          const next = payload.new as OnlineGame;
+          const prev = gameRef.current;
+          // A move was added to the row (moves.length grew). The mover is
+          // whoever's turn it was BEFORE this update — i.e. the opposite of
+          // next.current_turn, which already flips after every accepted
+          // move. If that mover isn't us, this is the opponent's move
+          // arriving — the one case ChessBoard's own applyMove() can never
+          // see, since it only re-keys off a new `fen` prop rather than
+          // running the move through chess.js locally. Skipped for our own
+          // move's server echo (already sounded locally, optimistically, at
+          // the moment we made it) to avoid a duplicate.
+          if (
+            prev &&
+            prev !== "loading" &&
+            next.moves.length > prev.moves.length &&
+            myColorRef.current
+          ) {
+            const moverColor: Color = next.current_turn === "w" ? "b" : "w";
+            if (moverColor !== myColorRef.current) {
+              // Priority: checkmate > capture > normal move. Both signals
+              // read directly off the server-generated SAN already stored
+              // in game.moves — standard chess notation appends "#" for a
+              // checkmating move and "x" for a capture — the same
+              // authoritative string the move list/opening recognizer
+              // already trust, not a new inference.
+              const lastSan = next.moves[next.moves.length - 1];
+              playMoveSound(
+                lastSan.includes("#") ? "checkmate" : lastSan.includes("x") ? "capture" : "move"
+              );
+            }
+          }
+          setGame(next);
         }
       )
       // Same channel, so this costs no additional Realtime connection.
@@ -773,6 +816,7 @@ export default function OnlineGamePage() {
   // --- Active game ---
   if (game.status === "active" && (isHost || isGuest)) {
     const myColor: Color = isHost ? game.host_color : game.host_color === "w" ? "b" : "w";
+    myColorRef.current = myColor;
     const myReactionRaw = isHost ? game.host_reaction : game.guest_reaction;
     const theirReactionRaw = isHost ? game.guest_reaction : game.host_reaction;
     // A draw offer rides the same reaction column (see DRAW_OFFER_PREFIX's
