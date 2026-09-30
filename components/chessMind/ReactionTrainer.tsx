@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -70,6 +71,7 @@ export function ReactionTrainer() {
   const childId = useRef<string | null>(null);
   const streakRef = useRef(0);
   const dailyLimit = useTrainYourMindDailyLimit(childIdState, "reaction");
+  const boardSize = useResponsiveBoardSize(340, { widthMultiplier: 0.85, maxSize: 650 });
 
   // Personal best is a per-viewer convenience; localStorage can throw in
   // private modes and preview contexts, so every access is guarded.
@@ -275,8 +277,8 @@ export function ReactionTrainer() {
               </span>
             </div>
 
-            <div className="w-full max-w-[360px] mx-auto">
-              <ChessBoard readOnly fen={challenge.fen} size={340} />
+            <div className="w-full mx-auto" style={{ maxWidth: boardSize }}>
+              <ChessBoard readOnly fen={challenge.fen} size={boardSize} />
             </div>
 
             <div className="grid grid-cols-2 gap-2">

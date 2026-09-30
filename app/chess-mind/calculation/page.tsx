@@ -10,6 +10,7 @@ import {
   getCalculationChallengesForLevel,
 } from "@/content/chessMindCalculation";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -53,6 +54,7 @@ export default function CalculationPage() {
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [boardKey, setBoardKey] = useState(0);
   const dailyLimit = useTrainYourMindDailyLimit(childId, "calculation");
+  const boardSize = useResponsiveBoardSize(320, { widthMultiplier: 0.85, maxSize: 650 });
 
   useEffect(() => {
     startChallenge(pickChallenge(1));
@@ -208,13 +210,13 @@ export default function CalculationPage() {
           <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
         </div>
 
-        <div className="mx-auto w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
+        <div className="mx-auto w-full max-w-md md:max-w-3xl rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
           <p className="font-classic-display text-base text-premium-ivory text-center">{challenge.prompt}</p>
 
           <ChessBoard
             key={boardKey}
             fen={displayFen}
-            size={320}
+            size={boardSize}
             readOnly={boardReadOnly}
             playableColor={boardPlayableColor}
             boardSkinId={boardSkinId}
