@@ -12,6 +12,9 @@ import { TEXT } from "@/lib/designSystem";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { useTrainYourMindDailyLimit } from "@/lib/trainYourMind/useDailyLimit";
+import { DailyLimitCard } from "@/components/trainYourMind/DailyLimitCard";
+import { DailyUsageIndicator } from "@/components/trainYourMind/DailyUsageIndicator";
 
 // Reuses real, already chess.js-verified positions from other Chess Mind
 // content instead of authoring a third position bank.
@@ -31,6 +34,7 @@ export default function MemoryPage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  const dailyLimit = useTrainYourMindDailyLimit(childId, "memory");
 
   useEffect(() => {
     setRound(pickRound());
@@ -48,12 +52,16 @@ export default function MemoryPage() {
     loadChild();
   }, []);
 
-  if (!round) {
+  if (!round || dailyLimit.loading) {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
       </>
     );
+  }
+
+  if (dailyLimit.reached) {
+    return <DailyLimitCard categoryLabel="Memory" />;
   }
 
   return (
@@ -65,6 +73,7 @@ export default function MemoryPage() {
             Look closely, then remember what you saw.
           </p>
         </div>
+        <DailyUsageIndicator usedToday={dailyLimit.usedToday} limit={dailyLimit.limit} isPremium={dailyLimit.isPremium} />
 
         <RevealChallenge
           key={JSON.stringify(round)}
@@ -77,6 +86,7 @@ export default function MemoryPage() {
           onCorrect={() => {
             setSolved((s) => s + 1);
             if (childId) recordChessMindSolve(createClient(), childId, "memory").catch(() => {});
+            dailyLimit.recordUse();
           }}
           onNext={() => setRound(pickRound())}
         />

@@ -17,6 +17,9 @@ import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { useTrainYourMindDailyLimit } from "@/lib/trainYourMind/useDailyLimit";
+import { DailyLimitCard } from "@/components/trainYourMind/DailyLimitCard";
+import { DailyUsageIndicator } from "@/components/trainYourMind/DailyUsageIndicator";
 import type { Square } from "chess.js";
 
 /** chess.js rejects a move object that specifies `promotion` when the
@@ -49,6 +52,7 @@ export default function CalculationPage() {
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [boardKey, setBoardKey] = useState(0);
+  const dailyLimit = useTrainYourMindDailyLimit(childId, "calculation");
 
   useEffect(() => {
     startChallenge(pickChallenge(1));
@@ -84,6 +88,7 @@ export default function CalculationPage() {
   function markSolved() {
     setSolved((s) => s + 1);
     if (childId) recordChessMindSolve(createClient(), childId, "calculation").catch(() => {});
+    dailyLimit.recordUse();
   }
 
   function handleMove(opts: { from: Square; to: Square }) {
@@ -150,12 +155,16 @@ export default function CalculationPage() {
     startChallenge(pickChallenge(level, challenge.id));
   }
 
-  if (!challenge) {
+  if (!challenge || dailyLimit.loading) {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
       </>
     );
+  }
+
+  if (dailyLimit.reached) {
+    return <DailyLimitCard categoryLabel="Calculation" />;
   }
 
   const levelInfo = CALCULATION_LEVELS.find((l) => l.level === level)!;
@@ -172,6 +181,7 @@ export default function CalculationPage() {
             Find the best move, then look further ahead.
           </p>
         </div>
+        <DailyUsageIndicator usedToday={dailyLimit.usedToday} limit={dailyLimit.limit} isPremium={dailyLimit.isPremium} />
 
         <div className="flex flex-wrap gap-1.5 justify-center max-w-md" role="group" aria-label="Choose a level">
           {CALCULATION_LEVELS.map((l) => (

@@ -12,6 +12,9 @@ import { TEXT } from "@/lib/designSystem";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { useTrainYourMindDailyLimit } from "@/lib/trainYourMind/useDailyLimit";
+import { DailyLimitCard } from "@/components/trainYourMind/DailyLimitCard";
+import { DailyUsageIndicator } from "@/components/trainYourMind/DailyUsageIndicator";
 
 const POSITION_POOL = [
   ...CHESS_MATH_POSITIONS.map((p) => p.fen),
@@ -40,6 +43,7 @@ export default function VisualizationPage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  const dailyLimit = useTrainYourMindDailyLimit(childId, "visualization");
 
   useEffect(() => {
     setRound(pickRound());
@@ -57,12 +61,16 @@ export default function VisualizationPage() {
     loadChild();
   }, []);
 
-  if (!round) {
+  if (!round || dailyLimit.loading) {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
       </>
     );
+  }
+
+  if (dailyLimit.reached) {
+    return <DailyLimitCard categoryLabel="Visualization" />;
   }
 
   return (
@@ -74,6 +82,7 @@ export default function VisualizationPage() {
             See the position, then picture where a piece can go.
           </p>
         </div>
+        <DailyUsageIndicator usedToday={dailyLimit.usedToday} limit={dailyLimit.limit} isPremium={dailyLimit.isPremium} />
 
         <RevealChallenge
           key={JSON.stringify(round)}
@@ -86,6 +95,7 @@ export default function VisualizationPage() {
           onCorrect={() => {
             setSolved((s) => s + 1);
             if (childId) recordChessMindSolve(createClient(), childId, "visualization").catch(() => {});
+            dailyLimit.recordUse();
           }}
           onNext={() => setRound(pickRound())}
         />

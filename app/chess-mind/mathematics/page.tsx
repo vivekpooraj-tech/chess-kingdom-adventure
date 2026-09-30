@@ -20,6 +20,9 @@ import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { useTrainYourMindDailyLimit } from "@/lib/trainYourMind/useDailyLimit";
+import { DailyLimitCard } from "@/components/trainYourMind/DailyLimitCard";
+import { DailyUsageIndicator } from "@/components/trainYourMind/DailyUsageIndicator";
 
 type Tier = "Beginner" | "Intermediate" | "Advanced";
 
@@ -105,6 +108,7 @@ export default function ChessMathematicsPage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  const dailyLimit = useTrainYourMindDailyLimit(childId, "mathematics");
 
   useEffect(() => {
     setRound(generateRound("Beginner"));
@@ -139,6 +143,7 @@ export default function ChessMathematicsPage() {
       if (childId) {
         recordChessMindSolve(createClient(), childId, "mathematics").catch(() => {});
       }
+      dailyLimit.recordUse();
     } else {
       setStreak(0);
     }
@@ -149,12 +154,16 @@ export default function ChessMathematicsPage() {
     setSelected(null);
   }
 
-  if (!round) {
+  if (!round || dailyLimit.loading) {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
       </>
     );
+  }
+
+  if (dailyLimit.reached) {
+    return <DailyLimitCard categoryLabel="Chess Mathematics" />;
   }
 
   const isCorrect = selected !== null && selected === round.answer;
@@ -169,6 +178,7 @@ export default function ChessMathematicsPage() {
             chess.
           </p>
         </div>
+        <DailyUsageIndicator usedToday={dailyLimit.usedToday} limit={dailyLimit.limit} isPremium={dailyLimit.isPremium} />
 
         <div className="flex items-center gap-3">
           <span className="font-classic-body text-[11px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-3 py-1">

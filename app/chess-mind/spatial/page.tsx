@@ -18,6 +18,9 @@ import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { useTrainYourMindDailyLimit } from "@/lib/trainYourMind/useDailyLimit";
+import { DailyLimitCard } from "@/components/trainYourMind/DailyLimitCard";
+import { DailyUsageIndicator } from "@/components/trainYourMind/DailyUsageIndicator";
 
 type Tier = "Beginner" | "Intermediate" | "Advanced";
 
@@ -73,6 +76,7 @@ export default function SpatialThinkingPage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  const dailyLimit = useTrainYourMindDailyLimit(childId, "spatial");
 
   useEffect(() => {
     setRound(pickRound("Beginner"));
@@ -111,6 +115,7 @@ export default function SpatialThinkingPage() {
       if (childId) {
         recordChessMindSolve(createClient(), childId, "spatial").catch(() => {});
       }
+      dailyLimit.recordUse();
     } else {
       setStreak(0);
     }
@@ -121,12 +126,16 @@ export default function SpatialThinkingPage() {
     setSelected(null);
   }
 
-  if (!round) {
+  if (!round || dailyLimit.loading) {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
       </>
     );
+  }
+
+  if (dailyLimit.reached) {
+    return <DailyLimitCard categoryLabel="Spatial Thinking" />;
   }
 
   const isCorrect = selected !== null && selected === round.question.correctAnswer;
@@ -140,6 +149,7 @@ export default function SpatialThinkingPage() {
             How pieces move through space — real positions, real reach.
           </p>
         </div>
+        <DailyUsageIndicator usedToday={dailyLimit.usedToday} limit={dailyLimit.limit} isPremium={dailyLimit.isPremium} />
 
         <div className="flex items-center gap-3">
           <span className="font-classic-body text-[11px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-3 py-1">
