@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Chess } from "chess.js";
 import { PATTERN_CHALLENGES, PatternChallenge } from "@/content/chessMindPatterns";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -37,6 +38,7 @@ export default function PatternRecognitionPage() {
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [boardKey, setBoardKey] = useState(0);
+  const boardSize = useResponsiveBoardSize(320, { widthMultiplier: 0.85, maxSize: 720 });
 
   useEffect(() => {
     setChallenge(pickChallenge());
@@ -115,7 +117,7 @@ export default function PatternRecognitionPage() {
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="medium">
         <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Pattern Recognition</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">
@@ -130,7 +132,7 @@ export default function PatternRecognitionPage() {
           <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
         </div>
 
-        <div className="mx-auto w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
+        <div className="mx-auto w-full max-w-md md:max-w-3xl rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
           <p className="font-classic-display text-base text-premium-ivory text-center">
             {challenge.prompt}
           </p>
@@ -138,7 +140,7 @@ export default function PatternRecognitionPage() {
           <ChessBoard
             key={boardKey}
             fen={challenge.fen}
-            size={320}
+            size={boardSize}
             readOnly={challenge.type === "pin" || status !== "playing"}
             playableColor={challenge.type !== "pin" ? sideToMove : undefined}
             boardSkinId={boardSkinId}

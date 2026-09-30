@@ -11,6 +11,7 @@ import {
   SpatialQuestion,
 } from "@/lib/chessMind/spatialQuestions";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -73,6 +74,7 @@ export default function SpatialThinkingPage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  const boardSize = useResponsiveBoardSize(220, { widthMultiplier: 0.85, maxSize: 720 });
 
   useEffect(() => {
     setRound(pickRound("Beginner"));
@@ -133,7 +135,7 @@ export default function SpatialThinkingPage() {
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="medium">
         <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Spatial Thinking</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">
@@ -148,10 +150,10 @@ export default function SpatialThinkingPage() {
           <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
         </div>
 
-        <div className="mx-auto w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-5">
+        <div className="mx-auto w-full max-w-md md:max-w-3xl rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-5">
           <ChessBoard
             fen={round.fen}
-            size={220}
+            size={boardSize}
             readOnly
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}

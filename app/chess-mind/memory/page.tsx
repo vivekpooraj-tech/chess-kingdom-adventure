@@ -58,7 +58,7 @@ export default function MemoryPage() {
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="medium">
         <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Memory</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">

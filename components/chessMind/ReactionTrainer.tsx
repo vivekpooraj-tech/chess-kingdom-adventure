@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -55,6 +56,7 @@ export function ReactionTrainer() {
   const [stats, setStats] = useState<SessionStats>(EMPTY);
   const [bestMs, setBestMs] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
+  const boardSize = useResponsiveBoardSize(340, { widthMultiplier: 0.85, maxSize: 720 });
 
   const startedAt = useRef<number | null>(null);
   const prefetched = useRef<ReactionChallenge | null>(null);
@@ -207,7 +209,7 @@ export function ReactionTrainer() {
 
   return (
     <main className="min-h-screen bg-premium-midnight px-5 pt-6 pb-nav-safe">
-      <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+      <div className="mx-auto flex w-full max-w-md md:max-w-3xl flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <Link
             href="/chess-mind"
@@ -257,8 +259,8 @@ export function ReactionTrainer() {
               </span>
             </div>
 
-            <div className="w-full max-w-[360px] mx-auto">
-              <ChessBoard readOnly fen={challenge.fen} size={340} />
+            <div className="w-full mx-auto" style={{ maxWidth: boardSize }}>
+              <ChessBoard readOnly fen={challenge.fen} size={boardSize} />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
