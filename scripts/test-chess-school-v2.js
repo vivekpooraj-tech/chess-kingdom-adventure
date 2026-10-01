@@ -104,6 +104,33 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
   check("teach steps are short — never a wall of text", teachSteps.every((st) => st.lines.length <= 4 && st.lines.every((l) => l.length <= 160)));
 }
 
+// --- 2b. Session 1 piece intro and beginner board guidance -----------------
+{
+  const s1 = C.getSession(1);
+  const intro = s1.steps.find((st) => st.type === "piece_intro");
+  const guided1 = s1.steps.find((st) => st.id === "s01-guided");
+  const guided2 = s1.steps.find((st) => st.id === "s01-guided-2");
+  check("only session 1 has a piece_intro step", SESSIONS.filter((s) => s.steps.some((st) => st.type === "piece_intro")).length === 1);
+  check("session 1 has exactly one piece_intro step", s1.steps.filter((st) => st.type === "piece_intro").length === 1);
+  check("piece_intro sits after teach and before the first move", (() => {
+    const idx = s1.steps.findIndex((st) => st.id === "s01-piece-intro");
+    const teachIdx = s1.steps.findIndex((st) => st.id === "s01-teach");
+    const guidedIdx = s1.steps.findIndex((st) => st.id === "s01-guided");
+    return idx === teachIdx + 1 && idx === guidedIdx - 1;
+  })());
+  check("piece_intro has six cards in pawn-rook-knight-bishop-queen-king order", intro && intro.cards.map((c) => c.piece).join(",") === "pawn,rook,knight,bishop,queen,king");
+  check("every piece_intro card names the piece and explains movement", intro && intro.cards.every((c) => c.name.length > 3 && c.lines.length >= 1 && c.highlightSquares.length >= 1));
+  check("session 1 first guided move highlights e2 and e4 with an arrow", guided1 && guided1.highlightSquares.join(",") === "e2,e4" && guided1.arrows[0].from === "e2" && guided1.arrows[0].to === "e4");
+  check("session 1 queen-pawn guided step identifies queen, pawn, and destination", guided2 && guided2.highlightSquares.join(",") === "d1,d2,d4" && guided2.arrows.some((a) => a.from === "d2" && a.to === "d4"));
+  check("sessions 1-2 guided boards use strong visual guidance", [1, 2].every((n) => C.getSession(n).steps.filter((st) => st.type === "guided_board").every((st) => st.visualGuidance === "strong")));
+  check("sessions 4-5 guided boards use medium visual guidance", [4, 5].every((n) => C.getSession(n).steps.find((st) => st.type === "guided_board")?.visualGuidance === "medium"));
+  check("session 6 guided board uses light visual guidance", C.getSession(6).steps.find((st) => st.type === "guided_board")?.visualGuidance === "light");
+  const runner = read("components", "school", "v2", "SessionRunner.tsx");
+  const stepsSrc = read("components", "school", "v2", "steps.tsx");
+  check("SessionRunner renders piece_intro", /case "piece_intro"/.test(runner));
+  check("steps exports PieceIntroStepView with TeachingOverlay", /PieceIntroStepView/.test(stepsSrc) && /TeachingOverlay/.test(stepsSrc));
+}
+
 // --- 3. Every position is real and every answer is legal ------------------
 {
   const tryMove = (fen, mv) => MV.canonicalSan(fen, mv) !== null;
@@ -113,6 +140,9 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
       const w = `${s.id}/${st.id}`;
       const fens = [];
       if (st.type === "teach" && st.fen) fens.push([st.fen, []]);
+      if (st.type === "piece_intro") {
+        for (const card of st.cards) fens.push([card.fen, [], card.piece]);
+      }
       if (st.type === "guided_board") fens.push([st.fen, st.acceptMoves]);
       if (st.type === "bot_match" && st.fen) fens.push([st.fen, []]);
       if (st.type === "puzzle_drill" || st.type === "exam") {

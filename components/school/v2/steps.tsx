@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { TeachingOverlay } from "@/components/board/TeachingOverlay";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
+import type { TeachingArrow } from "@/lib/board/teachingOverlay";
 import { moveMatches, canonicalSan } from "@/lib/school/v2/moves";
 import { drillOutcome } from "@/lib/school/v2/progress";
 import {
@@ -23,10 +25,12 @@ import type {
   ExamStep,
   GuidedBoardStep,
   PassAndPlayStep,
+  PieceIntroStep,
   PuzzleDrillStep,
   RecapStep,
   SchoolPuzzle,
   TeachStep,
+  VisualGuidanceLevel,
 } from "@/content/school/types";
 import { MilestoneCard, OllieCoach } from "./Coach";
 
@@ -41,11 +45,68 @@ import { MilestoneCard, OllieCoach } from "./Coach";
  * list in content/school/sessions.ts instead of a hand-written page.
  */
 
-// The board asks for this much and clamps itself to the viewport (width on a
-// phone, 75vh anywhere). 520 lets a tablet use its space instead of showing a
-// phone-sized board in the middle of a wide column; a 411px phone still gets
-// the same 395px board it always did.
-export const BOARD = 520;
+// Upper bound passed to ChessBoard — actual width comes from SchoolBoardFrame.
+export const BOARD = 720;
+
+/**
+ * Sizes the lesson board from available viewport/layout space. ChessBoard uses
+ * focusMode inside so width follows this shell instead of the global mobile
+ * breakout margins (which assume px-6 parents School does not use).
+ */
+export function SchoolBoardFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="mx-auto w-full max-w-full [width:min(calc(100vw-1rem),calc(100vw-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)-1rem),88dvh,720px)] md:[width:min(calc(100vw-2rem),min(85dvh,720px),720px)] lg:[width:min(100%,min(88dvh,680px),720px)]"
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Default overlay intensity by session — strong early, fading by session 7. */
+function defaultGuidanceLevel(sessionNumber: number): VisualGuidanceLevel {
+  if (sessionNumber <= 2) return "strong";
+  if (sessionNumber <= 4) return "medium";
+  if (sessionNumber <= 6) return "light";
+  return "none";
+}
+
+function guidancePulse(level: VisualGuidanceLevel): boolean {
+  return level === "strong" || level === "medium";
+}
+
+/**
+ * Board plus TeachingOverlay sibling. Overlay scales with the board frame and
+ * never intercepts taps — the child still plays on the real ChessBoard.
+ */
+function SchoolBoardWithOverlay({
+  squares = [],
+  arrows = [],
+  pulse = true,
+  children,
+}: {
+  squares?: string[];
+  arrows?: TeachingArrow[];
+  pulse?: boolean;
+  children: React.ReactNode;
+}) {
+  const hasOverlay = squares.length > 0 || arrows.length > 0;
+  return (
+    <div className="relative">
+      <SchoolBoardFrame>{children}</SchoolBoardFrame>
+      {hasOverlay ? <TeachingOverlay squares={squares} arrows={arrows} pulse={pulse} /> : null}
+    </div>
+  );
+}
+
+const PIECE_INTRO_IMAGE: Record<string, string> = {
+  pawn: "/pieces/wood-classic/light/pawn.svg",
+  rook: "/pieces/wood-classic/light/rook.svg",
+  knight: "/pieces/wood-classic/light/knight.svg",
+  bishop: "/pieces/wood-classic/light/bishop.svg",
+  queen: "/pieces/wood-classic/light/queen.svg",
+  king: "/pieces/wood-classic/light/king.svg",
+};
 
 interface StepProps<T> {
   step: T;
@@ -63,9 +124,9 @@ export function TeachStepView({ step, ollie, onComplete }: StepProps<TeachStep>)
       <OllieCoach line={ollie.intro} />
 
       {step.fen ? (
-        <div className="flex justify-center">
-          <ChessBoard fen={step.fen} readOnly size={BOARD} />
-        </div>
+        <SchoolBoardFrame>
+          <ChessBoard fen={step.fen} readOnly focusMode size={BOARD} />
+        </SchoolBoardFrame>
       ) : null}
 
       <div className="rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
@@ -87,6 +148,81 @@ export function TeachStepView({ step, ollie, onComplete }: StepProps<TeachStep>)
   );
 }
 
+// ───────────────────────────────────── piece intro ───────────────────────────
+export function PieceIntroStepView({ step, onComplete }: StepProps<PieceIntroStep>) {
+  const [cardIndex, setCardIndex] = useState(0);
+  const [lineIndex, setLineIndex] = useState(0);
+
+  const card = step.cards[cardIndex];
+  const lastCard = cardIndex >= step.cards.length - 1;
+  const showingIntro = cardIndex === 0 && lineIndex === 0;
+  const ollieLine = showingIntro ? step.introLine : card.lines[lineIndex];
+  const bodyLine = showingIntro ? card.lines[0] : card.lines[lineIndex];
+  const onLastLine = lineIndex >= card.lines.length - 1;
+
+  const advance = () => {
+    if (showingIntro) {
+      if (card.lines.length > 1) {
+        setLineIndex(1);
+        return;
+      }
+      if (!lastCard) {
+        setCardIndex((i) => i + 1);
+        setLineIndex(0);
+        return;
+      }
+      onComplete();
+      return;
+    }
+    if (!onLastLine) {
+      setLineIndex((i) => i + 1);
+      return;
+    }
+    if (!lastCard) {
+      setCardIndex((i) => i + 1);
+      setLineIndex(0);
+      return;
+    }
+    onComplete();
+  };
+
+  const buttonLabel = lastCard && (onLastLine || (showingIntro && card.lines.length === 1))
+    ? "Let's play!"
+    : "Next";
+
+  return (
+    <div className="flex flex-col gap-4">
+      <OllieCoach line={ollieLine} />
+
+      <div className="flex items-center gap-4 rounded-premiumCard border border-white/10 bg-white/[0.04] p-4">
+        <img src={PIECE_INTRO_IMAGE[card.piece]} alt="" className="h-16 w-16 shrink-0" />
+        <div>
+          <p className={TEXT.subheading}>{card.name}</p>
+          <p className={`${TEXT.caption} mt-1`}>
+            Piece {cardIndex + 1} of {step.cards.length}
+          </p>
+        </div>
+      </div>
+
+      <SchoolBoardWithOverlay
+        squares={[...card.highlightSquares]}
+        arrows={[...card.arrows]}
+        pulse
+      >
+        <ChessBoard fen={card.fen} readOnly focusMode size={BOARD} />
+      </SchoolBoardWithOverlay>
+
+      <div className="rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
+        <p className={`${TEXT.body} text-premium-ivory/90`}>{bodyLine}</p>
+      </div>
+
+      <Button tone="premium" block onClick={advance}>
+        {buttonLabel}
+      </Button>
+    </div>
+  );
+}
+
 // ──────────────────────────────────── guided board ───────────────────────────
 /**
  * The hint ladder is the core teaching mechanic, and it is deliberately slow.
@@ -96,12 +232,18 @@ export function TeachStepView({ step, ollie, onComplete }: StepProps<TeachStep>)
  * who gets it right on attempt two learned something; a child who was handed
  * the answer on attempt one learned to wait for the answer.
  */
-export function GuidedBoardStepView({ step, ollie, onComplete }: StepProps<GuidedBoardStep>) {
+export function GuidedBoardStepView({
+  step,
+  ollie,
+  sessionNumber = 99,
+  onComplete,
+}: StepProps<GuidedBoardStep> & { sessionNumber?: number }) {
   const [attempts, setAttempts] = useState(0);
   const [illegal, setIllegal] = useState(0);
   const [solved, setSolved] = useState(false);
   const [boardKey, setBoardKey] = useState(0);
   const [hintShown, setHintShown] = useState(false);
+  const [openingIndex, setOpeningIndex] = useState(0);
   // Set the moment the solving move itself delivers checkmate (ChessBoard's
   // onMove reports isCheckmate directly -- nothing here decides this, chess.js
   // does). Any future guided_board whose solution happens to mate gets this
@@ -130,6 +272,14 @@ export function GuidedBoardStepView({ step, ollie, onComplete }: StepProps<Guide
   // reaches the rung that names the move. A voluntary hint before any
   // attempt is always the gentlest one.
   const hintIndex = Math.max(0, Math.min(attempts - 1, step.hintLadder.length - 1));
+  const openingLines = step.openingLines ?? [];
+  const openingComplete = openingLines.length === 0 || openingIndex >= openingLines.length;
+  const guidanceLevel = step.visualGuidance ?? defaultGuidanceLevel(sessionNumber);
+  const overlaySquares =
+    !solved && guidanceLevel !== "none" ? [...(step.highlightSquares ?? [])] : [];
+  const overlayArrows =
+    !solved && guidanceLevel !== "none" ? [...(step.arrows ?? [])] : [];
+  const overlayPulse = guidancePulse(guidanceLevel);
   // The coach line answers "what should I do now?" at every moment: the goal
   // before any tap, the content's own correction after the first miss (it
   // names what the wrong move missed), a rotating nudge after that, a gentle
@@ -137,6 +287,8 @@ export function GuidedBoardStepView({ step, ollie, onComplete }: StepProps<Guide
   // was solved, not just that it was.
   const coachLine = solved
     ? perseveranceLine(attempts)
+    : !openingComplete
+    ? openingLines[openingIndex]
     : illegal > 0 && attempts === 0
     ? illegalLine(illegal - 1)
     : attempts === 0
@@ -171,14 +323,15 @@ export function GuidedBoardStepView({ step, ollie, onComplete }: StepProps<Guide
   if (mateAfterFen) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex justify-center">
+        <SchoolBoardFrame>
           <ChessBoard
             key={`mate-${matePhase}`}
             fen={matePhase === "before" ? step.fen : mateAfterFen}
             readOnly
+            focusMode
             size={BOARD}
           />
-        </div>
+        </SchoolBoardFrame>
         <div
           className={`rounded-premiumCard border border-premium-gold/40 bg-gradient-to-b from-premium-gold/15 to-transparent p-6 text-center transition-all duration-500 ${
             mateRevealed ? "opacity-100 scale-100" : "opacity-0 scale-95"
@@ -212,7 +365,11 @@ export function GuidedBoardStepView({ step, ollie, onComplete }: StepProps<Guide
     <div className="flex flex-col gap-4">
       <OllieCoach line={coachLine} tone={solved ? "proud" : attempts > 0 ? "warm" : "calm"} />
 
-      <div className="flex justify-center">
+      <SchoolBoardWithOverlay
+        squares={overlaySquares}
+        arrows={overlayArrows}
+        pulse={overlayPulse}
+      >
         <ChessBoard
           key={boardKey}
           fen={step.fen}
@@ -221,9 +378,20 @@ export function GuidedBoardStepView({ step, ollie, onComplete }: StepProps<Guide
           onIllegalAttempt={() => {
             if (!solved) setIllegal((n) => n + 1);
           }}
+          focusMode
           size={BOARD}
         />
-      </div>
+      </SchoolBoardWithOverlay>
+
+      {!solved && openingLines.length > 0 && !openingComplete ? (
+        <Button
+          tone="premium"
+          block
+          onClick={() => setOpeningIndex((i) => i + 1)}
+        >
+          {openingIndex < openingLines.length - 1 ? "Next" : "Got it — my turn!"}
+        </Button>
+      ) : null}
 
       {!solved && (hintShown || attempts > 0) ? (
         <div className="rounded-2xl border border-premium-gold/25 bg-premium-gold/[0.06] px-4 py-3">
@@ -445,7 +613,7 @@ function SinglePuzzle({
         line={coach}
         tone={state === "correct" ? "proud" : attempts > 0 || state === "revealed" ? "warm" : "calm"}
       />
-      <div className="flex justify-center">
+      <SchoolBoardFrame>
         <ChessBoard
           key={`${boardKey}-${state}`}
           fen={state === "revealed" ? revealedFen : puzzle.fen}
@@ -455,9 +623,10 @@ function SinglePuzzle({
             if (state === "playing") setIllegal((n) => n + 1);
           }}
           readOnly={state !== "playing"}
+          focusMode
           size={BOARD}
         />
-      </div>
+      </SchoolBoardFrame>
       {state !== "playing" ? (
         <Button tone="premium" block onClick={() => onResult(state === "correct")}>
           {state === "correct" ? "Next" : "Okay, next one"}
@@ -529,18 +698,19 @@ export function BotMatchStepView({ step, ollie, onComplete }: StepProps<BotMatch
     <div className="flex flex-col gap-4">
       <OllieCoach line={line} tone={over?.winner === "w" || reached ? "proud" : "calm"} />
 
-      <div className="flex justify-center">
+      <SchoolBoardFrame>
         <ChessBoard
           fen={step.fen}
           playableColor="w"
           opponent="stockfish"
           difficulty="easy"
+          focusMode
           size={BOARD}
           onMove={() => setMoves((m) => m + 1)}
           onPositionChange={({ turn: t }) => setTurn(t)}
           onGameOver={(r) => setOver({ winner: r.winner, isCheckmate: r.isCheckmate })}
         />
-      </div>
+      </SchoolBoardFrame>
 
       {/* Whose turn it is, always visible. A six-year-old waiting for a move
           that is theirs to make is the most common way a game "gets stuck". */}
@@ -688,8 +858,9 @@ export function PassAndPlayStepView({ step, ollie, onComplete }: StepProps<PassA
         ) : null}
       </div>
 
-      <div className="flex justify-center">
+      <SchoolBoardFrame>
         <ChessBoard
+          focusMode
           size={BOARD}
           onPositionChange={({ history, turn: t, isCheck }) => {
             setPlies(history.length);
@@ -698,7 +869,7 @@ export function PassAndPlayStepView({ step, ollie, onComplete }: StepProps<PassA
           }}
           onGameOver={(r) => setOver({ winner: r.winner, isCheckmate: r.isCheckmate, isDraw: r.isDraw })}
         />
-      </div>
+      </SchoolBoardFrame>
 
       {/* The proper result screen Part 2 asks for — WHITE WINS / BLACK WINS /
           DRAW — separate from the emotional line above, which never blocks on

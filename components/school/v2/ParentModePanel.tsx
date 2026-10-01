@@ -8,7 +8,7 @@ import { TEXT } from "@/lib/designSystem";
 import { moveMatches } from "@/lib/school/v2/moves";
 import type { ParentModeSessionStep } from "@/content/school/types";
 import { OllieCoach } from "./Coach";
-import { BOARD } from "./steps";
+import { BOARD, SchoolBoardFrame } from "./steps";
 import { PARENT_MODE_LINES } from "@/lib/school/v2/ollieLines";
 
 /**
@@ -133,16 +133,17 @@ export function ParentModePanel({
         <OllieCoach line={beat.childGoal} />
       )}
 
-      <div className="flex justify-center">
+      <SchoolBoardFrame>
         {/* key on the beat so the board resets its internal game between beats */}
         <ChessBoard
           key={`beat-${beatIndex}-${boardKey}`}
           fen={beat.fen}
           playableColor={isParentTurn ? "b" : "w"}
           onMove={handleMove}
+          focusMode
           size={BOARD}
         />
-      </div>
+      </SchoolBoardFrame>
 
       {nudge ? <p className={`${TEXT.caption} text-center text-amber-200/80`}>{nudge}</p> : null}
 

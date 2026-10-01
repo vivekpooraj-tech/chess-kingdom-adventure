@@ -21,6 +21,7 @@ import {
   DrillStepView,
   GuidedBoardStepView,
   PassAndPlayStepView,
+  PieceIntroStepView,
   RecapStepView,
   TeachStepView,
 } from "./steps";
@@ -224,8 +225,17 @@ function renderStep(
   switch (step.type) {
     case "teach":
       return <TeachStepView step={step} ollie={ollie} onComplete={onComplete} />;
+    case "piece_intro":
+      return <PieceIntroStepView step={step} ollie={ollie} onComplete={onComplete} />;
     case "guided_board":
-      return <GuidedBoardStepView step={step} ollie={ollie} onComplete={onComplete} />;
+      return (
+        <GuidedBoardStepView
+          step={step}
+          ollie={ollie}
+          sessionNumber={session.number}
+          onComplete={onComplete}
+        />
+      );
     case "puzzle_drill":
     case "exam":
       return <DrillStepView step={step} ollie={ollie} onComplete={onComplete} />;
@@ -257,7 +267,7 @@ function Frame({
 }) {
   return (
     <main
-      className={`relative isolate mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pb-16 pt-4 ${
+      className={`relative isolate mx-auto flex w-full max-w-full flex-col gap-5 px-2 pb-16 pt-4 sm:max-w-xl sm:px-4 md:max-w-4xl lg:max-w-3xl ${
         session.starred ? "school-starred" : ""
       }`}
     >

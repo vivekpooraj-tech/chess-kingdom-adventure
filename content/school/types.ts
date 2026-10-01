@@ -24,6 +24,7 @@
 /** The kinds of step a session can be built from. */
 export type SchoolStepType =
   | "teach"
+  | "piece_intro"
   | "guided_board"
   | "puzzle_drill"
   | "bot_match"
@@ -157,6 +158,33 @@ export interface TeachStep extends StepBase {
   fen?: string;
 }
 
+/** Arrow drawn over the board for teaching — square names only. */
+export interface SchoolTeachingArrow {
+  from: string;
+  to: string;
+}
+
+/** How loudly the board draws attention before the child moves. */
+export type VisualGuidanceLevel = "strong" | "medium" | "light" | "none";
+
+/** One piece in the Session 1 carousel: name, movement, and a mini demo. */
+export interface PieceIntroCard {
+  piece: "pawn" | "rook" | "knight" | "bishop" | "queen" | "king";
+  name: string;
+  /** One or two short lines about how this piece moves. */
+  lines: readonly string[];
+  fen: string;
+  highlightSquares: readonly string[];
+  arrows: readonly SchoolTeachingArrow[];
+}
+
+export interface PieceIntroStep extends StepBase {
+  type: "piece_intro";
+  /** Said once before the first card. */
+  introLine: string;
+  cards: readonly PieceIntroCard[];
+}
+
 export interface GuidedBoardStep extends StepBase {
   type: "guided_board";
   fen: string;
@@ -171,6 +199,17 @@ export interface GuidedBoardStep extends StepBase {
   hintLadder: readonly string[];
   /** Said when the child plays something legal but not the goal. */
   onWrong: string;
+  /**
+   * Short coach lines shown in order before the goal — for absolute beginners
+   * who need the board identified piece by piece.
+   */
+  openingLines?: readonly string[];
+  /** Squares to ring-highlight while the child is solving. */
+  highlightSquares?: readonly string[];
+  /** Movement arrows drawn over the board. */
+  arrows?: readonly SchoolTeachingArrow[];
+  /** Overrides the session-number default for overlay intensity. */
+  visualGuidance?: VisualGuidanceLevel;
 }
 
 export interface PuzzleDrillStep extends StepBase {
@@ -265,6 +304,7 @@ export interface RecapStep extends StepBase {
 
 export type SchoolStep =
   | TeachStep
+  | PieceIntroStep
   | GuidedBoardStep
   | PuzzleDrillStep
   | BotMatchStep

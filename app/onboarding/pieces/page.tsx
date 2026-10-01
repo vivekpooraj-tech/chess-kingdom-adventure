@@ -4,7 +4,6 @@ import { PieceSetPicker } from "@/components/board/PieceSetPicker";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { shouldSkipWelcome } from "@/lib/learner/experienceLevel";
 
 export default function OnboardingPiecesPage() {
   return (
@@ -18,7 +17,7 @@ export default function OnboardingPiecesPage() {
         const resolution = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
         const child = resolution.child;
         if (!child) return "/choose-child";
-        return shouldSkipWelcome(child.experience_level) ? "/kingdom-map" : "/welcome";
+        return "/onboarding/opening";
       }}
     />
   );

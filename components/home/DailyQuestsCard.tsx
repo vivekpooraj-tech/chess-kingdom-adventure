@@ -21,9 +21,13 @@ import {
 export function DailyQuestsCard({
   set,
   neutralTone,
+  embedded = false,
 }: {
   set: DailyQuestSet;
   neutralTone: boolean;
+  /** When nested under Home's "Today" section, drop the outer card chrome
+   * and shorten the heading so it doesn't compete with the section title. */
+  embedded?: boolean;
 }) {
   if (set.quests.length === 0) return null;
 
@@ -32,14 +36,18 @@ export function DailyQuestsCard({
   return (
     <section
       aria-labelledby="daily-quests-heading"
-      className="w-full rounded-premiumCard bg-premium-navy/70 border border-white/5 p-5 sm:p-6 flex flex-col gap-4"
+      className={
+        embedded
+          ? "flex w-full flex-col gap-3"
+          : "flex w-full flex-col gap-4 rounded-premiumCard border border-white/5 bg-premium-navy/70 p-5 sm:p-6"
+      }
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2
           id="daily-quests-heading"
           className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90"
         >
-          Today&apos;s Quests
+          {embedded ? "Quests" : "Today\u2019s Quests"}
         </h2>
         <p className="font-classic-body text-[11px] text-premium-ivory/45 flex-none">
           {set.completedCount} / {set.quests.length}

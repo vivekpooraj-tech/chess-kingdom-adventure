@@ -85,6 +85,164 @@
   --mode-touch-target-min: 44px;
 }
 
+/* --------------------------------------------------------------------------
+   PHASE 2 — HOME PRESENTATION TOKENS
+
+   Channels consumed only inside `.home-mode-scope` (the Home page's content
+   wrapper — see contentClassName on its <TabPageShell>), so nothing outside
+   Home is affected by adding these. Same "R G B" triplet convention as
+   app/themes.css's --cm-* channels, so they compose with
+   `rgb(var(--mode-accent) / <alpha-value>)`.
+
+   classic-pro's block lives on :root next to the Phase 1 tokens above —
+   values are the CURRENT Home colours (--cm-gold / --cm-navy-light /
+   --cm-navy / --cm-emerald), so selecting classic-pro (or no mode at all)
+   renders Home byte-for-byte as it already does.
+   -------------------------------------------------------------------------- */
+:root {
+  --mode-accent: var(--cm-gold);
+  --mode-accent-soft: var(--cm-emerald);
+  --mode-hero-from: var(--cm-navy-light);
+  --mode-hero-to: var(--cm-navy);
+  --mode-card-border-alpha: 0.25;
+  --mode-tile-icon-alpha: 0;
+  --mode-decoration-opacity: 0;
+}
+
+/* KIDS — warmer, rounder, a touch of magic. Reuses the `kingdom` palette
+   that tailwind.config.ts explicitly reserves for "deliberately extra-
+   playful Adventure-mode touches" rather than inventing a new one. */
+[data-mode="kids"] {
+  --mode-accent: 255 197 61; /* kingdom.gold */
+  --mode-accent-soft: 74 222 128; /* kingdom.leaf */
+  --mode-hero-from: 109 90 230; /* kingdom.royal */
+  --mode-hero-to: 51 33 97; /* deep royal-purple, keeps text contrast */
+  --mode-card-border-alpha: 0.35;
+  --mode-tile-icon-alpha: 0.16;
+  --mode-decoration-opacity: 1;
+}
+
+/* ADULT — sophisticated through restraint: same gold/navy family as
+   classic-pro (this is a training-focused ADULT experience, not a second
+   colourful mode — see the Phase 1 comment above), tighter border opacity,
+   quieter tile icon fills, no decorative flourish. */
+[data-mode="adult"] {
+  --mode-accent: var(--cm-gold);
+  --mode-accent-soft: var(--cm-emerald);
+  --mode-hero-from: var(--cm-navy-light);
+  --mode-hero-to: var(--cm-navy);
+  --mode-card-border-alpha: 0.16;
+  --mode-tile-icon-alpha: 0.05;
+  --mode-decoration-opacity: 0;
+}
+
+/* Typography: swap only inside Home, leaving the shared TEXT.* design
+   tokens (font-classic-display/-body, ~519 call sites app-wide) untouched
+   everywhere else. */
+.home-mode-scope .font-classic-display {
+  font-family: var(--mode-font-heading), Georgia, serif;
+}
+.home-mode-scope .font-classic-body {
+  font-family: var(--mode-font-body), system-ui, sans-serif;
+}
+
+/* Primary Action card + Ollie note: mode-tinted gradient/border, same
+   content and behaviour (see components/home/PrimaryActionCard.tsx).
+   Gradient + radius are safe unconditionally (their :root/classic-pro
+   values already equal what every variant's Tailwind classes rendered).
+   border-color is NOT safe unconditionally: PrimaryActionCard's variants
+   carry DIFFERENT classic-pro border alphas (school/focus are
+   border-premium-gold/25, academy/play are border-premium-gold/15) — a
+   single --mode-card-border-alpha would flatten that distinction, which is
+   exactly the regression the Phase 2 audit caught. So border-color is
+   scoped to Kids/Adult only, leaving classic-pro's own Tailwind
+   border-premium-gold/25 or /15 (whichever the variant already has) as the
+   sole source of truth. */
+.home-mode-scope .home-primary-card {
+  background-image: linear-gradient(
+    to bottom right,
+    rgb(var(--mode-hero-from)),
+    rgb(var(--mode-hero-to))
+  );
+  border-radius: var(--mode-radius-card);
+}
+[data-mode="kids"] .home-mode-scope .home-primary-card,
+[data-mode="adult"] .home-mode-scope .home-primary-card {
+  border-color: rgb(var(--mode-accent) / var(--mode-card-border-alpha));
+}
+.home-mode-scope .home-ollie-note {
+  border-color: rgb(var(--mode-accent) / 0.2);
+  border-radius: var(--mode-radius-btn);
+}
+
+/* Activity tiles: larger/tighter radius per mode, icon badge fill.
+   Routes/labels/order are unchanged — see ActivityTileGrid.tsx. Kids KEEPS
+   each tile's own sky/emerald/violet/teal border colour (already the
+   "colourful, adventurous" treatment) — only Adult unifies them into one
+   quiet accent, matching "restrained, refined" over Kids' variety. */
+.home-mode-scope .home-activity-tile {
+  border-radius: var(--mode-radius-card);
+}
+[data-mode="adult"] .home-mode-scope .home-activity-tile {
+  border-color: rgb(var(--mode-accent) / var(--mode-card-border-alpha));
+}
+.home-mode-scope .home-activity-icon-wrap {
+  /* Stays a circle (Tailwind's rounded-full on the element) in every mode —
+     only the fill responds to the mode accent/alpha. */
+  background-color: rgb(var(--mode-accent) / var(--mode-tile-icon-alpha));
+}
+
+/* Section cards that share the same "quiet container" treatment (Progress
+   row, Achievements preview, Discover destination card). */
+.home-mode-scope .home-surface-card {
+  border-radius: var(--mode-radius-card);
+}
+[data-mode="kids"] .home-mode-scope .home-surface-card,
+[data-mode="adult"] .home-mode-scope .home-surface-card {
+  border-color: rgb(var(--mode-accent) / var(--mode-card-border-alpha));
+}
+
+/* background-color is scoped to Kids/Adult only — classic-pro's own
+   Tailwind bg-premium-gold/15 is the pre-Phase-2 value and must stay the
+   source of truth there (a flat --mode-tile-icon-alpha-derived value
+   unconditionally applied was the second regression the Phase 2 audit
+   caught: it rendered ~8% instead of the original 15%). border-color is
+   unaffected (0.5 exactly matches the pre-existing border-premium-gold/50
+   in every mode already, so it stays unconditional). */
+.home-mode-scope .home-achievement-badge {
+  /* Stays a circle (Tailwind's rounded-full on the element) in every mode. */
+  border-color: rgb(var(--mode-accent) / 0.5);
+}
+[data-mode="kids"] .home-mode-scope .home-achievement-badge,
+[data-mode="adult"] .home-mode-scope .home-achievement-badge {
+  background-color: rgb(var(--mode-accent) / calc(var(--mode-tile-icon-alpha) + 0.08));
+}
+
+/* Kids-only decorative touch — a soft radial glow behind the hero card, the
+   "sense of exploration / magical" cue called for in the Phase 2 brief.
+   Purely decorative (aria-hidden host element), zero layout impact, and
+   opacity 0 (invisible) outside Kids mode via --mode-decoration-opacity. */
+.home-mode-scope .home-kingdom-glow {
+  opacity: var(--mode-decoration-opacity);
+  transition: opacity 200ms ease;
+}
+
+/* Profile strip + section headings: accent-tinted border only where a mode
+   actually wants one (Kids/Adult); classic-pro keeps its current subtle
+   white/5 border untouched. */
+[data-mode="kids"] .home-mode-scope .home-profile-strip,
+[data-mode="adult"] .home-mode-scope .home-profile-strip {
+  border-color: rgb(var(--mode-accent) / var(--mode-card-border-alpha));
+}
+
+/* Section captions (Today / Discover / Your Progress): tinted toward the
+   mode accent instead of the flat ivory/50 caption colour, so section
+   rhythm reads as part of the same presentation as the cards below it. */
+[data-mode="kids"] .home-mode-scope .home-section-heading,
+[data-mode="adult"] .home-mode-scope .home-section-heading {
+  color: rgb(var(--mode-accent) / 0.8);
+}
+
 /* ==========================================================================
    MODE TRANSITION
    Independent of app/themes.css's cm-theme-switching class, so changing mode
