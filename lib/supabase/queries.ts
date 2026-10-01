@@ -981,17 +981,17 @@ export async function cancelMatchmaking(supabase: SupabaseClient, childId: strin
 export async function getMatchmakingQueueStatus(
   supabase: SupabaseClient,
   childId: string
-): Promise<{ status: string; matchedGameId: string | null } | null> {
+): Promise<{ id: string; status: string; matchedGameId: string | null } | null> {
   const { data, error } = await supabase
     .from("matchmaking_queue")
-    .select("status, matched_game_id")
+    .select("id, status, matched_game_id")
     .eq("child_id", childId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  return { status: data.status, matchedGameId: data.matched_game_id };
+  return { id: data.id, status: data.status, matchedGameId: data.matched_game_id };
 }
 
 /** Settles ELO-style rating changes for a finished random match — see

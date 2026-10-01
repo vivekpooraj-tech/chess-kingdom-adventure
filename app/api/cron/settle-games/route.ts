@@ -88,6 +88,12 @@ interface SweepSummary {
   skipped: number;
   ratingsApplied: number;
   errors: number;
+  /**
+   * Abandoned random games still in the pre-start 'matched' state past the
+   * server timeout. The RPC writes the result; this route never decides a
+   * winner and never calls apply_match_rating for these rows.
+   */
+  expiredMatched: number;
   /** Only present when something went wrong — game id and reason, no child data. */
   failures?: Array<{ gameId: string; stage: string; message: string }>;
   dryRun?: true;
@@ -110,7 +116,7 @@ async function sweep(dryRun: boolean): Promise<SweepSummary> {
     .limit(MAX_GAMES_PER_RUN);
 
   if (error) {
-    return { scanned: 0, candidates: 0, settled: 0, skipped: 0, ratingsApplied: 0, errors: 1,
+    return { scanned: 0, candidates: 0, settled: 0, skipped: 0, ratingsApplied: 0, expiredMatched: 0, errors: 1,
       failures: [{ gameId: "-", stage: "query", message: error.message }] };
   }
 
@@ -120,7 +126,8 @@ async function sweep(dryRun: boolean): Promise<SweepSummary> {
   const now = new Date();
 
   const summary: SweepSummary = {
-    scanned: games.length, candidates: 0, settled: 0, skipped: 0, ratingsApplied: 0, errors: 0,
+    scanned: games.length, candidates: 0, settled: 0, skipped: 0, ratingsApplied: 0,
+    errors: 0, expiredMatched: 0,
   };
   const failures: SweepSummary["failures"] = [];
 
@@ -175,6 +182,29 @@ async function sweep(dryRun: boolean): Promise<SweepSummary> {
         message: e instanceof Error ? e.message : String(e),
       });
     }
+  }
+
+  // Pre-start random games nobody finished loading. Separate from the clock
+  // sweep above: those rows are not active, have no winner, and must not be
+  // rated. The function is idempotent and refuses active, finished, and
+  // invite games. A missing migration must not stop clock settlement.
+  try {
+    const { data: expired, error: expireError } = await admin.rpc(
+      "expire_abandoned_matched_games",
+      { p_dry_run: dryRun }
+    );
+    if (expireError) {
+      summary.errors++;
+      failures.push({ gameId: "-", stage: "expire-matched", message: expireError.message });
+    } else if (typeof expired === "number") {
+      summary.expiredMatched = expired;
+    }
+  } catch (e) {
+    summary.errors++;
+    failures.push({
+      gameId: "-", stage: "expire-matched",
+      message: e instanceof Error ? e.message : String(e),
+    });
   }
 
   if (failures.length) summary.failures = failures;

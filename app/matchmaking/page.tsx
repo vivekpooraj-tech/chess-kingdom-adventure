@@ -61,6 +61,15 @@ export default function MatchmakingPage() {
   // one of either at a time.
   const fallbackIntervalRef = useRef<number | null>(null);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  // True only while this search should still be in the queue. Cancel, unmount
+  // and a successful navigation all clear it, so an in-flight retry cannot
+  // put the child back into the queue afterwards.
+  const searchActiveRef = useRef(false);
+  // null until the first retry has checked whether the server keeps the
+  // waiting row's id (migration 0051). false means a retry replaced the row,
+  // which would freeze the rating window at ±50, so further retries stop.
+  const wideningOkRef = useRef<boolean | null>(null);
+  const retryInFlightRef = useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -93,12 +102,14 @@ export default function MatchmakingPage() {
     load();
   }, [router]);
 
-  // Leave the queue if the child navigates away mid-search, so they don't
-  // stay matchable after giving up on this screen. Also stops the fallback
-  // poll and drops the Realtime channel — nothing from this search should
-  // keep running once the screen is gone.
+  // Leave the queue if the child navigates away mid-search. The teardown is
+  // gated on the status this effect closed over, so the transition INTO
+  // "searching" does not tear down the poll and channel findOpponent()
+  // starts on the other side of its await.
   useEffect(() => {
     return () => {
+      if (view.status !== "searching") return;
+      searchActiveRef.current = false;
       if (fallbackIntervalRef.current) {
         window.clearInterval(fallbackIntervalRef.current);
         fallbackIntervalRef.current = null;
@@ -108,7 +119,7 @@ export default function MatchmakingPage() {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
-      if (view.status === "searching" && childIdRef.current) {
+      if (childIdRef.current) {
         const supabase = createClient();
         cancelMatchmaking(supabase, childIdRef.current).catch(() => {});
       }
@@ -148,6 +159,9 @@ export default function MatchmakingPage() {
 
     setView({ status: "searching", rating });
     hasNavigatedRef.current = false;
+    searchActiveRef.current = true;
+    wideningOkRef.current = null;
+    retryInFlightRef.current = false;
 
     // Single atomic guard shared by all three detection paths below — first
     // one to find a match wins, the other two become no-ops. Also the one
@@ -156,6 +170,7 @@ export default function MatchmakingPage() {
     const navigateToMatch = (gameId: string) => {
       if (hasNavigatedRef.current) return;
       hasNavigatedRef.current = true;
+      searchActiveRef.current = false;
       if (fallbackIntervalRef.current) {
         window.clearInterval(fallbackIntervalRef.current);
         fallbackIntervalRef.current = null;
@@ -214,28 +229,60 @@ export default function MatchmakingPage() {
       });
     channelRef.current = channel;
 
-    // 3. BOUNDED FALLBACK — a single 5s interval, purely a backstop for a
-    // delayed/disconnected/silently-missed Realtime event. Not unbounded
-    // polling: it always stops itself the moment a match is found (via
-    // navigateToMatch's own teardown), the search is cancelled
-    // (cancelSearch), or the component unmounts (the cleanup effect above)
-    // — never more than one interval alive at a time.
+    // 3. BOUNDED FALLBACK — a single 5s interval. Two jobs, both of which
+    // stop the moment a match is found, the search is cancelled, or the
+    // screen unmounts:
+    //
+    //   * Read our queue row. This is the safety net for a Realtime
+    //     subscription that cannot connect (see migration 0051) or that
+    //     drops an event. It is not a replacement for the subscription.
+    //   * Re-enter find_or_create_match so the rating window, which widens
+    //     with the waiting row's age, is evaluated again. 0051 keeps that
+    //     row's id and created_at. If a retry instead replaces the row, the
+    //     window would stay at ±50, so this stops retrying after one probe.
     fallbackIntervalRef.current = window.setInterval(() => {
-      getMatchmakingQueueStatus(supabase, childId)
-        .then((row) => {
+      if (!searchActiveRef.current || hasNavigatedRef.current || retryInFlightRef.current) return;
+      retryInFlightRef.current = true;
+      void (async () => {
+        try {
+          const row = await getMatchmakingQueueStatus(supabase, childId);
+          if (!searchActiveRef.current || hasNavigatedRef.current) return;
           if (row?.status === "matched" && row.matchedGameId) {
             navigateToMatch(row.matchedGameId);
+            return;
           }
-        })
-        .catch(() => {
+          if (wideningOkRef.current === false) return;
+          const beforeId = row?.id ?? null;
+          const result = await findOrCreateMatch(supabase, childId, rating, timeControlId);
+          if (!searchActiveRef.current || hasNavigatedRef.current) {
+            // The search ended while this call was in flight. Drop a waiting
+            // row it may have just created; a matched row belongs to the game
+            // we are already navigating to and must be left alone.
+            await cancelMatchmaking(supabase, childId).catch(() => {});
+            return;
+          }
+          if (result.matched && result.gameId) {
+            navigateToMatch(result.gameId);
+            return;
+          }
+          if (result.blocked) return;
+          if (wideningOkRef.current === null) {
+            const after = await getMatchmakingQueueStatus(supabase, childId);
+            wideningOkRef.current = !!beforeId && after?.id === beforeId && after.status === "waiting";
+          }
+        } catch {
           // A transient failure here isn't fatal — Realtime or the next
           // tick still cover us.
-        });
+        } finally {
+          retryInFlightRef.current = false;
+        }
+      })();
     }, 5000);
   }
 
   async function cancelSearch() {
     if (view.status !== "searching" || !childIdRef.current) return;
+    searchActiveRef.current = false;
     if (fallbackIntervalRef.current) {
       window.clearInterval(fallbackIntervalRef.current);
       fallbackIntervalRef.current = null;

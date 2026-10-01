@@ -97,6 +97,21 @@ async function requestCompletion(
   }
 }
 
+// A game row only ever moves forward: waiting/matched → active → finished,
+// and moves are append-only. Rows reach this page from Realtime, polls,
+// RPC responses and post-action refetches, which can resolve in any order —
+// anything older than what is already on screen must be dropped, or a late
+// response can undo an opponent's move or put a started game back on the
+// "Waiting for opponent" screen.
+const STATUS_RANK: Record<OnlineGame["status"], number> = { waiting: 0, matched: 0, active: 1, finished: 2 };
+
+function isOlderRow(current: OnlineGame | null | "loading", next: OnlineGame): boolean {
+  if (!current || current === "loading" || current.id !== next.id) return false;
+  const rankDiff = STATUS_RANK[next.status] - STATUS_RANK[current.status];
+  if (rankDiff !== 0) return rankDiff < 0;
+  return next.moves.length < current.moves.length;
+}
+
 export default function OnlineGamePage() {
   const params = useParams<{ gameId: string }>();
   const router = useRouter();
@@ -166,6 +181,14 @@ export default function OnlineGamePage() {
   const rematchRef = useRef<RematchContext>(REMATCH_INITIAL);
   rematchRef.current = rematch;
   const channelRef = useRef<ReturnType<typeof supabaseRef.current.channel> | null>(null);
+  // Fallback sync. Realtime is still the primary path for every row change;
+  // the poll only fetches while the channel isn't live (a fresh socket's
+  // join can lag tens of seconds behind page load) or while the ready gate
+  // is still open, so a missed UPDATE can't strand this client.
+  const syncPollRef = useRef<number | null>(null);
+  const channelLiveRef = useRef(false);
+  const readyRetryUsedRef = useRef(false);
+  const readyChildIdRef = useRef<string | null>(null);
   const creatingRef = useRef(false);
   // The specific draw-offer token (see DRAW_OFFER_PREFIX) the local player
   // has already dismissed — each offer is uniquely timestamped, so a new
@@ -183,11 +206,118 @@ export default function OnlineGamePage() {
   gameRef.current = game;
   const myColorRef = useRef<Color | null>(null);
 
+  // Every server row goes through here instead of a bare setGame.
+  function applyFreshGame(next: OnlineGame | null) {
+    setGame((current) => (next && isOlderRow(current, next) ? current : next));
+  }
+
   // Load the current child + initial game state, then subscribe to live
   // updates (the opponent's moves and reactions arrive this way).
   useEffect(() => {
     const supabase = supabaseRef.current;
     let cancelled = false;
+    readyRetryUsedRef.current = false;
+    channelLiveRef.current = false;
+
+    // The single entry point for a server row from Realtime, polling or the
+    // SUBSCRIBED catch-up. gameRef is advanced immediately (not on the next
+    // render) so two rows landing in the same tick — e.g. a poll response and
+    // the Realtime UPDATE for the same move — are compared against each
+    // other, and the opponent's move is sounded/animated exactly once.
+    const applyServerRow = (next: OnlineGame) => {
+      const prev = gameRef.current;
+      if (isOlderRow(prev, next)) return;
+      // A move was added to the row (moves.length grew). The mover is
+      // whoever's turn it was BEFORE this update — i.e. the opposite of
+      // next.current_turn, which already flips after every accepted
+      // move. If that mover isn't us, this is the opponent's move
+      // arriving — the one case ChessBoard's own applyMove() can never
+      // see, since it only re-keys off a new `fen` prop rather than
+      // running the move through chess.js locally. Skipped for our own
+      // move's server echo (already sounded locally, optimistically, at
+      // the moment we made it) to avoid a duplicate.
+      if (
+        prev &&
+        prev !== "loading" &&
+        prev.id === next.id &&
+        next.moves.length > prev.moves.length &&
+        myColorRef.current
+      ) {
+        const moverColor: Color = next.current_turn === "w" ? "b" : "w";
+        if (moverColor !== myColorRef.current) {
+          // Priority: checkmate > capture > normal move. Both signals
+          // read directly off the server-generated SAN already stored
+          // in game.moves — standard chess notation appends "#" for a
+          // checkmating move and "x" for a capture — the same
+          // authoritative string the move list/opening recognizer
+          // already trust, not a new inference.
+          const lastSan = next.moves[next.moves.length - 1];
+          playMoveSound(
+            lastSan.includes("#") ? "checkmate" : lastSan.includes("x") ? "capture" : "move"
+          );
+          // Same authoritative data the sound above already trusts —
+          // replay the known-good SAN from the position we had before
+          // this update to recover the from/to/promotion ChessBoard
+          // needs to animate this move, rather than inventing anything.
+          // Only a single-ply gap can be replayed from prev.fen; a larger
+          // jump (several missed updates) just snaps to the new position.
+          // A replay failure here only costs the animation (ChessBoard
+          // falls back to its normal instant-jump); it can never affect
+          // game state, which `next` (server-authoritative) already is.
+          try {
+            const replay = new Chess(prev.fen);
+            const result = next.moves.length === prev.moves.length + 1 ? replay.move(lastSan) : null;
+            setRemoteMove(
+              result
+                ? { from: result.from as Square, to: result.to as Square, promotion: result.promotion }
+                : null
+            );
+          } catch {
+            setRemoteMove(null);
+          }
+        } else {
+          // This is the server echo of our OWN move — already animated
+          // optimistically the moment we made it, and never re-animated
+          // from a remoteMove that would now be stale.
+          setRemoteMove(null);
+        }
+      }
+      gameRef.current = next;
+      applyFreshGame(next);
+    };
+
+    const fetchAndApply = async () => {
+      const row = await getOnlineGame(supabase, params.gameId);
+      if (!cancelled && row) applyServerRow(row);
+      return row;
+    };
+
+    // Deliberately not tied to the channel reaching SUBSCRIBED: on a fresh
+    // Realtime socket the join can lag tens of seconds behind page load. Each
+    // tick is a no-op (no request) while the channel is live and the game has
+    // left the ready gate; it stops for good once the game is settled.
+    const stopSyncPoll = () => {
+      if (syncPollRef.current !== null) {
+        window.clearInterval(syncPollRef.current);
+        syncPollRef.current = null;
+      }
+    };
+    syncPollRef.current = window.setInterval(() => {
+      const current = gameRef.current;
+      if (cancelled || current === "loading") return;
+      if (current && current.status === "finished") {
+        // Keep listening without a live channel only until the rating
+        // settlement (a later write) has landed on the row.
+        if (channelLiveRef.current || current.match_type !== "random" || current.rating_applied) {
+          stopSyncPoll();
+          return;
+        }
+      }
+      if (channelLiveRef.current && current && current.status !== "matched") return;
+      fetchAndApply().catch(() => {
+        // Next tick, or the Realtime listener, still covers this.
+      });
+    }, 3000);
 
     async function load() {
       const user = await getVerifiedUser(supabase);
@@ -201,6 +331,7 @@ export default function OnlineGamePage() {
         return;
       }
       if (cancelled) return;
+      readyChildIdRef.current = resolution.child!.id;
       setChildId(resolution.child!.id);
       setBoardSkinId(resolution.child!.board_skin_id);
       setPieceSetId(resolution.child!.piece_set_id);
@@ -208,7 +339,8 @@ export default function OnlineGamePage() {
 
       const initial = await getOnlineGame(supabase, params.gameId);
       if (cancelled) return;
-      setGame(initial);
+      if (initial) applyServerRow(initial);
+      else applyFreshGame(null);
 
       // Random-match readiness gate (0048_random_match_ready_gate.sql):
       // signal that this client has the game screen open. A no-op on the
@@ -225,7 +357,7 @@ export default function OnlineGamePage() {
           if (cancelled) return;
           if (ready.status === "active") {
             setGame((prev) =>
-              prev && prev !== "loading"
+              prev && prev !== "loading" && prev.status === "matched"
                 ? {
                     ...prev,
                     status: "active",
@@ -239,9 +371,9 @@ export default function OnlineGamePage() {
             );
           }
         } catch {
-          // Never break the page over this — the existing Realtime
-          // subscription below, and a later remount, both give the ready
-          // signal another chance to land.
+          // Never break the page over this — the sync poll above, the
+          // Realtime subscription below, and a later remount all give the
+          // ready signal another chance to land.
         }
       }
     }
@@ -258,63 +390,14 @@ export default function OnlineGamePage() {
           filter: `id=eq.${params.gameId}`,
         },
         (payload) => {
-          const next = payload.new as OnlineGame;
-          const prev = gameRef.current;
-          // A move was added to the row (moves.length grew). The mover is
-          // whoever's turn it was BEFORE this update — i.e. the opposite of
-          // next.current_turn, which already flips after every accepted
-          // move. If that mover isn't us, this is the opponent's move
-          // arriving — the one case ChessBoard's own applyMove() can never
-          // see, since it only re-keys off a new `fen` prop rather than
-          // running the move through chess.js locally. Skipped for our own
-          // move's server echo (already sounded locally, optimistically, at
-          // the moment we made it) to avoid a duplicate.
-          if (
-            prev &&
-            prev !== "loading" &&
-            next.moves.length > prev.moves.length &&
-            myColorRef.current
-          ) {
-            const moverColor: Color = next.current_turn === "w" ? "b" : "w";
-            if (moverColor !== myColorRef.current) {
-              // Priority: checkmate > capture > normal move. Both signals
-              // read directly off the server-generated SAN already stored
-              // in game.moves — standard chess notation appends "#" for a
-              // checkmating move and "x" for a capture — the same
-              // authoritative string the move list/opening recognizer
-              // already trust, not a new inference.
-              const lastSan = next.moves[next.moves.length - 1];
-              playMoveSound(
-                lastSan.includes("#") ? "checkmate" : lastSan.includes("x") ? "capture" : "move"
-              );
-              // Same authoritative data the sound above already trusts —
-              // replay the known-good SAN from the position we had before
-              // this update to recover the from/to/promotion ChessBoard
-              // needs to animate this move, rather than inventing anything.
-              // A replay failure here only costs the animation (ChessBoard
-              // falls back to its normal instant-jump); it can never affect
-              // game state, which `next` (server-authoritative) already is.
-              try {
-                const replay = new Chess(prev.fen);
-                const result = replay.move(lastSan);
-                if (result) {
-                  setRemoteMove({
-                    from: result.from as Square,
-                    to: result.to as Square,
-                    promotion: result.promotion,
-                  });
-                }
-              } catch {
-                setRemoteMove(null);
-              }
-            } else {
-              // This is the server echo of our OWN move — already animated
-              // optimistically the moment we made it, and never re-animated
-              // from a remoteMove that would now be stale.
-              setRemoteMove(null);
-            }
+          const next = payload.new as Partial<OnlineGame>;
+          // An UPDATE can omit large unchanged columns (moves/fen are
+          // TOASTed once a game gets long); never render a partial row.
+          if (!Array.isArray(next.moves) || typeof next.fen !== "string") {
+            fetchAndApply().catch(() => {});
+            return;
           }
-          setGame(next);
+          applyServerRow(next as OnlineGame);
         }
       )
       // Same channel, so this costs no additional Realtime connection.
@@ -326,11 +409,40 @@ export default function OnlineGamePage() {
           setRematch((c) => rematchReduce(c, { type: "CREATED", gameId: payload.gameId }));
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (cancelled) return;
+        if (status !== "SUBSCRIBED") {
+          // CHANNEL_ERROR / TIMED_OUT / CLOSED: Realtime will rejoin on its
+          // own; the sync poll covers whatever is missed until it does.
+          channelLiveRef.current = false;
+          return;
+        }
+        channelLiveRef.current = true;
+        // Fires on the first join and again after every reconnect — the
+        // moments an UPDATE sent while the channel wasn't joined is lost.
+        void (async () => {
+          try {
+            const fresh = await fetchAndApply();
+            if (cancelled || !fresh || fresh.match_type !== "random" || fresh.status !== "matched") return;
+
+            // One extra ready signal, not a loop. The mount-time call can
+            // fail silently; this covers that without repeating on every tick.
+            if (!readyRetryUsedRef.current && readyChildIdRef.current) {
+              readyRetryUsedRef.current = true;
+              const ready = await markGameClientReady(supabase, params.gameId, readyChildIdRef.current);
+              if (!cancelled && ready.status !== "matched") await fetchAndApply();
+            }
+          } catch {
+            // The sync poll still observes a later row.
+          }
+        })();
+      });
     channelRef.current = channel;
 
     return () => {
       cancelled = true;
+      channelLiveRef.current = false;
+      stopSyncPoll();
       supabase.removeChannel(channel);
     };
   }, [params.gameId, router]);
@@ -472,7 +584,7 @@ export default function OnlineGamePage() {
       const result = await claimTimeout(supabaseRef.current, params.gameId, childId);
       if (result.status === "finished") {
         const fresh = await getOnlineGame(supabaseRef.current, params.gameId);
-        setGame(fresh);
+        applyFreshGame(fresh);
       }
     }, 3000);
     return () => clearInterval(id);
@@ -515,7 +627,7 @@ export default function OnlineGamePage() {
     // Either joined successfully, or someone else claimed the guest slot
     // first — either way, refetch to show reality.
     const fresh = await getOnlineGame(supabase, params.gameId);
-    setGame(fresh);
+    applyFreshGame(fresh);
   }
 
   async function handleAbandonMatched() {
@@ -559,11 +671,32 @@ export default function OnlineGamePage() {
       if (!res.ok) {
         // Re-sync from the server rather than leaving a rejected move on screen.
         const fresh = await getOnlineGame(supabaseRef.current, params.gameId);
-        if (fresh) setGame(fresh);
+        if (fresh) applyFreshGame(fresh);
+        return;
+      }
+      // Take the server's accepted position now instead of waiting for our
+      // own Realtime echo. On a slow link the opponent's reply can arrive
+      // first, and the board can only animate it from the position that
+      // includes our move. The echo still lands afterwards with exact clock
+      // values; only a row exactly one ply ahead of what's shown is merged.
+      const body = await res.json().catch(() => null);
+      if (body?.ok && typeof body.fen === "string" && typeof body.san === "string" && typeof body.plies === "number") {
+        setGame((prev) => {
+          if (!prev || prev === "loading" || prev.moves.length !== body.plies - 1) return prev;
+          return {
+            ...prev,
+            fen: body.fen,
+            moves: [...prev.moves, body.san],
+            current_turn: body.turn,
+            white_time_ms: typeof body.whiteTimeMs === "number" ? body.whiteTimeMs : prev.white_time_ms,
+            black_time_ms: typeof body.blackTimeMs === "number" ? body.blackTimeMs : prev.black_time_ms,
+            last_move_at: new Date().toISOString(),
+          };
+        });
       }
     } catch {
       const fresh = await getOnlineGame(supabaseRef.current, params.gameId).catch(() => null);
-      if (fresh) setGame(fresh);
+      if (fresh) applyFreshGame(fresh);
     }
   }
 
@@ -585,7 +718,7 @@ export default function OnlineGamePage() {
         // own; this refetch just avoids waiting on that round trip.
         await applyMatchRating(supabase, params.gameId).catch(() => {});
         const fresh = await getOnlineGame(supabase, params.gameId);
-        if (fresh) setGame(fresh);
+        if (fresh) applyFreshGame(fresh);
       }
     }
   }
