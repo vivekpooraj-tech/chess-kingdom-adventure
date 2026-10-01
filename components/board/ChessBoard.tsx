@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useState, useCallback, useRef, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, useCallback, useRef, type ReactNode, type RefObject } from "react";
 import { Chess, Square, PieceSymbol, Color } from "chess.js";
 import clsx from "clsx";
 import { stockfish, Difficulty } from "@/lib/chess-engine/stockfishEngine";
@@ -146,6 +146,13 @@ export interface ChessBoardProps {
    * jump rather than animating something incorrect.
    */
   remoteMove?: { from: Square; to: Square; promotion?: string };
+  /**
+   * Marks drawn over the squares themselves (lesson arrows and rings).
+   * Rendered inside the piece grid so they use the same box as the pieces,
+   * including frame padding and image-board insets. The node must not
+   * handle pointer events — this slot never selects a piece or makes a move.
+   */
+  boardOverlay?: ReactNode;
 }
 
 /**
@@ -343,6 +350,7 @@ export function ChessBoard({
   focusMode = false,
   gameOverPauseMs = DEFAULT_GAME_OVER_PAUSE_MS,
   remoteMove,
+  boardOverlay,
 }: ChessBoardProps) {
   const game = useMemo(() => new Chess(fen), [fen]);
   const skin = useMemo(() => getBoardSkin(boardSkinId), [boardSkinId]);
@@ -859,6 +867,7 @@ export function ChessBoard({
             );
           })
         )}
+        {boardOverlay}
         {animActive && (
           <MoveSlideOverlay
             fromSquare={anim!.from}

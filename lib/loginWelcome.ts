@@ -18,7 +18,8 @@
  * sign-out-then-sign-in is its own explicit event, independent of whatever
  * happened earlier in the same browser/WebView session — but it does SET
  * this flag afterward, so a stray later visit to "/" in that same session
- * doesn't also replay it via Trigger B.
+ * doesn't also replay it via Trigger B. The flag is written only once the
+ * video has actually started, never because storage or autoplay failed.
  */
 const SESSION_KEY = "chessmind_login_welcome_shown";
 
@@ -26,12 +27,10 @@ export function hasShownLoginWelcomeThisSession(): boolean {
   try {
     return sessionStorage.getItem(SESSION_KEY) === "1";
   } catch {
-    // Private-browsing/storage-blocked: fail toward NOT replaying the video
-    // forever would be worse than occasionally skipping it, but the far
-    // more common real failure mode is storage being unavailable entirely,
-    // in which case treating it as "already shown" (skip) is the safer
-    // default — never trap a login behind a video that can't be tracked.
-    return true;
+    // SecurityError / storage disabled. Treating that as "already shown"
+    // skipped the welcome video on every cold launch. Storage failing is
+    // not evidence the video played — try to show it.
+    return false;
   }
 }
 
@@ -39,6 +38,6 @@ export function markLoginWelcomeShownThisSession(): void {
   try {
     sessionStorage.setItem(SESSION_KEY, "1");
   } catch {
-    // Nothing to do — see hasShownLoginWelcomeThisSession()'s fallback.
+    // The video can still play. A later cold launch may show it again.
   }
 }

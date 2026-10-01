@@ -948,7 +948,7 @@ export default function OnlineGamePage() {
           )}
           <Link href={game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map"}>
             <Button tone="premium" variant={game.moves.length > 0 ? "ghost" : "primary"}>
-              {game.tournament_id ? "Back to Tournament →" : "Back to the Kingdom Map →"}
+              {game.tournament_id ? "Back to Tournament →" : "Back"}
             </Button>
           </Link>
 

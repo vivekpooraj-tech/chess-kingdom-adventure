@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { cloneElement, isValidElement, useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { TeachingOverlay } from "@/components/board/TeachingOverlay";
 import { Button } from "@/components/ui/Button";
@@ -76,8 +76,13 @@ function guidancePulse(level: VisualGuidanceLevel): boolean {
 }
 
 /**
- * Board plus TeachingOverlay sibling. Overlay scales with the board frame and
- * never intercepts taps — the child still plays on the real ChessBoard.
+ * Board plus teaching marks drawn inside the piece grid.
+ *
+ * The marks used to be a sibling of the whole ChessBoard column. That column
+ * is taller than the squares (the "thinking" line sits under the board) and
+ * the default skin insets the grid by the frame padding, so rings and arrows
+ * landed beside the pieces and stacked arrows looked duplicated. Passing them
+ * through `boardOverlay` paints them on the same box as the squares.
  */
 function SchoolBoardWithOverlay({
   squares = [],
@@ -88,15 +93,16 @@ function SchoolBoardWithOverlay({
   squares?: string[];
   arrows?: TeachingArrow[];
   pulse?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const hasOverlay = squares.length > 0 || arrows.length > 0;
-  return (
-    <div className="relative">
-      <SchoolBoardFrame>{children}</SchoolBoardFrame>
-      {hasOverlay ? <TeachingOverlay squares={squares} arrows={arrows} pulse={pulse} /> : null}
-    </div>
-  );
+  const board =
+    hasOverlay && isValidElement(children)
+      ? cloneElement(children as ReactElement<{ boardOverlay?: ReactNode }>, {
+          boardOverlay: <TeachingOverlay squares={squares} arrows={arrows} pulse={pulse} />,
+        })
+      : children;
+  return <SchoolBoardFrame>{board}</SchoolBoardFrame>;
 }
 
 const PIECE_INTRO_IMAGE: Record<string, string> = {
@@ -190,6 +196,12 @@ export function PieceIntroStepView({ step, onComplete }: StepProps<PieceIntroSte
     ? "Let's play!"
     : "Next";
 
+  // The first line of each card only names the piece ("looks like a horse").
+  // Movement marks belong on the movement line, and they are arrows only —
+  // a ring on the piece square plus every possible arrow was the clutter on
+  // the pawn, rook, and knight cards.
+  const showMovementMarks = lineIndex >= card.lines.length - 1;
+
   return (
     <div className="flex flex-col gap-4">
       <OllieCoach line={ollieLine} />
@@ -205,11 +217,10 @@ export function PieceIntroStepView({ step, onComplete }: StepProps<PieceIntroSte
       </div>
 
       <SchoolBoardWithOverlay
-        squares={[...card.highlightSquares]}
-        arrows={[...card.arrows]}
-        pulse
+        arrows={showMovementMarks ? [...card.arrows] : []}
+        pulse={false}
       >
-        <ChessBoard fen={card.fen} readOnly focusMode size={BOARD} />
+        <ChessBoard key={card.piece} fen={card.fen} readOnly focusMode size={BOARD} />
       </SchoolBoardWithOverlay>
 
       <div className="rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">

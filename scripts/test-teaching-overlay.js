@@ -111,6 +111,34 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   check("a zero-length arrow is dropped", O.resolveArrows([{ from: "e4", to: "e4" }]).length === 0);
   check("null entries are survived", O.resolveArrows([null, { from: "g1", to: "f3" }]).length === 1);
   check("undefined arrows resolve to nothing", O.resolveArrows(undefined).length === 0);
+
+  const stacked = O.resolveArrows([
+    { from: "e2", to: "e3" },
+    { from: "e2", to: "e4" },
+  ]);
+  check("a shorter arrow on the same line is dropped", stacked.length === 1);
+  check("the longer pawn arrow is the one kept", Math.abs(stacked[0].y2 - 56.25) < 0.01);
+  check(
+    "arrows in different directions are both kept",
+    O.resolveArrows([
+      { from: "g1", to: "f3" },
+      { from: "g1", to: "h3" },
+    ]).length === 2
+  );
+  check(
+    "a two-step path is not collapsed into one arrow",
+    O.resolveArrows([
+      { from: "d1", to: "d2" },
+      { from: "d2", to: "d4" },
+    ]).length === 2
+  );
+  check(
+    "an exact duplicate arrow is drawn once",
+    O.resolveArrows([
+      { from: "a1", to: "a8" },
+      { from: "a1", to: "a8" },
+    ]).length === 1
+  );
 }
 
 // --- 4. Demonstrations come from chess.js, in the real position ----------

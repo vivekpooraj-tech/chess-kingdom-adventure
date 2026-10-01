@@ -120,6 +120,8 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
   })());
   check("piece_intro has six cards in pawn-rook-knight-bishop-queen-king order", intro && intro.cards.map((c) => c.piece).join(",") === "pawn,rook,knight,bishop,queen,king");
   check("every piece_intro card names the piece and explains movement", intro && intro.cards.every((c) => c.name.length > 3 && c.lines.length >= 1 && c.highlightSquares.length >= 1));
+  const pawnCard = intro && intro.cards.find((c) => c.piece === "pawn");
+  check("pawn intro shows one forward arrow, not two stacked on the e-file", pawnCard && pawnCard.arrows.length === 1 && pawnCard.arrows[0].from === "e2" && pawnCard.arrows[0].to === "e4");
   check("session 1 first guided move highlights e2 and e4 with an arrow", guided1 && guided1.highlightSquares.join(",") === "e2,e4" && guided1.arrows[0].from === "e2" && guided1.arrows[0].to === "e4");
   check("session 1 queen-pawn guided step identifies queen, pawn, and destination", guided2 && guided2.highlightSquares.join(",") === "d1,d2,d4" && guided2.arrows.some((a) => a.from === "d2" && a.to === "d4"));
   check("sessions 1-2 guided boards use strong visual guidance", [1, 2].every((n) => C.getSession(n).steps.filter((st) => st.type === "guided_board").every((st) => st.visualGuidance === "strong")));
@@ -129,6 +131,8 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
   const stepsSrc = read("components", "school", "v2", "steps.tsx");
   check("SessionRunner renders piece_intro", /case "piece_intro"/.test(runner));
   check("steps exports PieceIntroStepView with TeachingOverlay", /PieceIntroStepView/.test(stepsSrc) && /TeachingOverlay/.test(stepsSrc));
+  check("piece intro paints arrows on the movement line, not a ring on the piece", /showMovementMarks/.test(stepsSrc) && !/squares=\{\[\.\.\.card\.highlightSquares\]\}/.test(stepsSrc));
+  check("lesson marks are drawn inside the piece grid", /boardOverlay/.test(stepsSrc));
 }
 
 // --- 3. Every position is real and every answer is legal ------------------

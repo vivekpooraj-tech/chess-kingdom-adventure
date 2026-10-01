@@ -119,7 +119,7 @@ export const SCHOOL_SESSIONS: readonly SchoolSession[] = [
             ],
             fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
             highlightSquares: ["e2"],
-            arrows: [{ from: "e2", to: "e3" }, { from: "e2", to: "e4" }],
+            arrows: [{ from: "e2", to: "e4" }],
           },
           {
             piece: "rook",

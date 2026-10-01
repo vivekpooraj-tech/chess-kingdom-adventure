@@ -88,6 +88,41 @@ export interface ResolvedArrow {
  * Turn arrows into drawable line coordinates, dropping any that name a square
  * that does not exist or that start and end in the same place.
  */
+function segmentLength2(line: ResolvedArrow): number {
+  const dx = line.x2 - line.x1;
+  const dy = line.y2 - line.y1;
+  return dx * dx + dy * dy;
+}
+
+/** True when both segments lie on one straight line. */
+function onSameLine(a: ResolvedArrow, b: ResolvedArrow): boolean {
+  const dx = a.x2 - a.x1;
+  const dy = a.y2 - a.y1;
+  const crossStart = dx * (b.y1 - a.y1) - dy * (b.x1 - a.x1);
+  const crossEnd = dx * (b.y2 - a.y1) - dy * (b.x2 - a.x1);
+  return Math.abs(crossStart) < 0.05 && Math.abs(crossEnd) < 0.05;
+}
+
+/**
+ * True when `inner` sits entirely on `outer`. Used to drop a short arrow
+ * drawn on top of a longer one along the same squares (pawn e2→e3 stacked
+ * on e2→e4), which reads as a duplicated shaft and a second arrowhead.
+ * A path of two touching arrows (d1→d2 then d2→d4) is not contained, so
+ * both stay.
+ */
+function segmentContains(outer: ResolvedArrow, inner: ResolvedArrow): boolean {
+  const dx = outer.x2 - outer.x1;
+  const dy = outer.y2 - outer.y1;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) return false;
+  const tOf = (x: number, y: number) => ((x - outer.x1) * dx + (y - outer.y1) * dy) / len2;
+  const t1 = tOf(inner.x1, inner.y1);
+  const t2 = tOf(inner.x2, inner.y2);
+  const lo = Math.min(t1, t2);
+  const hi = Math.max(t1, t2);
+  return lo >= -0.001 && hi <= 1.001;
+}
+
 export function resolveArrows(
   arrows: readonly TeachingArrow[],
   orientation: BoardOrientation = "w"
@@ -106,7 +141,17 @@ export function resolveArrows(
       y2: to.centerYPercent,
     });
   }
-  return out;
+
+  return out.filter((line, index) => {
+    return !out.some((other, otherIndex) => {
+      if (otherIndex === index) return false;
+      if (!onSameLine(line, other)) return false;
+      if (!segmentContains(other, line)) return false;
+      const longer = segmentLength2(other) > segmentLength2(line) + 0.01;
+      const sameAndEarlier = otherIndex < index && Math.abs(segmentLength2(other) - segmentLength2(line)) <= 0.01;
+      return longer || sameAndEarlier;
+    });
+  });
 }
 
 /** Drop unknown squares and duplicates, preserving order. */
