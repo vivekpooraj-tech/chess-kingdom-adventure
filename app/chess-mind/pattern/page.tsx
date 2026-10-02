@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Chess } from "chess.js";
 import { PATTERN_CHALLENGES, PatternChallenge } from "@/content/chessMindPatterns";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -13,6 +14,9 @@ import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { moveWasFork, moveWasHanging } from "@/lib/chessMind/patternVerification";
+import { useTrainYourMindDailyLimit } from "@/lib/trainYourMind/useDailyLimit";
+import { DailyLimitCard } from "@/components/trainYourMind/DailyLimitCard";
+import { DailyUsageIndicator } from "@/components/trainYourMind/DailyUsageIndicator";
 import type { Square } from "chess.js";
 
 const TYPE_LABEL: Record<PatternChallenge["type"], string> = {
@@ -37,6 +41,8 @@ export default function PatternRecognitionPage() {
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [boardKey, setBoardKey] = useState(0);
+  const dailyLimit = useTrainYourMindDailyLimit(childId, "pattern");
+  const boardSize = useResponsiveBoardSize(320, { widthMultiplier: 0.85, maxSize: 720 });
 
   useEffect(() => {
     setChallenge(pickChallenge());
@@ -57,6 +63,7 @@ export default function PatternRecognitionPage() {
   function markSolved() {
     setSolved((s) => s + 1);
     if (childId) recordChessMindSolve(createClient(), childId, "pattern").catch(() => {});
+    dailyLimit.recordUse();
   }
 
   function handleMove(opts: { fen: string; san: string; isCheckmate: boolean; from: Square; to: Square }) {
@@ -103,7 +110,7 @@ export default function PatternRecognitionPage() {
     setBoardKey((k) => k + 1);
   }
 
-  if (!challenge) {
+  if (!challenge || dailyLimit.loading) {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
@@ -111,17 +118,22 @@ export default function PatternRecognitionPage() {
     );
   }
 
+  if (dailyLimit.reached) {
+    return <DailyLimitCard categoryLabel="Pattern Recognition" />;
+  }
+
   const sideToMove = new Chess(challenge.fen).turn();
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="medium" topSafeArea="icons">
         <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Pattern Recognition</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">
             Real positions, real patterns — spot what's really there.
           </p>
         </div>
+        <DailyUsageIndicator usedToday={dailyLimit.usedToday} limit={dailyLimit.limit} isPremium={dailyLimit.isPremium} />
 
         <div className="flex items-center gap-3">
           <span className="font-classic-body text-[11px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-3 py-1">
@@ -130,7 +142,7 @@ export default function PatternRecognitionPage() {
           <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
         </div>
 
-        <div className="mx-auto w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
+        <div className="mx-auto w-full max-w-md md:max-w-3xl rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
           <p className="font-classic-display text-base text-premium-ivory text-center">
             {challenge.prompt}
           </p>
@@ -138,7 +150,7 @@ export default function PatternRecognitionPage() {
           <ChessBoard
             key={boardKey}
             fen={challenge.fen}
-            size={320}
+            size={boardSize}
             readOnly={challenge.type === "pin" || status !== "playing"}
             playableColor={challenge.type !== "pin" ? sideToMove : undefined}
             boardSkinId={boardSkinId}

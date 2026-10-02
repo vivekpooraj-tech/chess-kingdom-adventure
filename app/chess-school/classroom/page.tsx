@@ -1,6 +1,8 @@
 import { TabPageShell } from "@/components/nav/TabPageShell";
+import { WorldScope } from "@/components/layout/WorldScope";
 import { SchoolHome } from "@/components/school/v2/SchoolHome";
 import { loadSchoolPageContext } from "@/lib/school/v2/server";
+import { parseWorldQuery } from "@/lib/world/worlds";
 
 export const metadata = {
   title: "Chess School · Classroom",
@@ -19,16 +21,22 @@ export const metadata = {
  * Chess Time was on. This path inherits that allow-list, and the app nav
  * chrome, without a single Parent Lock file changing.
  */
-export default async function ClassroomPage() {
+export default async function ClassroomPage({
+  searchParams,
+}: {
+  searchParams?: { world?: string };
+}) {
   const { child, progress, access } = await loadSchoolPageContext();
   return (
-    <TabPageShell>
-      <SchoolHome
-        childId={child.id}
-        childName={child.display_name}
-        initialProgress={progress}
-        access={access}
-      />
-    </TabPageShell>
+    <WorldScope world={parseWorldQuery(searchParams?.world)}>
+      <TabPageShell>
+        <SchoolHome
+          childId={child.id}
+          childName={child.display_name}
+          initialProgress={progress}
+          access={access}
+        />
+      </TabPageShell>
+    </WorldScope>
   );
 }

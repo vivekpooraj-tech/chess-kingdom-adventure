@@ -48,9 +48,10 @@ export default function WelcomePage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [stage, setStage] = useState<Stage>("loading");
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [videoUnavailable, setVideoUnavailable] = useState(!content.videoUrl);
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
+  const [videoVisible, setVideoVisible] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -113,16 +114,24 @@ export default function WelcomePage() {
   }
 
   function handleVideoReady() {
-    if (!videoRef.current) return;
-    // Attempt muted autoplay only — never with sound. Browsers reliably
-    // allow this; if it's still blocked for some reason, the visible
-    // Play control below still works.
-    videoRef.current.muted = true;
-    setMuted(true);
-    videoRef.current
-      .play()
+    const v = videoRef.current;
+    if (!v) return;
+    // History of Chess should start with audio. Browsers may block unmuted
+    // autoplay (NotAllowedError) — fall back to muted playback so the
+    // cinematic still plays; the Sound On control remains available.
+    v.muted = false;
+    setMuted(false);
+    v.play()
       .then(() => setPlaying(true))
-      .catch(() => setPlaying(false));
+      .catch(() => {
+        if (!videoRef.current) return;
+        videoRef.current.muted = true;
+        setMuted(true);
+        videoRef.current
+          .play()
+          .then(() => setPlaying(true))
+          .catch(() => setPlaying(false));
+      });
   }
 
   function togglePlay() {
@@ -222,11 +231,18 @@ export default function WelcomePage() {
                     ref={videoRef}
                     src={content.videoUrl!}
                     playsInline
+                    controls={false}
                     onCanPlay={handleVideoReady}
+                    onPlaying={() => {
+                      setVideoVisible(true);
+                      setPlaying(true);
+                    }}
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={handleVideoEnded}
                     onError={() => setVideoUnavailable(true)}
-                    className="w-full h-full object-cover"
+                    className={`h-full w-full bg-black object-cover transition-opacity duration-150 ${
+                      videoVisible ? "opacity-100 visible" : "opacity-0 invisible"
+                    }`}
                   >
                     {content.captionsUrl && (
                       <track kind="captions" src={content.captionsUrl} srcLang="en" label="English" default />
@@ -237,13 +253,26 @@ export default function WelcomePage() {
                 <button
                   onClick={handleSkip}
                   aria-label="Skip intro"
-                  className="absolute top-3 right-3 font-classic-body text-xs text-premium-ivory/70 hover:text-premium-ivory bg-black/40 rounded-full px-3 py-1.5 border border-white/15 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
+                  className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top,0px))] z-10 font-classic-body text-xs text-premium-ivory/70 hover:text-premium-ivory bg-black/40 rounded-full px-3 py-1.5 border border-white/15 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
                 >
                   Skip Intro
                 </button>
 
+                {fullscreenSupported && !videoUnavailable && (
+                  <IconButton
+                    label="Fullscreen"
+                    tone="premium"
+                    onClick={toggleFullscreen}
+                    className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top,0px))] z-10"
+                  >
+                    <FullscreenIcon className="w-4 h-4" />
+                  </IconButton>
+                )}
+
                 {!videoUnavailable && (
-                  <div className="absolute bottom-0 inset-x-0 flex items-center gap-2 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                  <div
+                    className="absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+                  >
                     <IconButton label={playing ? "Pause" : "Play"} tone="premium" onClick={togglePlay}>
                       {playing ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4" />}
                     </IconButton>
@@ -258,14 +287,6 @@ export default function WelcomePage() {
                     ) : (
                       <IconButton label="Mute" tone="premium" onClick={toggleSound}>
                         <SoundOnIcon className="w-4 h-4" />
-                      </IconButton>
-                    )}
-
-                    <div className="flex-1" />
-
-                    {fullscreenSupported && (
-                      <IconButton label="Fullscreen" tone="premium" onClick={toggleFullscreen}>
-                        <FullscreenIcon className="w-4 h-4" />
                       </IconButton>
                     )}
                   </div>

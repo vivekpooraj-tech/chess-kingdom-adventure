@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/branding/Logo";
+import { UtilityNavIcons } from "./UtilityNavIcons";
 
 /**
  * Tablet + desktop top bar (UI-2A). Deliberately minimal for the
@@ -16,9 +17,11 @@ import { Logo } from "@/components/branding/Logo";
 
 const SECTION_TITLES: Array<[prefix: string, title: string]> = [
   ["/kingdom-map", "Home"],
+  ["/chess-school", "School"],
   ["/puzzles", "Puzzles"],
   ["/play/tournaments", "Tournaments"],
   ["/play", "Play"],
+  ["/world", "World"],
   ["/learn", "Learn"],
   ["/academy", "Academy"],
   ["/chess-mind", "Chess Mind"],
@@ -54,6 +57,7 @@ export function AppTopBar() {
           {title}
         </span>
       )}
+      <UtilityNavIcons className="ml-auto" />
     </header>
   );
 }

@@ -1598,29 +1598,116 @@ export interface SkillSignal {
   practiceCorrect: number;
 }
 
-/** Insert one completed-review record. Fire-and-forget. */
-export async function recordGameReview(
+/** Exactly the shape /api/game-analysis/explain returns to a client at a
+ * given tier — Free's is always a subset (one mistake, no goodMoves/
+ * insights), Premium's is the full set. Persisted verbatim in
+ * child_game_reviews.free_analysis / .premium_analysis so a cache hit is a
+ * direct passthrough with no reshaping. */
+export interface GameReviewAnalysisSnapshot {
+  mistakes: Record<number, { explanation: string; whyBetter?: string; whatToNotice: string; skill?: string }>;
+  goodMoves: Record<number, { explanation: string }>;
+  biggestLesson: string;
+  insights: string[];
+}
+
+/**
+ * Phase 7B: the ONLY writer of child_game_reviews.game_ref/free_analysis/
+ * premium_analysis, via the upsert_child_game_review_analysis RPC
+ * (SECURITY DEFINER, ownership-checked, atomic — see migration 0045).
+ * Replaces the old recordGameReview()'s unconditional `.insert()`: this is
+ * idempotent on (child_id, source, gameRef), so calling it again for a
+ * reload of the same game updates the existing row instead of creating a
+ * duplicate, and never overwrites an existing free/premium snapshot with
+ * null (the RPC's own COALESCE merge). Server-only in practice (called
+ * from app/api/game-analysis/explain/route.ts), but takes a generic
+ * SupabaseClient like every other function in this file. Returns null on
+ * any failure — callers must not block the review on this.
+ */
+export async function upsertGameReviewAnalysis(
   supabase: SupabaseClient,
   childId: string,
-  input: GameReviewInput
-): Promise<void> {
+  gameRef: string,
+  summary: GameReviewInput,
+  snapshots: { freeAnalysis?: GameReviewAnalysisSnapshot | null; premiumAnalysis?: GameReviewAnalysisSnapshot | null }
+): Promise<{ id: string; isNewRow: boolean; hasFreeAnalysis: boolean; hasPremiumAnalysis: boolean } | null> {
   try {
-    await supabase.from("child_game_reviews").insert({
-      child_id: childId,
-      source: input.source,
-      played_color: input.playedColor,
-      result: input.result,
-      accuracy: input.accuracy,
-      total_moves: input.totalMoves,
-      mistakes: input.mistakes,
-      blunders: input.blunders,
-      inaccuracies: input.inaccuracies,
-      biggest_moment_skill: input.biggestMomentSkill,
-      biggest_moment_ply: input.biggestMomentPly,
-      opening_name: input.openingName,
+    const { data, error } = await supabase.rpc("upsert_child_game_review_analysis", {
+      p_child_id: childId,
+      p_source: summary.source,
+      p_game_ref: gameRef,
+      p_played_color: summary.playedColor,
+      p_result: summary.result,
+      p_accuracy: summary.accuracy,
+      p_total_moves: summary.totalMoves,
+      p_mistakes: summary.mistakes,
+      p_blunders: summary.blunders,
+      p_inaccuracies: summary.inaccuracies,
+      p_biggest_moment_skill: summary.biggestMomentSkill,
+      p_biggest_moment_ply: summary.biggestMomentPly,
+      p_opening_name: summary.openingName,
+      p_free_analysis: snapshots.freeAnalysis ?? null,
+      p_premium_analysis: snapshots.premiumAnalysis ?? null,
     });
+    if (error || !data || !data[0]) return null;
+    const row = data[0] as { id: string; is_new_row: boolean; has_free_analysis: boolean; has_premium_analysis: boolean };
+    return { id: row.id, isNewRow: row.is_new_row, hasFreeAnalysis: row.has_free_analysis, hasPremiumAnalysis: row.has_premium_analysis };
   } catch {
-    // best-effort — see file note
+    return null;
+  }
+}
+
+/**
+ * Free-tier read path: selects ONLY id + free_analysis. Never names
+ * premium_analysis in the select list — this is the enforcement point for
+ * "a Free request must never retrieve Premium analysis" (RLS alone cannot
+ * distinguish a Free-tier owner from a Premium-tier owner of the same
+ * row — see the Phase 7B-1 audit). Callers must have already resolved the
+ * caller as non-Premium via resolvePremiumState() before calling this.
+ */
+export async function getFreeGameReviewAnalysis(
+  supabase: SupabaseClient,
+  childId: string,
+  source: "free_play" | "online",
+  gameRef: string
+): Promise<{ id: string; freeAnalysis: GameReviewAnalysisSnapshot | null } | null> {
+  try {
+    const { data, error } = await supabase
+      .from("child_game_reviews")
+      .select("id, free_analysis")
+      .eq("child_id", childId)
+      .eq("source", source)
+      .eq("game_ref", gameRef)
+      .maybeSingle();
+    if (error || !data) return null;
+    return { id: data.id as string, freeAnalysis: (data.free_analysis as GameReviewAnalysisSnapshot | null) ?? null };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Premium-tier read path: may select premium_analysis. Callers must have
+ * already resolved the caller as Premium via resolvePremiumState() before
+ * calling this — this function itself contains no entitlement logic.
+ */
+export async function getPremiumGameReviewAnalysis(
+  supabase: SupabaseClient,
+  childId: string,
+  source: "free_play" | "online",
+  gameRef: string
+): Promise<{ id: string; premiumAnalysis: GameReviewAnalysisSnapshot | null } | null> {
+  try {
+    const { data, error } = await supabase
+      .from("child_game_reviews")
+      .select("id, premium_analysis")
+      .eq("child_id", childId)
+      .eq("source", source)
+      .eq("game_ref", gameRef)
+      .maybeSingle();
+    if (error || !data) return null;
+    return { id: data.id as string, premiumAnalysis: (data.premium_analysis as GameReviewAnalysisSnapshot | null) ?? null };
+  } catch {
+    return null;
   }
 }
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/Button";
+import { SchoolCta } from "./SchoolCta";
 import { TEXT } from "@/lib/designSystem";
 import type { SchoolProgress, SchoolSession, SchoolStep } from "@/content/school/types";
 import { moduleForSession } from "@/content/school/modules";
@@ -13,8 +13,12 @@ import { actTransitionLine, resumedLine } from "@/lib/school/v2/ollieLines";
 import { completeSession, hasGraduated, isSessionUnlocked, nextSessionNumber } from "@/lib/school/v2/progress";
 import { loadSchoolProgress, saveSchoolProgress } from "@/lib/school/v2/queries";
 import { mergeProgress } from "@/lib/school/v2/storage";
+import { track } from "@/lib/analytics/client";
 import { OllieCoach, SchoolChip } from "./Coach";
 import { ParentModePanel } from "./ParentModePanel";
+import { useWorld } from "@/lib/world/WorldContext";
+import type { WorldId } from "@/lib/world/worlds";
+import { schoolArenaKicker } from "@/lib/school/schoolArena";
 import {
   BotMatchStepView,
   CeremonyStepView,
@@ -28,8 +32,11 @@ import {
 
 export const CLASSROOM_HREF = "/chess-school/classroom";
 export const GRADUATE_HREF = "/chess-school/graduate";
-export function sessionHref(id: string): string {
-  return `/chess-school/session/${id}`;
+export function sessionHref(id: string, world?: WorldId): string {
+  return world ? `/chess-school/session/${id}?world=${world}` : `/chess-school/session/${id}`;
+}
+export function classroomHref(world?: WorldId): string {
+  return world ? `${CLASSROOM_HREF}?world=${world}` : CLASSROOM_HREF;
 }
 
 /**
@@ -58,6 +65,7 @@ export function SessionRunner({
   childName: string;
   initialProgress: SchoolProgress;
 }) {
+  const world = useWorld();
   const [progress, setProgress] = useState<SchoolProgress>(initialProgress);
   const [stepIndex, setStepIndex] = useState(0);
   const [resumedFrom, setResumedFrom] = useState<string | null>(null);
@@ -75,6 +83,14 @@ export function SessionRunner({
       setResumedFrom(session.steps[at]?.title ?? null);
     }
   }, [childId, session.id, session.steps]);
+
+  // Fired once per mount (a resumed session re-fires this too — the event
+  // means "this session's runner was opened", not "opened for the first
+  // time ever", which keeps this a one-line addition with no extra state).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    track("school_session_started", { sessionNumber: session.number });
+  }, []);
 
   // The server rendered with its own read; the device may know more (a session
   // finished offline). Merge on mount so an unlocked session is never shown
@@ -111,6 +127,7 @@ export function SessionRunner({
     setProgress(next);
     setFinished(true);
     clearBookmark(childId, session.id);
+    track("school_session_completed", { sessionNumber: session.number });
     const ok = await saveSchoolProgress(createClient(), childId, next);
     setSavedRemotely(ok);
   };
@@ -130,10 +147,10 @@ export function SessionRunner({
     return (
       <Frame session={session} moduleTitle={module?.title}>
         <OllieCoach line={`Not yet — finish session ${nextNumber} first. Nothing here is going anywhere.`} />
-        <Link href={CLASSROOM_HREF} className="w-full">
-          <Button tone="premium" block>
+        <Link href={classroomHref(world)} className="w-full">
+          <SchoolCta block>
             Go to session {nextNumber}
-          </Button>
+          </SchoolCta>
         </Link>
       </Frame>
     );
@@ -154,7 +171,7 @@ export function SessionRunner({
       <Frame session={session} moduleTitle={module?.title}>
         <OllieCoach line={session.ollie.success} tone="proud" />
         {actLine ? <OllieCoach line={actLine} tone="proud" /> : null}
-        <div className="rounded-premiumCard border border-premium-gold/30 bg-premium-gold/[0.06] p-5 text-center">
+        <div className="world-primary-card rounded-premiumCard border border-premium-gold/30 bg-premium-gold/[0.06] p-5 text-center">
           <p className="text-3xl" aria-hidden="true">
             {session.starred ? "★" : "✓"}
           </p>
@@ -173,21 +190,21 @@ export function SessionRunner({
             rather than on a locked screen. */}
         {graduated ? (
           <Link href={GRADUATE_HREF} className="w-full">
-            <Button tone="premium" block size="lg">
+            <SchoolCta block>
               See your certificate
-            </Button>
+            </SchoolCta>
           </Link>
         ) : nextSession ? (
           <>
-            <Link href={sessionHref(nextSession.id)} className="w-full">
-              <Button tone="premium" block size="lg">
+            <Link href={sessionHref(nextSession.id, world)} className="w-full">
+              <SchoolCta block>
                 Next: {nextSession.title}
-              </Button>
+              </SchoolCta>
             </Link>
             <p className={`${TEXT.caption} text-center`}>
               Session {nextSession.number} · about {nextSession.estimatedMinutes} minutes
             </p>
-            <Link href={CLASSROOM_HREF} className={`${TEXT.caption} text-center underline underline-offset-2`}>
+            <Link href={classroomHref(world)} className={`${TEXT.caption} text-center underline underline-offset-2`}>
               Back to the classroom
             </Link>
           </>
@@ -265,40 +282,35 @@ function Frame({
   stepCount?: number;
   children: React.ReactNode;
 }) {
+  const world = useWorld();
   return (
     <main
-      className={`relative isolate mx-auto flex w-full max-w-full flex-col gap-5 px-2 pb-16 pt-4 sm:max-w-xl sm:px-4 md:max-w-4xl lg:max-w-3xl ${
+      className={`sch-session relative isolate mx-auto flex w-full min-w-0 max-w-full flex-col gap-5 overflow-x-hidden px-2 pb-16 pt-4 sm:max-w-xl sm:px-4 md:max-w-4xl lg:max-w-3xl ${
         session.starred ? "school-starred" : ""
       }`}
     >
-      {/* A big moment gets a gold wash behind the header — the one visual cue
-          that this session is not an ordinary lesson. Everything else is the
-          same runner, so nothing about the mechanics changes. */}
       {session.starred ? (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-56"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(232,165,107,0.22), transparent 70%)",
-          }}
+          className="world-school-star pointer-events-none absolute inset-x-0 top-0 -z-10 h-56"
         />
       ) : null}
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
+          <p className="world-kicker">{schoolArenaKicker(world)}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             {moduleTitle ? <SchoolChip>{moduleTitle}</SchoolChip> : null}
             {session.starred ? <SchoolChip tone="gold">★ Big moment</SchoolChip> : null}
           </div>
-          <h1 className={`${TEXT.heading} mt-2`}>
+          <h1 className={`world-title ${TEXT.heading} mt-2`}>
             <span className="text-premium-ivory/50">Session {session.number} · </span>
             {session.title}
           </h1>
         </div>
         <Link
-          href={CLASSROOM_HREF}
+          href={classroomHref(world)}
           aria-label="Exit session"
-          className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-white/12 bg-white/[0.04] text-premium-ivory/70 hover:text-premium-ivory"
+          className="world-school-exit flex h-12 w-12 flex-none items-center justify-center rounded-full border border-white/12 bg-white/[0.04] text-premium-ivory/70 hover:text-premium-ivory"
         >
           ✕
         </Link>
@@ -310,7 +322,11 @@ function Frame({
             <span
               key={i}
               className={`h-1 flex-1 rounded-full ${
-                i < stepIndex ? "bg-premium-gold" : i === stepIndex ? "bg-premium-gold/60" : "bg-white/10"
+                i < stepIndex
+                  ? "world-school-step-on"
+                  : i === stepIndex
+                    ? "world-school-step-on opacity-60"
+                    : "bg-white/10"
               }`}
             />
           ))}
@@ -324,10 +340,10 @@ function Frame({
 
 function BackToClassroom() {
   return (
-    <Link href={CLASSROOM_HREF} className="w-full">
-      <Button tone="premium" block>
+    <Link href={classroomHref(useWorld())} className="w-full">
+      <SchoolCta block>
         Back to the classroom
-      </Button>
+      </SchoolCta>
     </Link>
   );
 }

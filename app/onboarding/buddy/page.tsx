@@ -72,7 +72,7 @@ export default function BuddyPickerPage() {
         ))}
       </div>
 
-      <Button size="lg" disabled={saving} onClick={confirm}>
+      <Button tone="adventure" size="lg" disabled={saving} onClick={confirm}>
         {saving ? "Saving..." : `Meet ${BUDDIES.find((b) => b.id === selected)?.name}! →`}
       </Button>
     </main>

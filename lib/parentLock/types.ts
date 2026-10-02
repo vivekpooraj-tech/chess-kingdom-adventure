@@ -56,6 +56,9 @@ export interface ChessTimeRemaining {
 export const CHESS_TIME_SESSION_STORAGE_KEY = "chessmind.chessTime.session.v1";
 export const PARENT_PIN_HASH_STORAGE_KEY = "chessmind.parentLock.pinHash.v1";
 export const PARENT_PIN_ATTEMPTS_STORAGE_KEY = "chessmind.parentLock.pinAttempts.v1";
+/** Set after the first Parent Dashboard visit PIN prompt is shown or skipped. */
+export const PARENT_DASHBOARD_PIN_PROMPT_SEEN_KEY =
+  "chessmind.parentLock.parentDashboardPinPromptSeen.v1";
 
 /** Duration presets shown to parents (minutes). */
 export const CHESS_TIME_DURATION_PRESETS = [10, 15, 30, 45, 60] as const;

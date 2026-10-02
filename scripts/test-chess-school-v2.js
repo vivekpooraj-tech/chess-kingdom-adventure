@@ -460,11 +460,18 @@ const STARRED = [1, 2, 4, 8, 10, 12, 13, 18, 24, 30];
 
   const inr = pricing.getSchoolRegionalPrice("IN");
   check("India price is ₹199 (19900 paise, inr)", inr.currency === "inr" && inr.amountMinor === 19900 && inr.display === "₹199");
-  check("unknown country falls back to a price rather than failing", pricing.getSchoolRegionalPrice(null).amountMinor > 0);
-  for (const c of ["IN", "US", "GB", "DE", "CA", "AU"]) {
-    const s = pricing.getSchoolRegionalPrice(c), p = premiumPricing.getRegionalPrice(c);
-    check(c + ": School is priced below Premium in the same currency", s.currency === p.currency && s.amountMinor < p.amountMinor);
+  const fallback = pricing.getSchoolRegionalPrice(null);
+  check("unknown country falls back to international USD $3.99, never $19.99", fallback.currency === "usd" && fallback.amountMinor === 399 && fallback.display === "$3.99");
+  for (const c of ["US", "GB", "DE", "CA", "AU"]) {
+    const s = pricing.getSchoolRegionalPrice(c);
+    check(String(c) + ": School is $3.99 USD (399 cents)", s.currency === "usd" && s.amountMinor === 399 && s.display === "$3.99");
   }
+  const inPremium = premiumPricing.getRegionalPrice("IN");
+  check("IN: School is priced below Premium in the same currency", inr.currency === inPremium.currency && inr.amountMinor < inPremium.amountMinor);
+  const usPremium = premiumPricing.getRegionalPrice("US");
+  const usSchool = pricing.getSchoolRegionalPrice("US");
+  check("US: School is priced below Premium in the same currency", usSchool.currency === usPremium.currency && usSchool.amountMinor < usPremium.amountMinor);
+  check("old Chess School $19.99 / 1999 is gone", pricing.getSchoolRegionalPrice("US").amountMinor !== 1999);
   check("product name says Lifetime Access", /Lifetime Access/.test(pricing.SCHOOL_PRODUCT_NAME));
 
   const mig = read("supabase", "migrations", "0043_chess_school_v2.sql");

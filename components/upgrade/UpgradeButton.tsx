@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { RegionalPrice } from "@/lib/pricing/regions";
 import { PREMIUM_DURATION_LABEL } from "@/lib/premium/entitlement";
+import { track } from "@/lib/analytics/client";
 
 interface PromoPreview {
   code: string;
@@ -15,7 +16,7 @@ export function UpgradeButton({
   tone = "adventure",
 }: {
   /** Full custom button text (no price appended). Omit to show the
-   * server-determined regional price: "Unlock Everything — ₹299". */
+   * server-determined regional price: "Unlock Everything — ₹349". */
   label?: string;
   tone?: "adventure" | "premium";
 }) {
@@ -28,6 +29,15 @@ export function UpgradeButton({
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoPreview, setPromoPreview] = useState<PromoPreview | null>(null);
+
+  // Fired once per mount of this button — it's rendered wherever the
+  // Premium upgrade UI is shown (parent dashboard, paywalls, Premium
+  // preview), so "viewed" here means "this upgrade UI was shown", not a
+  // page-level pageview.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    track("premium_upgrade_viewed");
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +85,7 @@ export function UpgradeButton({
   async function startCheckout() {
     setLoading(true);
     setError(null);
+    track("premium_checkout_started");
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",

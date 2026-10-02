@@ -7,7 +7,7 @@ import { NextLessonCard } from "@/components/learner/NextLessonCard";
 import { CourseStatusChip } from "@/components/learner/CourseStatusChip";
 import { LearningPathPanel } from "@/components/learner/LearningPathPanel";
 import { getCourse } from "@/lib/academy/courses.server";
-import { COURSE_NAME, COURSE_TITLE, COURSE_TAGLINE } from "@/lib/school/chessSchool";
+import { COURSE_NAME } from "@/lib/school/chessSchool";
 
 /**
  * Learn (Phase 19) — a single combined index over the existing Academy and
@@ -115,12 +115,18 @@ export default function LearnPage() {
                 "12 of 30" would be exactly the fake progress that is not
                 allowed. The real figures live on Home and on /chess-school,
                 where the data already is — this card only names the course
-                and points at it. */}
+                and points at it.
+                Phase 8A: title/tagline hardcoded to match Chess School V2's
+                own framing (see app/chess-school/classroom/page.tsx's
+                metadata) now that /chess-school lands there, not the old
+                day-based V1 course. */}
             <p className={`${TEXT.meta} text-premium-gold`}>🏫 {COURSE_NAME}</p>
             <p className="font-classic-display text-lg text-premium-ivory mt-1">
-              {COURSE_TITLE}
+              From zero to playing real people
             </p>
-            <p className={`${TEXT.caption} normal-case mt-1`}>{COURSE_TAGLINE}</p>
+            <p className={`${TEXT.caption} normal-case mt-1`}>
+              30 sessions with Ollie as your coach, at your own pace.
+            </p>
           </div>
         </PrimaryCard>
       </Link>

@@ -57,12 +57,18 @@ export function PuzzleTower({
   isPremium,
   freePuzzlesLeft,
   onStart,
+  kicker = "🧩 PUZZLES",
+  title = "The Puzzle Tower",
+  subtitle = "Solve today. Climb higher. Grow sharper.",
 }: {
   solvedCount: number;
   isPremium: boolean;
   /** Free-tier puzzles left today; null once premium (unlimited). */
   freePuzzlesLeft: number | null;
   onStart: () => void;
+  kicker?: string;
+  title?: string;
+  subtitle?: string;
 }) {
   const current = currentPuzzleLevel(solvedCount);
   const next = nextPuzzleLevel(solvedCount);
@@ -152,15 +158,15 @@ export function PuzzleTower({
   }, []);
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#080c18] px-4 pt-6 pb-nav-safe">
+    <main className="relative min-h-screen overflow-x-hidden bg-[#080c18] px-4 pt-safe-icons pb-nav-safe puzzle-quest-hub">
       <div className="relative mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-6xl md:grid md:grid-cols-[minmax(0,1.2fr)_minmax(280px,360px)] md:items-start md:gap-6 lg:gap-8">
         {/* ── Left: story + illustrated hero + tiers ──────────────────── */}
         <div className="flex min-w-0 flex-col gap-5">
           <div className="flex flex-col items-center gap-1 text-center md:items-start md:text-left">
-            <p className={`${TEXT.meta} text-premium-gold`}>🧩 PUZZLES</p>
-            <h1 className={TEXT.display}>The Puzzle Tower</h1>
+            <p className={`${TEXT.meta} text-premium-gold`}>{kicker}</p>
+            <h1 className={TEXT.display}>{title}</h1>
             <p className={`${TEXT.body} normal-case text-premium-ivory/85`}>
-              Solve today. Climb higher. Grow sharper.
+              {subtitle}
             </p>
             <p className={`${TEXT.caption} normal-case text-premium-ivory/55`}>
               {motivationalLine(solvedCount)}

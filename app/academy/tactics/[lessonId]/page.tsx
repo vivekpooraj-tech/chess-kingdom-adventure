@@ -18,6 +18,7 @@ import { getActiveChildIdClient } from "@/lib/childSession";
 import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import { getTacticsLesson, getTacticsLessonIndex, TACTICS_LESSONS } from "@/content/tacticsLessons";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -40,6 +41,13 @@ export default function TacticsLessonPage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  // "see" stage: the board sits in a flex row beside its caption with no
+  // wrapper of its own (the caption takes whatever space is left), so its
+  // cap stays modest to leave that text a readable column. "practice"
+  // stage: the board has a dedicated fixed-width column (see its
+  // lg:w-[...] wrapper below), so it can grow further.
+  const seeBoardSize = useResponsiveBoardSize(400, { maxSize: 480 });
+  const practiceBoardSize = useResponsiveBoardSize(460, { maxSize: 520 });
 
   const [stage, setStage] = useState<Stage>("learn");
   const [exerciseIndex, setExerciseIndex] = useState(0);
@@ -199,7 +207,7 @@ export default function TacticsLessonPage() {
   }
 
   return (
-    <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 py-10">
+    <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-safe-icons pb-10">
       <div className="w-full max-w-2xl flex items-center justify-between">
         <Link
           href="/academy/tactics"
@@ -255,7 +263,7 @@ export default function TacticsLessonPage() {
         /* Board-first: full-width board on phones; on wide screens the
            board sits beside its caption so you read and see at once. */
         <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-4 lg:max-w-4xl lg:flex-row lg:items-center lg:gap-8">
-          <ChessBoard readOnly fen={lesson.examples[0].fen} size={400} boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
+          <ChessBoard readOnly fen={lesson.examples[0].fen} size={seeBoardSize} boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
           <div className="flex flex-col items-center gap-4 lg:items-start">
             <p className={`${TEXT.body} text-center lg:text-left`}>{lesson.examples[0].caption}</p>
             <Button tone="premium" onClick={() => setStage("practice")}>
@@ -268,14 +276,15 @@ export default function TacticsLessonPage() {
       {stage === "practice" && (
         <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-4 lg:max-w-5xl lg:flex-row lg:items-start lg:gap-8">
           <div
-            className="board-feedback flex w-full items-center justify-center lg:w-[460px] lg:flex-none"
+            className="board-feedback flex w-full items-center justify-center lg:flex-none"
+            style={{ maxWidth: practiceBoardSize }}
             data-feedback={practiceStatus}
           >
             <ChessBoard
               key={boardKey}
               fen={exercise.fen}
               playableColor={exercise.sideToMove}
-              size={460}
+              size={practiceBoardSize}
               boardSkinId={boardSkinId}
               pieceSetId={pieceSetId}
               onMove={handlePracticeMove}

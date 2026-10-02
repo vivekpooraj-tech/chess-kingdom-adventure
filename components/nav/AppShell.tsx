@@ -7,6 +7,7 @@ import { isAppChromeRoute } from "./navConfig";
 import { PrimaryNav } from "./PrimaryNav";
 import { SideNav } from "./SideNav";
 import { AppTopBar } from "./AppTopBar";
+import { PhoneUtilityIcons } from "./PhoneUtilityIcons";
 
 const COLLAPSE_KEY = "chessmind-sidenav-collapsed";
 
@@ -88,6 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AppTopBar />
         {children}
       </div>
+      <PhoneUtilityIcons />
       <PrimaryNav />
     </>
   );

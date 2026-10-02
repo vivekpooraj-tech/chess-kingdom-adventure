@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { SchoolCta } from "./SchoolCta";
 import { TEXT } from "@/lib/designSystem";
-import { FREE_SESSION_LIMIT, SCHOOL_PRICE_LABEL, SCHOOL_PRICE_NOTE } from "@/lib/school/v2/access";
+import { FREE_SESSION_LIMIT, SCHOOL_PRICE_NOTE } from "@/lib/school/v2/access";
+import { track } from "@/lib/analytics/client";
 
 /**
  * The Chess School upgrade path, shown wherever a locked session is.
@@ -12,17 +13,24 @@ import { FREE_SESSION_LIMIT, SCHOOL_PRICE_LABEL, SCHOOL_PRICE_NOTE } from "@/lib
  * Two ways in, both stated plainly: buy Chess School on its own (lifetime,
  * one payment), or get Premium, which includes it. The price shown comes from
  * /api/pricing/school so it matches what Stripe will charge for this
- * region; the server-rendered fallback is the Indian price, which is the
- * requested one.
+ * region. Until that answers, no amount is shown: a hard-coded fallback would
+ * be the wrong currency for every other region.
  *
  * Same shape as components/upgrade/UpgradeButton: the client only ever asks
  * the server to start a checkout and is sent to Stripe's hosted page. No
  * amount, currency or product is chosen here.
  */
 export function UnlockSchoolButton({ nextSessionNumber }: { nextSessionNumber: number }) {
-  const [priceLabel, setPriceLabel] = useState(SCHOOL_PRICE_LABEL);
+  const [priceLabel, setPriceLabel] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fired once per mount — this button is rendered wherever a locked
+  // session's unlock UI is shown.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    track("school_upgrade_viewed");
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,7 +40,7 @@ export function UnlockSchoolButton({ nextSessionNumber }: { nextSessionNumber: n
         if (!cancelled && p && typeof p.display === "string") setPriceLabel(p.display);
       })
       .catch(() => {
-        /* keep the fallback label */
+        /* stay price-neutral */
       });
     return () => {
       cancelled = true;
@@ -42,8 +50,13 @@ export function UnlockSchoolButton({ nextSessionNumber }: { nextSessionNumber: n
   async function startCheckout() {
     setLoading(true);
     setError(null);
+    track("school_checkout_started");
     try {
-      const res = await fetch("/api/stripe/checkout-school", { method: "POST" });
+      const res = await fetch("/api/stripe/checkout-school", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ world: new URLSearchParams(window.location.search).get("world") }),
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -57,10 +70,11 @@ export function UnlockSchoolButton({ nextSessionNumber }: { nextSessionNumber: n
   }
 
   return (
-    <div className="rounded-premiumCard border border-premium-gold/30 bg-premium-gold/[0.06] p-5">
+    <div className="world-primary-card rounded-premiumCard border border-premium-gold/30 bg-premium-gold/[0.06] p-5">
       <p className={`${TEXT.subheading}`}>Session {nextSessionNumber} is waiting</p>
       <p className={`${TEXT.body} mt-1`}>
-        The first {FREE_SESSION_LIMIT} sessions are free. Unlock all thirty for {priceLabel}.
+        The first {FREE_SESSION_LIMIT} sessions are free.{" "}
+        {priceLabel ? `Unlock all thirty for ${priceLabel}.` : "Unlock all thirty with one payment."}
       </p>
       <p className={`${TEXT.caption} mt-1`}>{SCHOOL_PRICE_NOTE}</p>
 
@@ -78,9 +92,9 @@ export function UnlockSchoolButton({ nextSessionNumber }: { nextSessionNumber: n
         ))}
       </ul>
 
-      <Button tone="premium" block size="lg" className="mt-4" onClick={startCheckout} loading={loading}>
-        Chess School Lifetime Access — {priceLabel}
-      </Button>
+      <SchoolCta block className="mt-4" onClick={startCheckout} loading={loading}>
+        {priceLabel ? `Chess School Lifetime Access — ${priceLabel}` : "Chess School Lifetime Access"}
+      </SchoolCta>
       {error ? <p className="mt-2 font-classic-body text-sm text-red-300">{error}</p> : null}
 
       <Link

@@ -40,6 +40,7 @@ export function Screen({
   className,
   contentClassName,
   align = "stretch",
+  topSafeArea = "default",
 }: {
   children: React.ReactNode;
   maxWidth?: ScreenMaxWidth;
@@ -50,11 +51,22 @@ export function Screen({
   /** `center` keeps a compact column visually centred on wide screens
    * (splash-style pages); the default `stretch` lets content fill the column. */
   align?: "stretch" | "center";
+  /**
+   * `"icons"` adds extra phone-only top clearance so a page's own H1 — with
+   * nothing else (an avatar card, a stat row) between it and the top edge —
+   * doesn't sit under PhoneUtilityIcons' fixed top-right Learn/More cluster.
+   * `"default"` (.pt-safe, unchanged) is correct for every page that already
+   * clears the icons on its own, which is every existing call site — this is
+   * opt-in per page, not a global spacing change. See .pt-safe-icons in
+   * globals.css.
+   */
+  topSafeArea?: "default" | "icons";
 }) {
   return (
     <main
       className={clsx(
-        "screen-x pt-safe pb-nav-safe min-h-screen bg-premium-midnight",
+        "screen-x pb-nav-safe min-h-screen bg-premium-midnight",
+        topSafeArea === "icons" ? "pt-safe-icons" : "pt-safe",
         align === "center" && "flex flex-col items-center justify-center",
         className
       )}

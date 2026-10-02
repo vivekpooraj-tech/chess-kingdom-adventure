@@ -18,6 +18,15 @@ import { getActiveChildIdClient } from "@/lib/childSession";
 import type { TacticsPuzzle, TacticsPuzzleResponse } from "@/lib/puzzles/tacticsTypes";
 import { prefersNeutralHomeTone } from "@/lib/learner/experienceLevel";
 import { encourageAfterMiss, celebrateSolve } from "@/lib/puzzles/encouragement";
+import { useWorld } from "@/lib/world/WorldContext";
+import { PuzzleBoardMeta } from "@/components/puzzles/world/PuzzleBoardMeta";
+import { PuzzleSideChrome } from "@/components/puzzles/world/PuzzleSideChrome";
+import { PuzzleArenaHeading } from "@/components/puzzles/world/PuzzleArenaHeading";
+import {
+  puzzleElapsed,
+  puzzleNextLabel,
+  sessionAccuracyLabel,
+} from "@/lib/puzzles/puzzleArena";
 
 /**
  * Tactics Trainer — the client for the 5,000-puzzle server-side library.
@@ -50,6 +59,7 @@ type Status = "loading" | "playing" | "wrong" | "solved" | "empty";
  */
 export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = {}) {
   const router = useRouter();
+  const world = useWorld();
   const [puzzle, setPuzzle] = useState<TacticsPuzzle | null>(null);
   const [reason, setReason] = useState<TacticsPuzzleResponse["reason"]>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -59,6 +69,8 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
   const [attempts, setAttempts] = useState(0);
   const [solvedCount, setSolvedCount] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [firstTrySolves, setFirstTrySolves] = useState(0);
+  const [puzzleStartedAt, setPuzzleStartedAt] = useState("");
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>();
   const [pieceSetId, setPieceSetId] = useState<string | undefined>();
   const [neutralTone, setNeutralTone] = useState(false);
@@ -122,6 +134,7 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
       setReason(data.reason);
       setBoardFen(data.puzzle.fen);
       setBoardKey((k) => k + 1);
+      setPuzzleStartedAt(new Date().toISOString());
       setStatus("playing");
     } catch {
       setStatus("empty");
@@ -165,6 +178,7 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
       setStatus("solved");
       setSolvedCount((n) => n + 1);
       setStreak((n) => (attempts === 0 ? n + 1 : 0));
+      if (attempts === 0) setFirstTrySolves((n) => n + 1);
       const childId = childIdRef.current;
       if (childId) {
         // Same table the mate trainer writes to, so a child's solve history
@@ -231,14 +245,30 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
 
   const skill = getSkill(puzzle.skill);
   const remaining = Math.ceil((puzzle.solution.length - moveIndex) / 2);
+  const chromeStatus = status === "solved" ? "correct" : status === "wrong" ? "incorrect" : "playing";
 
   return (
     <ChessFocusLayout
-      title="Tactics Trainer"
+      title={<PuzzleArenaHeading fallback="Tactics Trainer" />}
       // Full-screen in every orientation, so this is the only way back to
       // the puzzle hub.
-      onExit={() => router.push("/puzzles")}
+      onExit={() => router.push(world === "classic" || world === "atelier" || world === "enchanted" ? `/puzzles?world=${world}` : "/puzzles")}
       preserveBottomNav={false}
+      boardMeta={
+        <PuzzleBoardMeta
+          theme={skill.name}
+          objective={skill.principle}
+          drill={skill.name}
+          depth={String(Math.ceil(puzzle.solution.length / 2))}
+          accuracy={sessionAccuracyLabel(solvedCount, firstTrySolves)}
+          time={puzzleElapsed(puzzleStartedAt)}
+          streak={String(streak)}
+          solvedCount={solvedCount}
+          rating={puzzle.rating}
+          source="Lichess tactics library"
+          notes={status === "solved" ? puzzle.solutionSan.join(" ") : skill.principle}
+        />
+      }
       renderBoard={(boardSize) => (
         <div className="board-feedback flex w-full items-center justify-center" data-feedback={status}>
           <ChessBoard
@@ -254,7 +284,16 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
           />
         </div>
       )}
-      sidePanel={
+        sidePanel={
+          <PuzzleSideChrome
+            status={chromeStatus}
+            missCount={attempts}
+            hint={
+              reason && status === "playing"
+                ? `${reason.skillName} came up in ${reason.weakCount} of your reviewed games.`
+                : skill.principle
+            }
+          >
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-classic-body text-xs bg-premium-gold/15 text-premium-gold rounded-full px-3 py-1">
@@ -275,10 +314,15 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
 
           {/* Only shown when the server actually chose this puzzle for a
               recorded weakness — never as generic encouragement. */}
-          {reason && status === "playing" && (
+          {reason && status === "playing" && world === "enchanted" && (
             <p className="rounded-premiumBtn border border-premium-gold/25 bg-premium-gold/10 px-3 py-2 font-classic-body text-sm text-premium-gold">
               Ollie picked this: {reason.skillName} came up in {reason.weakCount} of your reviewed
               games.
+            </p>
+          )}
+          {reason && status === "playing" && world !== "enchanted" && (
+            <p className={`${TEXT.caption} normal-case`}>
+              {reason.skillName} came up in {reason.weakCount} of your reviewed games.
             </p>
           )}
 
@@ -297,7 +341,7 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
               <MoveFeedback tone="incorrect">
                 {encourageAfterMiss({ attempt: attempts, neutralTone, hint: skill.name })}
               </MoveFeedback>
-              <Button tone="premium" variant="ghost" onClick={retry} className="w-full">
+              <Button tone="premium" variant="ghost" onClick={retry} className="w-full min-h-[48px]">
                 Try Again
               </Button>
             </div>
@@ -314,8 +358,8 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
                   {puzzle.solutionSan.join(" ")}
                 </p>
               </div>
-              <Button tone="premium" onClick={() => void loadPuzzle()} className="w-full">
-                Next Puzzle →
+              <Button tone="premium" onClick={() => void loadPuzzle()} className="w-full min-h-[48px]">
+                {puzzleNextLabel(world)} →
               </Button>
             </div>
           )}
@@ -324,7 +368,8 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
             Solved this session: {solvedCount}
           </p>
         </div>
-      }
+          </PuzzleSideChrome>
+        }
     />
   );
 }

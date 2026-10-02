@@ -23,7 +23,7 @@ export default async function OpeningExplorerPage() {
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="compact" topSafeArea="icons">
         <OpeningExplorerClient encounters={encounters} />
         <Link
           href="/academy"

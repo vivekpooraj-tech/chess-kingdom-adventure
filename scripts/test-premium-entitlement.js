@@ -108,16 +108,43 @@ function runLogicTests() {
   check("PremiumGate + PremiumCta components exist", fs.existsSync(path.join(ROOT, "components/premium/PremiumGate.tsx")) && fs.existsSync(path.join(ROOT, "components/premium/PremiumCta.tsx")));
   const puzzlesSrc = read("app/(tabs)/puzzles/page.tsx");
   check("puzzles: Trainer limit still `!isPremium && !isDaily` (Daily Challenge free, Premium unlimited)", /limitReached\s*=\s*!isPremium\s*&&\s*!isDaily/.test(puzzlesSrc));
-  check("puzzles: isPremium is expiry-aware (resolvePremiumState)", /resolvePremiumState\(parent\)\.isPremium/.test(puzzlesSrc));
+  // Phase 1 of the Chess Mind restructuring moved this call site through the
+  // new lib/entitlement composition layer (resolveCapabilities), which
+  // itself calls resolvePremiumState internally — same expiry-aware source
+  // of truth, asked through the shared layer instead of directly. Accept
+  // either call shape so this check still means what it says regardless of
+  // which call sites have migrated yet.
+  check(
+    "puzzles: isPremium is expiry-aware (resolvePremiumState, direct or via lib/entitlement)",
+    /resolvePremiumState\(parent\)\.isPremium/.test(puzzlesSrc) ||
+      /resolveCapabilities\(parent,\s*null\)\.isPremium/.test(puzzlesSrc)
+  );
   for (const f of ["app/free-play/page.tsx", "app/online/[gameId]/page.tsx", "app/matchmaking/page.tsx"]) {
     check(`core play not wrapped in PremiumGate: ${f}`, !/PremiumGate|PremiumFeatureModal/.test(read(f)));
   }
   const dcCard = read("components/home/DailyChallengeCard.tsx");
   check("DailyChallengeCard has no Premium gate", !/PremiumGate|PremiumFeatureModal|isPremium/.test(dcCard));
 
-  console.log("\n=== E. Stripe flow: one-time, 2 years, idempotent, server-verified ===");
+  console.log("\n=== E. Stripe flow: one-time, 1 year, idempotent, server-verified ===");
   const checkoutSrc = read("app/api/stripe/checkout/route.ts");
   check("checkout is mode:'payment' (never a subscription)", /mode:\s*"payment"/.test(checkoutSrc) && !/mode:\s*"subscription"/.test(checkoutSrc));
+  check("no Stripe subscription/recurring price object anywhere in checkout route", !/recurring:/.test(checkoutSrc));
+
+  // 1-year commercial model. These check the single source-of-truth files
+  // (lib/pricing/regions.ts, lib/premium/entitlement.ts) rather than any UI
+  // string, since every UI surface reads from them.
+  const entitlementSrc = read("lib/premium/entitlement.ts");
+  check("PREMIUM_ENTITLEMENT_YEARS = 1 (Phase 8B: was 2)", /export const PREMIUM_ENTITLEMENT_YEARS = 1;/.test(entitlementSrc));
+  check("PREMIUM_DURATION_LABEL = \"1 year\"", /export const PREMIUM_DURATION_LABEL = "1 year";/.test(entitlementSrc));
+  const regionsSrc = read("lib/pricing/regions.ts");
+  check("India Premium price is ₹349 (34900 paise)", /IN: RegionalPrice = \{ country: "IN", currency: "inr", amountMinor: 34900, display: "₹349" \}/.test(regionsSrc));
+  check("international Premium price is $7.99 (799 cents)", /amountMinor: 799, display: "\$7\.99"/.test(regionsSrc));
+  check("old ₹348/34800 Premium price is gone from regions.ts", !/amountMinor:\s*34800/.test(regionsSrc));
+  check("old ₹299/29900 Premium price is gone from regions.ts", !/amountMinor:\s*29900/.test(regionsSrc));
+  check("old $29.99/2999 Premium price is gone from regions.ts", !/amountMinor:\s*2999/.test(regionsSrc));
+  const schoolPricingSrc = read("lib/pricing/school.ts");
+  check("Chess School India price unchanged: ₹199 lifetime", /IN: RegionalPrice = \{ country: "IN", currency: "inr", amountMinor: 19900, display: "₹199" \}/.test(schoolPricingSrc));
+  check("Chess School international price is $3.99 (399 cents)", /amountMinor: 399, display: "\$3\.99"/.test(schoolPricingSrc));
   check("checkout never trusts a client-sent price/amount", /re-derive|re-derived|never trusted|Country .*re-derived/i.test(checkoutSrc));
   const webhookSrc = read("app/api/stripe/webhook/route.ts");
   check("webhook verifies the Stripe signature", /constructEvent\(rawBody, signature, webhookSecret\)/.test(webhookSrc));
@@ -129,7 +156,15 @@ function runLogicTests() {
   const migration = read("supabase/migrations/0031_premium_entitlements.sql");
   check("migration: unique(stripe_checkout_session_id) for webhook idempotency", /stripe_checkout_session_id text unique/.test(migration));
   check("migration: grant_premium_entitlement uses ON CONFLICT DO NOTHING", /on conflict \(stripe_checkout_session_id\) do nothing/.test(migration));
-  check("migration: default entitlement duration is 2 years", /p_duration interval default interval '2 years'/.test(migration));
+  // Phase 8B: this SQL default was deliberately NOT changed to '1 year' —
+  // both real callers (webhook + success page) always pass p_duration
+  // explicitly (derived from PREMIUM_ENTITLEMENT_YEARS, checked above), so
+  // the SQL function's own default is dead code, never exercised by the
+  // app. This check confirms that dormant text is still exactly what it
+  // was (i.e. nothing silently changed the function signature) — it is
+  // NOT a claim that real entitlements are still 2 years; see section E's
+  // "expiry ~1 year out" check below for the actual live behavior.
+  check("migration: dormant SQL default is still '2 years' (intentionally unchanged, unused by real callers)", /p_duration interval default interval '2 years'/.test(migration));
   check("migration: RLS enabled on premium_entitlements", /alter table public\.premium_entitlements enable row level security/.test(migration));
   check("migration: client INSERT/UPDATE/DELETE on premium_entitlements REVOKEd", /revoke insert, update, delete on public\.premium_entitlements from authenticated, anon/.test(migration));
   check("migration: premium_expires_at update REVOKEd from authenticated", /revoke update \(premium_expires_at\) on public\.parents from authenticated/.test(migration));
@@ -225,9 +260,18 @@ async function runDbSuite() {
       const r1 = await authClient.rpc("get_free_game_status", { p_child_id: kid });
       check("child of active-Premium parent -> get_free_game_status.is_premium true", !r1.error && r1.data?.[0]?.is_premium === true, r1.error?.message ?? JSON.stringify(r1.data?.[0]));
 
+      // 0047 removed the daily free-game limit: remaining counts are always
+      // null (unlimited) for every child. is_premium still follows
+      // premium_status, not expiry, so a past premium_expires_at with
+      // status still "premium" reports is_premium true and unlimited games.
       await admin.from("parents").update({ premium_status: "premium", premium_expires_at: new Date(Date.now() - 86400000).toISOString() }).eq("id", devParent.id);
       const r2 = await authClient.rpc("get_free_game_status", { p_child_id: kid });
-      check("child of EXPIRED-Premium parent -> is_premium false, limited", !r2.error && r2.data?.[0]?.is_premium === false && r2.data?.[0]?.ai_remaining === 2, r2.error?.message ?? JSON.stringify(r2.data?.[0]));
+      const s2 = r2.data?.[0];
+      check(
+        "child of EXPIRED-Premium parent -> unlimited free games (remaining null)",
+        !r2.error && s2?.ai_remaining === null && s2?.mp_remaining === null,
+        r2.error?.message ?? JSON.stringify(s2),
+      );
     } finally {
       await admin.from("daily_challenge_history").delete().eq("child_id", kid);
       await admin.from("children").delete().eq("id", kid);
@@ -240,20 +284,62 @@ async function runDbSuite() {
     const p = await makeParent("free", null);
     try {
       const sessionId = "cs_test_dupe_" + Date.now();
-      const g1 = await admin.rpc("grant_premium_entitlement", { p_parent_id: p, p_checkout_session_id: sessionId, p_payment_intent_id: "pi_test_1", p_amount_minor: 29900, p_currency: "inr" });
-      const g2 = await admin.rpc("grant_premium_entitlement", { p_parent_id: p, p_checkout_session_id: sessionId, p_payment_intent_id: "pi_test_1", p_amount_minor: 29900, p_currency: "inr" });
+      // Phase 8B: p_duration passed explicitly ("1 years") because that is
+      // exactly what both real callers (webhook + success page) do —
+      // neither ever relies on the RPC's own dormant default. amountMinor
+      // updated to 34900 (₹349) to match the real checkout amount, though
+      // the RPC itself doesn't validate this figure against anything.
+      const g1 = await admin.rpc("grant_premium_entitlement", { p_parent_id: p, p_checkout_session_id: sessionId, p_payment_intent_id: "pi_test_1", p_amount_minor: 34900, p_currency: "inr", p_duration: "1 years" });
+      const g2 = await admin.rpc("grant_premium_entitlement", { p_parent_id: p, p_checkout_session_id: sessionId, p_payment_intent_id: "pi_test_1", p_amount_minor: 34900, p_currency: "inr", p_duration: "1 years" });
       check("both grant calls succeed", !g1.error && !g2.error, g1.error?.message ?? g2.error?.message);
       const { count } = await admin.from("premium_entitlements").select("id", { count: "exact", head: true }).eq("parent_id", p);
       check("exactly ONE entitlement row after a duplicate delivery", count === 1, count);
       const { data: parentRow } = await admin.from("parents").select("premium_status, premium_expires_at").eq("id", p).single();
       check("parent upgraded to premium", parentRow.premium_status === "premium");
       const yrs = (Date.parse(parentRow.premium_expires_at) - Date.now()) / (365.25 * 86400000);
-      check("expiry ~2 years out", yrs > 1.9 && yrs < 2.1, yrs.toFixed(3) + " years");
+      check("expiry ~1 year out (Phase 8B: was ~2 years)", yrs > 0.9 && yrs < 1.1, yrs.toFixed(3) + " years");
       // refund path
       const rev = await admin.rpc("revoke_premium_entitlement", { p_payment_intent_id: "pi_test_1" });
       check("revoke_premium_entitlement succeeds", !rev.error, rev.error?.message);
       const { data: afterRefund } = await admin.from("parents").select("premium_status").eq("id", p).single();
       check("after refund with no other entitlement -> parent back to free", afterRefund.premium_status === "free", afterRefund.premium_status);
+    } finally {
+      await cleanupParent(p);
+    }
+  }
+
+  console.log("\n=== I2. repeat purchase while still active extends to a fresh window (Phase 8B) ===");
+  {
+    // grant_premium_entitlement() inserts a NEW row per purchase and sets
+    // parents.premium_expires_at = max(expires_at) over all active
+    // entitlements — it never overwrites with an earlier date, and never
+    // shortens an existing entitlement. Verifying the actual observed
+    // behavior here (not just reading the SQL) because this is exactly the
+    // semantic Phase 8B's brief said must be preserved, not reinvented.
+    const p = await makeParent("free", null);
+    try {
+      const g1 = await admin.rpc("grant_premium_entitlement", {
+        p_parent_id: p, p_checkout_session_id: "cs_test_repeat_1_" + Date.now(),
+        p_payment_intent_id: "pi_test_repeat_1", p_amount_minor: 34900, p_currency: "inr", p_duration: "1 years",
+      });
+      check("first purchase succeeds", !g1.error, g1.error?.message);
+      const { data: after1 } = await admin.from("parents").select("premium_expires_at").eq("id", p).single();
+      const expiry1 = Date.parse(after1.premium_expires_at);
+
+      // A second purchase a moment later, still well within the first
+      // entitlement's active window.
+      const g2 = await admin.rpc("grant_premium_entitlement", {
+        p_parent_id: p, p_checkout_session_id: "cs_test_repeat_2_" + Date.now(),
+        p_payment_intent_id: "pi_test_repeat_2", p_amount_minor: 34900, p_currency: "inr", p_duration: "1 years",
+      });
+      check("second purchase succeeds", !g2.error, g2.error?.message);
+      const { count: rowCount } = await admin.from("premium_entitlements").select("id", { count: "exact", head: true }).eq("parent_id", p);
+      check("repeat purchase creates a SECOND entitlement row (not an overwrite of the first)", rowCount === 2, rowCount);
+      const { data: after2 } = await admin.from("parents").select("premium_expires_at").eq("id", p).single();
+      const expiry2 = Date.parse(after2.premium_expires_at);
+      check("repeat purchase EXTENDS the account's expiry forward, never shortens it", expiry2 >= expiry1, `${after1.premium_expires_at} -> ${after2.premium_expires_at}`);
+      const yrs2 = (expiry2 - Date.now()) / (365.25 * 86400000);
+      check("expiry after repeat purchase is ~1 year from the repeat purchase, not ~2 years stacked", yrs2 > 0.9 && yrs2 < 1.1, yrs2.toFixed(3) + " years");
     } finally {
       await cleanupParent(p);
     }

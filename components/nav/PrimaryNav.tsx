@@ -40,6 +40,7 @@ export function PrimaryNav() {
             <Link
               key={item.label}
               href={item.href}
+              data-nav={item.label.toLowerCase()}
               aria-current={isActive ? "page" : undefined}
               className={`flex min-h-[var(--bottom-nav-h)] flex-1 flex-col items-center justify-center gap-1 py-2 transition-colors duration-100 active:scale-95 ${
                 isActive ? "text-premium-gold" : "text-premium-ivory/55 hover:text-premium-ivory"

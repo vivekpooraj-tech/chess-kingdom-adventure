@@ -196,7 +196,10 @@ const journey = (currentDay, completedDays) => C.courseJourney({ currentDay, com
   const page = read("app/chess-school/page.tsx");
   const journeyCmp = read("components/school/CourseJourney.tsx");
   const grad = read("components/school/GraduationPanel.tsx");
-  const card = read("components/school/ChessSchoolCard.tsx");
+  // Phase 3: ChessSchoolCard.tsx (Kingdom Journey V1 relabeled "Chess
+  // School") was removed from Home. Its "view the course" link lives on in
+  // PrimaryActionCard.tsx's "school" branch, which replaced it.
+  const card = read("components/home/PrimaryActionCard.tsx");
   const learn = read("app/(tabs)/learn/page.tsx");
 
   check("the course page exists and is authed", /getSessionUser/.test(page) && /redirect\("\/sign-in"\)/.test(page));

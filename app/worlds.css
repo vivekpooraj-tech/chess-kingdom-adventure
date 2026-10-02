@@ -1,0 +1,2007 @@
+/* ==========================================================================
+   CHESS MIND — WORLD LAYER
+   ==========================================================================
+
+   Three visual worlds on a SEPARATE axis from:
+     - app/themes.css  [data-theme]  (user-selectable colour identity)
+     - app/modes.css   [data-mode]   (Kids / Adult / Classic-Pro type/radius)
+
+   World is the *place*: Enchanted Kingdom, Master Training Atelier, Classic
+   Pro. Tokens apply through `data-world` on a subtree so one screen can look
+   like a kingdom without recolouring Chess School, Play, or auth.
+
+   Phase 1–3: Kingdom Map / Home (frozen).
+   Chess School classroom uses world-specific structure (`.sch-journey`,
+   `.sch-academy`, `.sch-study`) plus shared tokens (`.world-cta`,
+   `.world-school-card`, `.world-ollie`).
+
+   --cm-* channels are overridden here so existing `premium-*` Tailwind
+   classes pick up the world palette without duplicating components.
+   ========================================================================== */
+
+.world-scope {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.world-scope__atmosphere {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.world-scope > *:not(.world-scope__atmosphere) {
+  position: relative;
+  z-index: 1;
+}
+
+/* --------------------------------------------------------------------------
+   ENCHANTED KINGDOM — kids / adventure home
+   Turquoise, purple, magical gold, coral. Magical, never babyish.
+   -------------------------------------------------------------------------- */
+[data-world="enchanted"] {
+  --cm-midnight: 8 32 42;
+  --cm-midnight-deep: 4 18 26;
+  --cm-navy: 14 54 68;
+  --cm-navy-light: 22 82 98;
+  --cm-gold: 240 193 75;
+  --cm-gold-muted: 196 154 58;
+  --cm-ivory: 248 244 232;
+  --cm-cream: 239 228 210;
+  --cm-emerald: 46 196 182;
+  --cm-emerald-deep: 16 112 108;
+  --world-coral: 255 107 107;
+  --world-purple: 125 90 230;
+  --world-teal: 46 196 182;
+}
+
+[data-world="enchanted"] main {
+  position: relative;
+  overflow-x: hidden;
+  background-color: rgb(var(--cm-midnight));
+  background-image:
+    radial-gradient(120% 80% at 12% -10%, rgb(var(--world-purple) / 0.28), transparent 55%),
+    radial-gradient(90% 60% at 100% 8%, rgb(var(--world-teal) / 0.18), transparent 50%),
+    radial-gradient(70% 40% at 80% 100%, rgb(var(--world-coral) / 0.08), transparent 55%);
+}
+
+[data-world="enchanted"] .world-scope__atmosphere {
+  background:
+    radial-gradient(120% 80% at 12% -10%, rgb(var(--world-purple) / 0.28), transparent 55%),
+    radial-gradient(90% 60% at 100% 8%, rgb(var(--world-teal) / 0.18), transparent 50%),
+    radial-gradient(70% 40% at 80% 100%, rgb(var(--world-coral) / 0.08), transparent 55%);
+}
+
+[data-world="enchanted"] .world-scope__atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgb(var(--cm-ivory) / 0.7), transparent),
+    radial-gradient(1px 1px at 28% 42%, rgb(var(--cm-gold) / 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 72% 22%, rgb(var(--cm-ivory) / 0.45), transparent),
+    radial-gradient(1px 1px at 88% 58%, rgb(var(--cm-gold) / 0.4), transparent),
+    radial-gradient(1px 1px at 46% 76%, rgb(var(--cm-ivory) / 0.35), transparent);
+}
+
+[data-world="enchanted"] .world-kicker {
+  font-family: var(--font-nunito), system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--cm-gold));
+}
+
+[data-world="enchanted"] .world-title {
+  font-family: var(--font-baloo), system-ui, sans-serif;
+}
+
+[data-world="enchanted"] .world-primary-card {
+  border-radius: 1.25rem;
+  border-color: rgb(var(--cm-gold) / 0.4);
+  box-shadow:
+    0 0 0 1px rgb(var(--world-purple) / 0.18),
+    0 16px 40px -18px rgb(4 18 26 / 0.7);
+}
+
+[data-world="enchanted"] .world-cta {
+  min-height: 48px;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 24px rgb(var(--cm-gold) / 0.35);
+}
+
+[data-world="enchanted"] .world-profile {
+  border-radius: 1.25rem;
+  border-color: rgb(var(--world-teal) / 0.28);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--cm-navy-light) / 0.55),
+    rgb(var(--cm-navy) / 0.8)
+  );
+}
+
+[data-world="enchanted"] .world-tile {
+  border-radius: 1.25rem;
+  min-height: 108px;
+}
+
+[data-world="enchanted"] .world-enter {
+  animation: world-card-in 420ms ease-out both;
+}
+
+[data-world="enchanted"] .world-enter-delay-1 {
+  animation-delay: 60ms;
+}
+
+[data-world="enchanted"] .world-enter-delay-2 {
+  animation-delay: 120ms;
+}
+
+@keyframes world-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-world="enchanted"] .world-enter,
+  [data-world="enchanted"] .world-enter-delay-1,
+  [data-world="enchanted"] .world-enter-delay-2 {
+    animation: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   MASTER TRAINING ATELIER — serious training home
+   Crimson, copper, charcoal, warm ivory. Not teal. Not magical.
+   -------------------------------------------------------------------------- */
+[data-world="atelier"] {
+  --cm-midnight: 18 14 16;
+  --cm-midnight-deep: 10 8 10;
+  --cm-navy: 36 20 24;
+  --cm-navy-light: 58 28 34;
+  --cm-gold: 184 115 51;
+  --cm-gold-muted: 154 96 48;
+  --cm-ivory: 245 236 224;
+  --cm-cream: 232 220 204;
+  --cm-emerald: 140 36 48;
+  --cm-emerald-deep: 96 24 34;
+  --world-crimson: 140 32 46;
+  --world-copper: 184 115 51;
+  --world-charcoal: 18 14 16;
+}
+
+[data-world="atelier"] main {
+  position: relative;
+  overflow-x: hidden;
+  background-color: rgb(var(--cm-midnight));
+  background-image:
+    radial-gradient(90% 55% at 100% -8%, rgb(var(--world-crimson) / 0.28), transparent 52%),
+    radial-gradient(70% 40% at 0% 100%, rgb(var(--world-copper) / 0.1), transparent 50%);
+}
+
+[data-world="atelier"] .world-scope__atmosphere {
+  background:
+    linear-gradient(180deg, rgb(var(--cm-midnight-deep) / 0.55), transparent 28%),
+    radial-gradient(90% 55% at 100% -8%, rgb(var(--world-crimson) / 0.22), transparent 52%);
+}
+
+[data-world="atelier"] .world-kicker {
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(var(--world-copper));
+}
+
+[data-world="atelier"] .world-title {
+  font-family: var(--font-fraunces), Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+[data-world="atelier"] .world-primary-card {
+  border-radius: 0.75rem;
+  border-color: rgb(var(--world-copper) / 0.4);
+  box-shadow:
+    0 0 0 1px rgb(var(--world-crimson) / 0.22),
+    0 18px 36px -20px rgb(0 0 0 / 0.75);
+}
+
+[data-world="atelier"] .world-cta {
+  min-height: 48px;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background-color: rgb(var(--world-crimson));
+  color: rgb(var(--cm-ivory));
+  box-shadow: 0 8px 22px -8px rgb(var(--world-crimson) / 0.7);
+}
+
+[data-world="atelier"] .world-profile {
+  border-radius: 0.75rem;
+  border-color: rgb(var(--world-copper) / 0.28);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--cm-navy-light) / 0.7),
+    rgb(var(--cm-midnight-deep) / 0.9)
+  );
+}
+
+[data-world="atelier"] .world-tile {
+  border-radius: 0.75rem;
+  min-height: 108px;
+  background: rgb(var(--cm-navy) / 0.85);
+}
+
+[data-world="atelier"] .world-enter {
+  animation: world-card-in 380ms ease-out both;
+}
+
+[data-world="atelier"] .world-enter-delay-1 {
+  animation-delay: 50ms;
+}
+
+[data-world="atelier"] .world-ollie {
+  border-radius: 0.5rem;
+  border-color: rgb(var(--world-copper) / 0.28);
+  background: rgb(var(--cm-navy) / 0.5);
+}
+
+[data-world="atelier"] .world-bonus-sparkle {
+  filter: grayscale(0.4) saturate(0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-world="atelier"] .world-enter,
+  [data-world="atelier"] .world-enter-delay-1,
+  [data-world="atelier"] .world-enter-delay-2 {
+    animation: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   CLASSIC PRO — a private modern chess club for serious players
+   Obsidian ground, graphite cards, warm ivory type, emerald action,
+   champagne for mastery, muted silver for secondary, burgundy only for losses.
+   `--world-forest` / `--world-parchment` keep their names (every Classic rule
+   below reads them) but now carry emerald / ivory.
+   -------------------------------------------------------------------------- */
+[data-world="classic"] {
+  --cm-midnight: 12 15 20;
+  --cm-midnight-deep: 7 9 12;
+  --cm-navy: 25 30 39;
+  --cm-navy-light: 36 42 54;
+  --cm-gold: 214 190 140;
+  --cm-gold-muted: 168 148 108;
+  --cm-ivory: 242 236 224;
+  --cm-cream: 226 219 204;
+  --cm-emerald: 38 166 110;
+  --cm-emerald-deep: 20 112 74;
+  --world-obsidian: 12 15 20;
+  --world-graphite: 25 30 39;
+  --world-graphite-hi: 36 42 54;
+  --world-champagne: 214 190 140;
+  --world-silver: 164 171 184;
+  /* Fill for emerald buttons — dark enough for ivory text (≈4.8:1). */
+  --world-forest: 22 120 80;
+  --world-burgundy: 168 64 78;
+  /* Burgundy as readable text on graphite. */
+  --world-burgundy-ink: 226 140 150;
+  --world-parchment: 242 236 224;
+}
+
+[data-world="classic"] main {
+  position: relative;
+  overflow-x: hidden;
+  background-color: rgb(var(--world-obsidian));
+  background-image: linear-gradient(180deg, rgb(var(--cm-midnight-deep) / 0.7), transparent 40%);
+}
+
+[data-world="classic"] .world-scope__atmosphere {
+  background:
+    radial-gradient(90% 50% at 50% -8%, rgb(var(--world-forest) / 0.1), transparent 60%),
+    repeating-conic-gradient(rgb(var(--world-parchment) / 0.022) 0 25%, transparent 0 50%) 0 0 / 64px 64px;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 45%);
+  mask-image: linear-gradient(180deg, #000, transparent 45%);
+}
+
+[data-world="classic"] .world-kicker {
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(var(--world-parchment) / 0.72);
+}
+
+[data-world="classic"] .world-title {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+[data-world="classic"] .world-primary-card {
+  border-radius: 0.375rem;
+  background-image: none;
+  background-color: rgb(var(--world-graphite));
+  border-color: rgb(var(--world-parchment) / 0.16);
+  box-shadow:
+    inset 3px 0 0 rgb(var(--world-forest)),
+    0 14px 28px -20px rgb(0 0 0 / 0.6);
+}
+
+[data-world="classic"] .world-cta {
+  min-height: 48px;
+  border-radius: 2px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background-color: rgb(var(--world-forest));
+  color: rgb(var(--world-parchment));
+  box-shadow: none;
+}
+
+[data-world="classic"] .world-profile {
+  border-radius: 0.375rem;
+  border-color: rgb(var(--world-parchment) / 0.16);
+  background: rgb(var(--world-graphite) / 0.92);
+}
+
+[data-world="classic"] .world-tile {
+  border-radius: 0.375rem;
+  min-height: 108px;
+  background: rgb(var(--world-graphite) / 0.92);
+}
+
+[data-world="classic"] .world-ollie {
+  border-radius: 0.375rem;
+  border-color: rgb(var(--world-parchment) / 0.14);
+  background: rgb(var(--world-parchment) / 0.06);
+}
+
+[data-world="classic"] .world-bonus-sparkle {
+  display: none;
+}
+
+[data-world="classic"] .world-enter {
+  animation: world-card-in 360ms ease-out both;
+}
+
+[data-world="classic"] .world-enter-delay-1 {
+  animation-delay: 40ms;
+}
+
+[data-world="classic"] .world-enter-delay-2 {
+  animation-delay: 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-world="classic"] .world-enter,
+  [data-world="classic"] .world-enter-delay-1,
+  [data-world="classic"] .world-enter-delay-2 {
+    animation: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   WORLD BRANCH — Classic Pro Home swaps its whole layout (WorldBranch.tsx).
+   Before WorldScope resolves, both trees are in the HTML; the pre-paint
+   `html[data-mode]` decides which one may show, so no world sees the other.
+   -------------------------------------------------------------------------- */
+.world-branch {
+  display: contents;
+}
+
+html[data-mode="kids"] .world-scope:not([data-world-resolved]) .world-branch--classic,
+html[data-mode="adult"] .world-scope:not([data-world-resolved]) .world-branch--classic,
+html:not([data-mode="kids"]):not([data-mode="adult"])
+  .world-scope:not([data-world-resolved])
+  .world-branch--other {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   CLASSIC PRO HOME — `.ch-*` (components/home/classic)
+   -------------------------------------------------------------------------- */
+.ch-home {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 64rem;
+  margin-inline: auto;
+  color: rgb(var(--world-parchment));
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+}
+
+.ch-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgb(var(--world-parchment) / 0.08);
+}
+
+.ch-kicker,
+.ch-label {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(var(--world-silver));
+}
+
+.ch-kicker,
+.ch-label--champagne {
+  color: rgb(var(--world-champagne));
+}
+
+.ch-kicker {
+  letter-spacing: 0.26em;
+}
+
+.ch-brand,
+.ch-player__name,
+.ch-player__elo,
+.ch-hero__title,
+.ch-challenge__title,
+.ch-salon__title,
+.ch-ledger__grid dd {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.ch-brand {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.6rem, 1.25rem + 1.2vw, 2.25rem);
+  line-height: 1.05;
+}
+
+.ch-cols,
+.ch-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+@media (min-width: 720px) {
+  .ch-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+}
+
+.ch-card {
+  display: block;
+  min-width: 0;
+  border: 1px solid rgb(var(--world-parchment) / 0.09);
+  border-radius: 0.5rem;
+  background: rgb(var(--world-graphite));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.03),
+    0 14px 30px -24px rgb(0 0 0 / 0.9);
+}
+
+a.ch-card {
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    transform 100ms ease;
+}
+
+a.ch-card:hover {
+  border-color: rgb(var(--world-parchment) / 0.2);
+  background-color: rgb(var(--world-graphite-hi));
+}
+
+a.ch-card:active {
+  transform: scale(0.99);
+}
+
+.ch-home a:focus-visible {
+  outline: 2px solid rgb(var(--world-champagne));
+  outline-offset: 2px;
+}
+
+.ch-meta {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgb(var(--world-silver));
+  overflow-wrap: anywhere;
+}
+
+.ch-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgb(var(--world-champagne));
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--world-champagne) / 0.4);
+  text-underline-offset: 3px;
+}
+
+.ch-player {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 76px;
+  padding: 0.85rem 1rem;
+}
+
+.ch-player__avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  font-size: 1.45rem;
+  background: rgb(var(--world-graphite-hi));
+  box-shadow: 0 0 0 2px rgb(var(--world-graphite)), 0 0 0 3px rgb(var(--world-champagne) / 0.6);
+}
+
+.ch-player__copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.ch-player__name {
+  overflow: hidden;
+  font-size: 1.1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ch-player__rating {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+}
+
+.ch-player__elo {
+  font-size: 1.65rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--world-champagne));
+}
+
+.ch-hero {
+  padding: 1.15rem 1.15rem 0.6rem;
+  border-color: rgb(var(--cm-emerald) / 0.3);
+  background: linear-gradient(160deg, rgb(var(--world-graphite-hi)), rgb(var(--world-graphite)) 70%);
+  box-shadow:
+    inset 3px 0 0 rgb(var(--cm-emerald)),
+    0 18px 36px -26px rgb(0 0 0 / 0.9);
+}
+
+.ch-hero__title {
+  margin: 0.4rem 0 0.25rem;
+  font-size: clamp(1.6rem, 1.3rem + 1vw, 2.1rem);
+  line-height: 1.1;
+}
+
+.ch-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 1rem;
+  border-radius: 0.375rem;
+  background: rgb(var(--world-forest));
+  color: rgb(var(--world-parchment));
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 24px -16px rgb(var(--cm-emerald) / 0.9);
+  transition:
+    filter 150ms ease,
+    transform 100ms ease;
+}
+
+.ch-cta:hover {
+  filter: brightness(1.1);
+}
+
+.ch-cta:active {
+  transform: scale(0.99);
+}
+
+.ch-cta--champagne {
+  background: rgb(var(--world-champagne));
+  color: rgb(var(--world-obsidian));
+  box-shadow: none;
+}
+
+.ch-hero__alt {
+  justify-content: center;
+  width: 100%;
+}
+
+.ch-deck {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.ch-deck__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 116px;
+  padding: 0.9rem;
+}
+
+.ch-deck__glyph {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: rgb(var(--world-champagne));
+}
+
+.ch-deck__title {
+  margin-top: auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ch-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.ch-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: -0.55rem;
+}
+
+.ch-challenge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 96px;
+  padding: 1rem 1.1rem;
+  box-shadow:
+    inset 3px 0 0 rgb(var(--world-champagne)),
+    0 14px 30px -24px rgb(0 0 0 / 0.9);
+}
+
+.ch-challenge__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.ch-challenge__title {
+  font-size: 1.3rem;
+  line-height: 1.15;
+}
+
+.ch-challenge__cta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 0.85rem;
+  border: 1px solid rgb(var(--world-champagne) / 0.55);
+  border-radius: 0.375rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--world-champagne));
+}
+
+.ch-ledger__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  overflow: hidden;
+}
+
+.ch-ledger__grid > div {
+  min-width: 0;
+  padding: 0.8rem 0.85rem;
+  border-right: 1px solid rgb(var(--world-parchment) / 0.07);
+  border-bottom: 1px solid rgb(var(--world-parchment) / 0.07);
+}
+
+.ch-ledger__grid > div:nth-child(3n) {
+  border-right: 0;
+}
+
+.ch-ledger__grid > div:nth-child(n + 4) {
+  border-bottom: 0;
+}
+
+.ch-ledger__grid dt {
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(var(--world-silver));
+}
+
+.ch-ledger__grid dd {
+  margin: 0.3rem 0 0;
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ch-ledger__grid dd.ch-ledger__record {
+  font-size: 1.05rem;
+}
+
+.ch-duels__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.ch-duels__list li + li {
+  border-top: 1px solid rgb(var(--world-parchment) / 0.07);
+}
+
+.ch-duel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 60px;
+  padding: 0.6rem 0.9rem;
+  transition: background-color 150ms ease;
+}
+
+.ch-duel:hover {
+  background: rgb(var(--world-graphite-hi));
+}
+
+.ch-duel__result {
+  flex: none;
+  width: 3.2rem;
+  padding: 0.3rem 0;
+  border-radius: 0.25rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+  background: rgb(var(--world-silver) / 0.12);
+  color: rgb(var(--world-silver));
+}
+
+.ch-duel[data-result="win"] .ch-duel__result {
+  background: rgb(var(--cm-emerald) / 0.16);
+  color: rgb(var(--cm-emerald));
+}
+
+.ch-duel[data-result="loss"] .ch-duel__result {
+  background: rgb(var(--world-burgundy) / 0.2);
+  color: rgb(var(--world-burgundy-ink));
+}
+
+.ch-duel__copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.ch-duel__who {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ch-duel__delta {
+  flex: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--world-silver));
+}
+
+.ch-duel__delta[data-sign="up"] {
+  color: rgb(var(--cm-emerald));
+}
+
+.ch-duel__delta[data-sign="down"] {
+  color: rgb(var(--world-burgundy-ink));
+}
+
+.ch-duels__empty {
+  padding: 1rem 1rem 0.35rem;
+}
+
+.ch-duels__empty p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgb(var(--world-silver));
+}
+
+.ch-salon {
+  padding: 1.1rem 1.1rem 1.15rem;
+  border-color: rgb(var(--world-champagne) / 0.28);
+  background:
+    linear-gradient(160deg, rgb(var(--world-champagne) / 0.08), transparent 60%),
+    rgb(var(--world-graphite));
+}
+
+.ch-salon__title {
+  margin: 0.4rem 0 0.6rem;
+  font-size: 1.3rem;
+}
+
+.ch-salon__list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  color: rgb(var(--world-parchment) / 0.85);
+}
+
+.ch-salon__list li::before {
+  content: "◆";
+  margin-right: 0.55rem;
+  font-size: 0.5rem;
+  vertical-align: 0.15em;
+  color: rgb(var(--world-champagne));
+}
+
+.ch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 64px;
+  padding: 0.75rem 1rem;
+}
+
+.ch-row__title {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.ch-row__arrow {
+  flex: none;
+  color: rgb(var(--world-champagne));
+}
+
+.ch-study a {
+  min-width: 48px;
+  min-height: 48px;
+  justify-content: center;
+}
+
+.ch-parents {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 48px;
+  font-size: 0.85rem;
+  color: rgb(var(--world-silver));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Bottom nav lives outside any WorldScope, so Classic Pro is read from the
+   pre-paint mode attribute (classic-pro is the default mode). */
+html:not([data-mode="kids"]):not([data-mode="adult"]) .layout-bottom-nav {
+  border-top-color: rgb(242 236 224 / 0.08);
+  background-color: rgb(7 9 12 / 0.96);
+}
+
+html:not([data-mode="kids"]):not([data-mode="adult"]) .layout-bottom-nav a[aria-current="page"] {
+  color: rgb(214 190 140);
+}
+
+html:not([data-mode="kids"]):not([data-mode="adult"]) .layout-bottom-nav a[data-nav="play"] svg {
+  box-sizing: content-box;
+  margin-top: -0.35rem;
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: rgb(22 120 80);
+  color: rgb(242 236 224);
+  box-shadow: 0 8px 18px -10px rgb(38 166 110);
+}
+
+html:not([data-mode="kids"]):not([data-mode="adult"]) .layout-bottom-nav a[data-nav="play"][aria-current="page"] svg {
+  box-shadow:
+    0 0 0 2px rgb(214 190 140 / 0.7),
+    0 8px 18px -10px rgb(38 166 110);
+}
+
+/* --------------------------------------------------------------------------
+   CHESS SCHOOL — classroom + lesson session
+   Shared classes; worlds only change tokens / radii / accents.
+   -------------------------------------------------------------------------- */
+[data-world] .world-school-card {
+  min-width: 0;
+}
+
+[data-world="enchanted"] .world-school-card {
+  border-radius: 1.25rem;
+  border-color: rgb(var(--cm-gold) / 0.28);
+  background: rgb(var(--cm-navy) / 0.55);
+}
+
+[data-world="atelier"] .world-school-card {
+  border-radius: 0.75rem;
+  border-color: rgb(var(--world-copper) / 0.28);
+  background: rgb(var(--cm-navy) / 0.72);
+}
+
+[data-world="classic"] .world-school-card {
+  border-radius: 0.375rem;
+  border-color: rgb(var(--world-parchment) / 0.14);
+  background: rgb(var(--world-graphite) / 0.92);
+  box-shadow: inset 3px 0 0 rgb(var(--world-forest));
+}
+
+[data-world="enchanted"] .world-school-row {
+  border-radius: 1.25rem;
+}
+
+[data-world="atelier"] .world-school-row {
+  border-radius: 0.75rem;
+}
+
+[data-world="classic"] .world-school-row {
+  border-radius: 0.375rem;
+}
+
+[data-world="enchanted"] .world-chip {
+  border-radius: 999px;
+}
+
+[data-world="atelier"] .world-chip {
+  border-radius: 0.375rem;
+}
+
+[data-world="classic"] .world-chip {
+  border-radius: 2px;
+  letter-spacing: 0.14em;
+}
+
+[data-world="enchanted"] .world-school-exit {
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 999px;
+}
+
+[data-world="atelier"] .world-school-exit {
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 0.5rem;
+}
+
+[data-world="classic"] .world-school-exit {
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 2px;
+}
+
+[data-world="enchanted"] .world-school-step-on {
+  background-color: rgb(var(--cm-gold));
+}
+
+[data-world="atelier"] .world-school-step-on {
+  background-color: rgb(var(--world-copper));
+}
+
+[data-world="classic"] .world-school-step-on {
+  background-color: rgb(var(--world-forest));
+}
+
+[data-world="enchanted"] .world-school-star {
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgb(var(--cm-gold) / 0.22), transparent 70%);
+}
+
+[data-world="atelier"] .world-school-star {
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgb(var(--world-crimson) / 0.28), transparent 70%);
+}
+
+[data-world="classic"] .world-school-star {
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgb(var(--world-forest) / 0.2), transparent 70%);
+}
+
+[data-world="enchanted"] .world-ollie {
+  border-radius: 1.25rem;
+  border-color: rgb(var(--world-teal) / 0.28);
+}
+
+[data-world="enchanted"] .world-milestone {
+  border-color: rgb(var(--cm-gold) / 0.4);
+  background-image: linear-gradient(
+    135deg,
+    rgb(var(--cm-navy)),
+    rgb(var(--world-purple) / 0.42)
+  );
+}
+
+[data-world="atelier"] .world-milestone {
+  border-radius: 0.75rem;
+  border-color: rgb(var(--world-copper) / 0.4);
+  background-image: linear-gradient(
+    135deg,
+    rgb(var(--cm-midnight)),
+    rgb(var(--world-crimson) / 0.42)
+  );
+}
+
+[data-world="classic"] .world-milestone {
+  border-radius: 0.375rem;
+  border-color: rgb(var(--world-parchment) / 0.18);
+  background-image: none;
+  background-color: rgb(var(--world-graphite));
+  box-shadow: inset 3px 0 0 rgb(var(--world-forest));
+}
+
+[data-world="enchanted"] .world-cta {
+  background-color: rgb(var(--cm-gold));
+  color: rgb(var(--cm-midnight-deep));
+}
+
+/* --------------------------------------------------------------------------
+   PLAY — surrounding chrome only. Board geometry stays with ChessFocusLayout.
+   -------------------------------------------------------------------------- */
+.world-scope--play {
+  display: contents;
+}
+
+[data-world] .chess-focus-shell,
+[data-world] .chess-focus-shell--preserve-nav {
+  background-color: rgb(var(--cm-midnight));
+}
+
+[data-world] .chess-focus-header > button:first-child {
+  min-height: 48px;
+}
+
+/* The generic `.world-scope > *` stacking rule would otherwise demote the
+   full-screen arena from `fixed` to `relative`, leaving it content-height. */
+[data-world="classic"].world-scope--play > .chess-focus-shell {
+  position: fixed;
+}
+
+[data-world="classic"] .chess-focus-header button {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.play-meta,
+.play-panel,
+.play-opp {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.play-kicker {
+  margin: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--cm-ivory) / 0.45);
+}
+
+.play-note,
+.play-opp-name,
+.play-sheet-line,
+.play-trial,
+.play-masthead {
+  margin: 0;
+  color: rgb(var(--cm-ivory) / 0.88);
+}
+
+.play-meta--atelier .play-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid rgb(var(--world-copper) / 0.35);
+  border-radius: 0.5rem;
+  background: rgb(var(--cm-navy) / 0.72);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.play-meta--atelier .play-grid b {
+  display: block;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--world-copper) / 0.9);
+  font-size: 0.55rem;
+}
+
+.play-meta--enchanted .play-path {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.play-meta--enchanted .play-path li {
+  flex: 1 1 0;
+  min-width: 2.5rem;
+  padding: 0.35rem 0.2rem;
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--cm-gold) / 0.2);
+  color: rgb(var(--cm-ivory) / 0.45);
+}
+
+.play-meta--enchanted .play-path li[data-state="open"],
+.play-meta--enchanted .play-path li[data-state="here"] {
+  color: rgb(var(--cm-ivory));
+  border-color: rgb(var(--cm-gold) / 0.55);
+}
+
+.play-meta--enchanted .play-path li[data-state="here"] {
+  background: rgb(var(--cm-gold) / 0.18);
+}
+
+.play-trial {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.play-meta--classic {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.65rem;
+  padding: 0.35rem 0.15rem 0.4rem;
+  border-bottom: 1px solid rgb(var(--world-parchment) / 0.09);
+}
+
+.play-masthead {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.play-sheet-line {
+  font-size: 0.7rem;
+  color: rgb(var(--cm-ivory) / 0.55);
+}
+
+.play-meta--classic .play-kicker--classic {
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  color: rgb(var(--world-champagne));
+}
+
+.play-meta--classic .play-sheet-line {
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: rgb(var(--world-champagne) / 0.8);
+}
+
+.play-panel--atelier,
+.play-opp--atelier {
+  border-radius: 0.5rem;
+}
+
+.play-panel--classic {
+  box-shadow: inset 3px 0 0 rgb(var(--cm-emerald));
+  padding-left: 0.65rem;
+}
+
+.play-panel--classic > .play-kicker,
+.play-opp--classic > .play-kicker {
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: rgb(var(--world-silver));
+}
+
+.play-panel--classic > .play-kicker {
+  margin-bottom: 0.45rem;
+  color: rgb(var(--world-champagne));
+}
+
+[data-world="classic"] .chess-focus-header h1 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[data-world="classic"] [data-testid="player-card"] {
+  border-radius: 0.5rem;
+  border-color: rgb(var(--world-parchment) / 0.09);
+  background-color: rgb(var(--world-graphite));
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+[data-world="classic"] [data-testid="player-card"][data-active="true"] {
+  border-color: rgb(var(--cm-emerald) / 0.8);
+  box-shadow:
+    inset 3px 0 0 rgb(var(--cm-emerald)),
+    0 0 1.25rem rgb(var(--cm-emerald) / 0.16);
+}
+
+[data-world="classic"] [data-testid="player-rating"] {
+  color: rgb(var(--world-champagne));
+}
+
+[data-world="classic"] .play-panel--classic button {
+  min-height: 48px;
+}
+
+.play-stars {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0.4rem;
+  font-size: 1rem;
+  color: rgb(var(--cm-ivory) / 0.2);
+}
+
+.play-stars [data-on="true"] {
+  color: rgb(var(--cm-gold));
+}
+
+.play-ollie {
+  border-radius: 1.1rem;
+  border: 1px solid rgb(var(--world-teal) / 0.28);
+  padding: 0.5rem 0.65rem;
+  margin-bottom: 0.4rem;
+}
+
+.play-opp {
+  margin-bottom: 0.25rem;
+}
+
+.play-opp-name {
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+}
+
+@media (max-width: 430px) {
+  .play-meta--atelier .play-grid {
+    font-size: 0.62rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   PUZZLES — surrounding chrome only. Board + validation stay on the trainer.
+   -------------------------------------------------------------------------- */
+.pz-meta,
+.pz-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pz-kicker {
+  margin: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--cm-ivory) / 0.45);
+}
+
+.pz-note,
+.pz-trial,
+.pz-masthead,
+.pz-sheet-line,
+.pz-notes,
+.pz-next {
+  margin: 0;
+  color: rgb(var(--cm-ivory) / 0.88);
+}
+
+.pz-meta--atelier .pz-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid rgb(var(--world-copper) / 0.35);
+  border-radius: 0.5rem;
+  background: rgb(var(--cm-navy) / 0.72);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pz-meta--atelier .pz-grid b {
+  display: block;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--world-copper) / 0.9);
+  font-size: 0.55rem;
+}
+
+.pz-rail {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pz-rail li {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.3rem 0.15rem;
+  text-align: center;
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 0.25rem;
+  border: 1px solid rgb(var(--world-copper) / 0.25);
+  color: rgb(var(--cm-ivory) / 0.4);
+}
+
+.pz-rail li[data-state="completed"],
+.pz-rail li[data-state="current"] {
+  color: rgb(var(--cm-ivory));
+  border-color: rgb(var(--world-copper) / 0.55);
+}
+
+.pz-rail li[data-state="current"] {
+  background: rgb(var(--world-crimson) / 0.28);
+}
+
+.pz-meta--enchanted .pz-path {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.pz-meta--enchanted .pz-path li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 2.4rem;
+  padding: 0.35rem 0.15rem;
+  text-align: center;
+  font-size: 0.52rem;
+  letter-spacing: 0.03em;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--cm-gold) / 0.2);
+  color: rgb(var(--cm-ivory) / 0.45);
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+
+.pz-meta--enchanted .pz-path li[data-state="completed"],
+.pz-meta--enchanted .pz-path li[data-state="here"],
+.pz-meta--enchanted .pz-path li[data-state="current"] {
+  color: rgb(var(--cm-ivory));
+  border-color: rgb(var(--cm-gold) / 0.55);
+}
+
+.pz-meta--enchanted .pz-path li[data-state="here"],
+.pz-meta--enchanted .pz-path li[data-state="current"] {
+  background: rgb(var(--cm-gold) / 0.18);
+}
+
+.pz-trial {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.pz-meta--classic {
+  padding: 0.35rem 0.15rem 0.4rem;
+  border-bottom: 1px solid rgb(var(--world-parchment) / 0.09);
+  box-shadow: inset 3px 0 0 rgb(var(--world-champagne) / 0.7);
+  padding-left: 0.75rem;
+}
+
+.pz-masthead {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.pz-sheet-line,
+.pz-notes {
+  font-size: 0.7rem;
+  color: rgb(var(--cm-ivory) / 0.62);
+}
+
+.pz-notes {
+  margin-top: 0.2rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pz-panel--classic {
+  box-shadow: inset 3px 0 0 rgb(var(--world-champagne) / 0.7);
+  padding-left: 0.65rem;
+}
+
+.pz-panel--classic > .pz-kicker {
+  margin-bottom: 0.45rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: rgb(var(--world-champagne));
+}
+
+.pz-meta--classic .pz-desk__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+
+.pz-meta--classic .pz-kicker--classic {
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: rgb(var(--world-champagne));
+}
+
+.pz-desk__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pz-desk__chips li {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid rgb(var(--world-parchment) / 0.12);
+  border-radius: 0.25rem;
+  background: rgb(var(--world-graphite));
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--world-silver));
+}
+
+.pz-desk__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.6rem;
+  margin: 0.3rem 0 0;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: rgb(var(--world-parchment));
+}
+
+.pz-desk__title .pz-sheet-line {
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+  font-weight: 400;
+  color: rgb(var(--world-silver));
+}
+
+.pz-meta--classic .pz-notes {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  color: rgb(var(--world-parchment) / 0.7);
+}
+
+.pz-stars {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0.4rem;
+  font-size: 1rem;
+  color: rgb(var(--cm-ivory) / 0.2);
+}
+
+.pz-stars [data-on="true"] {
+  color: rgb(var(--cm-gold));
+}
+
+.pz-ollie {
+  border-radius: 1.1rem;
+  border: 1px solid rgb(var(--world-teal) / 0.28);
+  padding: 0.5rem 0.65rem;
+  margin-bottom: 0.4rem;
+}
+
+.pz-next {
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  color: rgb(var(--world-copper) / 0.9);
+}
+
+[data-world="enchanted"] .puzzle-quest-hub {
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgb(var(--world-teal) / 0.18), transparent 55%),
+    #080c18;
+}
+
+@media (max-width: 430px) {
+  .pz-meta--atelier .pz-grid {
+    font-size: 0.62rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   CHESS SCHOOL — three classroom structures
+   Enchanted = journey/map  ·  Atelier = academy block  ·  Classic = syllabus
+   -------------------------------------------------------------------------- */
+.sch-home,
+.sch-journey,
+.sch-academy,
+.sch-study {
+  min-width: 0;
+}
+
+.sch-mast {
+  min-width: 0;
+}
+
+/* Phone shows PhoneUtilityIcons fixed top-right with no flow height; the
+   left-aligned kicker/title must start below it. */
+html[data-layout="phone"] .sch-home {
+  padding-top: 2.75rem;
+}
+
+.sch-trail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sch-trail li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  background: rgb(255 255 255 / 0.06);
+  color: rgb(var(--cm-ivory) / 0.7);
+}
+
+.sch-trail li[data-state="done"] {
+  background: rgb(var(--cm-gold) / 0.9);
+  color: rgb(var(--cm-midnight));
+}
+
+.sch-trail li[data-state="here"] {
+  background: rgb(var(--world-teal) / 0.35);
+  box-shadow: 0 0 0 2px rgb(var(--cm-gold) / 0.7);
+}
+
+.sch-path {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.85rem;
+  border-left: 2px solid rgb(var(--cm-gold) / 0.35);
+}
+
+.sch-path li {
+  position: relative;
+  margin-bottom: 0.65rem;
+}
+
+.sch-path li:last-child {
+  margin-bottom: 0;
+}
+
+.sch-path__node {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 48px;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 1.1rem;
+  background: rgb(var(--cm-navy) / 0.45);
+}
+
+.sch-path__mark {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  font-size: 0.75rem;
+}
+
+.sch-path__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.sch-path__copy strong,
+.sch-path__copy em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sch-path__copy em {
+  font-style: normal;
+  font-size: 0.75rem;
+  color: rgb(var(--cm-ivory) / 0.55);
+}
+
+.sch-path li[data-state="here"] .sch-path__node {
+  background: rgb(var(--world-purple) / 0.35);
+  box-shadow: 0 0 0 1px rgb(var(--cm-gold) / 0.45);
+}
+
+.sch-path li[data-state="done"] .sch-path__mark {
+  background: rgb(var(--cm-gold));
+  color: rgb(var(--cm-midnight));
+}
+
+.sch-path li[data-state="locked"] {
+  opacity: 0.62;
+}
+
+.sch-stage,
+.sch-block,
+.sch-sheet,
+.sch-support,
+.sch-reward {
+  min-width: 0;
+  padding: 1.15rem;
+}
+
+.sch-row {
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.sch-row--done {
+  border-color: rgb(var(--cm-gold) / 0.25);
+  background: rgb(var(--cm-gold) / 0.05);
+}
+
+.sch-row--here {
+  border-color: rgb(var(--cm-gold) / 0.45);
+  background: rgb(255 255 255 / 0.07);
+}
+
+.sch-row--locked {
+  opacity: 0.6;
+  background: transparent;
+  border-color: rgb(255 255 255 / 0.06);
+}
+
+.sch-row__mark {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  font-size: 0.7rem;
+}
+
+.sch-row--done .sch-row__mark {
+  background: rgb(var(--cm-gold));
+  color: rgb(var(--cm-midnight));
+}
+
+.sch-curriculum__now {
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.75rem;
+  background: rgb(var(--world-crimson) / 0.08);
+}
+
+.sch-diagram {
+  margin-top: 0.85rem;
+  max-width: min(100%, 320px);
+  overflow: hidden;
+}
+
+.sch-diagram .chess-board,
+.sch-diagram > * {
+  max-width: 100%;
+}
+
+.sch-notes {
+  margin: 0.85rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: rgb(var(--cm-ivory) / 0.78);
+}
+
+.sch-notes li + li {
+  margin-top: 0.35rem;
+}
+
+.sch-reward-tile {
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+[data-world="atelier"] .sch-trail,
+[data-world="classic"] .sch-trail,
+[data-world="atelier"] .sch-path,
+[data-world="classic"] .sch-path,
+[data-world="enchanted"] .sch-block,
+[data-world="classic"] .sch-block,
+[data-world="enchanted"] .sch-curriculum,
+[data-world="classic"] .sch-curriculum,
+[data-world="enchanted"] .sch-sheet,
+[data-world="atelier"] .sch-sheet,
+[data-world="enchanted"] .sch-syllabus,
+[data-world="atelier"] .sch-syllabus,
+[data-world="enchanted"] .sch-diagram,
+[data-world="atelier"] .sch-diagram {
+  display: none;
+}
+
+[data-world="atelier"] .sch-row {
+  border-radius: 0.75rem;
+}
+
+[data-world="classic"] .sch-mast--sheet {
+  border-bottom: 1px solid rgb(var(--world-parchment) / 0.16);
+  padding-bottom: 0.85rem;
+}
+
+[data-world="classic"] .sch-sheet {
+  box-shadow: inset 3px 0 0 rgb(var(--world-forest));
+}
+
+[data-world="classic"] .sch-notes {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+[data-world="classic"] .sch-row {
+  border-radius: 0.25rem;
+}
+
+/* Classic classroom — Classical Chess Academy. */
+[data-world="classic"] .sch-study {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+[data-world="classic"] .sch-mast--sheet .world-kicker {
+  color: rgb(var(--world-champagne));
+}
+
+.sch-ledger {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.sch-ledger__count {
+  flex: none;
+  font-size: 0.75rem;
+  color: rgb(var(--world-silver, var(--cm-ivory)));
+}
+
+.sch-ledger__track {
+  position: relative;
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(var(--cm-ivory) / 0.1);
+}
+
+.sch-ledger__track > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgb(var(--cm-gold));
+}
+
+.sch-cols,
+.sch-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.sch-sheet__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+
+.sch-sheet__kicker {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(var(--cm-gold));
+}
+
+.sch-sheet__count {
+  margin: 0;
+  font-size: 0.72rem;
+  color: rgb(var(--cm-ivory) / 0.6);
+}
+
+.sch-sheet__title {
+  margin: 0.9rem 0 0;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: clamp(1.35rem, 1.1rem + 1vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.15;
+  color: rgb(var(--cm-ivory));
+}
+
+.sch-syllabus__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sch-module details {
+  border: 1px solid rgb(var(--cm-ivory) / 0.09);
+  border-radius: 0.5rem;
+  background: rgb(var(--cm-navy));
+}
+
+.sch-module[data-state="here"] details {
+  border-color: rgb(var(--cm-emerald) / 0.45);
+  box-shadow: inset 3px 0 0 rgb(var(--cm-emerald));
+}
+
+.sch-module__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sch-module__head::-webkit-details-marker {
+  display: none;
+}
+
+.sch-module__head:focus-visible {
+  outline: 2px solid rgb(var(--cm-gold));
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+.sch-module__act,
+.sch-module__title {
+  display: block;
+}
+
+.sch-module__act {
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(var(--cm-ivory) / 0.55);
+}
+
+.sch-module__title {
+  margin-top: 0.15rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: rgb(var(--cm-ivory));
+}
+
+.sch-module__count {
+  flex: none;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  background: rgb(var(--cm-ivory) / 0.06);
+  color: rgb(var(--cm-ivory) / 0.7);
+}
+
+.sch-module[data-state="done"] .sch-module__count {
+  background: rgb(var(--cm-gold) / 0.16);
+  color: rgb(var(--cm-gold));
+}
+
+.sch-module__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0 0.6rem 0.6rem;
+  list-style: none;
+}
+
+[data-world="classic"] .sch-row--here {
+  border-color: rgb(var(--cm-emerald) / 0.6);
+  background: rgb(var(--cm-emerald) / 0.1);
+}
+
+[data-world="classic"] .sch-row--here .sch-row__mark {
+  background: rgb(var(--world-forest));
+  color: rgb(var(--world-parchment));
+}
+
+@media (min-width: 720px) {
+  [data-world="classic"] .sch-home {
+    max-width: 64rem;
+  }
+
+  .sch-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+}
+
+@media (max-width: 430px) {
+  .sch-trail li {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+}

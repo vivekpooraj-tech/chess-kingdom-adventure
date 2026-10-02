@@ -23,19 +23,29 @@ export function CourseIndex({
   lessons,
   completedIds,
   basePath,
+  isPremium = true,
+  freeLessonLimit = null,
 }: {
   summary: CourseSummary;
   lessons: LessonHeader[];
   completedIds: Set<string>;
   basePath: string;
+  /** Phase 4 Learn gating. Omit both for a course with no free limit — every
+   * lesson then shows unlocked, same as before this feature existed. The
+   * actual gate lives server-side in /api/academy/lesson; this is display
+   * only, so a locked lesson still communicates its value on tap rather
+   * than the list simply refusing to link to it. */
+  isPremium?: boolean;
+  freeLessonLimit?: number | null;
 }) {
+  const isLocked = (order: number) => freeLessonLimit !== null && !isPremium && order > freeLessonLimit;
   const doneCount = lessons.filter((l) => completedIds.has(`${summary.id}:${l.id}`)).length;
   const allDone = doneCount === lessons.length && lessons.length > 0;
   // The first lesson not yet completed — where "Continue" should land.
   const nextLesson = lessons.find((l) => !completedIds.has(`${summary.id}:${l.id}`)) ?? null;
 
   return (
-    <main className="min-h-screen bg-premium-midnight px-5 pt-6 pb-nav-safe">
+    <main className="min-h-screen bg-premium-midnight px-5 pt-safe-icons pb-nav-safe">
       <div className="mx-auto flex w-full max-w-md flex-col gap-5">
         <Link
           href="/learn"
@@ -74,6 +84,7 @@ export function CourseIndex({
         <ol className="flex flex-col gap-2">
           {lessons.map((lesson) => {
             const done = completedIds.has(`${summary.id}:${lesson.id}`);
+            const locked = !done && isLocked(lesson.order);
             return (
               <li key={lesson.id}>
                 <Link
@@ -87,17 +98,19 @@ export function CourseIndex({
                     className={`flex h-7 w-7 flex-none items-center justify-center rounded-full border font-classic-body text-xs ${
                       done
                         ? "border-premium-gold bg-premium-gold/15 text-premium-gold"
+                        : locked
+                        ? "border-premium-gold/40 text-premium-gold/80"
                         : "border-white/20 text-premium-ivory/60"
                     }`}
                   >
-                    {done ? "✓" : lesson.order}
+                    {done ? "✓" : locked ? "🔒" : lesson.order}
                   </span>
                   <span className="flex min-w-0 flex-col">
                     <span className="font-classic-body text-sm text-premium-ivory">
                       {lesson.title}
                     </span>
                     <span className={TEXT.caption}>
-                      {done ? "Complete" : lesson.concept}
+                      {done ? "Complete" : locked ? "Premium" : lesson.concept}
                     </span>
                   </span>
                 </Link>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
-import { getCourse, getLesson } from "@/lib/academy/courses.server";
+import { getCourse, getLesson, isLessonFree } from "@/lib/academy/courses.server";
+import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import type { LessonResponse } from "@/lib/academy/courseTypes";
 
 /**
@@ -11,9 +12,13 @@ import type { LessonResponse } from "@/lib/academy/courseTypes";
  * a few tens of KB of prose and positions, and the existing tactics course
  * shows what happens otherwise — it imports all ~51KB into the client bundle.
  *
- * Auth-gated but not premium-gated: this only returns lesson content, and the
- * course index decides what a given child may open. Gating here as well would
- * duplicate that rule in a second place where it could drift.
+ * Auth-gated, and now (Phase 4) premium-gated for courses with a free lesson
+ * limit (isLessonFree(), backed by the same courses.server.ts registry the
+ * course index reads its lock icons from — one source of truth, not two
+ * independently-hardcoded checks). A locked lesson never leaves the server:
+ * the response omits `lesson` entirely and sends only a value-forward
+ * preview, so opening dev tools and hitting this endpoint directly can't be
+ * used to read gated content.
  */
 export async function GET(req: NextRequest) {
   const supabase = createClient();
@@ -41,6 +46,29 @@ export async function GET(req: NextRequest) {
   const lesson = getLesson(courseId, lessonId);
   const index = lessonIds.indexOf(lessonId);
   const nextLessonId = index >= 0 && index < lessonIds.length - 1 ? lessonIds[index + 1] : null;
+
+  if (lesson && !isLessonFree(courseId, lesson.order)) {
+    const { data: parent } = await supabase
+      .from("parents")
+      .select(PARENT_PREMIUM_COLUMNS)
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+    const isPremium = resolvePremiumState(parent).isPremium;
+    if (!isPremium) {
+      return NextResponse.json(
+        {
+          lesson: null,
+          courseId,
+          courseTitle: course.summary.title,
+          lessonIds,
+          nextLessonId,
+          locked: true,
+          lockedPreview: { title: lesson.title, concept: lesson.concept, intro: lesson.intro },
+        } satisfies LessonResponse,
+        { status: 200, headers: { "Cache-Control": "no-store" } }
+      );
+    }
+  }
 
   return NextResponse.json(
     {

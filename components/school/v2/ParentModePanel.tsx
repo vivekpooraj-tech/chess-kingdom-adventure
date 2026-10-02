@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Chess } from "chess.js";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { Button } from "@/components/ui/Button";
+import { SchoolCta } from "./SchoolCta";
 import { TEXT } from "@/lib/designSystem";
 import { moveMatches } from "@/lib/school/v2/moves";
 import type { ParentModeSessionStep } from "@/content/school/types";
@@ -62,15 +62,15 @@ export function ParentModePanel({
   if (done || !beat) {
     return (
       <div className="flex flex-col gap-5">
-        <div className="rounded-premiumCard border border-premium-gold/35 bg-premium-gold/10 p-6 text-center">
+        <div className="world-primary-card rounded-premiumCard border border-premium-gold/35 bg-premium-gold/10 p-6 text-center">
           <p className="text-4xl" aria-hidden="true">
             🎉
           </p>
           <p className="mt-3 font-classic-display text-xl text-premium-ivory">{step.celebration}</p>
         </div>
-        <Button tone="premium" block onClick={onComplete}>
+        <SchoolCta block onClick={onComplete}>
           Continue
-        </Button>
+        </SchoolCta>
       </div>
     );
   }
@@ -80,7 +80,7 @@ export function ParentModePanel({
   if (isParentTurn && !revealed) {
     return (
       <div className="flex flex-col gap-5">
-        <div className="rounded-premiumCard border border-white/12 bg-white/[0.04] p-6 text-center">
+        <div className="world-school-card rounded-premiumCard border border-white/12 bg-white/[0.04] p-6 text-center">
           <p className="text-4xl" aria-hidden="true">
             🤝
           </p>
@@ -89,9 +89,9 @@ export function ParentModePanel({
             They get their own instructions. No peeking — that&rsquo;s the whole point.
           </p>
         </div>
-        <Button tone="premium" block onClick={() => setRevealed(true)}>
+        <SchoolCta block onClick={() => setRevealed(true)}>
           I&rsquo;m the grown-up — show me
-        </Button>
+        </SchoolCta>
       </div>
     );
   }

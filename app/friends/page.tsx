@@ -18,7 +18,7 @@ import { AddFriendBox, RespondButtons } from "@/components/community/FriendActio
 
 export const metadata = {
   title: "Friends · Chess Mind",
-  description: "Add friends by code and challenge them to a game.",
+  description: "Add friends by code and see who's in your Chess Mind circle.",
 };
 
 /**
@@ -32,10 +32,12 @@ export const metadata = {
  * band, which means no one can be found by a stranger who does not already have
  * their code.
  *
- * Second, friendship grants exactly two things: a game, and a name. There is no
- * messaging, no feed, no comments. A chess friend list does not need free-text
- * communication between children to be useful, and adding it would create a
- * moderation problem this product has no way to answer.
+ * Second, friendship grants exactly two things: a name and rating to recognise, and a
+ * reason to go play. There is no direct friend-vs-friend challenge (accepting a friend
+ * links to the general Play hub, not a targeted match against that friend — see Phase
+ * 8A comment on FriendRowItem below) and no messaging, no feed, no comments. A chess
+ * friend list does not need free-text communication between children to be useful, and
+ * adding it would create a moderation problem this product has no way to answer.
  *
  * The page degrades honestly when migration 0034 has not been applied — it says
  * the feature is not switched on rather than erroring or pretending to work.
@@ -58,12 +60,19 @@ function FriendRowItem({
           {row.friendRating !== null ? `Rating ${row.friendRating}` : "Chess Mind player"}
         </span>
       </span>
+      {/* Phase 8A: this used to say "Challenge" and link to /play, which does
+          not actually start a game against this specific friend — it opens
+          the general Play hub (random matchmaking / Free Play), same as it
+          would for anyone. Labelling that "Challenge" promised a
+          friend-vs-friend game that does not exist yet. Relabelled to be
+          honest about what the link actually does; the link itself (and all
+          other Friends functionality) is unchanged. */}
       {kind === "accepted" && (
         <Link
           href="/play"
           className="flex min-h-[44px] flex-none items-center font-classic-body text-sm text-premium-gold underline underline-offset-4"
         >
-          Challenge
+          Go to Play
         </Link>
       )}
       <RespondButtons childId={childId} friendshipId={row.friendshipId} kind={kind} />
@@ -114,7 +123,7 @@ export default async function FriendsPage() {
       <header className="flex flex-col gap-2">
         <h1 className={TEXT.display}>Friends</h1>
         <p className={TEXT.body}>
-          Add someone by their code, then challenge them to a game. Chess Mind has no player
+          Add someone by their code to see their name and rating here. Chess Mind has no player
           search and no messaging — you can only add someone whose code you already have.
         </p>
       </header>

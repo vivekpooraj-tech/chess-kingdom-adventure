@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { Button } from "@/components/ui/Button";
 import { RevealQuestion } from "@/lib/chessMind/revealQuestions";
 
@@ -34,6 +35,7 @@ export function RevealChallenge({
   const [stage, setStage] = useState<Stage>("revealing");
   const [secondsLeft, setSecondsLeft] = useState(revealSeconds);
   const [answered, setAnswered] = useState<string | null>(null);
+  const boardSize = useResponsiveBoardSize(300, { widthMultiplier: 0.85, maxSize: 720 });
 
   useEffect(() => {
     setStage("revealing");
@@ -59,12 +61,12 @@ export function RevealChallenge({
   }
 
   return (
-    <div className="w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
+    <div className="w-full max-w-md md:max-w-3xl rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
       <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
 
       {stage === "revealing" && (
         <>
-          <ChessBoard fen={fen} size={300} readOnly boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
+          <ChessBoard fen={fen} size={boardSize} readOnly boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
           <p className="font-classic-display text-2xl text-premium-gold">{secondsLeft}</p>
           <p className="font-classic-body text-xs text-premium-ivory/50">Memorize the position...</p>
         </>
@@ -72,7 +74,10 @@ export function RevealChallenge({
 
       {stage !== "revealing" && (
         <>
-          <div className="w-full aspect-square max-w-[300px] rounded-premiumBtn bg-premium-midnightDeep flex items-center justify-center">
+          <div
+            className="w-full aspect-square rounded-premiumBtn bg-premium-midnightDeep flex items-center justify-center"
+            style={{ maxWidth: boardSize }}
+          >
             <span className="text-4xl opacity-30">🔒</span>
           </div>
           <p className="font-classic-display text-base text-premium-ivory text-center">
@@ -107,7 +112,7 @@ export function RevealChallenge({
                   ? "Exactly right! 🧠"
                   : `It was ${question.correctAnswer}.`}
               </p>
-              <Button onClick={onNext}>Next →</Button>
+              <Button tone="adventure" onClick={onNext}>Next →</Button>
             </div>
           )}
         </>

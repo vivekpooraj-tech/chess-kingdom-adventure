@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { BRAND } from "@/lib/brand";
 import {
   PREMIUM_ENTITLEMENT_YEARS,
+  PREMIUM_DURATION_LABEL,
   PREMIUM_BILLING_NOTE,
   formatExpiryDate,
 } from "@/lib/premium/entitlement";
@@ -85,12 +86,12 @@ export default async function UpgradeSuccessPage({
             <span className="text-6xl">🎉</span>
             <h1 className="font-display text-2xl text-kingdom-night">Welcome to Premium!</h1>
             <p className="font-body text-kingdom-night/70">
-              {BRAND.name} Premium is unlocked for {PREMIUM_ENTITLEMENT_YEARS} years.
+              {BRAND.name} Premium is unlocked for {PREMIUM_DURATION_LABEL}.
               {expiresAtLabel ? ` Active until ${expiresAtLabel}.` : ""}
             </p>
             <p className="font-body text-xs text-kingdom-night/50">{PREMIUM_BILLING_NOTE}</p>
             <Link href="/kingdom-map">
-              <Button>Back to the Kingdom →</Button>
+              <Button tone="adventure">Back to the Kingdom →</Button>
             </Link>
           </>
         ) : (
@@ -99,7 +100,7 @@ export default async function UpgradeSuccessPage({
             <h1 className="font-display text-xl text-kingdom-night">Something needs a second look</h1>
             <p className="font-body text-kingdom-night/70">{errorMessage}</p>
             <Link href="/kingdom-map">
-              <Button variant="ghost">Back to the Kingdom Map</Button>
+              <Button tone="adventure" variant="ghost">Back to the Kingdom Map</Button>
             </Link>
           </>
         )}

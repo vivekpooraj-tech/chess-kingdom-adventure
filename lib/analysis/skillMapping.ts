@@ -161,14 +161,28 @@ export function classifyMistakeSkill(mistake: AnalyzedMove, allMoves: AnalyzedMo
   return { skill: "advantage_loss", confidence: "low", neutral: true };
 }
 
+/** The minimal facts pickBiggestMoment() actually needs — factored out so
+ * server code that only has the request-body shape (not a full AnalyzedMove,
+ * which carries browser-only/local fields) can call the SAME function
+ * instead of re-implementing its ranking. Phase 7A: reused by
+ * app/api/game-analysis/explain/route.ts to decide, server-side, which one
+ * mistake a Free response may explain. */
+export interface BiggestMomentFacts {
+  missedMate: boolean;
+  missedMaterial: boolean;
+  lossCp: number;
+}
+
 /** The single "biggest learning moment": the flagged mistake most worth a
  * child's attention. Prefers a missed mate, then a missed winning capture,
  * then the largest centipawn swing. Returns null when there are no flagged
- * mistakes. */
-export function pickBiggestMoment(flagged: AnalyzedMove[]): AnalyzedMove | null {
+ * mistakes. Generic only to admit both the full client-side AnalyzedMove and
+ * the server's trimmed request-body shape — the ranking logic itself is
+ * unchanged and lives in exactly one place. */
+export function pickBiggestMoment<T extends BiggestMomentFacts>(flagged: T[]): T | null {
   if (flagged.length === 0) return null;
   return [...flagged].sort((a, b) => {
-    const rank = (m: AnalyzedMove) => (m.missedMate ? 2 : m.missedMaterial ? 1 : 0);
+    const rank = (m: T) => (m.missedMate ? 2 : m.missedMaterial ? 1 : 0);
     const r = rank(b) - rank(a);
     if (r !== 0) return r;
     return b.lossCp - a.lossCp;

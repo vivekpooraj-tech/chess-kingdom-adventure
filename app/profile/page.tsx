@@ -146,7 +146,7 @@ export default async function ProfilePage() {
         <div className="w-full flex flex-col gap-2">
           <SectionHeader title="Your Stats" />
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatCard emoji="🗺️" value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Journey" />
+            <StatCard emoji="🗺️" value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Story Map" />
             <StatCard emoji="🏛️" value={`${completedAcademyIds.length}`} label="Academy Completed" />
             <StatCard emoji="🧩" value={`${puzzleStats.puzzlesSolved}`} label="Puzzles Solved" />
             <StatCard emoji="🧠" value={`${chessMindTotalSolved}`} label="Chess Mind Solved" />

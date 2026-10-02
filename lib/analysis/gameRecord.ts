@@ -40,6 +40,10 @@ export interface OnlineGameRecordInput {
   openingName: string | null;
   startedAt: string;
   endedAt: string;
+  /** Phase 7B: online_games.id, reused verbatim as the Game Review cache
+   * key (CompletedGameRecord.gameRef) — no second Online game identifier
+   * is created. */
+  gameRef: string;
 }
 
 /** Adapts a finished online game into the exact CompletedGameRecord shape
@@ -73,5 +77,6 @@ export function buildOnlineGameRecord(input: OnlineGameRecordInput): CompletedGa
     startedAt: input.startedAt,
     endedAt: input.endedAt,
     openingName: input.openingName,
+    gameRef: input.gameRef,
   };
 }

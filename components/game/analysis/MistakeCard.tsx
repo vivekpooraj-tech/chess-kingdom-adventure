@@ -129,7 +129,17 @@ export function MistakeCard({
       </Button>
 
       {reviewOpen && (
-        <MistakeReviewStepper mistake={mistake} record={record} boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
+        // MistakeCard itself is only ever rendered inside PostGameAnalysis's
+        // `isPremium && mode === "analysis"` branch (the "All Mistakes"
+        // carousel) — never reachable by a Free viewer — so the best-move
+        // reveal this stepper gates is always correctly Premium here.
+        <MistakeReviewStepper
+          mistake={mistake}
+          record={record}
+          boardSkinId={boardSkinId}
+          pieceSetId={pieceSetId}
+          isPremium
+        />
       )}
     </div>
   );

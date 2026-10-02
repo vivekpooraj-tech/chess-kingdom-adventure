@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/client";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { BRAND } from "@/lib/brand";
 import { getCountryFromRequest } from "@/lib/pricing/country";
 import { getRegionalPrice } from "@/lib/pricing/regions";
 import { validatePromoCode } from "@/lib/pricing/promo";
-import { PREMIUM_ENTITLEMENT_YEARS } from "@/lib/premium/entitlement";
+import { PREMIUM_ENTITLEMENT_YEARS, PREMIUM_DURATION_LABEL } from "@/lib/premium/entitlement";
 
 // One-time purchase (Stripe mode: "payment", never a subscription) — a
 // single payment that unlocks Premium for a fixed term (see
@@ -17,9 +17,14 @@ import { PREMIUM_ENTITLEMENT_YEARS } from "@/lib/premium/entitlement";
 // trusted for that.
 export async function POST(request: NextRequest) {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Phase 8B-hardening: getSessionUser() (fast x-user-id header path from
+  // middleware, plus one retry on a retryable Supabase fetch error) instead
+  // of a raw supabase.auth.getUser() call — a transient network blip during
+  // checkout previously failed auth immediately rather than retrying once,
+  // exactly the "keeps asking me to sign in" bug class this wrapper exists
+  // to prevent. Behavior for a genuinely unauthenticated request (401) is
+  // unchanged.
+  const user = await getSessionUser(supabase);
 
   if (!user) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
@@ -84,8 +89,14 @@ export async function POST(request: NextRequest) {
             currency: regionalPrice.currency,
             unit_amount: regionalPrice.amountMinor,
             product_data: {
-              name: `${BRAND.name} — Premium (${PREMIUM_ENTITLEMENT_YEARS} years)`,
-              description: `Unlimited puzzles, deeper analysis, full AI Coach, detailed progress and no ads for ${PREMIUM_ENTITLEMENT_YEARS} years. One payment — no recurring subscription.`,
+              // Phase 8B: uses the pre-pluralized label (PREMIUM_DURATION_LABEL,
+              // "1 year") rather than interpolating PREMIUM_ENTITLEMENT_YEARS
+              // directly — that raw number is still correct for the RPC's
+              // interval string below (Postgres accepts "1 years" fine), but
+              // "Premium (1 years)" would be wrong English on the actual
+              // Stripe-hosted checkout page a customer sees.
+              name: `${BRAND.name} — Premium (${PREMIUM_DURATION_LABEL})`,
+              description: `Unlimited puzzles, deeper analysis, full AI Coach, detailed progress and no ads for ${PREMIUM_DURATION_LABEL}. One payment — no recurring subscription.`,
             },
           },
           quantity: 1,

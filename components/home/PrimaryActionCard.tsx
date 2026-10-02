@@ -1,5 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import type { PrimaryAction } from "@/lib/home/getPrimaryAction";
+import { useWorld } from "@/lib/world/WorldContext";
+
+const PRIMARY_CARD =
+  "world-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy border border-premium-gold/25 p-5 sm:p-6 flex flex-col gap-4 shadow-premiumCard";
+const PRIMARY_CTA =
+  "world-cta font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[48px] flex items-center active:scale-[0.98] transition-transform duration-100";
 
 /**
  * Home's single primary action card (Phase 3) — replaces the old
@@ -7,17 +15,28 @@ import type { PrimaryAction } from "@/lib/home/getPrimaryAction";
  * driven by lib/home/getPrimaryAction.ts.
  */
 export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
+  const world = useWorld();
+  const atelier = world === "atelier";
+  const classic = world === "classic";
+
   if (action.kind === "school") {
     const percent = Math.round((action.startedCount / action.totalSessions) * 100);
+    const ctaLabel = atelier
+      ? action.isFirstSession
+        ? "Start Training →"
+        : "Continue Training →"
+      : classic
+        ? action.isFirstSession
+          ? "Begin Session"
+          : "Continue"
+        : action.isFirstSession
+          ? "Start Session 1 →"
+          : `Continue Session ${action.sessionNumber} →`;
     return (
-      <section className="home-primary-card relative w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy border border-premium-gold/25 p-5 sm:p-6 flex flex-col gap-4 shadow-premiumCard overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="home-kingdom-glow pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgb(var(--mode-accent)/0.35),transparent_70%)]"
-        />
-        <div className="relative flex items-start justify-between gap-3 flex-wrap">
+      <section className={PRIMARY_CARD}>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
-            🏫 Chess School
+            {atelier ? "Current Session" : classic ? "Study" : "🏫 Chess School"}
           </p>
           <span className="font-classic-body text-[11px] text-premium-ivory/55 flex-none tabular-nums border border-white/10 rounded-full px-2.5 py-1">
             {action.startedCount} / {action.totalSessions}
@@ -48,9 +67,9 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
         <div className="flex items-center gap-4 flex-wrap mt-auto">
           <Link
             href={action.href}
-            className="font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center active:scale-[0.98] transition-transform duration-100"
+            className={PRIMARY_CTA}
           >
-            {action.isFirstSession ? "Start Session 1 →" : `Continue Session ${action.sessionNumber} →`}
+            {ctaLabel}
           </Link>
           {/* The course overview — what all the sessions teach, stage by
               stage. Secondary on purpose: the primary action is always to
@@ -58,9 +77,9 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
               from the old ChessSchoolCard, which this replaces. */}
           <Link
             href="/chess-school"
-            className="font-classic-body text-xs text-premium-ivory/65 underline underline-offset-4 hover:text-premium-gold min-h-[44px] flex items-center"
+            className="font-classic-body text-xs text-premium-ivory/65 underline underline-offset-4 hover:text-premium-gold min-h-[48px] flex items-center"
           >
-            View the course
+            {atelier ? "View the course" : classic ? "Syllabus" : "View the course"}
           </Link>
         </div>
       </section>
@@ -71,10 +90,10 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href={action.href}
-        className="home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/25 active:scale-[0.99] transition-transform duration-100"
+        className={`${PRIMARY_CARD} gap-3 active:scale-[0.99] transition-transform duration-100`}
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
-          Your focus
+          {atelier ? "Skill Focus" : classic ? "Improvement" : "Your focus"}
         </p>
         <p className="font-classic-display text-lg sm:text-xl text-premium-ivory leading-snug">
           {action.skillName}
@@ -82,7 +101,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
         <p className="font-classic-body text-sm text-premium-ivory/65">
           It came up in {action.weakCount} of your reviewed games. Let&apos;s work on it.
         </p>
-        <span className="self-start mt-auto font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center">
+        <span className={`self-start mt-auto ${PRIMARY_CTA}`}>
           Work on {action.skillName} →
         </span>
       </Link>
@@ -93,16 +112,16 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href="/puzzles"
-        className="home-surface-card w-full rounded-premiumCard border border-transparent bg-gradient-to-br from-premium-emerald to-premium-emeraldDeep p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard active:scale-[0.99] transition-transform duration-100"
+        className={`${PRIMARY_CARD} gap-3 border-transparent bg-gradient-to-br from-premium-emerald to-premium-emeraldDeep active:scale-[0.99] transition-transform duration-100`}
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-ivory/80">
-          Puzzle Trainer
+          {atelier ? "Tactical Drill" : classic ? "Tactics" : "Puzzle Trainer"}
         </p>
         <p className="font-classic-display text-lg sm:text-xl text-premium-ivory leading-snug">
           Sharpen your skills with a fresh puzzle.
         </p>
-        <span className="self-start mt-auto font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center">
-          Solve Today&apos;s Puzzle →
+        <span className={`self-start mt-auto ${PRIMARY_CTA}`}>
+          {atelier ? "Train Tactics →" : classic ? "Solve" : "Solve Today&apos;s Puzzle →"}
         </span>
       </Link>
     );
@@ -112,7 +131,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href="/puzzles"
-        className="home-surface-card w-full rounded-premiumCard border border-transparent bg-gradient-to-br from-premium-emerald to-premium-emeraldDeep p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard active:scale-[0.99] transition-transform duration-100"
+        className={`${PRIMARY_CARD} gap-3 border-transparent bg-gradient-to-br from-premium-emerald to-premium-emeraldDeep active:scale-[0.99] transition-transform duration-100`}
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-ivory/80">
           Recommended
@@ -121,8 +140,8 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
           {action.title}
         </p>
         <p className="font-classic-body text-sm text-premium-ivory/65">{action.subtitle}</p>
-        <span className="self-start mt-auto font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center">
-          Open Puzzle Trainer →
+        <span className={`self-start mt-auto ${PRIMARY_CTA}`}>
+          {atelier ? "Open Tactics →" : classic ? "Open Trainer" : "Open Puzzle Trainer →"}
         </span>
       </Link>
     );
@@ -132,7 +151,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
     return (
       <Link
         href={action.href}
-        className="home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
+        className={`${PRIMARY_CARD} gap-3 active:scale-[0.99] transition-transform duration-100`}
       >
         <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
           Academy
@@ -141,7 +160,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
           {action.title}
         </p>
         <p className="font-classic-body text-sm text-premium-ivory/60">{action.subtitle}</p>
-        <span className="self-start mt-auto font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center">
+        <span className={`self-start mt-auto ${PRIMARY_CTA}`}>
           Start Training →
         </span>
       </Link>
@@ -151,7 +170,7 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
   return (
     <Link
       href="/play"
-      className="home-primary-card w-full rounded-premiumCard bg-gradient-to-br from-premium-navyLight to-premium-navy p-5 sm:p-6 flex flex-col gap-3 shadow-premiumCard border border-premium-gold/15 active:scale-[0.99] transition-transform duration-100"
+      className={`${PRIMARY_CARD} gap-3 active:scale-[0.99] transition-transform duration-100`}
     >
       <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold/90">
         Play
@@ -160,8 +179,8 @@ export function PrimaryActionCard({ action }: { action: PrimaryAction }) {
         {action.title}
       </p>
       <p className="font-classic-body text-sm text-premium-ivory/60">{action.subtitle}</p>
-      <span className="self-start mt-auto font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center">
-        Play Now →
+      <span className={`self-start mt-auto ${PRIMARY_CTA}`}>
+        {classic ? "Play Chess" : "Play Now →"}
       </span>
     </Link>
   );

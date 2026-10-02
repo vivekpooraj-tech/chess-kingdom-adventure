@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Chess } from "chess.js";
-import { getOpening } from "@/content/openings";
+import { getOpening, isOpeningFree } from "@/content/openings";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { Button } from "@/components/ui/Button";
 import { MoveFeedback } from "@/components/game/MoveFeedback";
@@ -16,6 +16,7 @@ import {
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { useArenaBoardSize } from "@/lib/hooks/useArenaBoardSize";
+import { usePremium } from "@/lib/premium/usePremium";
 
 /** FEN after each ply, 0 = starting position, computed once client-side by
  * replaying the opening's own (already chess.js-verified) move list — the
@@ -42,6 +43,13 @@ export default function OpeningDetailPage() {
   const params = useParams<{ openingId: string }>();
   const router = useRouter();
   const opening = getOpening(params.openingId);
+  const { state: premiumState, loading: premiumLoading } = usePremium();
+  const needsAccessCheck = !!opening && !isOpeningFree(opening.id);
+  // While Premium status is still loading, a gated opening must not flash its
+  // real content before flipping to locked — show nothing (a beat of loading)
+  // rather than leak the content this whole check exists to protect.
+  const checkingAccess = needsAccessCheck && premiumLoading;
+  const locked = needsAccessCheck && !premiumLoading && !premiumState.isPremium;
 
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
@@ -95,9 +103,48 @@ export default function OpeningDetailPage() {
     );
   }
 
+  if (checkingAccess) {
+    return <main className="min-h-screen bg-premium-midnight" />;
+  }
+
+  if (locked) {
+    return (
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-safe-icons pb-24">
+        <div className="w-full max-w-md flex flex-col gap-4 rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 border border-premium-gold/30">
+          <span className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold">
+            🔒 Premium Opening
+          </span>
+          <div>
+            <p className="font-classic-body text-[11px] uppercase tracking-wide text-premium-ivory/50">
+              What you&apos;ll learn
+            </p>
+            <p className="font-classic-display text-lg text-premium-ivory mt-1">{opening.name}</p>
+          </div>
+          <div>
+            <p className="font-classic-body text-[11px] uppercase tracking-wide text-premium-ivory/50">
+              Why it matters
+            </p>
+            <p className="font-classic-body text-sm text-premium-ivory/70 mt-1">{opening.description}</p>
+          </div>
+          <Link href="/upgrade">
+            <Button tone="premium" className="w-full">
+              Unlock Premium
+            </Button>
+          </Link>
+          <Link
+            href="/academy/openings"
+            className="inline-flex items-center justify-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
+          >
+            Back to Openings
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-24">
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-safe-icons pb-24">
         <div className="w-full max-w-6xl flex flex-col gap-6">
           {/* Header */}
           <div className="text-center lg:text-left">

@@ -41,7 +41,7 @@ export default function ChessTimePage() {
         Screen Pinning on your tablet.
       </p>
       <Link
-        href="/parent-gate?next=/parent-dashboard/parent-lock"
+        href="/parent-gate?next=/parent-dashboard"
         className={`${TEXT.caption} normal-case text-center underline underline-offset-4 text-premium-ivory/50`}
       >
         Parent settings

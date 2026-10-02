@@ -18,6 +18,23 @@ import { getDailyChallenge, DailyChallengeState } from "@/lib/supabase/dailyChal
 // single-purpose, and doesn't need React Query's invalidation machinery.
 const CACHE_TTL_MS = 30_000;
 let cache: { date: string; state: DailyChallengeState | "unavailable"; fetchedAt: number } | null = null;
+// Home renders two world layouts until the world resolves, so two cards can
+// mount together; they share one in-flight request instead of racing the RPC.
+let inflight: { key: string; promise: Promise<DailyChallengeState> } | null = null;
+
+function fetchChallenge(
+  supabase: ReturnType<typeof createClient>,
+  childId: string,
+  today: string
+): Promise<DailyChallengeState> {
+  const key = `${childId}:${today}`;
+  if (inflight && inflight.key === key) return inflight.promise;
+  const promise = getDailyChallenge(supabase, childId, today).finally(() => {
+    if (inflight?.promise === promise) inflight = null;
+  });
+  inflight = { key, promise };
+  return promise;
+}
 
 interface DailyChallengeCardProps {
   /**
@@ -31,6 +48,8 @@ interface DailyChallengeCardProps {
    * resolved this user's active child recently.
    */
   childId?: string;
+  /** Classic Pro Home's graphite study card. Same data, same link. */
+  variant?: "default" | "classic";
 }
 
 /**
@@ -42,7 +61,7 @@ interface DailyChallengeCardProps {
  * get_daily_challenge RPC (supabase/migrations/0025_daily_challenge_progression.sql)
  * instead of the old dayOfYear-rotation getDailyPuzzle(), which is gone.
  */
-export function DailyChallengeCard({ childId }: DailyChallengeCardProps = {}) {
+export function DailyChallengeCard({ childId, variant = "default" }: DailyChallengeCardProps = {}) {
   const today = localDateString();
   const cached = cache && cache.date === today && Date.now() - cache.fetchedAt < CACHE_TTL_MS ? cache : null;
   const [state, setState] = useState<DailyChallengeState | "loading" | "unavailable">(cached?.state ?? "loading");
@@ -75,7 +94,7 @@ export function DailyChallengeCard({ childId }: DailyChallengeCardProps = {}) {
           resolvedChildId = resolution.child.id;
         }
 
-        const challenge = await getDailyChallenge(supabase, resolvedChildId, today);
+        const challenge = await fetchChallenge(supabase, resolvedChildId, today);
         cache = { date: today, state: challenge, fetchedAt: Date.now() };
         if (!cancelled) setState(challenge);
       } catch {
@@ -93,6 +112,9 @@ export function DailyChallengeCard({ childId }: DailyChallengeCardProps = {}) {
   }, []);
 
   if (state === "loading") {
+    if (variant === "classic") {
+      return <div className="ch-card ch-challenge h-[112px] animate-pulse" aria-hidden="true" />;
+    }
     return (
       <div
         className="w-full rounded-premiumCard bg-premium-ivory/50 p-5 h-[76px] animate-pulse"
@@ -103,6 +125,20 @@ export function DailyChallengeCard({ childId }: DailyChallengeCardProps = {}) {
   if (state === "unavailable") return null;
 
   const solved = state.result === "solved";
+
+  if (variant === "classic") {
+    const title = solved ? "Solved for today" : `Checkmate in ${state.mateIn}`;
+    return (
+      <Link href={`/puzzles?id=${state.puzzleId}&daily=1`} className="ch-card ch-challenge">
+        <span className="ch-challenge__copy">
+          <span className="ch-label">Today&apos;s challenge</span>
+          <span className="ch-challenge__title">{title}</span>
+          {state.theme && state.theme !== title && <span className="ch-meta">{state.theme}</span>}
+        </span>
+        <span className="ch-challenge__cta">{solved ? "Review" : "Solve puzzle"}</span>
+      </Link>
+    );
+  }
 
   return (
     <Link

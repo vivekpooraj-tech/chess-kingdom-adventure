@@ -151,28 +151,37 @@ const prog = (currentDay, completedDays, totalDays) =>
   check("empty course percent is 0, not NaN", prog(1, [], 0).percentComplete === 0);
 }
 
-// --- 7. Wiring ------------------------------------------------------------
+// --- 7. Wiring --------------------------------------------------------------
+//
+// Phase 3 (Home restructuring) removed components/school/ChessSchoolCard.tsx
+// — it was Kingdom Journey V1 (children.current_day / content/lessons.ts)
+// relabeled "Chess School", NOT the real Chess School V2 course. Home's
+// single primary action now comes from lib/home/getPrimaryAction.ts, which
+// leads with real Chess School V2 progress (lib/school/v2/progress.ts) and
+// falls back to the same adaptive signals Home always used. The 30-day
+// Kingdom Journey itself is unchanged and un-deleted — it moved off Home's
+// main flow to its own route, reachable from More.
 {
   const read = (p) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
   const home = read("app/(tabs)/kingdom-map/page.tsx");
-  const card = read("components/school/ChessSchoolCard.tsx");
+  const homeHero = read("components/home/HomeHeroSection.tsx");
+  const journey = read("app/(tabs)/kingdom-map/journey/page.tsx");
+  const primaryAction = read("lib/home/getPrimaryAction.ts");
   const header = read("components/lesson/LessonHeader.tsx");
   const lesson = read("app/lesson/[dayId]/page.tsx");
   const learn = read("app/(tabs)/learn/page.tsx");
+  const more = read("app/(tabs)/more/page.tsx");
 
-  check("Home renders the Chess School card", /<ChessSchoolCard/.test(home));
-  check("the card is fed real current_day", /currentDay=\{child\.current_day\}/.test(home));
-  check("the card is fed real completedDays", /completedDays=\{completedDays\}/.test(home));
-  check("there is exactly one Chess School card on Home, not a duplicate", (home.match(/<ChessSchoolCard/g) || []).length === 1);
-  // Phase D: Chess School leads Home — "what's next" should default to
-  // "keep going" before a learner scrolls past the daily challenge/hero
-  // recommendation row to find it.
+  check("the old naming-collision card is gone from Home", !/<ChessSchoolCard/.test(home));
+  check("Home routes the hero through HomeHeroSection", /<HomeHeroSection/.test(home));
+  check("HomeHeroSection renders the single primary action card", /<PrimaryActionCard/.test(homeHero));
   check(
-    "the Chess School card appears before the Daily Challenge card",
-    home.indexOf("<ChessSchoolCard") < home.indexOf("<DailyChallengeCard")
+    "there is exactly one primary action card in the Home hero",
+    (homeHero.match(/<PrimaryActionCard/g) || []).length === 1
   );
-  check("the card computes, never hardcodes", /chessSchoolProgress\(/.test(card));
-  check("no hardcoded progress fraction in the card", !/\b\d+\s*\/\s*30\b/.test(card));
+  check("Home feeds it real Chess School V2 progress", /loadSchoolProgressServer\(/.test(home));
+  check("getPrimaryAction leads with real School V2 progress", /nextSession\(/.test(primaryAction) && /hasGraduated\(/.test(primaryAction));
+  check("getPrimaryAction never falls back to the Kingdom Journey lesson list", !/from ["']@\/content\/lessons["']/.test(primaryAction));
 
   check("the lesson header can show 'of N'", /courseTotalDays/.test(header));
   check("the lesson page passes the real total", /courseTotalDays=\{TOTAL_DAYS\}/.test(lesson));
@@ -185,10 +194,11 @@ const prog = (currentDay, completedDays, totalDays) =>
   check("Learn shows no fabricated progress", !/\b\d+\s*\/\s*30\b/.test(learn));
   check("Learn stays a static server page", !/lib\/supabase\/server/.test(learn));
 
-  // The existing journey must still be there — this is a reframe, not a
-  // replacement.
-  check("the 30-day journey still renders", /<KingdomMapCards/.test(home));
-  check("existing progress semantics untouched", /completedDays=\{completedDays\}/.test(home));
+  // The Kingdom Journey itself must still be there — moved, not deleted.
+  check("the 30-day journey renders on its own route", /<KingdomMapCards/.test(journey));
+  check("the journey route uses real progress data, not hardcoded", /completedDays=\{completedDays\}/.test(journey));
+  check("More links to the relocated journey route", /\/kingdom-map\/journey/.test(more));
+  check("Home no longer renders the journey inline", !/<KingdomMapCards/.test(home));
 }
 
 console.log(`\n=== CHESS SCHOOL: ${pass} passed, ${failures.length} failed ===`);

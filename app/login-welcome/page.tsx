@@ -8,8 +8,8 @@ import { getActiveChildIdClient } from "@/lib/childSession";
 import { postAuthDestination } from "@/lib/auth/postAuthDestination";
 import { markLoginWelcomeShownThisSession } from "@/lib/loginWelcome";
 import { LOGIN_WELCOME_VIDEO_URL } from "@/content/loginWelcomeVideo";
-import { Button } from "@/components/ui/Button";
-import { TEXT } from "@/lib/designSystem";
+
+const STALL_MS = 8000;
 
 /**
  * Video 2 — the returning-user welcome animation. Reached from exactly two
@@ -24,6 +24,14 @@ import { TEXT } from "@/lib/designSystem";
  * it is written only after playback has actually started — never because
  * autoplay was blocked or the file failed to load.
  *
+ * Sound is attempted once, unmuted, with no tap. The Android WebView allows
+ * that because Capacitor sets setMediaPlaybackRequiresUserGesture(false).
+ * If that play() is rejected, the same video continues muted and stays on
+ * screen. A video that has already started muted is never unmuted later —
+ * that pause was measured in Chrome. Play and Continue are offered only when
+ * both attempts fail, the file errors, or nothing has started after
+ * STALL_MS — and the page never moves on by itself in that state.
+ *
  * Destination after the video is computed via the exact same
  * postAuthDestination() every login already resolves through — this page
  * is only ever reached for an already-onboarded child in practice, but
@@ -35,7 +43,7 @@ export default function LoginWelcomePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
-  const [playbackError, setPlaybackError] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const nextHrefRef = useRef<string>("/kingdom-map");
@@ -72,6 +80,30 @@ export default function LoginWelcomePage() {
     };
   }, [router]);
 
+  // If nothing has started a while after the page is ready (slow network, a
+  // stalled decoder, an autoplay policy that never answers), surface the
+  // Play / Continue controls instead of leaving a black screen. This never
+  // navigates on its own.
+  useEffect(() => {
+    if (!ready) return;
+    const t = window.setTimeout(() => {
+      if (!startedRef.current && !settledRef.current) setNeedsGesture(true);
+    }, STALL_MS);
+    return () => window.clearTimeout(t);
+  }, [ready]);
+
+  function logVideo(label: string, v: HTMLVideoElement | null) {
+    const err = v?.error;
+    console.log(
+      `[login-welcome] ${label} muted=${v ? v.muted : "null"} volume=${v ? v.volume : "null"} readyState=${v ? v.readyState : "null"} paused=${v ? v.paused : "null"} currentTime=${v ? v.currentTime : "null"} error=${err ? `${err.code} ${err.message}` : "none"}`
+    );
+  }
+
+  function rejectionText(reason: unknown) {
+    if (reason instanceof Error) return `${reason.name} ${reason.message}`;
+    return String(reason);
+  }
+
   function rememberStarted() {
     if (startedRef.current) return;
     startedRef.current = true;
@@ -91,40 +123,72 @@ export default function LoginWelcomePage() {
     autoplayAttemptedRef.current = true;
     const v = videoRef.current;
     if (!v) return;
-    // Muted autoplay is what browsers allow without a tap. Unmuted-first
-    // was rejected, and that rejection used to leave the page immediately.
+    // One unmuted attempt. Do not retry it, and do not unmute later.
+    logVideo("ready", v);
+    v.muted = false;
+    logVideo("before-unmuted-play", v);
+    v.play()
+      .then(() => {
+        console.log("[login-welcome] unmuted-play SUCCESS");
+        logVideo("after-unmuted-play", videoRef.current);
+      })
+      .catch((reason: unknown) => {
+        console.log(`[login-welcome] unmuted-play REJECTED ${rejectionText(reason)}`);
+        playMutedFallback();
+      });
+  }
+
+  /** The same video, muted, after the sound attempt was refused. */
+  function playMutedFallback() {
+    const v = videoRef.current;
+    if (!v || startedRef.current) return;
     v.muted = true;
-    v.play().catch(() => {
-      if (!startedRef.current) setNeedsGesture(true);
-    });
+    console.log("[login-welcome] fallback-muted-play");
+    logVideo("before-muted-play", v);
+    v.play()
+      .then(() => {
+        console.log("[login-welcome] muted-play SUCCESS");
+        logVideo("after-muted-play", videoRef.current);
+      })
+      .catch((mutedReason: unknown) => {
+        console.log(`[login-welcome] muted-play REJECTED ${rejectionText(mutedReason)}`);
+        logVideo("muted-play-failed", videoRef.current);
+        if (!startedRef.current) setNeedsGesture(true);
+      });
   }
 
   function handlePlaying() {
+    logVideo("event playing", videoRef.current);
     rememberStarted();
     setNeedsGesture(false);
-    setPlaybackError(false);
+    setLoadFailed(false);
+  }
+
+  function handlePause() {
+    logVideo("event pause", videoRef.current);
+  }
+
+  function handleEnded() {
+    logVideo("event ended", videoRef.current);
+    finish();
   }
 
   function handleError() {
+    logVideo("event error", videoRef.current);
     if (startedRef.current || settledRef.current) return;
-    setPlaybackError(true);
+    setLoadFailed(true);
     setNeedsGesture(true);
   }
 
-  function playFromGesture() {
+  function playFromTap() {
+    if (startedRef.current || settledRef.current) return;
     const v = videoRef.current;
     if (!v) return;
     setNeedsGesture(false);
+    setLoadFailed(false);
     if (v.error) v.load();
     v.muted = false;
-    v.play().catch(() => {
-      const el = videoRef.current;
-      if (!el) return;
-      el.muted = true;
-      el.play().catch(() => {
-        if (!startedRef.current) setNeedsGesture(true);
-      });
-    });
+    v.play().catch(() => playMutedFallback());
   }
 
   if (!ready) {
@@ -136,32 +200,39 @@ export default function LoginWelcomePage() {
       <video
         ref={videoRef}
         src={LOGIN_WELCOME_VIDEO_URL}
-        className="h-full w-full object-contain"
+        className="h-full w-full bg-black object-contain"
         playsInline
-        muted
         preload="auto"
         autoPlay
         controls={false}
         onCanPlay={handleCanPlay}
         onPlaying={handlePlaying}
-        onEnded={finish}
+        onPause={handlePause}
+        onEnded={handleEnded}
         onError={handleError}
       />
       {needsGesture ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/50 px-6">
-          {playbackError ? (
-            <p className={`${TEXT.body} text-center text-white`}>
-              The welcome video couldn&apos;t start.
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/55 px-6 text-center">
+          {loadFailed ? (
+            <p role="alert" className="max-w-xs font-classic-body text-sm text-white/80">
+              The welcome video couldn&apos;t load right now.
             </p>
           ) : null}
-          <Button tone="premium" onClick={playFromGesture}>
+          <button
+            type="button"
+            aria-label="Play the welcome video"
+            className="min-h-[48px] min-w-[8rem] rounded-full bg-white px-8 font-classic-body text-base font-semibold text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            onClick={playFromTap}
+          >
             Play
-          </Button>
-          {playbackError ? (
-            <Button tone="premium" variant="ghost" onClick={() => router.replace(nextHrefRef.current)}>
-              Continue
-            </Button>
-          ) : null}
+          </button>
+          <button
+            type="button"
+            className="min-h-[48px] px-6 font-classic-body text-sm text-white/75 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            onClick={finish}
+          >
+            Continue
+          </button>
         </div>
       ) : null}
     </main>

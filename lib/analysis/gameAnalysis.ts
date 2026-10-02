@@ -30,6 +30,14 @@ export interface CompletedGameRecord {
   startedAt: string;
   endedAt: string;
   openingName: string | null;
+  /** Phase 7B: stable identifier for THIS specific finished game — the
+   * cache key for persisted Game Review analysis (child_game_reviews
+   * .game_ref). Online games reuse online_games.id; Free Play generates
+   * one crypto.randomUUID() once when the game starts (app/free-play/page.tsx).
+   * Optional so an older caller (or a future surface that hasn't been
+   * wired up yet) simply gets no caching rather than a crash — the review
+   * itself works identically either way, just without persistence. */
+  gameRef?: string;
 }
 
 export interface BestMoveSuggestion {

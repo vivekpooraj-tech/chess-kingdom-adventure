@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type Stripe from "stripe";
 import { PREMIUM_ENTITLEMENT_YEARS } from "@/lib/premium/entitlement";
 import { SCHOOL_CHECKOUT_PRODUCT } from "@/lib/pricing/school";
+import { trackServerEvent } from "@/lib/analytics/server";
 
 /**
  * The durable source of truth for granting Premium. Stripe calls this
@@ -54,6 +55,19 @@ export async function POST(request: NextRequest) {
         const schoolParentId = session.metadata?.school_parent_id;
         if (schoolParentId && session.payment_status === "paid") {
           const admin = getSupabaseAdmin();
+          // Analytics de-dup: read-only, BEFORE the (unmodified) grant RPC —
+          // Stripe delivers this event at least once, and
+          // grant_school_entitlement() is correctly idempotent on repeat
+          // delivery, but it reports no "was this new" signal back. This
+          // check exists ONLY so a Stripe redelivery of an already-granted
+          // session doesn't double-count a school_purchase_success event;
+          // it changes no entitlement behavior and the grant call below is
+          // byte-identical to before this file was touched.
+          const { data: existingSchoolEntitlement } = await admin
+            .from("school_entitlements")
+            .select("id")
+            .eq("checkout_session_id", session.id)
+            .maybeSingle();
           const { error } = await admin.rpc("grant_school_entitlement", {
             p_parent_id: schoolParentId,
             p_checkout_session_id: session.id,
@@ -65,6 +79,12 @@ export async function POST(request: NextRequest) {
           });
           if (error) {
             console.error("Stripe webhook: grant_school_entitlement failed", schoolParentId, error);
+          } else if (!existingSchoolEntitlement) {
+            await trackServerEvent(schoolParentId, "school_purchase_success", {
+              product: "chess_school",
+              currency: session.currency ?? undefined,
+              amount: session.amount_total ?? undefined,
+            });
           }
         } else {
           console.warn("Stripe webhook: chess_school session missing school_parent_id or not paid.", {
@@ -77,6 +97,13 @@ export async function POST(request: NextRequest) {
 
       if (parentId && session.payment_status === "paid") {
         const admin = getSupabaseAdmin();
+        // Analytics de-dup — see the identical comment on the School branch
+        // above. Read-only; grant_premium_entitlement() below is unchanged.
+        const { data: existingPremiumEntitlement } = await admin
+          .from("premium_entitlements")
+          .select("id")
+          .eq("stripe_checkout_session_id", session.id)
+          .maybeSingle();
         const { error } = await admin.rpc("grant_premium_entitlement", {
           p_parent_id: parentId,
           p_checkout_session_id: session.id,
@@ -91,6 +118,12 @@ export async function POST(request: NextRequest) {
           console.error("Stripe webhook: grant_premium_entitlement failed", parentId, error);
           // Still 200 below — a 5xx makes Stripe retry, which won't fix a DB
           // config problem. Logged for manual follow-up.
+        } else if (!existingPremiumEntitlement) {
+          await trackServerEvent(parentId, "premium_purchase_success", {
+            product: "premium",
+            currency: session.currency ?? undefined,
+            amount: session.amount_total ?? undefined,
+          });
         }
       } else {
         console.warn("Stripe webhook: checkout.session.completed missing parent_id or not paid.", {

@@ -62,6 +62,30 @@ export function skillWeaknessCounts(
   return counts;
 }
 
+/** The minimal facts skillWeaknessCounts's resolution loop actually needs —
+ * factored out (same pattern as skillMapping.ts's BiggestMomentFacts, Phase
+ * 7A) so server code that only has the request-body shape (MistakeInput[],
+ * not a full AnalyzedMove) can use the SAME resolution precedence instead
+ * of re-implementing it. Phase 7B: used by
+ * app/api/game-analysis/explain/route.ts to bump child_skill_signals for a
+ * genuinely new analysis, server-side. */
+export interface SkillWeaknessFact {
+  ply: number;
+  skillHint?: string;
+}
+
+export function skillWeaknessCountsFromFacts(
+  mistakes: SkillWeaknessFact[],
+  apiSkillByPly: Record<number, string | undefined>
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const m of mistakes) {
+    const skill = (apiSkillByPly[m.ply] as SkillId | undefined) ?? (m.skillHint as SkillId | undefined) ?? "advantage_loss";
+    counts[skill] = (counts[skill] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** How many times a skill has been the flagged cause of a mistake across
  * this child's past reviews — the threshold for "you've seen this before".
  * 3+ is a genuine pattern (matches the feature-vision mockup). */

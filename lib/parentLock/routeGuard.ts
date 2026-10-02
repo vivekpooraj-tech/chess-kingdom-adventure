@@ -12,14 +12,19 @@ export function shouldRedirectToChessTimeHub(input: {
 }): boolean {
   const { pathname, session, nowMs = Date.now() } = input;
   if (!session?.active) return false;
-  if (isChessTimeExpired(session, nowMs)) return pathname !== "/chess-time";
-  if (pathname === "/chess-time" || pathname.startsWith("/chess-time/")) return false;
 
+  // Parent admin (dashboard, daily limits, Parent Lock settings) must stay
+  // reachable even when the child's focus session has expired — the child
+  // stays on /chess-time until PIN exit; the grown-up still needs to adjust
+  // limits on the same device.
   if (
     PARENT_ADMIN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   ) {
     return false;
   }
+
+  if (isChessTimeExpired(session, nowMs)) return pathname !== "/chess-time";
+  if (pathname === "/chess-time" || pathname.startsWith("/chess-time/")) return false;
 
   return !isActivityAllowed(pathname, session.allowedActivities);
 }

@@ -37,7 +37,7 @@ const SIDE_PANEL_MIN = CHESS_FOCUS_SIDE_PANEL_WIDTH; // 272
 const SIDE_PANEL_MAX = 360;
 
 export type ChessFocusLayoutProps = {
-  title: string;
+  title: ReactNode;
   onExit?: () => void;
   opponentRow?: ReactNode;
   playerRow?: ReactNode;

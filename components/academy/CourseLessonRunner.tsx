@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Chess } from "chess.js";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { MoveFeedback } from "@/components/game/MoveFeedback";
 import { PrimaryCard } from "@/components/ui/Card";
@@ -77,6 +78,7 @@ export function CourseLessonRunner({
   const [quizChoice, setQuizChoice] = useState<number | null>(null);
   const [savedState, setSavedState] = useState<"idle" | "saving" | "saved">("idle");
   const childIdRef = useRef<string | null>(null);
+  const boardSize = useResponsiveBoardSize(340);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,9 +154,46 @@ export function CourseLessonRunner({
     );
   }
 
+  if (data?.locked) {
+    const preview = data.lockedPreview;
+    return (
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-safe-icons pb-nav-safe">
+        <div className="w-full max-w-md flex flex-col gap-5">
+          <Link
+            href={courseHref}
+            className="flex min-h-[44px] items-center font-body text-sm text-premium-ivory/65 underline underline-offset-2"
+          >
+            ← Back to the course
+          </Link>
+          <PrimaryCard className="flex flex-col gap-4 border-premium-gold/30">
+            <span className={`${TEXT.meta} text-premium-gold`}>🔒 Premium Lesson</span>
+            {preview && (
+              <>
+                <div>
+                  <p className={TEXT.meta}>What you&apos;ll learn</p>
+                  <p className="font-classic-display text-lg text-premium-ivory mt-1">{preview.title}</p>
+                  <p className={`${TEXT.body} mt-1`}>{preview.concept}</p>
+                </div>
+                <div>
+                  <p className={TEXT.meta}>Why it matters</p>
+                  <p className={`${TEXT.body} mt-1`}>{preview.intro}</p>
+                </div>
+              </>
+            )}
+            <Link href="/upgrade">
+              <Button tone="premium" className="w-full">
+                Unlock Premium
+              </Button>
+            </Link>
+          </PrimaryCard>
+        </div>
+      </main>
+    );
+  }
+
   if (!lesson) {
     return (
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-10 pb-nav-safe">
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 pt-safe-icons pb-nav-safe">
         <div className="h-9 w-56 rounded bg-premium-navy/70 animate-pulse" />
         <SkeletonBlock className="w-full max-w-md h-40" />
         <SkeletonBlock className="w-full max-w-md aspect-square" />
@@ -202,8 +241,8 @@ export function CourseLessonRunner({
   }
 
   return (
-    <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-5 px-5 pt-6 pb-nav-safe">
-      <div className="w-full max-w-md flex flex-col gap-4">
+    <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-5 px-5 pt-safe-icons pb-nav-safe">
+      <div className="w-full max-w-md md:max-w-2xl flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <Link
             href={courseHref}
@@ -270,8 +309,8 @@ export function CourseLessonRunner({
           <PrimaryCard className="flex flex-col gap-3 items-center">
             {lesson.examples.map((ex, i) => (
               <div key={i} className="flex flex-col gap-2 items-center w-full">
-                <div className="w-full max-w-[360px] mx-auto">
-                  <ChessBoard readOnly fen={ex.fen} size={340} />
+                <div className="w-full mx-auto" style={{ maxWidth: boardSize }}>
+                  <ChessBoard readOnly fen={ex.fen} size={boardSize} />
                 </div>
                 <p className={`${TEXT.body} text-center`}>{ex.caption}</p>
               </div>
@@ -291,13 +330,13 @@ export function CourseLessonRunner({
               </span>
             </div>
             <p className={`${TEXT.body} text-center`}>{exercise.prompt}</p>
-            <div className="w-full max-w-[360px] mx-auto">
+            <div className="w-full mx-auto" style={{ maxWidth: boardSize }}>
               <ChessBoard
                 key={boardKey}
                 fen={exercise.fen}
                 playableColor={exercise.sideToMove}
                 readOnly={tryStatus === "correct"}
-                size={340}
+                size={boardSize}
                 onMove={handleMove}
               />
             </div>

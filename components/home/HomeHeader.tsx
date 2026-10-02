@@ -16,9 +16,13 @@ export function HomeHeader({
 }: {
   displayName: string;
   avatar: AvatarOption | undefined;
-  zone: KingdomZone;
-  currentDay: number;
-  totalDays: number;
+  /** Kingdom Journey zone + day framing. Omit both `zone` and `currentDay`/
+   * `totalDays` to hide this row entirely — Home (Phase 3) no longer leads
+   * with Kingdom Journey's day count, since Chess School V2 is the
+   * flagship curriculum now. Profile still passes all three, unchanged. */
+  zone?: KingdomZone;
+  currentDay?: number;
+  totalDays?: number;
   /** Consecutive-day Chess Mind activity streak — the one real, measured
    * streak in the app currently (see getChessMindStreak). Shown here as
    * the header's general streak per the Phase 10B brief; 0 hides it. */
@@ -29,7 +33,10 @@ export function HomeHeader({
    * fallback like 1200 — always the actual value or nothing. */
   rating?: number;
 }) {
-  const progressPercent = Math.min(100, Math.round((Math.min(currentDay - 1, totalDays) / totalDays) * 100));
+  const showJourneyRow = typeof currentDay === "number" && typeof totalDays === "number" && totalDays > 0;
+  const progressPercent = showJourneyRow
+    ? Math.min(100, Math.round((Math.min(currentDay! - 1, totalDays!) / totalDays!) * 100))
+    : 0;
 
   return (
     <div className="w-full h-full rounded-premiumCard bg-premium-midnight text-premium-ivory p-5 flex flex-col gap-4 shadow-premiumCard">
@@ -46,10 +53,12 @@ export function HomeHeader({
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-classic-display text-lg leading-tight truncate">{displayName}</p>
-          <p className="font-classic-body text-xs text-premium-gold/90 flex items-center gap-1">
-            <span>{zone.emoji}</span>
-            <span>{zone.name}</span>
-          </p>
+          {zone && (
+            <p className="font-classic-body text-xs text-premium-gold/90 flex items-center gap-1">
+              <span>{zone.emoji}</span>
+              <span>{zone.name}</span>
+            </p>
+          )}
         </div>
         {typeof rating === "number" && (
           <Link
@@ -71,15 +80,17 @@ export function HomeHeader({
         </div>
       )}
 
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <p className="font-classic-body text-xs text-premium-ivory/60">
-            Day {Math.min(currentDay, totalDays)} of {totalDays}
-          </p>
-          <p className="font-classic-body text-xs text-premium-ivory/60">{progressPercent}%</p>
+      {showJourneyRow && (
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <p className="font-classic-body text-xs text-premium-ivory/60">
+              Day {Math.min(currentDay!, totalDays!)} of {totalDays}
+            </p>
+            <p className="font-classic-body text-xs text-premium-ivory/60">{progressPercent}%</p>
+          </div>
+          <ProgressBar percent={progressPercent} />
         </div>
-        <ProgressBar percent={progressPercent} />
-      </div>
+      )}
     </div>
   );
 }

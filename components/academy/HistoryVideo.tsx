@@ -58,6 +58,7 @@ export function HistoryVideo({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [videoVisible, setVideoVisible] = useState(false);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -112,13 +113,32 @@ export function HistoryVideo({
     if (v) onProgress?.(v.currentTime);
   }, [onProgress]);
 
+  // History of Chess plays with audio unless the user mutes via native controls.
+  const handlePlay = useCallback(() => {
+    const v = videoRef.current;
+    if (v) v.muted = false;
+    setVideoVisible(true);
+  }, []);
+
+  const handleCanPlay = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = false;
+    v.play().catch(() => {
+      if (!videoRef.current) return;
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(() => {});
+    });
+  }, []);
+
   return (
     <div
       ref={wrapperRef}
       data-orientation={orientation}
       data-fullscreen={isFullscreen ? "true" : undefined}
       className={clsx(
-        "history-video relative overflow-hidden bg-premium-navy",
+        "history-video relative overflow-hidden",
+        videoVisible ? "bg-premium-navy" : "bg-black",
         !isFullscreen && "history-video--inline mx-auto w-full rounded-premiumCard shadow-premiumCard"
       )}
     >
@@ -141,15 +161,20 @@ export function HistoryVideo({
         <video
           ref={videoRef}
           src={src}
-          poster={poster}
-          controls
+          poster={videoVisible ? poster : undefined}
+          controls={videoVisible}
           // Inline only — see the component doc comment.
           controlsList="nofullscreen noremoteplayback nodownload"
           disablePictureInPicture
           playsInline
           preload="metadata"
-          className="video-inline history-video__el relative z-10 mx-auto h-full w-full bg-black object-cover lg:w-auto lg:bg-transparent lg:object-contain lg:shadow-premiumCard"
+          className={`video-inline history-video__el relative z-10 mx-auto h-full w-full bg-black object-cover transition-opacity duration-150 lg:w-auto lg:bg-transparent lg:object-contain lg:shadow-premiumCard ${
+            videoVisible ? "opacity-100 visible" : "opacity-0 invisible"
+          }`}
           onLoadedMetadata={handleLoadedMetadata}
+          onCanPlay={handleCanPlay}
+          onPlay={handlePlay}
+          onPlaying={() => setVideoVisible(true)}
           onTimeUpdate={handleTimeUpdate}
           onError={() => setFailed(true)}
         >
@@ -179,7 +204,7 @@ export function HistoryVideo({
           onClick={toggleFullscreen}
           aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
           aria-pressed={isFullscreen}
-          className="history-video__fs absolute right-2 top-2 z-20 flex h-11 w-11 items-center justify-center rounded-premiumBtn border border-white/15 bg-black/55 text-premium-ivory backdrop-blur-sm transition-colors hover:bg-black/75 hover:text-white active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/70"
+          className="history-video__fs absolute z-20 flex h-11 w-11 items-center justify-center rounded-premiumBtn border border-white/15 bg-black/55 text-premium-ivory backdrop-blur-sm transition-colors hover:bg-black/75 hover:text-white active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/70 right-[max(0.5rem,env(safe-area-inset-right,0px))] top-[max(0.5rem,var(--safe-top,0px))]"
         >
           {isFullscreen ? (
             <ExitFullscreenIcon className="h-5 w-5" />

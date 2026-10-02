@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { OPENINGS, OpeningDef, getOpeningFamily } from "@/content/openings";
+import { OPENINGS, OpeningDef, getOpeningFamily, isOpeningFree } from "@/content/openings";
 import { getOpeningStatus, STATUS_LABELS, OpeningEncounterRow } from "@/lib/openings/practiceTracking";
 import { TEXT } from "@/lib/designSystem";
 
@@ -114,6 +114,11 @@ export function OpeningExplorerClient({
                   {o.isGambit && (
                     <span className="font-classic-body text-[11px] font-semibold text-red-300 border border-red-400/30 rounded-full px-1.5 py-0.5">
                       GAMBIT
+                    </span>
+                  )}
+                  {!isOpeningFree(o.id) && (
+                    <span className="font-classic-body text-[11px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-1.5 py-0.5">
+                      🔒 Premium
                     </span>
                   )}
                 </div>

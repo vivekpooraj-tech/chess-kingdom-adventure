@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Capacitor } from "@capacitor/core";
 import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { clearExplicitSignOutClient } from "@/lib/childSession";
+import { track } from "@/lib/analytics/client";
 import { Button } from "@/components/ui/Button";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Logo } from "@/components/branding/Logo";
@@ -94,6 +96,7 @@ export default function SignInPage() {
         setError("Incorrect email or password. Please try again.");
         return;
       }
+      clearExplicitSignOutClient();
       router.push(destination);
       return;
     }
@@ -117,6 +120,8 @@ export default function SignInPage() {
     }
 
     if (data.session) {
+      clearExplicitSignOutClient();
+      track("signup_completed", { platform: Capacitor.isNativePlatform() ? "android" : "web" });
       router.push(destination);
       return;
     }

@@ -26,7 +26,7 @@ export default function MinigameDemoPage() {
         {memoryDone ? (
           <div className="flex flex-col items-center gap-3">
             <p className="font-display text-xl text-kingdom-forest">Solved! 🎉</p>
-            <Button
+            <Button tone="adventure"
               size="md"
               onClick={() => {
                 setMemoryDone(false);
@@ -56,7 +56,7 @@ export default function MinigameDemoPage() {
         {reactionDone ? (
           <div className="flex flex-col items-center gap-3">
             <p className="font-display text-xl text-kingdom-forest">All 3 rounds done! ⚡</p>
-            <Button
+            <Button tone="adventure"
               size="md"
               onClick={() => {
                 setReactionDone(false);

@@ -51,11 +51,24 @@ export function MistakeReviewStepper({
   record,
   boardSkinId,
   pieceSetId,
+  isPremium,
 }: {
   mistake: EnrichedMistake;
   record: CompletedGameRecord;
   boardSkinId?: string;
   pieceSetId?: string;
+  /** Launch-day QA fix: "Try it yourself" (attempting a move, and the
+   * found/repeated/other feedback messages) reveals nothing Free doesn't
+   * already have — it's the child's own attempted move being judged, using
+   * only the explanation Free already receives in full (`mistake.explanation`
+   * above). The actual best-move-alternative reveal ("Show Better Move" /
+   * "Show me the move" / the resulting move+whyBetter block) is the same
+   * Premium deliverable BiggestMomentCard's caption gates one line up in
+   * that file — this was reachable one tap away from here even after that
+   * fix, since this component never received isPremium. Only that reveal is
+   * gated; the attempt-it-yourself teaching loop stays available to every
+   * tier. */
+  isPremium: boolean;
 }) {
   const steps = useMemo(() => buildReviewSteps(record, mistake), [record, mistake]);
   const [stepIndex, setStepIndex] = useState(steps.length - 1);
@@ -182,9 +195,11 @@ export function MistakeReviewStepper({
               <Button tone="premium" onClick={() => setTrying(true)}>
                 Try it yourself
               </Button>
-              <Button tone="premium" variant="ghost" onClick={() => setShowBetterMove(true)}>
-                Show Better Move
-              </Button>
+              {isPremium && (
+                <Button tone="premium" variant="ghost" onClick={() => setShowBetterMove(true)}>
+                  Show Better Move
+                </Button>
+              )}
             </div>
           )}
 
@@ -216,8 +231,11 @@ export function MistakeReviewStepper({
                         Try again
                       </Button>
                       {/* Never let a child get stuck: after a couple of goes the
-                          answer is offered rather than waited for. */}
-                      {attemptCount >= ATTEMPTS_BEFORE_HINT && (
+                          answer is offered rather than waited for — Premium
+                          only; Free can keep trying (or come back once
+                          Premium reveals it), same boundary as the caption
+                          this mirrors. */}
+                      {isPremium && attemptCount >= ATTEMPTS_BEFORE_HINT && (
                         <Button tone="premium" onClick={() => setShowBetterMove(true)}>
                           Show me the move
                         </Button>
@@ -229,7 +247,7 @@ export function MistakeReviewStepper({
             </div>
           )}
 
-          {mistake.bestMove && showBetterMove && (
+          {isPremium && mistake.bestMove && showBetterMove && (
             <div className="rounded-premiumBtn bg-premium-navy border border-premium-gold/15 p-3 flex flex-col gap-1 w-full">
               <p className="font-classic-body text-sm text-premium-ivory/70">
                 Your move: <span className="text-premium-ivory">{step.san}</span>

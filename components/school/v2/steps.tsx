@@ -3,7 +3,7 @@
 import { cloneElement, isValidElement, useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { TeachingOverlay } from "@/components/board/TeachingOverlay";
-import { Button } from "@/components/ui/Button";
+import { SchoolCta } from "./SchoolCta";
 import { TEXT } from "@/lib/designSystem";
 import type { TeachingArrow } from "@/lib/board/teachingOverlay";
 import { moveMatches, canonicalSan } from "@/lib/school/v2/moves";
@@ -56,7 +56,7 @@ export const BOARD = 720;
 export function SchoolBoardFrame({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="mx-auto w-full max-w-full [width:min(calc(100vw-1rem),calc(100vw-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)-1rem),88dvh,720px)] md:[width:min(calc(100vw-2rem),min(85dvh,720px),720px)] lg:[width:min(100%,min(88dvh,680px),720px)]"
+      className="world-school-board mx-auto w-full max-w-full [width:min(calc(100vw-1rem),calc(100vw-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)-1rem),88dvh,720px)] md:[width:min(calc(100vw-2rem),min(85dvh,720px),720px)] lg:[width:min(100%,min(88dvh,680px),720px)]"
     >
       {children}
     </div>
@@ -135,7 +135,7 @@ export function TeachStepView({ step, ollie, onComplete }: StepProps<TeachStep>)
         </SchoolBoardFrame>
       ) : null}
 
-      <div className="rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
+      <div className="world-school-card rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
         <p className={`${TEXT.subheading}`}>{step.title}</p>
         <p className={`${TEXT.body} mt-3 text-premium-ivory/90`}>{step.lines[lineIndex]}</p>
         <p className={`${TEXT.caption} mt-4`}>
@@ -143,13 +143,12 @@ export function TeachStepView({ step, ollie, onComplete }: StepProps<TeachStep>)
         </p>
       </div>
 
-      <Button
-        tone="premium"
+      <SchoolCta
         block
         onClick={() => (last ? onComplete() : setLineIndex((i) => i + 1))}
       >
         {last ? "Got it — let's try" : "Next"}
-      </Button>
+      </SchoolCta>
     </div>
   );
 }
@@ -223,13 +222,13 @@ export function PieceIntroStepView({ step, onComplete }: StepProps<PieceIntroSte
         <ChessBoard key={card.piece} fen={card.fen} readOnly focusMode size={BOARD} />
       </SchoolBoardWithOverlay>
 
-      <div className="rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
+      <div className="world-school-card rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
         <p className={`${TEXT.body} text-premium-ivory/90`}>{bodyLine}</p>
       </div>
 
-      <Button tone="premium" block onClick={advance}>
+      <SchoolCta block onClick={advance}>
         {buttonLabel}
-      </Button>
+      </SchoolCta>
     </div>
   );
 }
@@ -363,9 +362,9 @@ export function GuidedBoardStepView({
             >
               How did I do that? Watch it again
             </button>
-            <Button tone="premium" block onClick={onComplete}>
+            <SchoolCta block onClick={onComplete}>
               Continue
-            </Button>
+            </SchoolCta>
           </>
         ) : null}
       </div>
@@ -395,13 +394,12 @@ export function GuidedBoardStepView({
       </SchoolBoardWithOverlay>
 
       {!solved && openingLines.length > 0 && !openingComplete ? (
-        <Button
-          tone="premium"
+        <SchoolCta
           block
           onClick={() => setOpeningIndex((i) => i + 1)}
         >
           {openingIndex < openingLines.length - 1 ? "Next" : "Got it — my turn!"}
-        </Button>
+        </SchoolCta>
       ) : null}
 
       {!solved && (hintShown || attempts > 0) ? (
@@ -422,9 +420,9 @@ export function GuidedBoardStepView({
       ) : null}
 
       {solved ? (
-        <Button tone="premium" block onClick={onComplete}>
+        <SchoolCta block onClick={onComplete}>
           Continue
-        </Button>
+        </SchoolCta>
       ) : null}
     </div>
   );
@@ -469,9 +467,9 @@ export function DrillStepView({
     return (
       <div className="flex flex-col gap-5">
         <OllieCoach line={step.intro} />
-        <Button tone="premium" block onClick={() => setPhase("puzzles")}>
+        <SchoolCta block onClick={() => setPhase("puzzles")}>
           Start
-        </Button>
+        </SchoolCta>
       </div>
     );
   }
@@ -480,13 +478,13 @@ export function DrillStepView({
     return (
       <div className="flex flex-col gap-5">
         <OllieCoach line={ollie.mistake} tone="warm" />
-        <div className="rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
+        <div className="world-school-card rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
           <p className={`${TEXT.meta} text-premium-gold`}>ONE MORE TIME, SMALLER</p>
           <p className={`${TEXT.body} mt-2 text-premium-ivory/90`}>{drill.remedialTeach}</p>
         </div>
-        <Button tone="premium" block onClick={() => setPhase("remedial")}>
+        <SchoolCta block onClick={() => setPhase("remedial")}>
           Try an easier one
-        </Button>
+        </SchoolCta>
       </div>
     );
   }
@@ -521,9 +519,9 @@ export function DrillStepView({
             {passed ? "Passed." : "Practised again, and ready to move on."}
           </p>
         </div>
-        <Button tone="premium" block onClick={onComplete}>
+        <SchoolCta block onClick={onComplete}>
           Continue
-        </Button>
+        </SchoolCta>
       </div>
     );
   }
@@ -639,9 +637,9 @@ function SinglePuzzle({
         />
       </SchoolBoardFrame>
       {state !== "playing" ? (
-        <Button tone="premium" block onClick={() => onResult(state === "correct")}>
+        <SchoolCta block onClick={() => onResult(state === "correct")}>
           {state === "correct" ? "Next" : "Okay, next one"}
-        </Button>
+        </SchoolCta>
       ) : null}
     </div>
   );
@@ -690,9 +688,9 @@ export function BotMatchStepView({ step, ollie, onComplete }: StepProps<BotMatch
             </p>
           ))}
         </div>
-        <Button tone="premium" block size="lg" onClick={() => setReady(true)}>
+        <SchoolCta block size="lg" onClick={() => setReady(true)}>
           {step.prelude.cta}
-        </Button>
+        </SchoolCta>
       </div>
     );
   }
@@ -758,9 +756,9 @@ export function BotMatchStepView({ step, ollie, onComplete }: StepProps<BotMatch
       ) : null}
 
       {reached || over ? (
-        <Button tone="premium" block onClick={onComplete}>
+        <SchoolCta block onClick={onComplete}>
           {over ? "Continue" : "That's enough — continue"}
-        </Button>
+        </SchoolCta>
       ) : null}
     </div>
   );
@@ -806,9 +804,9 @@ export function PassAndPlayStepView({ step, ollie, onComplete }: StepProps<PassA
             </p>
           ))}
         </div>
-        <Button tone="premium" block size="lg" onClick={() => setReady(true)}>
+        <SchoolCta block size="lg" onClick={() => setReady(true)}>
           {step.prelude.cta}
-        </Button>
+        </SchoolCta>
       </div>
     );
   }
@@ -896,9 +894,9 @@ export function PassAndPlayStepView({ step, ollie, onComplete }: StepProps<PassA
       )}
 
       {plies >= 6 || over ? (
-        <Button tone="premium" block onClick={onComplete}>
+        <SchoolCta block onClick={onComplete}>
           {over ? "Continue" : "We're done — continue"}
-        </Button>
+        </SchoolCta>
       ) : null}
     </div>
   );
@@ -976,9 +974,9 @@ export function CeremonyStepView({ step, childName, onComplete }: {
       ) : null}
 
       {!step.epic || unlockShown || !step.unlock ? (
-        <Button tone="premium" block onClick={onComplete}>
+        <SchoolCta block onClick={onComplete}>
           Continue
-        </Button>
+        </SchoolCta>
       ) : null}
     </div>
   );
@@ -1032,20 +1030,19 @@ export function RecapStepView({ step, onComplete, isLast }: {
             />
           ))}
         </div>
-        <Button
-          tone="premium"
+        <SchoolCta
           block
           onClick={() => (last ? onComplete() : setMontageIndex((i) => i + 1))}
         >
           {last ? (isLast ? "Finish session" : "Continue") : "Next"}
-        </Button>
+        </SchoolCta>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
+      <div className="world-school-card rounded-premiumCard border border-white/10 bg-white/[0.04] p-5">
         <p className={`${TEXT.meta} text-premium-gold`}>WHAT YOU CAN DO NOW</p>
         <ul className="mt-3 space-y-2">
           {step.learned.map((l) => (
@@ -1059,9 +1056,9 @@ export function RecapStepView({ step, onComplete, isLast }: {
         </ul>
       </div>
       <OllieCoach line={step.nextTeaser} />
-      <Button tone="premium" block onClick={onComplete}>
+      <SchoolCta block onClick={onComplete}>
         {isLast ? "Finish session" : "Continue"}
-      </Button>
+      </SchoolCta>
     </div>
   );
 }

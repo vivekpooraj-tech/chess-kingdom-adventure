@@ -89,7 +89,7 @@ export default function ChessMindPage() {
 
   return (
     <>
-      <Screen maxWidth="medium">
+      <Screen maxWidth="medium" topSafeArea="icons">
         <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Chess Mind</h1>
           <p className={`${TEXT.body} mt-2`}>Train the way you think about chess.</p>

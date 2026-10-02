@@ -69,7 +69,7 @@ export default function AvatarPickerPage() {
         ))}
       </div>
 
-      <Button size="lg" disabled={!selected || saving} onClick={confirm}>
+      <Button tone="adventure" size="lg" disabled={!selected || saving} onClick={confirm}>
         {saving ? "Saving..." : "Next →"}
       </Button>
     </main>

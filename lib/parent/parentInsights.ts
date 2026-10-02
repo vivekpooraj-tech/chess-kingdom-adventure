@@ -184,9 +184,9 @@ export function getSkillSnapshot(input: {
   }
 
   if (input.lessonsCompleted >= 10) {
-    developing.push("Kingdom Journey");
+    developing.push("Kingdom Story Map");
   } else {
-    needsPractice.push("Kingdom Journey");
+    needsPractice.push("Kingdom Story Map");
   }
 
   if (input.puzzleFirstTryRate !== null) {

@@ -33,10 +33,10 @@ must exist in the Stripe **account**, not the code:
   **`checkout.session.completed`** and **`charge.refunded`**. Copy its signing
   secret into `STRIPE_WEBHOOK_SECRET`.
 - **Payment methods:** enable **UPI** (Dashboard → Settings → Payment methods)
-  for the India ₹299 price to show Google Pay / PhonePe / Paytm at checkout.
+  for the India ₹349 price to show Google Pay / PhonePe / Paytm at checkout.
 - **No Product/Price object is needed** — checkout uses inline `price_data`
-  with the regional amount from `lib/pricing/regions.ts` (₹299 for IN). Do not
-  create or reference a Stripe Price ID.
+  with the regional amount from `lib/pricing/regions.ts` (₹349 for IN, $7.99
+  USD otherwise). Do not create or reference a Stripe Price ID.
 - Pricing is a one-time payment (`mode: "payment"`). There is **no Stripe
   subscription** and none must be created.
 

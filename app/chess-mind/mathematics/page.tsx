@@ -13,6 +13,7 @@ import {
   MathQuestion,
 } from "@/lib/chessMind/mathQuestions";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -20,6 +21,9 @@ import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { useTrainYourMindDailyLimit } from "@/lib/trainYourMind/useDailyLimit";
+import { DailyLimitCard } from "@/components/trainYourMind/DailyLimitCard";
+import { DailyUsageIndicator } from "@/components/trainYourMind/DailyUsageIndicator";
 
 type Tier = "Beginner" | "Intermediate" | "Advanced";
 
@@ -105,6 +109,8 @@ export default function ChessMathematicsPage() {
   const [childId, setChildId] = useState<string | null>(null);
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  const dailyLimit = useTrainYourMindDailyLimit(childId, "mathematics");
+  const boardSize = useResponsiveBoardSize(220, { widthMultiplier: 0.85, maxSize: 720 });
 
   useEffect(() => {
     setRound(generateRound("Beginner"));
@@ -139,6 +145,7 @@ export default function ChessMathematicsPage() {
       if (childId) {
         recordChessMindSolve(createClient(), childId, "mathematics").catch(() => {});
       }
+      dailyLimit.recordUse();
     } else {
       setStreak(0);
     }
@@ -149,7 +156,7 @@ export default function ChessMathematicsPage() {
     setSelected(null);
   }
 
-  if (!round) {
+  if (!round || dailyLimit.loading) {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
@@ -157,11 +164,15 @@ export default function ChessMathematicsPage() {
     );
   }
 
+  if (dailyLimit.reached) {
+    return <DailyLimitCard categoryLabel="Chess Mathematics" />;
+  }
+
   const isCorrect = selected !== null && selected === round.answer;
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="medium" topSafeArea="icons">
         <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Chess Mathematics</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">
@@ -169,6 +180,7 @@ export default function ChessMathematicsPage() {
             chess.
           </p>
         </div>
+        <DailyUsageIndicator usedToday={dailyLimit.usedToday} limit={dailyLimit.limit} isPremium={dailyLimit.isPremium} />
 
         <div className="flex items-center gap-3">
           <span className="font-classic-body text-[11px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-3 py-1">
@@ -177,11 +189,11 @@ export default function ChessMathematicsPage() {
           <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
         </div>
 
-        <div className="mx-auto w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-5">
+        <div className="mx-auto w-full max-w-md md:max-w-3xl rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-5">
           {round.fen && (
             <ChessBoard
               fen={round.fen}
-              size={220}
+              size={boardSize}
               readOnly
               boardSkinId={boardSkinId}
               pieceSetId={pieceSetId}

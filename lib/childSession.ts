@@ -10,6 +10,9 @@
 import { clearAllActiveChildCache } from "./supabase/activeChildCache";
 
 const COOKIE_NAME = "cka_active_child";
+/** Set by SignOutRow after a deliberate sign-out; middleware reads this in
+ *  LOCAL_TEST_MODE so dev auto-signin does not immediately re-authenticate. */
+export const EXPLICIT_SIGN_OUT_COOKIE_NAME = "cka_explicit_sign_out";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 export function getActiveChildIdClient(): string | null {
@@ -30,3 +33,21 @@ export function setActiveChildIdClient(childId: string) {
 }
 
 export const ACTIVE_CHILD_COOKIE_NAME = COOKIE_NAME;
+
+export function clearActiveChildIdClient() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
+  clearAllActiveChildCache();
+}
+
+/** Marks that the user explicitly signed out (survives a hard navigation). */
+export function markExplicitSignOutClient() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${EXPLICIT_SIGN_OUT_COOKIE_NAME}=1; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
+}
+
+/** Cleared on a deliberate sign-in so LOCAL_TEST_MODE auto-signin resumes. */
+export function clearExplicitSignOutClient() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${EXPLICIT_SIGN_OUT_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
+}

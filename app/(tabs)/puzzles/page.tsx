@@ -13,8 +13,8 @@ import {
   localDateString,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
-import { DAILY_PREVIEW_LIMIT } from "@/content/lessons";
+import { PARENT_PREMIUM_COLUMNS } from "@/lib/premium/entitlement";
+import { resolveCapabilities, DAILY_LIMITS } from "@/lib/entitlement";
 import { rememberPuzzleShown, readRecentPuzzleIds } from "@/lib/puzzles/recentPuzzles";
 import type { ChessPuzzle } from "@/lib/types";
 import type { MatePuzzleResponse } from "@/lib/puzzles/mateTypes";
@@ -33,6 +33,17 @@ import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 import { TEXT } from "@/lib/designSystem";
 import { getMatePattern } from "@/content/matePatterns";
 import { PuzzleTower } from "@/components/puzzles/PuzzleTower";
+import { parseWorldQuery } from "@/lib/world/worlds";
+import { WorldScope } from "@/components/layout/WorldScope";
+import { PuzzleBoardMeta } from "@/components/puzzles/world/PuzzleBoardMeta";
+import { PuzzleSideChrome } from "@/components/puzzles/world/PuzzleSideChrome";
+import { PuzzleArenaHeading } from "@/components/puzzles/world/PuzzleArenaHeading";
+import { useWorld } from "@/lib/world/WorldContext";
+import {
+  puzzleElapsed,
+  puzzleNextLabel,
+  sessionAccuracyLabel,
+} from "@/lib/puzzles/puzzleArena";
 
 type Status = "playing" | "correct" | "incorrect";
 
@@ -46,13 +57,23 @@ const OBJECTIVE_TEXT: Record<1 | 2 | 3, string> = {
 export default function PuzzlesPage() {
   return (
     <Suspense fallback={<main className="min-h-screen bg-premium-midnight" />}>
-      <PuzzlesPageInner />
+      <PuzzlesWorldGate />
     </Suspense>
+  );
+}
+
+function PuzzlesWorldGate() {
+  const searchParams = useSearchParams();
+  return (
+    <WorldScope world={parseWorldQuery(searchParams.get("world"))} fit="play">
+      <PuzzlesPageInner />
+    </WorldScope>
   );
 }
 
 function PuzzlesPageInner() {
   const router = useRouter();
+  const world = useWorld();
 
   // AppShell stamps html[data-puzzle-trainer] on /puzzles, and globals.css
   // reads it as "this is a normal tab page, keep the tab bar visible" — twice,
@@ -103,6 +124,8 @@ function PuzzlesPageInner() {
   // Consecutive first-try solves this session. Reset by a wrong attempt, so it
   // reports genuine unaided runs rather than counting retried puzzles.
   const [streakCount, setStreakCount] = useState(0);
+  const [firstTrySolves, setFirstTrySolves] = useState(0);
+  const [puzzleStartedAt, setPuzzleStartedAt] = useState("");
   const [dailyAttempts, setDailyAttempts] = useState(0);
   // Misses on the CURRENT puzzle. Survives "Try Again" (that's the same
   // puzzle, so the encouragement ladder should keep getting more helpful) and
@@ -120,7 +143,7 @@ function PuzzlesPageInner() {
   // against the 3/day Puzzle Trainer allowance and is always playable, even
   // once that allowance is spent. Only bare (free-practice) /puzzles visits
   // hit the limit.
-  const limitReached = !isPremium && !isDaily && todayCount >= DAILY_PREVIEW_LIMIT;
+  const limitReached = !isPremium && !isDaily && todayCount >= DAILY_LIMITS.puzzles;
 
   // The FEN the player's NEXT move should be validated from — the puzzle's
   // own starting position at first, then whatever position the auto-
@@ -130,7 +153,10 @@ function PuzzlesPageInner() {
   const [beforeFen, setBeforeFen] = useState<string>("");
 
   useEffect(() => {
-    if (puzzle) setBeforeFen(puzzle.fen);
+    if (puzzle) {
+      setBeforeFen(puzzle.fen);
+      setPuzzleStartedAt(new Date().toISOString());
+    }
   }, [puzzle]);
 
   useEffect(() => {
@@ -180,7 +206,14 @@ function PuzzlesPageInner() {
           .then((r) => r.json() as Promise<MatePuzzleResponse>)
           .catch(() => ({ puzzle: null, solvedIds: [] }) as MatePuzzleResponse),
       ]);
-      const premium = resolvePremiumState(parent).isPremium;
+      // Resolved through the shared entitlement layer (lib/entitlement) now,
+      // rather than calling resolvePremiumState directly — same underlying
+      // source of truth, same answer, just asked through the one place the
+      // rest of the app is migrating to ask it from. School row is not
+      // fetched on this page (Puzzles' free tier isn't lifted by owning
+      // Chess School), so it's passed as null; resolveCapabilities treats a
+      // null school row as "no school entitlement," identical to before.
+      const premium = resolveCapabilities(parent, null).isPremium;
       setIsPremium(premium);
       if (!premium) {
         setTodayCount(previewCount);
@@ -245,6 +278,7 @@ function PuzzlesPageInner() {
     // only ever persisted for the very first solve of a puzzle.
     const attemptNumber = dailyAttempts + 1;
     const firstTry = dailyAttempts === 0;
+    if (firstTry) setFirstTrySolves((n) => n + 1);
 
     // Free Puzzle Trainer quota: a bare free-practice solve spends one of the
     // 3/day preview credits. The Daily Challenge is a separate free activity
@@ -333,13 +367,16 @@ function PuzzlesPageInner() {
   // Shown first, ahead of the loading skeleton below — the puzzle itself
   // keeps loading in the background via the effect above, so by the time
   // the child taps "Solve a Puzzle" it's usually already there.
-  if (showTower) {
+  if (showTower && world === "enchanted") {
     return (
       <PuzzleTower
         solvedCount={solvedIds.size}
         isPremium={isPremium}
-        freePuzzlesLeft={isPremium ? null : Math.max(0, DAILY_PREVIEW_LIMIT - todayCount)}
+        freePuzzlesLeft={isPremium ? null : Math.max(0, DAILY_LIMITS.puzzles - todayCount)}
         onStart={() => setShowTower(false)}
+        kicker="Puzzle Quest"
+        title="Kingdom Chambers"
+        subtitle="Unlock chambers by solving real puzzles."
       />
     );
   }
@@ -367,12 +404,12 @@ function PuzzlesPageInner() {
   if (!limitReached) {
     return (
       <ChessFocusLayout
-        title="Puzzle Trainer"
+        title={<PuzzleArenaHeading fallback="Puzzle Trainer" />}
         // Full-screen hides the tab bar, so the shell's own Exit button is
         // the only way out. It must go somewhere — without this it renders
         // and does nothing, which is a trap.
         onExit={() => {
-          if (!isDaily) {
+          if (!isDaily && world === "enchanted") {
             setShowTower(true);
             return;
           }
@@ -383,6 +420,25 @@ function PuzzlesPageInner() {
         // sharing the screen with the tab bar the way an ordinary tab page
         // does.
         preserveBottomNav={false}
+        boardMeta={
+          <PuzzleBoardMeta
+            theme={puzzle.theme}
+            objective={OBJECTIVE_TEXT[puzzle.mateIn]}
+            drill={`Mate in ${puzzle.mateIn}`}
+            depth={String(puzzle.mateIn)}
+            accuracy={sessionAccuracyLabel(solvedCount, firstTrySolves)}
+            time={puzzleElapsed(puzzleStartedAt)}
+            streak={String(streakCount)}
+            solvedCount={solvedIds.size}
+            source={isDaily ? "Daily Challenge" : "Chess Mind mate library"}
+            notes={
+              status === "correct" && matePattern
+                ? matePattern.description
+                : OBJECTIVE_TEXT[puzzle.mateIn]
+            }
+            isDaily={isDaily}
+          />
+        }
         renderBoard={(boardSize) => (
           <div className="board-feedback flex w-full items-center justify-center" data-feedback={status}>
             <ChessBoard
@@ -401,6 +457,17 @@ function PuzzlesPageInner() {
           </div>
         )}
         sidePanel={
+          <PuzzleSideChrome
+            status={status}
+            missCount={missCount}
+            hint={
+              status === "playing"
+                ? OBJECTIVE_TEXT[puzzle.mateIn]
+                : status === "correct"
+                  ? matePattern?.description ?? null
+                  : puzzle.theme
+            }
+          >
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-classic-body text-xs bg-premium-emerald/25 text-emerald-300 rounded-full px-3 py-1 font-semibold">
@@ -446,8 +513,8 @@ function PuzzlesPageInner() {
                     <p className={`${TEXT.caption} normal-case`}>{matePattern.recognise}</p>
                   </div>
                 )}
-                <Button tone="premium" onClick={nextPuzzle} className="w-full">
-                  Next Puzzle →
+                <Button tone="premium" onClick={nextPuzzle} className="w-full min-h-[48px]">
+                  {puzzleNextLabel(world)} →
                 </Button>
               </div>
             )}
@@ -463,7 +530,7 @@ function PuzzlesPageInner() {
                     hint: puzzle.theme,
                   })}
                 </MoveFeedback>
-                <Button tone="premium" variant="ghost" onClick={resetPuzzle} className="w-full">
+                <Button tone="premium" variant="ghost" onClick={resetPuzzle} className="w-full min-h-[48px]">
                   Try Again
                 </Button>
               </div>
@@ -478,10 +545,11 @@ function PuzzlesPageInner() {
               <p className={`${TEXT.caption} mt-auto pt-2 border-t border-white/5`}>
                 {isPremium
                   ? `Solved this session: ${solvedCount}`
-                  : `${Math.max(0, DAILY_PREVIEW_LIMIT - todayCount)} of ${DAILY_PREVIEW_LIMIT} free puzzles left today`}
+                  : `${Math.max(0, DAILY_LIMITS.puzzles - todayCount)} of ${DAILY_LIMITS.puzzles} free puzzles left today`}
               </p>
             )}
           </div>
+          </PuzzleSideChrome>
         }
       />
     );
@@ -489,12 +557,14 @@ function PuzzlesPageInner() {
 
   return (
     <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-6 px-4 sm:px-6 pt-8 pb-nav-safe">
-      <h1 className={`${TEXT.display} text-center`}>Puzzle Trainer</h1>
+      <h1 className={`${TEXT.display} text-center`}>
+        <PuzzleArenaHeading fallback="Puzzle Trainer" />
+      </h1>
       <SecondaryCard className="max-w-sm w-full flex flex-col items-center gap-5 text-center border border-premium-gold/15">
         <span className="text-5xl">🔒</span>
         <h2 className={TEXT.heading}>Today&apos;s free puzzles are used up</h2>
         <p className={TEXT.body}>
-          Free accounts get {DAILY_PREVIEW_LIMIT} puzzles a day — come back tomorrow for more, or unlock
+          Free accounts get {DAILY_LIMITS.puzzles} puzzles a day — come back tomorrow for more, or unlock
           unlimited puzzles right now.
         </p>
         <UpgradeButton tone="premium" />

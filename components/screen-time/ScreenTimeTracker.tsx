@@ -17,6 +17,7 @@ import {
   isBlocked,
   parseLeader,
   pickLimit,
+  SCREEN_TIME_LIMITS_UPDATED_EVENT,
   shouldClaimLeadership,
   type Accumulator,
 } from "@/lib/screenTime/session";
@@ -172,6 +173,11 @@ export function ScreenTimeTracker() {
       /* Screen time must never break the app; no enforcement beats a blank page. */
     });
 
+    const onLimitsUpdated = () => {
+      void resync().catch(() => {});
+    };
+    window.addEventListener(SCREEN_TIME_LIMITS_UPDATED_EVENT, onLimitsUpdated);
+
     const interval = window.setInterval(() => {
       void (async () => {
         if (cancelled) return;
@@ -264,6 +270,7 @@ export function ScreenTimeTracker() {
     return () => {
       cancelled = true;
       window.clearInterval(interval);
+      window.removeEventListener(SCREEN_TIME_LIMITS_UPDATED_EVENT, onLimitsUpdated);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
       onPageHide();

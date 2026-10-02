@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { getCountryFromRequest } from "@/lib/pricing/country";
 import { getRegionalPrice } from "@/lib/pricing/regions";
 import { validatePromoCode } from "@/lib/pricing/promo";
@@ -14,9 +14,10 @@ const INVALID_MESSAGE = "Invalid or expired discount code.";
  */
 export async function POST(request: NextRequest) {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Phase 8B-hardening: getSessionUser() instead of a raw
+  // supabase.auth.getUser() call — see app/api/stripe/checkout/route.ts's
+  // identical comment. 401-on-unauthenticated behavior is unchanged.
+  const user = await getSessionUser(supabase);
   if (!user) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }

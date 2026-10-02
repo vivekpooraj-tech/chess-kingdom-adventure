@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { isAuthRetryableFetchError } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getAuthState } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Logo } from "@/components/branding/Logo";
@@ -37,6 +37,12 @@ function ResetPasswordInner() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  /** Phase 8B-hardening: distinguishes "couldn't reach Supabase to check for
+   * a recovery session" from "checked, and there genuinely isn't one" — the
+   * raw getSession() call this replaced collapsed both into "invalid",
+   * which could strand someone with a perfectly valid reset link behind a
+   * transient network blip on this one-shot, security-sensitive flow. */
+  const [networkError, setNetworkError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,8 +67,21 @@ function ResetPasswordInner() {
 
       // Arrived via /auth/callback?next=/reset-password — the recovery code
       // was already exchanged server-side; a session cookie should be set.
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) setStage(data.session ? "form" : "invalid");
+      // getAuthState() (not a raw getSession() call) so a transient network
+      // failure here shows "couldn't verify" rather than the misleading
+      // "this link is invalid or expired" — the exact "network failure ≠
+      // signed out" bug class this wrapper exists to prevent, on a one-shot
+      // security-sensitive flow where that distinction matters most.
+      const state = await getAuthState(supabase);
+      if (cancelled) return;
+      if (state.status === "authed") {
+        setStage("form");
+      } else if (state.status === "network-error") {
+        setNetworkError(true);
+        setStage("invalid");
+      } else {
+        setStage("invalid");
+      }
     })();
 
     return () => {
@@ -146,14 +165,17 @@ function ResetPasswordInner() {
                 role="alert"
                 className="rounded-premiumBtn bg-red-500/10 border border-red-400/25 px-3.5 py-3 font-classic-body text-sm text-red-300"
               >
-                This reset link is invalid or has expired. Reset links can only be used once and time
-                out after a while.
+                {networkError
+                  ? "Couldn't reach the server to check your reset link. Check your connection and reload this page — your link hasn't been used yet."
+                  : "This reset link is invalid or has expired. Reset links can only be used once and time out after a while."}
               </p>
-              <Link href="/forgot-password">
-                <Button tone="premium" size="md" className="w-full">
-                  Request a new link
-                </Button>
-              </Link>
+              {!networkError && (
+                <Link href="/forgot-password">
+                  <Button tone="premium" size="md" className="w-full">
+                    Request a new link
+                  </Button>
+                </Link>
+              )}
               <Link href="/sign-in" className={LINK}>
                 Back to sign in
               </Link>

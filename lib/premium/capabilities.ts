@@ -5,7 +5,7 @@
  * lives with — so gating reads `hasPremiumCapability(isPremium, "...")`
  * instead of scattering bare `if (premium)` checks with per-site copies of
  * the feature list. All Premium capabilities unlock together with the single
- * one-time 2-year entitlement (see lib/premium/entitlement.ts); there are no
+ * one-time 1-year entitlement (see lib/premium/entitlement.ts); there are no
  * partial tiers.
  *
  * IMPORTANT: core chess play is NEVER a Premium capability — see
@@ -103,7 +103,7 @@ export const PREMIUM_HEADLINE_BENEFITS = [
   "No ads",
 ] as const;
 
-/** Every Premium capability unlocks with the single 2-year entitlement. */
+/** Every Premium capability unlocks with the single 1-year entitlement. */
 export function hasPremiumCapability(isPremium: boolean, _capability: PremiumCapability): boolean {
   return isPremium;
 }

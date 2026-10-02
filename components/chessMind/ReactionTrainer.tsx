@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { SideToMoveIndicator } from "@/components/board/SideToMoveIndicator";
 import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +13,9 @@ import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { OllieNote } from "@/components/ollie/OllieNote";
+import { useTrainYourMindDailyLimit } from "@/lib/trainYourMind/useDailyLimit";
+import { DailyLimitCard } from "@/components/trainYourMind/DailyLimitCard";
+import { DailyUsageIndicator } from "@/components/trainYourMind/DailyUsageIndicator";
 import type { ReactionChallenge, ReactionResponse } from "@/lib/chessMind/reactionTypes";
 
 /**
@@ -55,12 +59,19 @@ export function ReactionTrainer() {
   const [stats, setStats] = useState<SessionStats>(EMPTY);
   const [bestMs, setBestMs] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
+  // Mirrors childId.current below as reactive state — only so
+  // useTrainYourMindDailyLimit (which needs to re-run once the child is
+  // known) can see it. The ref remains the source the rest of this
+  // component reads from, unchanged.
+  const [childIdState, setChildIdState] = useState<string | null>(null);
+  const boardSize = useResponsiveBoardSize(340, { widthMultiplier: 0.85, maxSize: 720 });
 
   const startedAt = useRef<number | null>(null);
   const prefetched = useRef<ReactionChallenge | null>(null);
   const seen = useRef<string[]>([]);
   const childId = useRef<string | null>(null);
   const streakRef = useRef(0);
+  const dailyLimit = useTrainYourMindDailyLimit(childIdState, "reaction");
 
   // Personal best is a per-viewer convenience; localStorage can throw in
   // private modes and preview contexts, so every access is guarded.
@@ -81,7 +92,10 @@ export function ReactionTrainer() {
         const user = await getVerifiedUser(supabase);
         if (!user || cancelled) return;
         const res = await resolveActiveChild(supabase, user.id, getActiveChildIdClient());
-        if (!cancelled) childId.current = res.child?.id ?? null;
+        if (!cancelled) {
+          childId.current = res.child?.id ?? null;
+          setChildIdState(childId.current);
+        }
       } catch {
         /* progress just won't be recorded */
       }
@@ -172,6 +186,7 @@ export function ReactionTrainer() {
           /* progress is best-effort; never interrupt training */
         });
       }
+      dailyLimit.recordUse();
     }
 
     // Load the next one now, while the learner is reading feedback.
@@ -194,6 +209,10 @@ export function ReactionTrainer() {
   const avgMs = stats.correct > 0 ? stats.totalMs / stats.correct : null;
   const accuracy = stats.attempts > 0 ? Math.round((stats.correct / stats.attempts) * 100) : null;
 
+  if (dailyLimit.reached) {
+    return <DailyLimitCard categoryLabel="Reaction" />;
+  }
+
   if (failed) {
     return (
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-4 px-6">
@@ -206,8 +225,8 @@ export function ReactionTrainer() {
   }
 
   return (
-    <main className="min-h-screen bg-premium-midnight px-5 pt-6 pb-nav-safe">
-      <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+    <main className="min-h-screen bg-premium-midnight px-5 pt-safe-icons pb-nav-safe">
+      <div className="mx-auto flex w-full max-w-md md:max-w-3xl flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <Link
             href="/chess-mind"
@@ -228,6 +247,7 @@ export function ReactionTrainer() {
             Spot the move that wins. Accuracy first — speed is what accuracy turns into.
           </p>
         </div>
+        <DailyUsageIndicator usedToday={dailyLimit.usedToday} limit={dailyLimit.limit} isPremium={dailyLimit.isPremium} />
 
         {/* Live session numbers, all measured. */}
         {/* Two columns on the narrowest phones: at 320px four columns clipped
@@ -240,7 +260,7 @@ export function ReactionTrainer() {
           <Stat label="Best" value={bestMs === null ? "—" : `${(bestMs / 1000).toFixed(2)}s`} />
         </dl>
 
-        {!challenge ? (
+        {!challenge || dailyLimit.loading ? (
           <SkeletonBlock className="w-full aspect-square" />
         ) : (
           <>
@@ -257,8 +277,8 @@ export function ReactionTrainer() {
               </span>
             </div>
 
-            <div className="w-full max-w-[360px] mx-auto">
-              <ChessBoard readOnly fen={challenge.fen} size={340} />
+            <div className="w-full mx-auto" style={{ maxWidth: boardSize }}>
+              <ChessBoard readOnly fen={challenge.fen} size={boardSize} />
             </div>
 
             <div className="grid grid-cols-2 gap-2">

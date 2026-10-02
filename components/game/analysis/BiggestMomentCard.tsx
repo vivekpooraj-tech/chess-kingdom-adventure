@@ -34,6 +34,7 @@ export function BiggestMomentCard({
   boardSkinId,
   pieceSetId,
   onPractice,
+  isPremium,
 }: {
   mistake: EnrichedMistake | null;
   record: CompletedGameRecord;
@@ -45,6 +46,14 @@ export function BiggestMomentCard({
   boardSkinId?: string;
   pieceSetId?: string;
   onPractice: (skill: SkillId) => void;
+  /** Server-resolved Premium state (PostGameAnalysis's usePremium(), never a
+   * client guess) — gates the two deep-dive numbers this card would
+   * otherwise show for free: the exact accuracy percentage and a flagged
+   * mistake's best-move alternative. Best Moment itself, the skill, "what
+   * to notice", and practice all stay available regardless of tier — only
+   * these two specific figures (part of Premium's "full accuracy" /
+   * "best-move alternative" deliverables) are gated here. */
+  isPremium: boolean;
 }) {
   const [showPosition, setShowPosition] = useState(false);
 
@@ -55,7 +64,15 @@ export function BiggestMomentCard({
         <p className={`${TEXT.meta} text-premium-gold`}>🧠 Your Chess Mind Review</p>
         <p className="font-classic-display text-lg text-premium-ivory">No big mistakes this game — nicely done.</p>
         <p className={TEXT.body}>
-          You played at <span className="text-premium-gold">{accuracy}% accuracy</span> ({band.toLowerCase()})
+          {isPremium ? (
+            <>
+              You played at <span className="text-premium-gold">{accuracy}% accuracy</span> ({band.toLowerCase()})
+            </>
+          ) : (
+            <>
+              This was a <span className="text-premium-gold">{band.toLowerCase()}</span> game for accuracy
+            </>
+          )}
           {goodMoveCount > 0 ? ` with ${goodMoveCount} standout move${goodMoveCount === 1 ? "" : "s"}.` : "."} Keep
           checking your opponent's threats every move and this stays consistent.
         </p>
@@ -120,6 +137,7 @@ export function BiggestMomentCard({
             record={record}
             boardSkinId={boardSkinId}
             pieceSetId={pieceSetId}
+            isPremium={isPremium}
           />
         )}
         <Button tone="premium" onClick={() => onPractice(mistake.skillId)}>
@@ -129,7 +147,12 @@ export function BiggestMomentCard({
 
       <p className={TEXT.caption}>
         {formatMoveNumber(mistake.ply, mistake.mover)} {mistake.san}
-        {mistake.bestMove ? ` · one strong option was ${mistake.bestMove.san}` : ""}
+        {/* Best-move alternative is a Premium deliverable (see the "Unlock
+            the Full Review" upsell in PostGameAnalysis, which explicitly
+            sells "every mistake explained with a best-move alternative") —
+            never shown to Free here, regardless of whether the engine found
+            one. */}
+        {isPremium && mistake.bestMove ? ` · one strong option was ${mistake.bestMove.san}` : ""}
       </p>
     </div>
   );

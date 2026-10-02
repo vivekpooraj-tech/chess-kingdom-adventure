@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCAL_TEST_MODE } from "@/lib/devTestMode";
+import { EXPLICIT_SIGN_OUT_COOKIE_NAME } from "@/lib/childSession";
 import {
   readSupabaseConfig,
   describeSupabaseConfigProblem,
@@ -202,7 +203,17 @@ async function handleRequest(request: NextRequest) {
   // app locally lands straight in Chess Kingdom. This whole block is
   // skipped entirely whenever LOCAL_TEST_MODE is false, so it changes
   // nothing about production's auth flow.
-  if (LOCAL_TEST_MODE && !user && request.nextUrl.pathname !== DEV_AUTO_SIGNIN_PATH) {
+  const explicitSignOut =
+    request.cookies.get(EXPLICIT_SIGN_OUT_COOKIE_NAME)?.value === "1";
+
+  // Respect a deliberate sign-out: do not immediately re-authenticate via the
+  // dev auto-signin shortcut — the user must reach the real sign-in screen.
+  if (
+    LOCAL_TEST_MODE &&
+    !user &&
+    !explicitSignOut &&
+    request.nextUrl.pathname !== DEV_AUTO_SIGNIN_PATH
+  ) {
     const isEntryPoint = request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/sign-in";
     const nextPath = isEntryPoint ? "/kingdom-map" : request.nextUrl.pathname;
     const autoSigninUrl = new URL(DEV_AUTO_SIGNIN_PATH, request.url);

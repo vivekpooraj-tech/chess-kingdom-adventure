@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
+import { notifyScreenTimeLimitsUpdated } from "@/lib/screenTime/session";
 
 interface ScreenTimeSettingsProps {
   parentId: string;
@@ -35,6 +36,7 @@ export function ScreenTimeSettings({
       .eq("id", parentId);
     setSaving(false);
     if (!error) {
+      notifyScreenTimeLimitsUpdated();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }
@@ -76,8 +78,8 @@ export function ScreenTimeSettings({
       </div>
 
       <p className={`${TEXT.caption} normal-case italic`}>
-        These limits are stored but not yet enforced in the app — the lock-after-time-expires
-        behavior described in the product plan is a future update.
+        Changes apply straight away on this device. A child who has used today&apos;s allowance
+        can play again as soon as the new limit is above time already used.
       </p>
     </SecondaryCard>
   );

@@ -5,6 +5,7 @@
 import type { ChessTimeSession } from "./types";
 import {
   CHESS_TIME_SESSION_STORAGE_KEY,
+  PARENT_DASHBOARD_PIN_PROMPT_SEEN_KEY,
   PARENT_PIN_ATTEMPTS_STORAGE_KEY,
   PARENT_PIN_HASH_STORAGE_KEY,
 } from "./types";
@@ -68,4 +69,18 @@ export function savePinAttempts(state: PinAttemptState): void {
 
 export function hasParentPinConfigured(): boolean {
   return !!loadParentPinHash();
+}
+
+export function hasSeenParentDashboardPinPrompt(): boolean {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(PARENT_DASHBOARD_PIN_PROMPT_SEEN_KEY) === "1";
+}
+
+export function markParentDashboardPinPromptSeen(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PARENT_DASHBOARD_PIN_PROMPT_SEEN_KEY, "1");
+  } catch {
+    /* quota / private mode */
+  }
 }

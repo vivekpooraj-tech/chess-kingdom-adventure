@@ -10,6 +10,7 @@ import {
   getCalculationChallengesForLevel,
 } from "@/content/chessMindCalculation";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { Screen } from "@/components/layout/Screen";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { TEXT } from "@/lib/designSystem";
@@ -17,6 +18,9 @@ import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, recordChessMindSolve } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { useTrainYourMindDailyLimit } from "@/lib/trainYourMind/useDailyLimit";
+import { DailyLimitCard } from "@/components/trainYourMind/DailyLimitCard";
+import { DailyUsageIndicator } from "@/components/trainYourMind/DailyUsageIndicator";
 import type { Square } from "chess.js";
 
 /** chess.js rejects a move object that specifies `promotion` when the
@@ -49,6 +53,8 @@ export default function CalculationPage() {
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
   const [boardKey, setBoardKey] = useState(0);
+  const dailyLimit = useTrainYourMindDailyLimit(childId, "calculation");
+  const boardSize = useResponsiveBoardSize(320, { widthMultiplier: 0.85, maxSize: 720 });
 
   useEffect(() => {
     startChallenge(pickChallenge(1));
@@ -84,6 +90,7 @@ export default function CalculationPage() {
   function markSolved() {
     setSolved((s) => s + 1);
     if (childId) recordChessMindSolve(createClient(), childId, "calculation").catch(() => {});
+    dailyLimit.recordUse();
   }
 
   function handleMove(opts: { from: Square; to: Square }) {
@@ -150,12 +157,16 @@ export default function CalculationPage() {
     startChallenge(pickChallenge(level, challenge.id));
   }
 
-  if (!challenge) {
+  if (!challenge || dailyLimit.loading) {
     return (
       <>
         <ScreenSkeleton maxWidth="compact" />
       </>
     );
+  }
+
+  if (dailyLimit.reached) {
+    return <DailyLimitCard categoryLabel="Calculation" />;
   }
 
   const levelInfo = CALCULATION_LEVELS.find((l) => l.level === level)!;
@@ -165,13 +176,14 @@ export default function CalculationPage() {
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="medium" topSafeArea="icons">
         <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Calculation</h1>
           <p className="font-classic-body text-sm text-premium-ivory/50 mt-2">
             Find the best move, then look further ahead.
           </p>
         </div>
+        <DailyUsageIndicator usedToday={dailyLimit.usedToday} limit={dailyLimit.limit} isPremium={dailyLimit.isPremium} />
 
         <div className="flex flex-wrap gap-1.5 justify-center max-w-md" role="group" aria-label="Choose a level">
           {CALCULATION_LEVELS.map((l) => (
@@ -198,13 +210,13 @@ export default function CalculationPage() {
           <span className="font-classic-body text-xs text-premium-ivory/40">Solved: {solved}</span>
         </div>
 
-        <div className="mx-auto w-full max-w-md rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
+        <div className="mx-auto w-full max-w-md md:max-w-3xl rounded-premiumCard bg-premium-navy shadow-premiumCard p-6 flex flex-col items-center gap-4">
           <p className="font-classic-display text-base text-premium-ivory text-center">{challenge.prompt}</p>
 
           <ChessBoard
             key={boardKey}
             fen={displayFen}
-            size={320}
+            size={boardSize}
             readOnly={boardReadOnly}
             playableColor={boardPlayableColor}
             boardSkinId={boardSkinId}

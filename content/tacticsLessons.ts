@@ -52,8 +52,9 @@ export interface TacticsLesson {
   concept: string;
   difficulty: TacticsDifficulty;
   /** Free users can open this lesson without hitting the paywall — the
-   * first two (the "what is a tactic" + CCT scanning-method lessons) are
-   * free so a free user genuinely understands what the course teaches,
+   * first five (orders 1-5: what a tactic is, CCT scanning, forks, pins,
+   * skewers) are free (Phase 4 product decision) so a free user gets a
+   * genuinely useful, complete mini-course before hitting anything locked,
    * matching the rest of this course's own philosophy: never gate away
    * the ability to evaluate whether the content is worth unlocking. */
   free: boolean;
@@ -164,7 +165,7 @@ export const TACTICS_LESSONS: TacticsLesson[] = [
     title: "Forks",
     concept: "fork",
     difficulty: "beginner",
-    free: false,
+    free: true,
     intro: "The fork is the most famous tactic in chess — and often the first one every player learns to spot.",
     explanation:
       "A fork happens when one piece attacks two (or more) enemy pieces at the same time. The opponent can only save one of them, so you win the other. Knights are especially dangerous forkers because of their unusual jumping movement.",
@@ -208,7 +209,7 @@ export const TACTICS_LESSONS: TacticsLesson[] = [
     title: "Pins",
     concept: "pin",
     difficulty: "beginner",
-    free: false,
+    free: true,
     intro: "A pinned piece looks normal on the board, but it's actually stuck — and that makes it a target.",
     explanation:
       "A pin happens when a piece can't move freely because moving it would expose a more valuable piece behind it — usually the king — to attack. Bishops, rooks, and queens create pins, since they attack in straight lines.",
@@ -252,7 +253,7 @@ export const TACTICS_LESSONS: TacticsLesson[] = [
     title: "Skewers",
     concept: "skewer",
     difficulty: "beginner",
-    free: false,
+    free: true,
     intro: "A skewer looks like a pin's mirror image — but the order of the pieces is flipped, and that changes everything.",
     explanation:
       "In a skewer, a valuable piece is attacked first and must move out of the way — and when it does, a less valuable piece behind it is exposed and captured. It's the opposite arrangement from a pin, where the LESS valuable piece is in front.",

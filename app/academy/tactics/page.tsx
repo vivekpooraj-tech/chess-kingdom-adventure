@@ -35,7 +35,7 @@ export default async function TacticsCoursePage() {
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="compact" topSafeArea="icons">
         <TacticsCourseClient isPremium={isPremium} progressByLessonId={progressByLessonId} />
       </Screen>
     </>

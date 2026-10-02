@@ -27,7 +27,7 @@ export function GameEndOpeningSummary({ match }: { match: OpeningMatch }) {
       </p>
       <p className="font-classic-body text-xs text-premium-ivory/50">{opening.description}</p>
       <Link href={`/academy/openings/${opening.id}`} className="mt-2">
-        <Button variant="ghost">Study this opening →</Button>
+        <Button tone="adventure" variant="ghost">Study this opening →</Button>
       </Link>
     </div>
   );

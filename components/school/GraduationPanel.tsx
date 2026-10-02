@@ -72,7 +72,7 @@ export function GraduationPanel({
         {[
           { href: "/puzzles", label: "🧩 Practise tactics" },
           { href: "/play", label: "♟ Play a game" },
-          { href: "/kingdom-map#journey", label: "📚 Review lessons" },
+          { href: "/kingdom-map/journey", label: "📚 Review lessons" },
         ].map((action) => (
           <Link
             key={action.href}

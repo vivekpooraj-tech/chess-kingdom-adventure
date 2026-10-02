@@ -20,6 +20,14 @@ import type { CourseLesson, CourseSummary } from "./courseTypes";
 interface Course {
   summary: CourseSummary;
   lessons: CourseLesson[];
+  /** Highest lesson `order` a free account may open. null = every lesson is
+   * free (Phase 4: Fundamentals/Origins/Strategy/Tactical-thinking stay
+   * FULL — only Endgames has a free tier limit, per the approved Learn
+   * gating table). The single source of truth for this course's free
+   * cutoff — consumed by both the course index (list UI) and
+   * /api/academy/lesson (the actual content gate), so the two can never
+   * drift apart the way two independently-hardcoded checks could. */
+  freeLessonLimit: number | null;
 }
 
 const COURSES: Record<string, Course> = {
@@ -32,6 +40,7 @@ const COURSES: Record<string, Course> = {
       lessonCount: TACTICAL_THINKING_LESSONS.length,
     },
     lessons: [...TACTICAL_THINKING_LESSONS].sort((a, b) => a.order - b.order),
+    freeLessonLimit: null,
   },
   strategy: {
     summary: {
@@ -42,6 +51,7 @@ const COURSES: Record<string, Course> = {
       lessonCount: STRATEGY_LESSONS.length,
     },
     lessons: [...STRATEGY_LESSONS].sort((a, b) => a.order - b.order),
+    freeLessonLimit: null,
   },
   endgames: {
     summary: {
@@ -52,6 +62,7 @@ const COURSES: Record<string, Course> = {
       lessonCount: ENDGAME_LESSONS.length,
     },
     lessons: [...ENDGAME_LESSONS].sort((a, b) => a.order - b.order),
+    freeLessonLimit: 2,
   },
 };
 
@@ -69,6 +80,12 @@ export function listCourseSummaries(): CourseSummary[] {
 
 export function getLesson(courseId: string, lessonId: string): CourseLesson | null {
   return getCourse(courseId)?.lessons.find((l) => l.id === lessonId) ?? null;
+}
+
+/** Whether a free (non-Premium) account may open this lesson. */
+export function isLessonFree(courseId: string, order: number): boolean {
+  const limit = getCourse(courseId)?.freeLessonLimit ?? null;
+  return limit === null || order <= limit;
 }
 
 /**

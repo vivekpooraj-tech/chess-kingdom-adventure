@@ -34,6 +34,11 @@ import { PlayerCard } from "@/components/game/PlayerCard";
 import { WorldArenaChrome } from "@/components/world/WorldArenaChrome";
 import { readSelectedLocation } from "@/lib/world/passport";
 import type { WorldLocationId } from "@/lib/world/locations";
+import { parseWorldQuery, type WorldId } from "@/lib/world/worlds";
+import { WorldScope } from "@/components/layout/WorldScope";
+import { PlayBoardMeta } from "@/components/game/play/PlayBoardMeta";
+import { PlayOpponentFrame, PlaySideChrome } from "@/components/game/play/PlaySideChrome";
+import { PlayArenaHeading } from "@/components/game/play/PlayArenaHeading";
 import { LiveChessClock } from "@/components/game/ChessClock";
 import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -147,8 +152,10 @@ export default function OnlineGamePage() {
    * stale or hand-edited id renders no World rather than a broken one.
    */
   const [worldLocationId, setWorldLocationId] = useState<WorldLocationId | null>(null);
+  const [pinnedWorld, setPinnedWorld] = useState<WorldId | undefined>(undefined);
   useEffect(() => {
     setWorldLocationId(readSelectedLocation());
+    setPinnedWorld(parseWorldQuery(new URLSearchParams(window.location.search).get("world")));
   }, []);
   const [game, setGame] = useState<OnlineGame | null | "loading">("loading");
   // The opponent's move that produced the CURRENT `game.fen`, passed to
@@ -844,6 +851,9 @@ export default function OnlineGamePage() {
             openingName: openingMatch?.opening.name ?? null,
             startedAt: game.last_move_at ?? new Date().toISOString(),
             endedAt: game.last_move_at ?? new Date().toISOString(),
+            // Phase 7B: reuse online_games.id verbatim as the Game Review
+            // cache key — no second Online game identifier.
+            gameRef: params.gameId,
           })}
           boardSkinId={boardSkinId}
           pieceSetId={pieceSetId}
@@ -1044,9 +1054,9 @@ export default function OnlineGamePage() {
         : "Friend Match";
 
     return (
-      <>
+      <WorldScope world={pinnedWorld} fit="play">
       <GameArenaLayout
-        title={arenaTitle}
+        title={<PlayArenaHeading fallback={arenaTitle} />}
         /* Chess Mind World, full-bleed behind the arena — the same mount Free
          * Play uses, for the same reason: rendered inside the board slot the
          * scene was scoped to the board's own box and the opaque board covered
@@ -1055,12 +1065,28 @@ export default function OnlineGamePage() {
          * shell's background but below every piece of UI. Renders no space,
          * takes none, and the board's geometry is untouched. */
         boardMeta={
-          worldLocationId ? <WorldArenaChrome locationId={worldLocationId} /> : undefined
+          <>
+            {worldLocationId ? <WorldArenaChrome locationId={worldLocationId} /> : null}
+            <PlayBoardMeta
+              historyLength={game.moves?.length ?? 0}
+              capturedCount={0}
+              openingName={openingMatch?.opening.name}
+              matchLine={
+                game.match_type === "tournament"
+                  ? `Tournament · Round ${game.round_number}`
+                  : game.match_type === "random"
+                    ? "Random match · rated"
+                    : "Friend match"
+              }
+              timeControl={game.time_control}
+            />
+          </>
         }
         onExit={() =>
           router.push(game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map")
         }
         opponentRow={
+          <PlayOpponentFrame name="Opponent">
           <PlayerCard
             icon="⚔️"
             label="Opponent"
@@ -1077,6 +1103,7 @@ export default function OnlineGamePage() {
               {opponentClock && <LiveChessClock {...opponentClock} />}
             </span>
           </PlayerCard>
+          </PlayOpponentFrame>
         }
         playerRow={
           <PlayerCard
@@ -1111,7 +1138,7 @@ export default function OnlineGamePage() {
           </div>
         )}
         sidePanel={
-          <>
+          <PlaySideChrome hint={null} capturedCount={0} isCheck={false}>
             {pendingDrawOffer && (
               <div className="rounded-premiumCard bg-premium-gold/10 border border-premium-gold/30 p-3 flex flex-col gap-2">
                 <p className="font-classic-body text-sm text-premium-ivory">Your opponent offered a draw.</p>
@@ -1227,10 +1254,10 @@ export default function OnlineGamePage() {
                 )}
               </div>
             )}
-          </>
+          </PlaySideChrome>
         }
       />
-      </>
+      </WorldScope>
     );
   }
 

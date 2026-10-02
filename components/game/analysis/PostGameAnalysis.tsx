@@ -1,27 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { analyzeGame, type CompletedGameRecord, type GameAnalysisResult } from "@/lib/analysis/gameAnalysis";
 import { pickBiggestMoment } from "@/lib/analysis/skillMapping";
 import { getSkill, type SkillId } from "@/lib/analysis/skills";
 import { recommendPractice, type PracticeRecommendation } from "@/lib/training/recommendation";
-import {
-  buildGameReviewInput,
-  skillWeaknessCounts,
-  RECURRING_SKILL_THRESHOLD,
-} from "@/lib/analysis/gameReviewSignals";
+import { RECURRING_SKILL_THRESHOLD } from "@/lib/analysis/gameReviewSignals";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import {
   resolveActiveChild,
   getChildProfileById,
   getSolvedPuzzleIds,
   getSkillSignals,
-  recordGameReview,
-  bumpSkillWeaknesses,
   recordSkillPractice,
   type SkillSignal,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
+import { usePremium } from "@/lib/premium/usePremium";
 import { BUDDIES } from "@/content/buddies";
 import type { ExperienceLevel, AgeBand } from "@/lib/learner/experienceLevel";
 import type { OllieReviewContext } from "@/lib/ollie/reviewContext";
@@ -51,11 +47,42 @@ const FALLBACK_TEXT = {
   whatToNotice: "Take a moment to check your opponent's threats before you move.",
 };
 
-async function fetchExplanations(analysis: GameAnalysisResult, record: CompletedGameRecord): Promise<ExplainResponse> {
+async function fetchExplanations(
+  analysis: GameAnalysisResult,
+  record: CompletedGameRecord,
+  childId: string | null,
+  source: "free_play" | "online"
+): Promise<ExplainResponse> {
+  const result: "win" | "loss" | "draw" | null = record.result.isDraw
+    ? "draw"
+    : record.result.winner === record.playerColor
+      ? "win"
+      : record.result.winner
+        ? "loss"
+        : null;
   const res = await fetch("/api/game-analysis/explain", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      // Phase 7B: identity for the persisted review row — lets the server
+      // return a cached snapshot instead of calling Claude again, and
+      // persist a genuinely new one exactly once. Omitted fields (no
+      // childId, or Free Play's gameRef missing for some reason) simply
+      // disable caching for this request server-side; the review itself
+      // still works identically, just without persistence.
+      childId,
+      source,
+      gameRef: record.gameRef,
+      summary: {
+        playedColor: record.playerColor,
+        result,
+        accuracy: analysis.accuracy.movesConsidered > 0 ? analysis.accuracy.score : null,
+        totalMoves: Math.ceil(record.moves.length / 2),
+        mistakes: analysis.counts.mistake,
+        blunders: analysis.counts.blunder,
+        inaccuracies: analysis.counts.inaccuracy,
+        openingName: record.openingName,
+      },
       mistakes: analysis.flaggedMistakes.map((m) => ({
         ply: m.ply,
         moveNumber: Math.floor(m.ply / 2) + 1,
@@ -65,6 +92,11 @@ async function fetchExplanations(analysis: GameAnalysisResult, record: Completed
         isCapture: m.bestMove?.isCapture,
         missedMate: m.missedMate,
         missedMaterial: m.missedMaterial,
+        // Phase 7A: lets the server pick the same "biggest moment" via the
+        // real pickBiggestMoment() (lib/analysis/skillMapping.ts) instead of
+        // guessing — needed to decide, server-side, which one mistake a
+        // Free response may explain. Not used for rendering.
+        lossCp: m.lossCp,
         skillHint: m.skill?.skill,
         skillConfidence: m.skill?.confidence,
       })),
@@ -151,7 +183,15 @@ export function PostGameAnalysis({
     solvedPuzzleIds: new Set(),
     skillSignals: {},
   });
-  const persistedRef = useRef(false);
+  // Game Review's Free/Premium split (Phase 4): Free keeps Best Moment, One
+  // Important Lesson, and Practice Next — the parts that are the review's
+  // own core teaching loop. Premium adds the deep-dive layer (full accuracy,
+  // move-by-move critical moments, detailed mistakes with best-move
+  // alternatives, opening insights, tactical opportunities, trends). No
+  // engine change: this only decides what of the SAME analysis result gets
+  // rendered.
+  const { state: premiumState } = usePremium();
+  const isPremium = premiumState.isPremium;
 
   // Best-effort — everything here degrades gracefully: the recommendation
   // falls back to "new"/no-solved-data, skill signals to empty, and none
@@ -201,7 +241,7 @@ export function PostGameAnalysis({
         if (cancelled) return;
         setAnalysis(result);
         try {
-          const explained = await fetchExplanations(result, record);
+          const explained = await fetchExplanations(result, record, childIdProp ?? null, source);
           if (!cancelled) setExplanations(explained);
         } catch {
           if (!cancelled) {
@@ -279,25 +319,6 @@ export function PostGameAnalysis({
     const sig = childCtx.skillSignals[biggestMoment.skillId];
     return !!sig && sig.weakCount >= RECURRING_SKILL_THRESHOLD;
   }, [biggestMoment, childCtx.skillSignals]);
-
-  // Persist the completed review + skill weakness signals — exactly once,
-  // once analysis + explanations + child id are all available. Fully
-  // best-effort: buildGameReviewInput is pure, and every write swallows
-  // its own errors (missing table before 0033 is applied, offline, RLS).
-  useEffect(() => {
-    if (persistedRef.current) return;
-    if (!analysis || !explanations || !childCtx.childId) return;
-    persistedRef.current = true;
-    const supabase = createClient();
-    const apiSkillByPly: Record<number, string | undefined> = {};
-    for (const [ply, m] of Object.entries(explanations.mistakes)) apiSkillByPly[Number(ply)] = m.skill;
-    const pick = pickBiggestMoment(analysis.flaggedMistakes);
-    const bmSkill =
-      (pick && (apiSkillByPly[pick.ply] as SkillId | undefined)) ?? pick?.skill?.skill ?? null;
-    const input = buildGameReviewInput(analysis, record, source, bmSkill, pick?.ply ?? null);
-    void recordGameReview(supabase, childCtx.childId, input);
-    void bumpSkillWeaknesses(supabase, childCtx.childId, skillWeaknessCounts(analysis, apiSkillByPly));
-  }, [analysis, explanations, childCtx.childId, record, source]);
 
   function startPractice(skill: SkillId) {
     setPracticeSkill(skill);
@@ -407,7 +428,7 @@ export function PostGameAnalysis({
         <h1 className={TEXT.display}>Your Chess Mind Review</h1>
       </div>
 
-      <GameSummaryCard record={record} accuracy={accuracyScore} />
+      <GameSummaryCard record={record} accuracy={isPremium ? accuracyScore : undefined} />
 
       <BiggestMomentCard
         mistake={biggestMoment}
@@ -418,6 +439,7 @@ export function PostGameAnalysis({
         boardSkinId={boardSkinId}
         pieceSetId={pieceSetId}
         onPractice={startPractice}
+        isPremium={isPremium}
       />
 
       {reviewOllieContext && (
@@ -451,16 +473,25 @@ export function PostGameAnalysis({
         </div>
       )}
 
-      <div className="flex gap-2" role="tablist" aria-label="Review mode">
-        <Button tone="premium" variant={mode === "replay" ? "primary" : "ghost"} onClick={() => setMode("replay")}>
-          Replay Game
-        </Button>
-        <Button tone="premium" variant={mode === "analysis" ? "primary" : "ghost"} onClick={() => setMode("analysis")}>
-          All Mistakes
-        </Button>
-      </div>
+      {!isPremium && (
+        <div className="rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 w-full max-w-md flex flex-col gap-3">
+          <p className={`${TEXT.meta} text-premium-gold`}>One Important Lesson</p>
+          <p className={TEXT.body}>{explanations.biggestLesson}</p>
+        </div>
+      )}
 
-      {mode === "replay" && (
+      {isPremium && (
+        <div className="flex gap-2" role="tablist" aria-label="Review mode">
+          <Button tone="premium" variant={mode === "replay" ? "primary" : "ghost"} onClick={() => setMode("replay")}>
+            Replay Game
+          </Button>
+          <Button tone="premium" variant={mode === "analysis" ? "primary" : "ghost"} onClick={() => setMode("analysis")}>
+            All Mistakes
+          </Button>
+        </div>
+      )}
+
+      {isPremium && mode === "replay" && (
         <MoveNavigator
           record={record}
           analyzedMoves={analysis.moves}
@@ -471,7 +502,7 @@ export function PostGameAnalysis({
         />
       )}
 
-      {mode === "analysis" && (
+      {isPremium && mode === "analysis" && (
         <div className="flex flex-col items-center gap-6 w-full">
           {enrichedMistakes.length === 0 ? (
             <div className="rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 w-full max-w-md text-center">
@@ -522,6 +553,25 @@ export function PostGameAnalysis({
             biggestLesson={explanations.biggestLesson}
             insights={explanations.insights}
           />
+        </div>
+      )}
+
+      {!isPremium && (
+        <div className="rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 w-full max-w-md flex flex-col gap-3 border border-premium-gold/25">
+          <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold">
+            🔒 Unlock the Full Review
+          </p>
+          <p className={TEXT.body}>
+            Premium adds full accuracy, move-by-move critical moments, every mistake explained with a
+            best-move alternative, opening insights, tactical opportunities you missed, and trends across
+            your games.
+          </p>
+          <Link
+            href="/upgrade"
+            className="self-start font-classic-body text-sm font-semibold text-premium-midnight bg-premium-gold rounded-full px-5 py-2.5 min-h-[44px] flex items-center"
+          >
+            Unlock Premium
+          </Link>
         </div>
       )}
 

@@ -1,4 +1,6 @@
 import { TacticsTrainer } from "@/components/puzzles/TacticsTrainer";
+import { WorldScope } from "@/components/layout/WorldScope";
+import { parseWorldQuery } from "@/lib/world/worlds";
 
 /**
  * Tactics Trainer — forks, pins, skewers, discovered attacks and the rest,
@@ -16,7 +18,11 @@ import { TacticsTrainer } from "@/components/puzzles/TacticsTrainer";
 export default function TacticsPuzzlesPage({
   searchParams,
 }: {
-  searchParams: { skill?: string };
+  searchParams: { skill?: string; world?: string };
 }) {
-  return <TacticsTrainer focusSkill={searchParams.skill ?? null} />;
+  return (
+    <WorldScope world={parseWorldQuery(searchParams.world)} fit="play">
+      <TacticsTrainer focusSkill={searchParams.skill ?? null} />
+    </WorldScope>
+  );
 }

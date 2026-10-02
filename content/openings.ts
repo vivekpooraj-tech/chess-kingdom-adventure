@@ -31,6 +31,22 @@ export interface OpeningDef {
   academyLessonId: string;
 }
 
+/**
+ * Learn gating (Phase 4): the first 4 openings (by array order — this file's
+ * existing curation order, beginner-first within each move family) stay
+ * free; the rest need Premium. Mirrors content/tacticsLessons.ts's own
+ * `free` field, but as a derived function rather than a stored field on
+ * every entry — this array has no other per-entry ordering concept to
+ * piggyback on, and adding one just for this would duplicate the array's
+ * own order.
+ */
+export const OPENINGS_FREE_LIMIT = 4;
+
+export function isOpeningFree(openingId: string): boolean {
+  const index = OPENINGS.findIndex((o) => o.id === openingId);
+  return index >= 0 && index < OPENINGS_FREE_LIMIT;
+}
+
 /** First move family, derived from the real move data rather than stored
  * separately (so it can never drift out of sync) — used for Explorer filters. */
 export function getOpeningFamily(opening: OpeningDef): "e4" | "d4" | "c4" | "nf3" {

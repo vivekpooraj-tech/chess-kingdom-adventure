@@ -76,7 +76,7 @@ export default async function MorePage() {
               <span className="text-2xl flex-none">👥</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">Friends</p>
-                <p className={`${TEXT.caption} normal-case`}>Add by code and challenge them</p>
+                <p className={`${TEXT.caption} normal-case`}>Add by code and see their rating</p>
               </div>
               <span className="text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
@@ -110,11 +110,17 @@ export default async function MorePage() {
               </div>
               <span className="text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
-            <ListItemRow href="/kingdom-map#journey">
+            {/* Phase 8A: reframed from "Your 30-day beginner adventure" to a
+                retrospective story map, not a second structured course —
+                Chess School is the only curriculum now (see
+                app/(tabs)/kingdom-map/journey/page.tsx for the matching
+                in-page copy change). Nothing about the underlying content,
+                current_day, or child_lesson_progress changed. */}
+            <ListItemRow href="/kingdom-map/journey">
               <span className="text-2xl flex-none">🗺️</span>
               <div className="flex-1">
-                <p className="font-classic-display text-base text-premium-ivory">Chess Kingdom Journey</p>
-                <p className={`${TEXT.caption} normal-case`}>Your 30-day beginner adventure</p>
+                <p className="font-classic-display text-base text-premium-ivory">Kingdom Story Map</p>
+                <p className={`${TEXT.caption} normal-case`}>Revisit the story you played through as a beginner</p>
               </div>
               <span className="text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>

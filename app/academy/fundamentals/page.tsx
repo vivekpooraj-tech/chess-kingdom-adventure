@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FUNDAMENTALS_TOPICS } from "@/content/academyFundamentals";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { Screen } from "@/components/layout/Screen";
 import { SecondaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
@@ -17,6 +18,11 @@ export default function FundamentalsPage() {
   // pattern used in Chess Mind's spatial/mathematics pages).
   const [boardSkinId, setBoardSkinId] = useState<string | undefined>(undefined);
   const [pieceSetId, setPieceSetId] = useState<string | undefined>(undefined);
+  // A modest cap, not the general ~640 ceiling — this page stacks many
+  // small illustrative example boards down a single list column, so a
+  // single board growing to a large focal size would look out of place
+  // repeated topic after topic.
+  const boardSize = useResponsiveBoardSize(240, { maxSize: 400 });
 
   useEffect(() => {
     async function load() {
@@ -34,7 +40,7 @@ export default function FundamentalsPage() {
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="compact" topSafeArea="icons">
         <div className="mx-auto max-w-xl text-center">
           <h1 className={TEXT.display}>Chess Fundamentals</h1>
           <p className={`${TEXT.body} mt-2`}>
@@ -56,7 +62,7 @@ export default function FundamentalsPage() {
                 <div className="flex flex-col items-center gap-2 pt-1">
                   <ChessBoard
                     fen={topic.exampleFen}
-                    size={240}
+                    size={boardSize}
                     readOnly
                     boardSkinId={boardSkinId}
                     pieceSetId={pieceSetId}

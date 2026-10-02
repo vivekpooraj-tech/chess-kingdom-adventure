@@ -191,6 +191,20 @@ html[data-sidenav="collapsed"] .app-sidenav-item {
   }
 }
 
+/* Same as .pt-safe, plus enough extra clearance on phone to sit fully below
+   PhoneUtilityIcons' fixed top-right cluster (roughly 44px tall + 0.5rem
+   inset from the top). Opt-in via <Screen topSafeArea="icons">, for pages
+   whose H1 has nothing else above it to naturally clear the icons with —
+   see Screen.tsx. Tablet/desktop show the icons inline in .app-topbar
+   instead (real flow height, no overlap risk), so this only needs to widen
+   the gap on phone. */
+.pt-safe-icons {
+  padding-top: calc(1.5rem + var(--safe-top));
+}
+html[data-layout="phone"] .pt-safe-icons {
+  padding-top: calc(4.5rem + var(--safe-top));
+}
+
 /* Bottom padding that ALWAYS clears the fixed PrimaryNav + the device's
    bottom inset (gesture bar or 3-button nav) + a breathing gap. Replaces
    the hardcoded pb-24 duplicated across ~30 pages. */
@@ -313,10 +327,11 @@ html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) main.min-h-s
   animation: board-pulse-incorrect 620ms ease-out;
 }
 
-/* Chess.com-style piece glide — transform is driven inline in MoveSlideOverlay. */
+/* Chess.com-style piece glide — transform is driven inline in MoveSlideOverlay.
+   Shadow matches .piece-on-board so the landing handoff does not pop. */
 .piece-move-slide {
   will-change: transform;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
 .piece-on-board {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
@@ -375,6 +390,13 @@ html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) main.min-h-s
    plain-px fallback first for engines without `svh`. Desktop keeps the
    deliberately-horizontal 16:9 letterbox introduced in Phase 5 — the
    portrait clip sits centred over a blurred copy of its poster. */
+/* Lift the native <video controls> clear of Android system navigation in
+   inline mode — padding on the stage shrinks the clip without moving the
+   whole page layout. History of Chess player only. */
+.history-video--inline .history-video__stage {
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px), 20px);
+}
+
 .history-video--inline[data-orientation="portrait"] {
   aspect-ratio: 9 / 16;
   max-width: 340px;
@@ -582,6 +604,13 @@ html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) main.min-h-s
 html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) .layout-bottom-nav {
   display: none !important;
 }
+/* The floating phone Learn/More icons must disappear during full-screen
+   board focus too — they stay mounted (AppShell never unmounts chrome for
+   focus mode, see its own comment), so without this they would float over
+   the board exactly like the bottom nav would without the rule above. */
+html.chess-focus-active .phone-utility-icons {
+  display: none !important;
+}
 /* Bottom tabs on phone + tablet. */
 html:not([data-layout="desktop"]):has(.chess-focus-shell--preserve-nav) .layout-bottom-nav {
   display: flex !important;
@@ -618,6 +647,17 @@ html[data-layout="desktop"] .app-topbar {
    tablet, where there is no sidebar. */
 html[data-layout="tablet"] .app-topbar-brand {
   display: inline-flex;
+}
+
+/* Phone's persistent Learn/More icons (PhoneUtilityIcons) — a small fixed
+   element, not part of .app-topbar's flow/height-reserving system, shown
+   only on phone (tablet/desktop already get the same icons inline in
+   .app-topbar itself). */
+.phone-utility-icons {
+  display: none;
+}
+html[data-layout="phone"] .phone-utility-icons {
+  display: flex;
 }
 
 /* Desktop: PrimaryNav is replaced by the sidebar. */
@@ -686,6 +726,23 @@ html[data-layout="desktop"]:has(.chess-focus-shell--preserve-nav) .app-shell-con
 }
 
 /* Board shell fits in the content column — never under the tab bar or sidebar. */
+/* Home (kingdom-map): phone stacks hero + activity grid; tablet/desktop
+   split them into two columns — Ollie + primary CTA left, 2×2 grid right. */
+.home-hero-grid {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+html[data-layout="tablet"] .home-hero-grid,
+html[data-layout="desktop"] .home-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
 html[data-layout="phone"] .app-shell-content .chess-focus-shell--preserve-nav {
   height: calc(100dvh - var(--bottom-nav-h) - env(safe-area-inset-bottom, 0px));
   max-height: calc(100dvh - var(--bottom-nav-h) - env(safe-area-inset-bottom, 0px));
@@ -714,21 +771,4 @@ html[data-chess-time-expired] .layout-bottom-nav {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-}
-
-/* Home (kingdom-map): phone stacks hero + activity grid; tablet/desktop
-   split them into two columns — Ollie + primary CTA left, 2×2 grid right. */
-.home-hero-grid {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-html[data-layout="tablet"] .home-hero-grid,
-html[data-layout="desktop"] .home-hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: start;
-  gap: 1rem;
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { PieceSymbol, Color } from "chess.js";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
-import { resolveActiveChild, recordOpeningEncounter, getFreeGameStatus, startAiGame, FreeGameStatus } from "@/lib/supabase/queries";
+import { resolveActiveChild, recordOpeningEncounter, startAiGame } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { GameArenaLayout } from "@/components/game/GameArenaLayout";
@@ -27,6 +27,11 @@ import { recordGameStarted, recordGameWon } from "@/lib/world/passport";
 import { getWorldCinematic } from "@/content/worldCinematics";
 import { LocationCinematic } from "@/components/world/LocationCinematic";
 import { primeCinematicAudio } from "@/lib/world/cinematicMusic";
+import { parseWorldQuery, type WorldId } from "@/lib/world/worlds";
+import { WorldScope } from "@/components/layout/WorldScope";
+import { PlayBoardMeta } from "@/components/game/play/PlayBoardMeta";
+import { PlayOpponentFrame, PlaySideChrome } from "@/components/game/play/PlaySideChrome";
+import { PlayArenaHeading } from "@/components/game/play/PlayArenaHeading";
 
 const STANDARD_START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -95,7 +100,6 @@ export default function FreePlayPage() {
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const [childId, setChildId] = useState<string | null>(null);
   const [seenOpeningIds, setSeenOpeningIds] = useState<Set<string>>(new Set());
-  const [gameStatus, setGameStatus] = useState<FreeGameStatus | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [startingGame, setStartingGame] = useState(false);
   // A historical ply shown on the board while the live game remains safely
@@ -106,17 +110,24 @@ export default function FreePlayPage() {
   // the clock or the free-game limit below. See lib/world/locations.ts for
   // why this is a query param on Free Play rather than a second game route.
   const [worldLocationId, setWorldLocationId] = useState<WorldLocationId | null>(null);
+  const [pinnedWorld, setPinnedWorld] = useState<WorldId | undefined>(undefined);
   // Ply-by-ply log captured live during play — the source of truth for the
   // post-game analysis screen (section 14: "preserve the complete move
   // history"). A ref, not state: it's written on every ply but only ever
   // read once, at game-over, so it doesn't need to trigger re-renders.
   const moveLogRef = useRef<PlayedMove[]>([]);
   const gameStartedAtRef = useRef<string>("");
+  // Phase 7B: stable per-game identifier for Game Review caching
+  // (CompletedGameRecord.gameRef -> child_game_reviews.game_ref). Free Play
+  // has no database row of its own, so this is generated purely client-side
+  // once per game — no new database row is created to obtain it.
+  const gameRefRef = useRef<string>("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const location = getWorldLocation(params.get("world"));
     if (location) setWorldLocationId(location.id);
+    setPinnedWorld(parseWorldQuery(params.get("world")));
 
     async function load() {
       const supabase = createClient();
@@ -136,18 +147,13 @@ export default function FreePlayPage() {
       setBoardSkinId(child.board_skin_id);
       setPieceSetId(child.piece_set_id);
 
-      const status = await getFreeGameStatus(supabase, child.id);
-      setGameStatus(status);
       setView({ status: "picking-difficulty" });
     }
     load();
   }, [router]);
 
-  // Checks + consumes a daily free-game credit server-side BEFORE the
-  // board ever renders — clicking a difficulty is the earliest point a
-  // real "game start" exists for Free Play (see
-  // supabase/migrations/0019_daily_free_game_limits.sql), so this is
-  // exactly where eligibility has to be enforced, not after.
+  // Server-side eligibility check before the board renders — clicking a
+  // difficulty is the earliest "game start" event for Free Play.
   async function startGame(difficulty: Difficulty) {
     if (!childId || startingGame) return;
     // Runs synchronously, before this function's first `await` — i.e. still
@@ -162,12 +168,9 @@ export default function FreePlayPage() {
       const supabase = createClient();
       const result = await startAiGame(supabase, childId);
       if (!result.allowed) {
-        const fresh = await getFreeGameStatus(supabase, childId);
-        setGameStatus(fresh);
         setShowPaywall(true);
         return;
       }
-      setGameStatus((prev) => (prev ? { ...prev, aiRemaining: result.remaining } : prev));
       setGameKey((k) => k + 1);
       setPosition(EMPTY_POSITION);
       setPrevCapturedCount(0);
@@ -177,6 +180,7 @@ export default function FreePlayPage() {
       setReviewPly(null);
       moveLogRef.current = [];
       gameStartedAtRef.current = new Date().toISOString();
+      gameRefRef.current = crypto.randomUUID();
       if (worldLocationId) recordGameStarted(worldLocationId);
       // A location with a pre-game cinematic (see content/worldCinematics.ts)
       // gets one short full-screen clip here, between difficulty selection
@@ -214,6 +218,7 @@ export default function FreePlayPage() {
       startedAt: gameStartedAtRef.current || new Date().toISOString(),
       endedAt: new Date().toISOString(),
       openingName: openingMatch?.opening.name ?? null,
+      gameRef: gameRefRef.current || undefined,
     };
     setView({ status: "game-over", record });
   }
@@ -271,7 +276,6 @@ export default function FreePlayPage() {
   }
 
   if (view.status === "picking-difficulty") {
-    const exhausted = gameStatus && !gameStatus.isPremium && gameStatus.aiRemaining === 0;
     return (
       <Screen maxWidth="medium" align="center">
         <div className="text-center">
@@ -279,11 +283,6 @@ export default function FreePlayPage() {
           <p className={`${TEXT.body} mx-auto mt-2 max-w-sm`}>
             Choose your opponent's strength and play a full game, start to finish!
           </p>
-          {gameStatus && !gameStatus.isPremium && (
-            <p className={`${TEXT.caption} mt-3`}>
-              {gameStatus.aiRemaining} of 2 free AI games remaining today
-            </p>
-          )}
         </div>
         <div
           className="auto-grid mx-auto w-full max-w-2xl"
@@ -292,11 +291,9 @@ export default function FreePlayPage() {
           {DIFFICULTY_INFO.map((d) => (
             <button
               key={d.key}
-              onClick={() => (exhausted ? setShowPaywall(true) : startGame(d.key))}
+              onClick={() => startGame(d.key)}
               disabled={startingGame}
-              className={`flex min-h-[4.5rem] items-center gap-4 rounded-premiumCard bg-premium-navy p-5 text-left shadow-premiumCard transition-transform duration-100 active:scale-[0.98] hover:border-premium-gold/30 border border-white/5 ${
-                exhausted ? "opacity-50" : ""
-              }`}
+              className="flex min-h-[4.5rem] items-center gap-4 rounded-premiumCard bg-premium-navy p-5 text-left shadow-premiumCard transition-transform duration-100 active:scale-[0.98] hover:border-premium-gold/30 border border-white/5"
             >
               <span className="flex-none text-4xl">{d.emoji}</span>
               <div className="min-w-0">
@@ -345,9 +342,9 @@ export default function FreePlayPage() {
         : moveLogRef.current[reviewPly - 1]?.fen ?? position.fen;
     const reviewPlies = Array.from({ length: totalPlies - minReviewPly + 1 }, (_, i) => minReviewPly + i);
     return (
-      <>
+      <WorldScope world={pinnedWorld} fit="play">
       <GameArenaLayout
-        title={`${difficultyInfo.label} Match`}
+        title={<PlayArenaHeading fallback={`${difficultyInfo.label} Match`} />}
         onExit={() => setView({ status: "picking-difficulty" })}
         /*
          * Chess Mind World, full-bleed behind the whole arena.
@@ -366,13 +363,25 @@ export default function FreePlayPage() {
          * untouched: this renders no space and takes none.
          */
         boardMeta={
-          worldLocationId ? <WorldArenaChrome locationId={worldLocationId} /> : undefined
+          <>
+            {worldLocationId ? <WorldArenaChrome locationId={worldLocationId} /> : null}
+            <PlayBoardMeta
+              historyLength={position.history.length}
+              capturedCount={position.capturedByWhite.length + position.capturedByBlack.length}
+              difficulty={view.difficulty}
+              openingName={openingMatch?.opening.name}
+              startedAt={gameStartedAtRef.current}
+              objectiveHint={hint}
+            />
+          </>
         }
         opponentRow={
-          <div className="flex items-center gap-2 font-classic-body text-sm text-premium-ivory/70">
-            <span className="text-xl">{difficultyInfo.emoji}</span>
-            Stockfish — {difficultyInfo.label}
-          </div>
+          <PlayOpponentFrame name={`Stockfish — ${difficultyInfo.label}`}>
+            <div className="flex items-center gap-2 font-classic-body text-sm text-premium-ivory/70">
+              <span className="text-xl">{difficultyInfo.emoji}</span>
+              Stockfish — {difficultyInfo.label}
+            </div>
+          </PlayOpponentFrame>
         }
         playerRow={
           <div className="flex items-center gap-2 font-classic-body text-sm text-premium-ivory">
@@ -454,7 +463,11 @@ export default function FreePlayPage() {
           </div>
         )}
         sidePanel={
-          <>
+          <PlaySideChrome
+            hint={hint}
+            capturedCount={position.capturedByWhite.length + position.capturedByBlack.length}
+            isCheck={position.isCheck}
+          >
             {openingMatch && (
               <OpeningBadge
                 match={openingMatch}
@@ -474,10 +487,10 @@ export default function FreePlayPage() {
             <Button tone="premium" variant="ghost" onClick={() => setView({ status: "picking-difficulty" })}>
               Change Difficulty
             </Button>
-          </>
+          </PlaySideChrome>
         }
       />
-      </>
+      </WorldScope>
     );
   }
 

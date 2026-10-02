@@ -11,6 +11,9 @@ import "./themes.css";
 // not matter for correctness (the two files touch disjoint selectors/vars),
 // but is kept after it to mirror themes.css's own "after globals.css" story.
 import "./modes.css";
+// After mode: world (Enchanted / Atelier / Classic) is a third axis, scoped
+// to `data-world` subtrees — see app/worlds.css. Kingdom Map/Home is first.
+import "./worlds.css";
 import { CapacitorDeepLinkHandler } from "@/components/CapacitorDeepLinkHandler";
 import { MotionProvider } from "@/components/MotionProvider";
 import { DevTestModeBar } from "@/components/dev/DevTestModeBar";

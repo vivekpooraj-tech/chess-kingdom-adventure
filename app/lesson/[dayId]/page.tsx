@@ -18,6 +18,7 @@ import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
 import { BuddyAvatar } from "@/components/buddy/BuddyAvatar";
 import { BuddyChat } from "@/components/buddy/BuddyChat";
 import { ChessBoard } from "@/components/board/ChessBoard";
+import { useResponsiveBoardSize } from "@/lib/hooks/useResponsiveBoardSize";
 import { DragToTarget } from "@/components/minigames/engines/DragToTarget";
 import { MemoryFlip } from "@/components/minigames/engines/MemoryFlip";
 import { TimedReaction } from "@/components/minigames/engines/TimedReaction";
@@ -542,11 +543,12 @@ function PieceIntroStep({
   pieceSetId?: string;
   onNext: () => void;
 }) {
+  const boardSize = useResponsiveBoardSize(420, { maxSize: 520 });
   return (
     <SecondaryCard className="flex w-full flex-col items-center gap-5 text-center">
       <p className={`${TEXT.meta} text-premium-gold`}>See it on the board</p>
       <h2 className={TEXT.heading}>{title}</h2>
-      <ChessBoard fen={fen} size={420} readOnly boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
+      <ChessBoard fen={fen} size={boardSize} readOnly boardSkinId={boardSkinId} pieceSetId={pieceSetId} />
       <p className={TEXT.body}>
         Here's where the {crystal} starts. Let's see how it moves.
       </p>
@@ -645,6 +647,7 @@ function PuzzleStep({
   const [checkmated, setCheckmated] = useState(false);
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [boardKey, setBoardKey] = useState(0);
+  const boardSize = useResponsiveBoardSize(440, { maxSize: 520 });
 
   async function handleMove(piece: PieceSymbol) {
     const isCorrect = acceptedPieceTypes === "any" || acceptedPieceTypes.includes(piece);
@@ -688,7 +691,7 @@ function PuzzleStep({
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={440}
+        size={boardSize}
         boardSkinId={boardSkinId}
         pieceSetId={pieceSetId}
         onMove={(opts) => handleMove(opts.piece)}
@@ -745,6 +748,7 @@ function MiniMatchStep({
   const [started, setStarted] = useState(false);
   const [moveCount, setMoveCount] = useState(0);
   const [checkmated, setCheckmated] = useState(false);
+  const boardSize = useResponsiveBoardSize(440, { maxSize: 520 });
 
   if (!started) {
     return (
@@ -768,7 +772,7 @@ function MiniMatchStep({
         fen={fen}
         playableColor="w"
         opponent="stockfish"
-        size={440}
+        size={boardSize}
         boardSkinId={boardSkinId}
         pieceSetId={pieceSetId}
         onMove={() => setMoveCount((c) => c + 1)}

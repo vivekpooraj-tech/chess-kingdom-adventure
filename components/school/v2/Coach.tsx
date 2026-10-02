@@ -32,7 +32,7 @@ export function OllieCoach({
       : "border-white/10 bg-white/[0.04]";
 
   return (
-    <div className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${ring}`}>
+    <div className={`world-ollie flex items-start gap-3 rounded-2xl border px-4 py-3 ${ring}`}>
       <span aria-hidden="true" className="mt-0.5 flex-none text-2xl leading-none">
         🦉
       </span>
@@ -74,7 +74,7 @@ export function MilestoneCard({
   }, [staged]);
 
   return (
-    <div className="relative overflow-hidden rounded-premiumCard border border-premium-gold/30 bg-gradient-to-br from-[#241a3a] via-[#3a2a52] to-[#5a3f2e] p-6 text-center shadow-premiumCard">
+    <div className="world-milestone relative overflow-hidden rounded-premiumCard border border-premium-gold/30 bg-gradient-to-br from-[#241a3a] via-[#3a2a52] to-[#5a3f2e] p-6 text-center shadow-premiumCard">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-30"
@@ -118,7 +118,7 @@ export function MilestoneCard({
 export function SchoolChip({ children, tone = "muted" }: { children: ReactNode; tone?: "muted" | "gold" }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 font-classic-body text-[11px] uppercase tracking-wide ${
+      className={`world-chip inline-flex items-center rounded-full border px-2.5 py-1 font-classic-body text-[11px] uppercase tracking-wide ${
         tone === "gold"
           ? "border-premium-gold/40 bg-premium-gold/10 text-premium-gold"
           : "border-white/12 bg-white/[0.04] text-premium-ivory/60"

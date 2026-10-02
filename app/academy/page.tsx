@@ -11,10 +11,10 @@ type AcademyCategory =
 const CATEGORIES: AcademyCategory[] = [
   {
     id: "journey",
-    title: "Chess Journey",
+    title: "Kingdom Story Map",
     emoji: "🗺️",
-    description: "The 30-day story path through every Kingdom zone.",
-    href: "/kingdom-map#journey",
+    description: "Revisit the story path you played through every Kingdom zone.",
+    href: "/kingdom-map/journey",
   },
   {
     id: "fundamentals",
@@ -63,7 +63,7 @@ const CATEGORIES: AcademyCategory[] = [
 export default function AcademyPage() {
   return (
     <>
-      <Screen maxWidth="medium">
+      <Screen maxWidth="medium" topSafeArea="icons">
         <div className="mx-auto max-w-xl text-center">
           <p className={`${TEXT.meta} text-premium-gold`}>{BRAND.academyName}</p>
           <h1 className={`${TEXT.display} mt-1`}>{BRAND.academyTagline}</h1>

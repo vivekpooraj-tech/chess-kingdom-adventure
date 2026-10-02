@@ -66,6 +66,15 @@ export interface CourseSummary {
   lessonCount: number;
 }
 
+/** The value-forward preview sent instead of full content for a locked
+ * lesson (Phase 4 Learn gating) — enough for "what you'll learn / why it
+ * matters", never the actual explanation/examples/exercises. */
+export interface LockedLessonPreview {
+  title: string;
+  concept: string;
+  intro: string;
+}
+
 /** What the lesson API sends: one lesson plus enough context to navigate. */
 export interface LessonResponse {
   lesson: CourseLesson | null;
@@ -75,4 +84,10 @@ export interface LessonResponse {
    *  holding the whole course. */
   lessonIds: string[];
   nextLessonId: string | null;
+  /** True when this lesson exists but is beyond the course's free limit for
+   * a non-Premium account — `lesson` is null in that case and
+   * `lockedPreview` carries just enough to show its value, never the real
+   * content. Absent/false for courses with no free limit. */
+  locked?: boolean;
+  lockedPreview?: LockedLessonPreview | null;
 }

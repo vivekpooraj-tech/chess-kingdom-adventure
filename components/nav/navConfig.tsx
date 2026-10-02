@@ -3,7 +3,6 @@ import {
   PuzzlePieceIcon,
   PlayIcon,
   AcademyIcon,
-  MoreIcon,
   ChessMindIcon,
   DiscoverIcon,
   ProfileIcon,
@@ -14,9 +13,19 @@ import {
  * The five primary destinations — the app's information architecture — and
  * the active-route matching for them. Extracted here (UI-2A) so the phone
  * `PrimaryNav` (bottom bar) and the desktop `SideNav` render from ONE
- * source and can never drift apart. Destinations, order, routes and match
- * prefixes are UNCHANGED from the previous inline definition in
- * PrimaryNav.tsx.
+ * source and can never drift apart.
+ *
+ * CHESS MIND PHASE 4 NAVIGATION (approved): Home / School / Puzzles / Play /
+ * World. Chess School is promoted to a primary tab — it was previously
+ * reachable only via a Home card, which the UX audit identified as the
+ * single biggest navigation gap for the flagship paid product. World is
+ * promoted for the same reason (a named product differentiator with no
+ * primary presence before). Learn (the Academy library) and "More"
+ * (Profile/Appearance/Parent access) are no longer primary tabs, but are
+ * NOT buried — see UTILITY_NAV_ITEMS below, rendered as a persistent,
+ * named top-bar entry on every breakpoint (AppTopBar for tablet/desktop,
+ * PhoneUtilityIcons for phone), specifically so nothing becomes
+ * undiscoverable just because it isn't one of the five primary tabs.
  */
 export type NavItem = {
   label: string;
@@ -30,7 +39,17 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Home",
     href: "/kingdom-map",
     icon: HomeIcon,
-    match: ["/kingdom-map", "/discover", "/piece-library"],
+    // /lesson (Kingdom Journey) is provisionally grouped under Home — it is
+    // entered from a Home section today and has not yet been repositioned
+    // into World (that migration is its own later implementation phase).
+    // This keeps the active-tab highlight correct without pre-empting that
+    // decision.
+    match: ["/kingdom-map", "/discover", "/piece-library", "/lesson"],
+  },
+  {
+    label: "School",
+    href: "/chess-school",
+    icon: AcademyIcon,
   },
   {
     label: "Puzzles",
@@ -44,15 +63,32 @@ export const NAV_ITEMS: NavItem[] = [
     match: ["/play", "/free-play", "/matchmaking", "/online"],
   },
   {
+    label: "World",
+    href: "/world",
+    icon: WorldIcon,
+  },
+];
+
+/**
+ * Utility destinations — not one of the five primary tabs, but each still
+ * needs a persistent, named, always-reachable entry point (per the approved
+ * navigation decision: "do not hide important product areas behind a
+ * generic More"). Rendered by AppTopBar (tablet/desktop) and
+ * PhoneUtilityIcons (phone) — see those components for the Chess-Time-aware
+ * visibility rules, which intentionally do NOT live here (this file stays
+ * pure configuration, matching the rest of navConfig.tsx).
+ */
+export const UTILITY_NAV_ITEMS: NavItem[] = [
+  {
     label: "Learn",
     href: "/learn",
-    icon: AcademyIcon,
-    match: ["/learn", "/academy", "/chess-mind", "/lesson"],
+    icon: DiscoverIcon,
+    match: ["/learn", "/academy", "/chess-mind"],
   },
   {
     label: "More",
     href: "/more",
-    icon: MoreIcon,
+    icon: ProfileIcon,
     match: ["/more", "/profile", "/kingdom-map/customize", "/parent-gate", "/parent-dashboard"],
   },
 ];
@@ -60,16 +96,21 @@ export const NAV_ITEMS: NavItem[] = [
 /**
  * Secondary destinations, shown ONLY in the desktop sidebar.
  *
- * On a phone these correctly live behind Home and More: five thumb-reachable
- * tabs is the right ceiling, and burying the rest one tap deeper costs
- * almost nothing there. On desktop that same routing is pure friction — the
- * sidebar is a full-height column carrying five items and roughly 70% empty
- * space, while Academy, Chess Mind, Profile and Discover each need a detour
- * through Learn or More.
+ * On a phone/tablet these live behind the persistent Learn and More
+ * utility icons (UTILITY_NAV_ITEMS, rendered via AppTopBar/
+ * PhoneUtilityIcons): five thumb-reachable tabs is the right ceiling, and
+ * a clearly-labeled icon one tap away costs almost nothing there. On
+ * desktop that same routing is pure friction — the sidebar is a
+ * full-height column with room to spare, so Academy, Chess Mind, Profile
+ * and Discover get one-click direct links instead of a detour through
+ * Learn or More.
  *
- * So this is a chrome affordance for one layout, NOT an IA change: every
- * route here is already reachable exactly as before, the phone bottom bar is
- * untouched, and nothing is added or removed from the five primary tabs.
+ * World was removed from this list when it was promoted to a primary tab
+ * (NAV_ITEMS) — it would otherwise appear twice in desktop chrome.
+ *
+ * So this remains a chrome affordance for one layout, NOT a second IA —
+ * every route here is already reachable exactly as before, the phone
+ * bottom bar is untouched, and nothing here duplicates a primary tab.
  *
  * Parent Dashboard is deliberately absent. It sits behind the parent gate,
  * and putting it in a child's primary chrome would both invite them to
@@ -78,7 +119,6 @@ export const NAV_ITEMS: NavItem[] = [
 export const SECONDARY_NAV_ITEMS: NavItem[] = [
   { label: "Academy", href: "/academy", icon: AcademyIcon },
   { label: "Chess Mind", href: "/chess-mind", icon: ChessMindIcon },
-  { label: "World", href: "/world", icon: WorldIcon },
   { label: "Profile", href: "/profile", icon: ProfileIcon },
   { label: "Discover", href: "/discover", icon: DiscoverIcon },
 ];

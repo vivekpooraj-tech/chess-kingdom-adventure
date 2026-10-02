@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/client";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { BRAND } from "@/lib/brand";
 import { getCountryFromRequest } from "@/lib/pricing/country";
 import {
@@ -10,6 +10,7 @@ import {
   SCHOOL_PRODUCT_NAME,
   getSchoolRegionalPrice,
 } from "@/lib/pricing/school";
+import { parseWorldQuery } from "@/lib/world/worlds";
 
 /**
  * Chess School — Lifetime Access. A one-time payment (Stripe mode "payment",
@@ -22,11 +23,11 @@ import {
  * decision.
  *
  * THE INVARIANT THIS ROUTE MUST NEVER BREAK: a Chess School session carries
- * NO `metadata.parent_id`. The existing /upgrade/success page grants two
- * years of PREMIUM to any paid session whose metadata.parent_id matches the
+ * NO `metadata.parent_id`. The existing /upgrade/success page grants one
+ * year of PREMIUM to any paid session whose metadata.parent_id matches the
  * signed-in parent, and checks neither the amount nor the product. If this
  * session carried parent_id, a buyer could open /upgrade/success with its
- * session_id and redeem ₹199 as ₹299 Premium. The parent is identified here
+ * session_id and redeem Chess School as Premium. The parent is identified here
  * under a different key (`school_parent_id`) precisely so that page cannot
  * recognise it. scripts/test-chess-school-v2.js asserts this file never
  * emits `parent_id:`.
@@ -37,9 +38,12 @@ import {
  */
 export async function POST(request: NextRequest) {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Phase 8B-hardening: see app/api/stripe/checkout/route.ts's identical
+  // comment — getSessionUser() instead of a raw supabase.auth.getUser()
+  // call, so a transient network blip during Chess School checkout retries
+  // once rather than failing auth immediately. 401-on-unauthenticated
+  // behavior is unchanged.
+  const user = await getSessionUser(supabase);
 
   if (!user) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
@@ -58,6 +62,10 @@ export async function POST(request: NextRequest) {
   const country = getCountryFromRequest(request);
   const price = getSchoolRegionalPrice(country);
   const origin = request.headers.get("origin") ?? request.nextUrl.origin;
+  // The body only carries the world to return to on cancel; it never
+  // influences the product or the amount.
+  const body = await request.json().catch(() => null);
+  const world = parseWorldQuery(body?.world);
 
   try {
     const stripe = getStripe();
@@ -90,7 +98,9 @@ export async function POST(request: NextRequest) {
         currency: price.currency,
       },
       success_url: `${origin}/chess-school/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/chess-school/classroom`,
+      cancel_url: world
+        ? `${origin}/chess-school/classroom?world=${world}`
+        : `${origin}/chess-school/classroom`,
     });
 
     return NextResponse.json({ url: session.url });

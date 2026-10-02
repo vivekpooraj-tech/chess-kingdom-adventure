@@ -16,10 +16,21 @@
 /** Column list for `.select(...)` on the `parents` table wherever Premium is checked. */
 export const PARENT_PREMIUM_COLUMNS = "premium_status, premium_expires_at";
 
-/** One-time purchase entitlement length. Keep in sync with
- * grant_premium_entitlement()'s `p_duration` default in migration 0031. */
-export const PREMIUM_ENTITLEMENT_YEARS = 2;
-export const PREMIUM_DURATION_LABEL = "2 years";
+/** One-time purchase entitlement length.
+ *
+ * Phase 8B: changed 2 years -> 1 year (the approved V1 commercial model:
+ * one-time for 1 year of Premium, no Stripe subscription). Every real call
+ * site (app/api/stripe/webhook/route.ts, app/upgrade/success/page.tsx)
+ * passes this value explicitly as the RPC's `p_duration` argument, so
+ * changing it here is sufficient — no migration needed. The SQL function
+ * grant_premium_entitlement()'s own `p_duration default interval '2 years'`
+ * (migration 0031) is NOT updated: it is a dead default that neither call
+ * site has ever relied on, since both always pass p_duration explicitly.
+ * It's a purely cosmetic inconsistency in the migration file's default
+ * value, not a functional one — see the Phase 8B report for why no
+ * migration was made for it. */
+export const PREMIUM_ENTITLEMENT_YEARS = 1;
+export const PREMIUM_DURATION_LABEL = "1 year";
 /** Currency-agnostic reassurance line shown under every price. */
 export const PREMIUM_BILLING_NOTE = "One payment. No recurring subscription.";
 

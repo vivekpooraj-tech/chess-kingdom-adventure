@@ -112,6 +112,15 @@ export function accumulate(
 // Deliberately not BroadcastChannel: this needs to survive a tab crashing
 // without a clean handover, which a timestamp does and a channel does not.
 
+/** Fired on window after a parent saves new daily limits — ScreenTimeTracker resyncs immediately. */
+export const SCREEN_TIME_LIMITS_UPDATED_EVENT = "chessmind-screen-time-limits-updated";
+
+export function notifyScreenTimeLimitsUpdated(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(SCREEN_TIME_LIMITS_UPDATED_EVENT));
+  }
+}
+
 export const LEADER_HEARTBEAT_MS = 5_000;
 /** A leader silent for longer than this is presumed gone. */
 export const LEADER_STALE_MS = 15_000;

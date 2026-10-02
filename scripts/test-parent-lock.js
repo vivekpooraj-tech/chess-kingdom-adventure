@@ -143,6 +143,17 @@ async function run() {
       "expired still blocks /more",
       routeGuard.shouldRedirectToChessTimeHub({ pathname: "/more", session })
     );
+    check(
+      "expired still allows parent dashboard (daily limits)",
+      !routeGuard.shouldRedirectToChessTimeHub({ pathname: "/parent-dashboard", session })
+    );
+    check(
+      "expired still allows parent-lock settings",
+      !routeGuard.shouldRedirectToChessTimeHub({
+        pathname: "/parent-dashboard/parent-lock",
+        session,
+      })
+    );
   }
 
   // --- active session route guard ---
@@ -241,6 +252,80 @@ async function run() {
     check("keeps puzzles tab", filtered.some((i) => i.href === "/puzzles"));
   }
 
+  // --- Chess Mind navigation restructuring: /chess-school and /world
+  // compatibility (Phase 2 — approved narrow addition to navFilter.ts).
+  // Chess School and World are now primary tabs; without these branches
+  // both would silently fall through to the filter's default `false` and
+  // stay hidden even when a parent explicitly allowed them. -------------
+  {
+    const fiveTabItems = [
+      { label: "Home", href: "/kingdom-map" },
+      { label: "School", href: "/chess-school" },
+      { label: "Puzzles", href: "/puzzles" },
+      { label: "Play", href: "/play" },
+      { label: "World", href: "/world" },
+    ];
+
+    // 1. Chess School allowed -> /chess-school stays visible.
+    const schoolAllowed = navFilter.filterNavItemsForChessTime(fiveTabItems, ["chess_school"]);
+    check(
+      "chess_school allowed: /chess-school remains visible",
+      schoolAllowed.some((i) => i.href === "/chess-school")
+    );
+
+    // 2. Chess School NOT allowed -> /chess-school stays hidden.
+    const schoolNotAllowed = navFilter.filterNavItemsForChessTime(fiveTabItems, ["puzzles"]);
+    check(
+      "chess_school NOT allowed: /chess-school remains hidden",
+      !schoolNotAllowed.some((i) => i.href === "/chess-school")
+    );
+
+    // 3. World allowed -> /world stays visible.
+    const worldAllowed = navFilter.filterNavItemsForChessTime(fiveTabItems, ["world"]);
+    check("world allowed: /world remains visible", worldAllowed.some((i) => i.href === "/world"));
+
+    // 4. World NOT allowed -> /world stays hidden.
+    const worldNotAllowed = navFilter.filterNavItemsForChessTime(fiveTabItems, ["puzzles"]);
+    check("world NOT allowed: /world remains hidden", !worldNotAllowed.some((i) => i.href === "/world"));
+
+    // 5-7. Existing /puzzles, /play, /more behavior is byte-identical to
+    // before this change — same three branches, untouched.
+    const allThreeCore = navFilter.filterNavItemsForChessTime(fiveTabItems, ["puzzles", "play"]);
+    check("existing /puzzles behavior unchanged: visible when allowed", allThreeCore.some((i) => i.href === "/puzzles"));
+    check("existing /play behavior unchanged: visible when allowed", allThreeCore.some((i) => i.href === "/play"));
+    const withMore = [...fiveTabItems, { label: "More", href: "/more" }];
+    const moreFiltered = navFilter.filterNavItemsForChessTime(withMore, [
+      "puzzles",
+      "play",
+      "chess_school",
+      "world",
+    ]);
+    check(
+      "existing /more behavior unchanged: ALWAYS hidden during any active restriction, even if everything else is allowed",
+      !moreFiltered.some((i) => i.href === "/more")
+    );
+
+    // 8. Every non-allow-listed destination is still blocked exactly as
+    // before — allow only "puzzles" and confirm School/World/Play/More are
+    // all hidden, Home too (was never in the allow-list vocabulary).
+    const onlyPuzzles = navFilter.filterNavItemsForChessTime(
+      [...fiveTabItems, { label: "More", href: "/more" }],
+      ["puzzles"]
+    );
+    check(
+      "only-puzzles allow-list blocks every other destination (School, World, Play, More, Home)",
+      onlyPuzzles.length === 1 && onlyPuzzles[0].href === "/puzzles"
+    );
+
+    // 9. No unrelated behavior changed: an unrestricted session (null
+    // activities) still returns the full list unfiltered, exactly as
+    // before, for the new five-tab shape too.
+    check(
+      "no restriction -> full five-tab list passes through unfiltered",
+      navFilter.filterNavItemsForChessTime(fiveTabItems, null).length === 5
+    );
+  }
+
   // --- Chess School V2 files untouched ---
   {
     const protectedPaths = [
@@ -272,6 +357,28 @@ async function run() {
     check(
       "parent-lock setup page exists",
       fs.existsSync(path.join(process.cwd(), "app", "parent-dashboard", "parent-lock", "page.tsx"))
+    );
+    check(
+      "dashboard mounts first-visit Parent PIN setup",
+      dash.includes("ParentDashboardFirstPinSetup")
+    );
+    const firstPinPath = path.join(
+      process.cwd(),
+      "app",
+      "parent-dashboard",
+      "ParentDashboardFirstPinSetup.tsx"
+    );
+    check("first-visit Parent PIN setup component exists", fs.existsSync(firstPinPath));
+    const firstPin = fs.readFileSync(firstPinPath, "utf8");
+    check("first-visit prompt uses ParentPinSetup", firstPin.includes("ParentPinSetup"));
+    check("first-visit prompt can be skipped", firstPin.includes("Skip for now"));
+    const storage = fs.readFileSync(
+      path.join(process.cwd(), "lib", "parentLock", "storage.ts"),
+      "utf8"
+    );
+    check(
+      "storage tracks first dashboard PIN prompt",
+      storage.includes("markParentDashboardPinPromptSeen")
     );
   }
 

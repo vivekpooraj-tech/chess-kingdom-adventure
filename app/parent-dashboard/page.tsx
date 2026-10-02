@@ -36,6 +36,7 @@ import {
 } from "@/lib/parent/parentInsights";
 import Link from "next/link";
 import { ManageChildren } from "./ManageChildren";
+import { ParentDashboardFirstPinSetup } from "./ParentDashboardFirstPinSetup";
 
 export default async function ParentDashboardPage() {
   const supabase = createClient();
@@ -184,6 +185,8 @@ export default async function ParentDashboardPage() {
       </div>
       <h1 className={TEXT.display}>Parent Dashboard</h1>
 
+      <ParentDashboardFirstPinSetup />
+
       <ManageChildren initialChildren={allChildren} activeChildId={child?.id ?? ""} />
 
       <section className="w-full flex flex-col gap-2">
@@ -233,32 +236,70 @@ export default async function ParentDashboardPage() {
           {/* Answers the question a parent actually opens this page with:
               is my child learning, and at what. Placed straight after the
               activity counts, which say how MUCH they did but not whether any
-              of it is working. */}
+              of it is working.
+
+              Phase 4 Parent Mode split: this card is "game insights" +
+              "common mistakes" territory — Premium. Free parents still get
+              the raw activity counts and achievements above/below; what's
+              gated here is the INTERPRETATION of that activity, not the
+              activity itself, matching "never paywall basic visibility." */}
           {learningView && (
-            <ChildLearningInsight view={learningView} childName={child.display_name} />
+            premiumState.isPremium ? (
+              <ChildLearningInsight view={learningView} childName={child.display_name} />
+            ) : (
+              <ParentPremiumTeaser
+                title="How is my child really progressing?"
+                body={`Premium adds a full read on ${child.display_name}'s learning — recurring mistakes, skill trends over time, and game-by-game insights, not just activity counts.`}
+              />
+            )
           )}
 
+          {/* "Suggested Next Step" is a personalized recommendation, not raw
+              activity — Premium, per the same split. */}
           {nextStep && (
-            <SecondaryCard className="w-full flex flex-col gap-3">
-              <h2 className={TEXT.heading}>Suggested Next Step</h2>
-              <p className="font-classic-display text-base text-premium-ivory">{nextStep.title}</p>
-              <p className={TEXT.body}>{nextStep.description}</p>
-              <p className={TEXT.caption}>{nextStep.durationLabel}</p>
-              <Link
-                href={nextStep.href}
-                className="inline-flex items-center justify-center rounded-premiumBtn bg-premium-gold/15 border border-premium-gold/30 px-4 py-2 text-sm font-classic-body text-premium-gold hover:bg-premium-gold/25 transition-colors w-fit"
-              >
-                Open for {child.display_name} →
-              </Link>
-            </SecondaryCard>
+            premiumState.isPremium ? (
+              <SecondaryCard className="w-full flex flex-col gap-3">
+                <h2 className={TEXT.heading}>Suggested Next Step</h2>
+                <p className="font-classic-display text-base text-premium-ivory">{nextStep.title}</p>
+                <p className={TEXT.body}>{nextStep.description}</p>
+                <p className={TEXT.caption}>{nextStep.durationLabel}</p>
+                <Link
+                  href={nextStep.href}
+                  className="inline-flex items-center justify-center rounded-premiumBtn bg-premium-gold/15 border border-premium-gold/30 px-4 py-2 text-sm font-classic-body text-premium-gold hover:bg-premium-gold/25 transition-colors w-fit"
+                >
+                  Open for {child.display_name} →
+                </Link>
+              </SecondaryCard>
+            ) : (
+              <ParentPremiumTeaser
+                title="What should we work on next?"
+                body={`Premium recommends ${child.display_name}'s next best activity, personalized from what they've actually practiced.`}
+              />
+            )
           )}
 
+          {/* Basic strengths stay free (the "Strong" column only); the full
+              strengths/weaknesses breakdown (Developing + Needs practice) is
+              Premium's "detailed strengths/weaknesses" + "skill trends". */}
           {skillSnapshot && (
             <SecondaryCard className="w-full flex flex-col gap-4">
               <h2 className={TEXT.heading}>Skills Snapshot</h2>
               <SkillColumn title="Strong" items={skillSnapshot.strong} tone="strong" />
-              <SkillColumn title="Developing" items={skillSnapshot.developing} tone="developing" />
-              <SkillColumn title="Needs practice" items={skillSnapshot.needsPractice} tone="needs" />
+              {premiumState.isPremium ? (
+                <>
+                  <SkillColumn title="Developing" items={skillSnapshot.developing} tone="developing" />
+                  <SkillColumn title="Needs practice" items={skillSnapshot.needsPractice} tone="needs" />
+                </>
+              ) : (
+                <div className="rounded-premiumBtn bg-premium-midnightDeep px-4 py-3 flex items-center justify-between gap-3">
+                  <p className={`${TEXT.caption} normal-case`}>
+                    🔒 Premium shows what {child.display_name} is still developing, and what needs practice.
+                  </p>
+                  <Link href="/upgrade" className="font-classic-body text-xs font-semibold text-premium-gold flex-none">
+                    Unlock →
+                  </Link>
+                </div>
+              )}
             </SecondaryCard>
           )}
 
@@ -266,7 +307,7 @@ export default async function ParentDashboardPage() {
               asks for: learning, Academy, Chess Mind, openings, time spent
               all in one glance, with detail below for anyone who wants more. */}
           <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatTile value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Journey" />
+            <StatTile value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Story Map" />
             <StatTile value={chessMindTotal} label="Chess Mind Solved" />
             <StatTile value={openingsDiscovered} label="Openings Discovered" />
             <StatTile value={`${recentMinutes}m`} label="Screen Time (7d)" />
@@ -422,6 +463,25 @@ export default async function ParentDashboardPage() {
 
       <PremiumStatusCard initial={premiumState} />
     </Screen>
+  );
+}
+
+/** Phase 4 Parent Mode value-forward teaser — always names what unlocks. */
+function ParentPremiumTeaser({ title, body }: { title: string; body: string }) {
+  return (
+    <SecondaryCard className="w-full flex flex-col gap-3 border border-premium-gold/25">
+      <p className="font-classic-body text-[11px] font-bold uppercase tracking-wider text-premium-gold">
+        🔒 Premium
+      </p>
+      <p className="font-classic-display text-base text-premium-ivory">{title}</p>
+      <p className={TEXT.body}>{body}</p>
+      <Link
+        href="/upgrade"
+        className="inline-flex items-center justify-center rounded-premiumBtn bg-premium-gold/15 border border-premium-gold/30 px-4 py-2 text-sm font-classic-body text-premium-gold hover:bg-premium-gold/25 transition-colors w-fit"
+      >
+        Unlock Premium →
+      </Link>
+    </SecondaryCard>
   );
 }
 

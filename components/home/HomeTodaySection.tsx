@@ -18,7 +18,7 @@ export function HomeTodaySection({
 }) {
   return (
     <section className="flex w-full flex-col gap-2">
-      <SectionHeader title="Today" className="home-section-heading" />
+      <SectionHeader title="Today" />
       <div className="flex flex-col gap-3">
         <DailyChallengeCard childId={childId} />
         <DailyQuestsCard set={set} neutralTone={neutralTone} embedded />

@@ -132,7 +132,7 @@ export default function ChessOriginsPage() {
 
   return (
     <>
-      <Screen maxWidth="compact">
+      <Screen maxWidth="compact" topSafeArea="icons">
         <div className="mx-auto max-w-xl text-center">
           {alreadyCompleted && (
             <span className="inline-block font-classic-body text-[11px] font-semibold text-premium-gold border border-premium-gold/30 rounded-full px-2 py-1 mb-3">
