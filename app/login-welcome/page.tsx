@@ -8,8 +8,17 @@ import { getActiveChildIdClient } from "@/lib/childSession";
 import { postAuthDestination } from "@/lib/auth/postAuthDestination";
 import { markLoginWelcomeShownThisSession } from "@/lib/loginWelcome";
 import { LOGIN_WELCOME_VIDEO_URL } from "@/content/loginWelcomeVideo";
+import {
+  initialWelcomeState,
+  reduceWelcome,
+  type WelcomeEffect,
+  type WelcomeEvent,
+  type WelcomeState,
+} from "@/lib/loginWelcomeMachine";
 
-const STALL_MS = 8000;
+// Monotonic: a wall-clock jump (NTP sync on a just-woken device) must not
+// look like the video going silent.
+const now = () => performance.now();
 
 /**
  * Video 2 — the returning-user welcome animation. Reached from exactly two
@@ -29,8 +38,10 @@ const STALL_MS = 8000;
  * If that play() is rejected, the same video continues muted and stays on
  * screen. A video that has already started muted is never unmuted later —
  * that pause was measured in Chrome. Play and Continue are offered only when
- * both attempts fail, the file errors, or nothing has started after
- * STALL_MS — and the page never moves on by itself in that state.
+ * both attempts fail, the file errors, or the video has genuinely stopped
+ * making progress (lib/loginWelcomeMachine.ts) — a merely slow start is not
+ * a failure, and a late `playing` clears the overlay. The page never moves
+ * on by itself in that state.
  *
  * Destination after the video is computed via the exact same
  * postAuthDestination() every login already resolves through — this page
@@ -42,14 +53,15 @@ const STALL_MS = 8000;
 export default function LoginWelcomePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [needsGesture, setNeedsGesture] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [welcome, setWelcome] = useState<WelcomeState>(initialWelcomeState);
+  const needsGesture = welcome.phase === "fallback";
+  const loadFailed = welcome.failure === "error";
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const nextHrefRef = useRef<string>("/kingdom-map");
   const settledRef = useRef(false);
   const startedRef = useRef(false);
-  const autoplayAttemptedRef = useRef(false);
+  const machineRef = useRef<WelcomeState>(welcome);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,16 +92,17 @@ export default function LoginWelcomePage() {
     };
   }, [router]);
 
-  // If nothing has started a while after the page is ready (slow network, a
-  // stalled decoder, an autoplay policy that never answers), surface the
-  // Play / Continue controls instead of leaving a black screen. This never
-  // navigates on its own.
+  // Watchdog for a video that has genuinely stopped (see
+  // lib/loginWelcomeMachine.ts): it asks "has the video made any progress
+  // lately?", never "have N seconds passed since the page loaded?", so a slow
+  // but live start is left alone while a dead one still gets the Play /
+  // Continue escape. This never navigates on its own.
   useEffect(() => {
     if (!ready) return;
-    const t = window.setTimeout(() => {
-      if (!startedRef.current && !settledRef.current) setNeedsGesture(true);
-    }, STALL_MS);
-    return () => window.clearTimeout(t);
+    dispatch({ type: "ready", at: now() });
+    const id = window.setInterval(() => dispatch({ type: "tick", at: now() }), 1000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
   function logVideo(label: string, v: HTMLVideoElement | null) {
@@ -114,34 +127,46 @@ export default function LoginWelcomePage() {
     if (settledRef.current) return;
     settledRef.current = true;
     startedRef.current = true;
+    dispatch({ type: "settled", at: now() });
     markLoginWelcomeShownThisSession();
     router.replace(nextHrefRef.current);
   }
 
-  function handleCanPlay() {
-    if (autoplayAttemptedRef.current || startedRef.current) return;
-    autoplayAttemptedRef.current = true;
-    const v = videoRef.current;
-    if (!v) return;
-    // One unmuted attempt. Do not retry it, and do not unmute later.
-    logVideo("ready", v);
-    v.muted = false;
-    logVideo("before-unmuted-play", v);
-    v.play()
-      .then(() => {
-        console.log("[login-welcome] unmuted-play SUCCESS");
-        logVideo("after-unmuted-play", videoRef.current);
-      })
-      .catch((reason: unknown) => {
-        console.log(`[login-welcome] unmuted-play REJECTED ${rejectionText(reason)}`);
-        playMutedFallback();
-      });
+  /** Feed one event to the fallback machine and run whatever it asks for. */
+  function dispatch(event: WelcomeEvent) {
+    const before = machineRef.current;
+    const { state, effects } = reduceWelcome(before, event);
+    machineRef.current = state;
+    // Progress events arrive several times a second; only re-render when
+    // what is on screen can actually change.
+    if (state.phase !== before.phase || state.failure !== before.failure) setWelcome(state);
+    for (const effect of effects) runEffect(effect);
   }
 
-  /** The same video, muted, after the sound attempt was refused. */
-  function playMutedFallback() {
+  function runEffect(effect: WelcomeEffect) {
     const v = videoRef.current;
-    if (!v || startedRef.current) return;
+    if (!v || settledRef.current) return;
+    // Each rejection carries the attempt id it belongs to, so a result from an
+    // attempt that a newer one has since replaced (e.g. aborted by load()) is
+    // ignored by the machine instead of triggering a muted retry or the overlay.
+    if (effect.kind === "play-unmuted") {
+      // One unmuted attempt per load. Do not retry it, and do not unmute later.
+      if (v.error) v.load();
+      logVideo("ready", v);
+      v.muted = false;
+      logVideo("before-unmuted-play", v);
+      v.play()
+        .then(() => {
+          console.log("[login-welcome] unmuted-play SUCCESS");
+          logVideo("after-unmuted-play", videoRef.current);
+        })
+        .catch((reason: unknown) => {
+          console.log(`[login-welcome] unmuted-play REJECTED ${rejectionText(reason)}`);
+          dispatch({ type: "unmuted-rejected", at: now(), attempt: effect.attempt });
+        });
+      return;
+    }
+    // The same video, muted, after the sound attempt was refused.
     v.muted = true;
     console.log("[login-welcome] fallback-muted-play");
     logVideo("before-muted-play", v);
@@ -153,15 +178,34 @@ export default function LoginWelcomePage() {
       .catch((mutedReason: unknown) => {
         console.log(`[login-welcome] muted-play REJECTED ${rejectionText(mutedReason)}`);
         logVideo("muted-play-failed", videoRef.current);
-        if (!startedRef.current) setNeedsGesture(true);
+        dispatch({ type: "muted-rejected", at: now(), attempt: effect.attempt });
       });
+  }
+
+  function handleCanPlay() {
+    logVideo("event canplay", videoRef.current);
+    dispatch({ type: "canplay", at: now() });
+  }
+
+  /** loadstart / progress / loadedmetadata / loadeddata / … — the video is alive. */
+  function handleProgress() {
+    dispatch({ type: "progress", at: now() });
+  }
+
+  function handleWaiting() {
+    logVideo("event waiting", videoRef.current);
+    dispatch({ type: "waiting", at: now() });
+  }
+
+  function handleStalled() {
+    logVideo("event stalled", videoRef.current);
+    dispatch({ type: "stalled", at: now() });
   }
 
   function handlePlaying() {
     logVideo("event playing", videoRef.current);
     rememberStarted();
-    setNeedsGesture(false);
-    setLoadFailed(false);
+    dispatch({ type: "playing", at: now() });
   }
 
   function handlePause() {
@@ -176,19 +220,15 @@ export default function LoginWelcomePage() {
   function handleError() {
     logVideo("event error", videoRef.current);
     if (startedRef.current || settledRef.current) return;
-    setLoadFailed(true);
-    setNeedsGesture(true);
+    dispatch({ type: "error", at: now() });
   }
 
   function playFromTap() {
-    if (startedRef.current || settledRef.current) return;
-    const v = videoRef.current;
-    if (!v) return;
-    setNeedsGesture(false);
-    setLoadFailed(false);
-    if (v.error) v.load();
-    v.muted = false;
-    v.play().catch(() => playMutedFallback());
+    // Not gated on startedRef: the overlay can also appear after playback
+    // started and then froze, and Play must be able to resume it.
+    if (settledRef.current) return;
+    if (!videoRef.current) return;
+    dispatch({ type: "tap-play", at: now() });
   }
 
   if (!ready) {
@@ -200,11 +240,24 @@ export default function LoginWelcomePage() {
       <video
         ref={videoRef}
         src={LOGIN_WELCOME_VIDEO_URL}
+        // Android WebView paints its stock grey play-circle on any <video>
+        // without a poster until the first frame arrives (a visible flash on
+        // every launch). A transparent poster over the black page replaces it.
+        poster="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
         className="h-full w-full bg-black object-contain"
         playsInline
         preload="auto"
         autoPlay
         controls={false}
+        onLoadStart={handleProgress}
+        onProgress={handleProgress}
+        onLoadedMetadata={handleProgress}
+        onLoadedData={handleProgress}
+        onDurationChange={handleProgress}
+        onCanPlayThrough={handleProgress}
+        onTimeUpdate={handleProgress}
+        onWaiting={handleWaiting}
+        onStalled={handleStalled}
         onCanPlay={handleCanPlay}
         onPlaying={handlePlaying}
         onPause={handlePause}
