@@ -6,12 +6,10 @@ import { CheckIcon } from "@/components/nav/icons";
 import { TEXT } from "@/lib/designSystem";
 
 /**
- * Mode selector for the More screen — same structural pattern as
- * ThemePicker (radiogroup, arrow-key nav, no colour-only selection state),
- * but a separate control for a separate axis: THEME is the app's colour
- * identity, MODE is which of the three Chess Mind presentation experiences
- * is active. Selecting a mode never touches the current theme, and vice
- * versa — see lib/mode/useMode.ts and app/modes.css.
+ * Mode (World) selector for the More screen: a radiogroup with arrow-key
+ * navigation and no colour-only selection state. MODE is which of the three
+ * Chess Mind presentation experiences is active — see lib/mode/useMode.ts
+ * and app/modes.css.
  */
 export function ModePicker() {
   const { mode, setMode } = useMode();

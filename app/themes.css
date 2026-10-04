@@ -2,9 +2,11 @@
    CHESS MIND — THEME LAYER
    ==========================================================================
 
-   Four premium visual identities for ONE application. No duplicated pages,
-   components or layouts: every theme is a set of colour channels swapped by a
-   `data-theme` attribute on <html>.
+   The app's single colour identity — Chess Kingdom — expressed as colour
+   channels on :root. The user-selectable Appearance themes (Midnight
+   Grandmaster, Royal Classic, Future Arena) were removed; the visual
+   experience is now chosen only through Worlds (app/worlds.css), which
+   override these same channels on a `data-world` subtree.
 
    WHY CHANNELS, NOT HEX
    The app's 10-colour `premium` palette is referenced ~1,109 times across 117
@@ -22,19 +24,14 @@
    `:root` definitions win at equal specificity, so the semantic tokens below
    cleanly re-derive globals.css's values from the channels without editing it.
 
-   WHY EVERY THEME IS DARK-SURFACE / LIGHT-TEXT
+   WHY EVERY PALETTE (THEME OR WORLD) IS DARK-SURFACE / LIGHT-TEXT
    Not an aesthetic preference — a structural fact of the codebase. The
    `midnight` and `midnightDeep` tokens are used as a BACKGROUND 124 times but
    also as TEXT 19 times (dark ink on a gold button). A light theme would need
    that single token to be simultaneously a light surface and dark ink, which
-   is impossible without editing those 19 call sites. So all four themes keep
-   the same polarity and express their personality through hue, temperature and
-   accent instead. Royal Classic is therefore a warm, deep-green hall rather
-   than an ivory one.
-
-   ADDING A THEME
-   Add one `[data-theme="..."]` block with the 10 channels. Nothing else — the
-   semantic tokens, Tailwind classes and every component follow automatically.
+   is impossible without editing those 19 call sites. So every palette keeps
+   the same polarity and expresses its personality through hue, temperature and
+   accent instead.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -43,8 +40,7 @@
    to channels. This theme must render identically to before the theme system
    existed; that is verified, not assumed.
    -------------------------------------------------------------------------- */
-:root,
-[data-theme="chess-kingdom"] {
+:root {
   --cm-midnight: 15 22 41;
   --cm-midnight-deep: 8 12 24;
   --cm-navy: 27 36 64;
@@ -59,81 +55,6 @@
   /* Board frame tint — the board's own squares stay owned by
      content/boardSkins.ts; only the surround follows the theme. */
   --cm-board-frame: 27 36 64;
-}
-
-/* --------------------------------------------------------------------------
-   2. MIDNIGHT GRANDMASTER — "professional online chess club at midnight".
-   Cool charcoal and near-black with a restrained steel-blue accent. No neon,
-   no cyberpunk: the accent is a muted platinum blue that reads as considered
-   rather than loud, and still clears AA as both text and a button fill.
-   -------------------------------------------------------------------------- */
-[data-theme="midnight-grandmaster"] {
-  --cm-midnight: 12 15 20;
-  --cm-midnight-deep: 7 9 16;
-  --cm-navy: 22 26 33;
-  --cm-navy-light: 35 41 53;
-  --cm-gold: 143 176 217;
-  --cm-gold-muted: 110 136 168;
-  --cm-ivory: 233 237 243;
-  --cm-cream: 220 227 236;
-  /* The hero-card surface (HeroJourneyCard / a puzzle chip) — NOT a semantic
-     success colour, which stays theme-invariant. Kept deep and desaturated so
-     it reads as part of this palette rather than a green card dropped into a
-     charcoal room. */
-  --cm-emerald: 28 62 78;
-  --cm-emerald-deep: 17 40 52;
-
-  --cm-board-frame: 22 26 33;
-}
-
-/* --------------------------------------------------------------------------
-   3. ROYAL CLASSIC — "premium tournament in a historic grand hall".
-   Deep forest green surfaces, warm ivory text, brass accent. The atmosphere
-   comes entirely from hue and warmth — there are no wood or marble images,
-   because a texture asset would cost every route bandwidth for decoration.
-   -------------------------------------------------------------------------- */
-[data-theme="royal-classic"] {
-  --cm-midnight: 20 32 26;
-  --cm-midnight-deep: 12 21 17;
-  --cm-navy: 28 43 35;
-  --cm-navy-light: 39 57 47;
-  --cm-gold: 201 162 39;
-  --cm-gold-muted: 168 135 58;
-  /* Brighter than the obvious "warm ivory" choice, for a measured reason: the
-     green surfaces are lighter in luminance than the default navy, so a softer
-     ivory pushed muted text (the /50 tint) to 4.25:1 — under the 4.5 AA bar
-     this app documents for that token. At 252/247/238 it reaches 4.60 on cards
-     and 4.90 on the ground, matching the default theme, and is still clearly
-     warm (R > G > B). Surfaces were left alone instead: darkening them enough
-     to fix contrast collapsed the card against the ground. */
-  --cm-ivory: 252 247 238;
-  --cm-cream: 230 218 196;
-  --cm-emerald: 27 122 86;
-  --cm-emerald-deep: 16 85 58;
-
-  --cm-board-frame: 28 43 35;
-}
-
-/* --------------------------------------------------------------------------
-   4. FUTURE ARENA — "next-generation professional chess arena".
-   Dark slate base with an electric blue accent. Deliberately restrained: the
-   accent appears on controls and focus states, never as a glowing background,
-   so it still reads as professional to an adult competitor.
-   -------------------------------------------------------------------------- */
-[data-theme="future-arena"] {
-  --cm-midnight: 10 14 23;
-  --cm-midnight-deep: 5 7 13;
-  --cm-navy: 18 26 43;
-  --cm-navy-light: 29 40 65;
-  --cm-gold: 77 163 255;
-  --cm-gold-muted: 61 127 196;
-  --cm-ivory: 230 236 245;
-  --cm-cream: 211 221 236;
-  /* Hero-card surface, pulled toward the arena's blue rather than green. */
-  --cm-emerald: 26 106 138;
-  --cm-emerald-deep: 15 66 92;
-
-  --cm-board-frame: 18 26 43;
 }
 
 /* ==========================================================================
@@ -173,40 +94,6 @@
   --last-move: rgb(var(--cm-gold) / 0.3);
 
   --glow-gold: 0 0 20px rgb(var(--cm-gold) / 0.35);
-}
-
-/* ==========================================================================
-   THEME TRANSITION
-   Only the properties that actually change, only on the elements that carry
-   them, and only for a moment. A blanket `* { transition: all }` would make
-   every hover and layout change in the app feel laggy, which is exactly the
-   kind of "polish" that reads as slow.
-
-   The class is added by the theme switcher for ~220ms and then removed.
-   ========================================================================== */
-html.cm-theme-switching,
-html.cm-theme-switching body,
-html.cm-theme-switching main,
-html.cm-theme-switching header,
-html.cm-theme-switching nav,
-html.cm-theme-switching section,
-html.cm-theme-switching aside,
-html.cm-theme-switching a,
-html.cm-theme-switching button,
-html.cm-theme-switching p,
-html.cm-theme-switching span,
-html.cm-theme-switching div {
-  transition:
-    background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html.cm-theme-switching,
-  html.cm-theme-switching * {
-    transition: none !important;
-  }
 }
 
 /* ==========================================================================

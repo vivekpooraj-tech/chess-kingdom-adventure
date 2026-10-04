@@ -20,7 +20,6 @@ import { DevTestModeBar } from "@/components/dev/DevTestModeBar";
 import { NativeLayoutProvider } from "@/components/nav/NativeLayoutProvider";
 import { LayoutBootstrapScript } from "@/components/nav/LayoutBootstrapScript";
 import { ShellBootstrapScript } from "@/components/nav/ShellBootstrapScript";
-import { ThemeBootstrapScript } from "@/components/theme/ThemeBootstrapScript";
 import { ModeBootstrapScript } from "@/components/mode/ModeBootstrapScript";
 import { AppShell } from "@/components/nav/AppShell";
 import { ScreenTimeTracker } from "@/components/screen-time/ScreenTimeTracker";
@@ -99,7 +98,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-premium-midnight">
         <LayoutBootstrapScript />
         <ShellBootstrapScript />
-        <ThemeBootstrapScript />
         <ModeBootstrapScript />
         <NativeLayoutProvider>
           <CapacitorDeepLinkHandler />

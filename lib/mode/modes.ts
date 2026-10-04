@@ -1,15 +1,13 @@
 /**
  * The three Chess Mind presentation modes.
  *
- * Pure data — no React, no CSS, no side effects — exactly mirroring
- * lib/theme/themes.ts's own doc comment reasoning: safe to import from a
- * server component, a client component, or a bootstrap script alike.
+ * Pure data — no React, no CSS, no side effects — so it is safe to import
+ * from a server component, a client component, or a bootstrap script alike.
  *
- * Mode is a SEPARATE axis from theme (see app/modes.css vs app/themes.css):
- * theme is the app's colour identity, mode is which of the three Chess Mind
- * presentation experiences (Kids / Adult / Classic-Pro) is active. The two
- * attributes — [data-theme] and [data-mode] — are independently settable and
- * neither reads or depends on the other.
+ * Mode is which of the three Chess Mind presentation experiences
+ * (Kids / Adult / Classic-Pro) is active, held in [data-mode] on <html>
+ * (see app/modes.css). The app's base colour identity is Chess Kingdom,
+ * defined on :root in app/themes.css.
  */
 
 export const MODE_IDS = ["kids", "adult", "classic-pro"] as const;
@@ -20,7 +18,7 @@ export type ModeId = (typeof MODE_IDS)[number];
  * classic-pro is the default: it IS the app's current, already-shipping
  * presentation. Selecting it (or having no stored preference at all) must
  * render byte-for-byte identical to the app before this mode system existed
- * — the same guarantee chess-kingdom makes for theme. Phase 1 introduces the
+ * — the same "no attribute = default" guarantee as the base colours. Phase 1 introduces the
  * attribute and its CSS channels but wires no component to branch on them
  * yet, so this is true by construction, not merely by value choice.
  */

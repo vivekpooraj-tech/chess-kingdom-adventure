@@ -2,12 +2,10 @@
    CHESS MIND — MODE LAYER (Phase 1: infrastructure only)
    ==========================================================================
 
-   Three presentation modes for ONE application, on a SEPARATE axis from
-   app/themes.css's [data-theme]. Theme is the app's colour identity; mode is
-   which Chess Mind presentation experience (Kids / Adult / Classic-Pro) is
-   active. The two attributes are independently settable — [data-theme] and
-   [data-mode] never read or depend on each other, and can be combined in any
-   pairing (e.g. [data-theme="royal-classic"][data-mode="kids"]).
+   Three presentation modes for ONE application. Mode is which Chess Mind
+   presentation experience (Kids / Adult / Classic-Pro) is active, held in
+   [data-mode] on <html>. The base colour identity (Chess Kingdom) lives on
+   :root in app/themes.css; mode does not depend on it.
 
    PHASE 1 SCOPE: this file defines the mode CHANNELS only. No existing
    component references any --mode-* variable yet, so activating any mode
@@ -18,8 +16,7 @@
    ahead of any visual migration.
 
    WHY CLASSIC-PRO HAS NO BLOCK OF ITS OWN
-   Exactly mirroring chess-kingdom's role in app/themes.css: classic-pro IS
-   the app's current, already-shipping presentation, so its values live on
+   classic-pro IS the app's current, already-shipping presentation, so its values live on
    :root (see the "no attribute = default" convention in
    ModeBootstrapScript/useMode) rather than under a [data-mode="classic-pro"]
    selector — there is nothing to override, only a baseline to declare once.
@@ -37,7 +34,7 @@
    ADDING TO A MODE
    Add channels to the relevant [data-mode="..."] block (or to :root for
    classic-pro's baseline). Nothing else — Tailwind classes and any component
-   that later opts in follow automatically, same discipline as themes.css.
+   that later opts in follow automatically.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -87,10 +84,9 @@
 
 /* ==========================================================================
    MODE TRANSITION
-   Independent of app/themes.css's cm-theme-switching class, so changing mode
-   and changing theme never interfere with or extend each other's transition
-   window. Also transitions font-family, since mode (unlike theme) can change
-   the active typeface.
+   Brief, scoped transition applied via the cm-mode-switching class while the
+   mode changes. Also transitions font-family, since mode can change the
+   active typeface.
    ========================================================================== */
 html.cm-mode-switching,
 html.cm-mode-switching body,
