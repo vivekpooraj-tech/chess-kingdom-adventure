@@ -89,6 +89,13 @@ check("week strip is a labelled list with text alternatives", /aria-label="Chess
 check("reduced motion respected", /prefers-reduced-motion: reduce/.test(atCss));
 check("phone greeting stays clear of the fixed header pill", /@media \(max-width: 639px\)[\s\S]*?\.at-greeting \{ margin-top: 1rem/.test(atCss));
 
+console.log("=== Missing display name must never crash the page ===");
+check("AtelierHome never calls a string method on displayName directly (children.display_name can be null)", !/displayName\.(trim|split|toString)\(/.test(home) && /displayName: string \| null \| undefined/.test(home));
+const nameExpr = home.match(/const firstName = ([^;]+);/)[1];
+const firstNameOf = new Function("displayName", "return " + nameExpr);
+check("first name: null / undefined / empty / spaces -> no name (no throw); 'Dev Test Child' -> 'Dev'; one word kept", firstNameOf(null) === null && firstNameOf(undefined) === null && firstNameOf("") === null && firstNameOf("   ") === null && firstNameOf("Dev Test Child") === "Dev" && firstNameOf("  Leo ") === "Leo");
+check("greeting renders without a name instead of 'undefined' / an empty emphasis", /name\?: string \| null/.test(live) && /name \? \(/.test(live));
+
 console.log("=== Nothing else was changed ===");
 let changed = "";
 try { changed = execSync("git diff --name-only", { cwd: ROOT }).toString(); } catch (e) {}

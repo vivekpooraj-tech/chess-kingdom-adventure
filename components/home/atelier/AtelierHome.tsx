@@ -126,7 +126,8 @@ export function AtelierHome({
   neutralTone,
 }: {
   childId: string;
-  displayName: string;
+  /** children.display_name — can be null/empty on older profiles, so it is never assumed to be a string. */
+  displayName: string | null | undefined;
   rating: number | null;
   streak: number;
   totalSolved: number;
@@ -141,7 +142,7 @@ export function AtelierHome({
   const preview = sessionPreview(primaryAction);
   // Strategic Levers has no per-child solved count, so it shows a real fact about the course instead.
   const strategyLessons = getCourse("strategy")?.lessons.length ?? null;
-  const firstName = displayName.trim().split(/\s+/)[0] || displayName;
+  const firstName = (displayName ?? "").trim().split(/\s+/)[0] || null;
   const percent = training.progress ? Math.round((training.progress.have / training.progress.total) * 100) : 0;
 
   // "Train next": a real recurring weakness if there is one; otherwise the Chess Mind category practised least.

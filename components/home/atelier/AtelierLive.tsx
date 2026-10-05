@@ -33,7 +33,7 @@ function partOfDay(): string {
 const GREETING_SCRIPT = `(function(){var e=document.getElementById("at-greeting-part");if(!e)return;var h=new Date().getHours();e.textContent=h<12?"Good morning":h<18?"Good afternoon":"Good evening"})()`;
 
 /** "Good evening, Leo." — the part of day comes from the viewer's own clock (the server cannot know it). */
-export function AtelierGreeting({ name }: { name: string }) {
+export function AtelierGreeting({ name }: { name?: string | null }) {
   const [part, setPart] = useState("Good evening");
   useIsoLayoutEffect(() => {
     setPart(partOfDay());
@@ -43,7 +43,12 @@ export function AtelierGreeting({ name }: { name: string }) {
       <span id="at-greeting-part" suppressHydrationWarning>
         {part}
       </span>
-      , <em>{name}</em>.
+      {name ? (
+        <>
+          , <em>{name}</em>
+        </>
+      ) : null}
+      .
       <script dangerouslySetInnerHTML={{ __html: GREETING_SCRIPT }} />
     </h1>
   );
