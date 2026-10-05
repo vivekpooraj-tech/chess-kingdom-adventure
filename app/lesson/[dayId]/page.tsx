@@ -336,7 +336,10 @@ export default function LessonPage() {
 
   return (
     <ScreenTimeGate childId={childId}>
-      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-6 px-6 py-8">
+      {/* Tighter top padding and gaps: the header's own "Back to Lessons" row is a 44px target, so the
+          page no longer needs 32px of padding above it, and 16px gaps keep a board step (board + Continue)
+          within one 844px phone screen. */}
+      <main className="min-h-screen bg-premium-midnight flex flex-col items-center gap-4 px-6 pt-4 pb-8">
         <LessonHeader
           zoneName={zone.name}
           zoneEmoji={zone.emoji}

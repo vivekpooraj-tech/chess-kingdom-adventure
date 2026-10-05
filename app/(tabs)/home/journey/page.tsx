@@ -45,7 +45,7 @@ export default async function KingdomJourneyPage() {
   return (
     <TabPageShell>
       <div>
-        <h1 className={TEXT.display}>Kingdom Story Map {currentZone.emoji}</h1>
+        <h1 className={TEXT.display}>Lessons {currentZone.emoji}</h1>
         <p className={`${TEXT.body} mt-2`}>
           Look back on the story you played through, day by day. Chess School is your course now —
           this is just the map of how you got here.

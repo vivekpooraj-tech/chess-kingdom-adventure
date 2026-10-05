@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { backLabel } from "@/lib/navigation/destinations";
 import { useRouter } from "next/navigation";
 import { Chess } from "chess.js";
 import { ChessBoard } from "@/components/board/ChessBoard";
@@ -252,6 +253,7 @@ export function TacticsTrainer({ focusSkill }: { focusSkill?: string | null } = 
       title={<PuzzleArenaHeading fallback="Tactics Trainer" />}
       // Full-screen in every orientation, so this is the only way back to
       // the puzzle hub.
+      exitLabel={backLabel("PUZZLES")}
       onExit={() => router.push(world === "classic" || world === "atelier" || world === "enchanted" ? `/puzzles?world=${world}` : "/puzzles")}
       preserveBottomNav={false}
       boardMeta={

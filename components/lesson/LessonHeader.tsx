@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CloseIcon } from "@/components/nav/icons";
+import { backLabel, destinationHref } from "@/lib/navigation/destinations";
 import { TEXT } from "@/lib/designSystem";
 
 /**
@@ -13,7 +13,7 @@ export function LessonHeader({
   title,
   stepIndex,
   totalSteps,
-  exitHref = "/home",
+  exitHref = destinationHref("LESSONS"),
   courseTotalDays,
 }: {
   zoneName?: string;
@@ -38,7 +38,16 @@ export function LessonHeader({
   const progressPercent = Math.round(((stepIndex + 1) / totalSteps) * 100);
 
   return (
-    <div className="w-full max-w-lg flex flex-col gap-2">
+    <div className="w-full max-w-lg flex flex-col gap-1">
+      {/* The way out of a lesson: a visible, named parent link (the lesson list it was opened
+          from), 44px tall. It replaces a 32px icon-only "Exit lesson" button. */}
+      <Link
+        href={exitHref}
+        aria-label={backLabel("LESSONS")}
+        className="-ml-1 inline-flex min-h-[44px] min-w-[44px] items-center self-start rounded px-1 font-classic-body text-sm text-premium-ivory/80 underline underline-offset-2 hover:text-premium-ivory focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
+      >
+        ← {backLabel("LESSONS")}
+      </Link>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className={`${TEXT.meta} text-premium-gold`}>
@@ -51,13 +60,6 @@ export function LessonHeader({
             {courseTotalDays ? ` of ${courseTotalDays}` : ""} · {title}
           </p>
         </div>
-        <Link
-          href={exitHref}
-          aria-label="Exit lesson"
-          className="flex-none w-8 h-8 rounded-full flex items-center justify-center text-premium-ivory/50 hover:text-premium-ivory hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
-        >
-          <CloseIcon className="w-4 h-4" />
-        </Link>
       </div>
 
       <div className="flex items-center gap-2">

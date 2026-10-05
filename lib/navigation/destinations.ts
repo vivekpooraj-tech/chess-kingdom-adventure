@@ -12,6 +12,7 @@ export type DestinationKey =
   | "PLAY"
   | "PUZZLES"
   | "LEARN"
+  | "LESSONS"
   | "ACADEMY"
   | "CHESS_SCHOOL"
   | "TRAIN_YOUR_MIND"
@@ -23,6 +24,8 @@ export const DESTINATIONS: Record<DestinationKey, { href: string; label: string 
   PLAY: { href: "/play", label: "Play" },
   PUZZLES: { href: "/puzzles", label: "Puzzles" },
   LEARN: { href: "/learn", label: "Learn" },
+  // The lesson list (Kingdom Story Map) that /lesson/<day> is opened from.
+  LESSONS: { href: "/home/journey", label: "Lessons" },
   ACADEMY: { href: "/academy", label: "Academy" },
   // /chess-school redirects to its classroom, which is the Chess School's main screen.
   CHESS_SCHOOL: { href: "/chess-school", label: "Chess School" },

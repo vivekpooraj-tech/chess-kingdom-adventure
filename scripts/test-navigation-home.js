@@ -136,5 +136,26 @@ check("the strip is still a single link to /profile with a >=48px target", /href
 check("Classic Pro avatar is 4rem with a ~2.15rem glyph (was 3rem / 1.45rem)", /\.ch-player__avatar \{[^}]*width:\s*4rem[^}]*font-size:\s*2\.15rem/.test(css.replace(/\r?\n/g, " ")));
 check("fallback avatar still renders (emoji fallback and default gradient)", /avatar\?\.emoji \?\? "🧑"/.test(strip2) && /avatar\?\.emoji \?\? "♔"/.test(read("components/home/classic/ClassicHome.tsx")));
 
-console.log(`\n=== NAVIGATION: ${pass} passed, ${fails.length} failed ===`);
+console.log("\n=== F. Puzzle child pages and the lesson screen have a named way back ===");
+check("Puzzles destination is /puzzles, Lessons destination is the lesson list /home/journey", D.PUZZLES.href === "/puzzles" && D.LESSONS && D.LESSONS.href === "/home/journey" && D.LESSONS.label === "Lessons");
+const trainer = read("components/puzzles/TacticsTrainer.tsx");
+const focus = read("components/chess/ChessFocusLayout.tsx");
+check("/puzzles/tactics: the focus layout's exit reads 'Back to Puzzles' and goes to /puzzles (world preserved)", /exitLabel=\{backLabel\("PUZZLES"\)\}/.test(trainer) && /router\.push\([^)]*`\/puzzles\?world=\$\{world\}`[^)]*"\/puzzles"/.test(trainer));
+check("ChessFocusLayout: exitLabel is optional, falls back to the plain 'Exit', and the button stays 44px", /exitLabel\?: string/.test(focus) && /aria-label=\{exitLabel \?\? "Exit"\}/.test(focus) && /min-h-\[44px\]/.test(focus));
+check("other ChessFocusLayout screens are unchanged (only TacticsTrainer passes exitLabel)", SRC.filter((f) => f.endsWith(".tsx") && /exitLabel=/.test(read(f))).join() === "components/puzzles/TacticsTrainer.tsx");
+const themes = read("app/(tabs)/puzzles/tactics/themes/page.tsx");
+check("/puzzles/tactics/themes: a visible 'Back to Puzzles' link to /puzzles, 44px tall", /href=\{destinationHref\("PUZZLES"\)\}[\s\S]*?min-h-\[44px\][\s\S]*?\{backLabel\("PUZZLES"\)\}/.test(themes));
+const lh = read("components/lesson/LessonHeader.tsx");
+check("lesson screen: visible 'Back to Lessons' link replaces the 32px icon-only Exit lesson", /\{backLabel\("LESSONS"\)\}/.test(lh) && !/Exit lesson/.test(lh.replace(/\/\*[\s\S]*?\*\//g, "")) && !/w-8 h-8/.test(lh));
+check("lesson back link: aria-label, >=44x44 target, default exit is the lesson list (not Home, not a hard-coded /lesson)", /aria-label=\{backLabel\("LESSONS"\)\}/.test(lh) && /min-h-\[44px\] min-w-\[44px\]/.test(lh) && /exitHref = destinationHref\("LESSONS"\)/.test(lh));
+check("lesson exitHref prop is still overridable (existing exit behaviour preserved)", /exitHref\?: string/.test(lh));
+check("no generic 'Back' / legacy wording in the new controls", !/Back to Kingdom|Chess Kingdom/.test(lh + themes + focus) && !/>\s*Back\s*</.test(lh + themes));
+const lessonPage = read("app/lesson/[dayId]/page.tsx");
+check("the lesson page still renders LessonHeader and still finishes to Home as before", /<LessonHeader/.test(lessonPage) && /router\.push\("\/home"\)/.test(lessonPage));
+check("the lesson list page exists at the destination", exists("app/(tabs)/home/journey/page.tsx"));
+const journey = read("app/(tabs)/home/journey/page.tsx");
+check("lesson list heading reads 'Lessons' (matches 'Back to Lessons'); no 'Kingdom Story Map' heading; route unchanged", /<h1[^>]*>Lessons \{currentZone\.emoji\}<\/h1>/.test(journey) && !/<h1[^>]*>[^<]*Kingdom Story Map/.test(journey) && D.LESSONS.href === "/home/journey");
+check("lesson page: tighter top padding and gaps (pt-4 pb-8 gap-4) so a board step fits an 844px phone; header link stays 44px", /flex flex-col items-center gap-4 px-6 pt-4 pb-8">\s*<LessonHeader/.test(lessonPage) && /min-h-\[44px\] min-w-\[44px\]/.test(lh));
+
+console.log(`\n=== NAVIGATION:${pass} passed, ${fails.length} failed ===`);
 if (fails.length) { console.log(fails.join("\n")); process.exit(1); }

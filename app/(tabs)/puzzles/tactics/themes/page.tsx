@@ -12,6 +12,7 @@ import { getSkill } from "@/lib/analysis/skills";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { PuzzleProgressPanel } from "@/components/puzzles/PuzzleProgressPanel";
 import { TEXT } from "@/lib/designSystem";
+import { backLabel, destinationHref } from "@/lib/navigation/destinations";
 
 export const metadata = {
   title: "Puzzle Themes · Chess Mind",
@@ -72,6 +73,12 @@ export default async function PuzzleThemesPage() {
 
   return (
     <TabPageShell maxWidth="wide">
+      <Link
+        href={destinationHref("PUZZLES")}
+        className="inline-flex min-h-[44px] items-center self-start font-body text-sm text-premium-ivory/80 underline underline-offset-2 hover:text-premium-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded"
+      >
+        ← {backLabel("PUZZLES")}
+      </Link>
       <header className="w-full">
         <p className={`${TEXT.meta} text-premium-gold`}>🎯 Puzzle Themes</p>
         <h1 className={`${TEXT.display} mt-1`}>Practise by pattern</h1>

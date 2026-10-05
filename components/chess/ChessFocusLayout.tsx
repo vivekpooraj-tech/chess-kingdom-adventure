@@ -39,6 +39,8 @@ const SIDE_PANEL_MAX = 360;
 export type ChessFocusLayoutProps = {
   title: ReactNode;
   onExit?: () => void;
+  /** Visible name of where onExit goes (e.g. "Back to Puzzles"). Omit for the plain "Exit" control. */
+  exitLabel?: string;
   opponentRow?: ReactNode;
   playerRow?: ReactNode;
   renderBoard: (boardSize: number) => ReactNode;
@@ -70,6 +72,7 @@ export type ChessFocusLayoutProps = {
 export function ChessFocusLayout({
   title,
   onExit,
+  exitLabel,
   opponentRow,
   playerRow,
   boardMeta,
@@ -211,10 +214,16 @@ export function ChessFocusLayout({
     >
       <button
         onClick={onExit}
-        aria-label="Exit"
+        aria-label={exitLabel ?? "Exit"}
         className="flex items-center gap-1.5 font-classic-body text-xs text-premium-ivory/55 hover:text-premium-ivory transition-colors rounded min-h-[44px] px-1"
       >
-        <CloseIcon className="w-4 h-4" /> Exit
+        {exitLabel ? (
+          <>← {exitLabel}</>
+        ) : (
+          <>
+            <CloseIcon className="w-4 h-4" /> Exit
+          </>
+        )}
       </button>
       {!isCompactLandscape && (
         <h1 className="font-classic-display text-sm sm:text-base text-premium-ivory/85 truncate px-2">
