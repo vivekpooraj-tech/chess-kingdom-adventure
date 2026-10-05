@@ -2383,11 +2383,12 @@ html[data-mode="adult"] .world-scope:not([data-world-resolved]) .world-branch--o
   .at-cta, .at-lab__card { transition: none; }
 }
 
-/* Atelier mode: the persistent chrome (side nav, top bar, bottom nav) follows the graphite palette
+/* Atelier mode: the persistent chrome (side nav, top bar, bottom nav and the phone's floating Learn/More pill) follows the graphite palette
    instead of the shared navy, so no blue shows next to the Atelier Home. Scoped to those elements only. */
 html[data-mode="adult"] .app-sidenav,
 html[data-mode="adult"] .app-topbar,
-html[data-mode="adult"] .layout-bottom-nav {
+html[data-mode="adult"] .layout-bottom-nav,
+html[data-mode="adult"] .phone-utility-icons {
   --cm-midnight-deep: 14 11 14;
   --cm-navy: 36 20 24;
   --cm-navy-light: 58 28 34;
