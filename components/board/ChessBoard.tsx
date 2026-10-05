@@ -784,9 +784,17 @@ export function ChessBoard({
             // class (which the skin's inline backgroundColor would hide).
             // Image-backed skins stay transparent otherwise, letting the
             // image show through.
+            // Subtle, readable-on-green highlights (the familiar yellow-green tints):
+            // selected is a touch stronger than the last-move tint.
             const squareBackground =
-              isLastMove && !isSelected
-                ? "rgba(205, 210, 106, 0.5)"
+              isSelected
+                ? isDark
+                  ? "#A9B93A"
+                  : "#E6E65A"
+                : isLastMove
+                ? isDark
+                  ? "#BACA44"
+                  : "#F6F669"
                 : skin.boardImageUrl
                 ? "transparent"
                 : isDark
@@ -804,8 +812,8 @@ export function ChessBoard({
             const labelColorClass = skin.coordinateColor
               ? undefined
               : isDark
-              ? "text-white/80"
-              : "text-kingdom-night/50";
+              ? "text-[#EEEED2]"
+              : "text-[#769656]";
             const labelColorStyle = skin.coordinateColor ? { color: skin.coordinateColor } : undefined;
 
             return (
@@ -815,21 +823,20 @@ export function ChessBoard({
                 onClick={() => handleSquareClick(square)}
                 className={clsx(
                   "relative flex items-center justify-center transition-colors w-full h-full overflow-visible",
-                  isSelected && "ring-4 ring-inset ring-kingdom-gold",
-                  isCheckedKing && !isSelected && "ring-4 ring-inset ring-red-500/80"
+                  isCheckedKing && !isSelected && "ring-2 ring-inset ring-red-600/70"
                 )}
                 style={{
                   backgroundColor: isCheckedKing
-                    ? "rgba(239, 68, 68, 0.35)"
+                    ? "rgba(235, 64, 52, 0.55)"
                     : squareBackground,
                 }}
                 aria-label={`${square}${piece ? ` — ${piece.color === "w" ? "white" : "black"} ${piece.type}` : ""}${isCheckedKing ? " — in check" : ""}`}
               >
                 {isLegalTarget && !piece && (
-                  <span className="absolute w-1/3 h-1/3 rounded-full bg-kingdom-gold/70" />
+                  <span className="absolute w-1/3 h-1/3 rounded-full bg-black/20" />
                 )}
                 {isLegalTarget && piece && (
-                  <span className="absolute inset-1 rounded-full ring-4 ring-kingdom-coral/70" />
+                  <span className="absolute inset-0.5 rounded-full ring-4 ring-black/20" />
                 )}
                 {showFileLabel && (
                   <span

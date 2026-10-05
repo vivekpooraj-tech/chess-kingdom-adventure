@@ -286,7 +286,7 @@ function Frame({
   const world = useWorld();
   return (
     <main
-      className={`sch-session relative isolate mx-auto flex w-full min-w-0 max-w-full flex-col gap-5 overflow-x-hidden px-2 pb-16 pt-4 sm:max-w-xl sm:px-4 md:max-w-4xl lg:max-w-3xl ${
+      className={`sch-session relative isolate mx-auto flex w-full min-w-0 max-w-full flex-col gap-4 overflow-x-hidden px-2 pb-[max(2rem,env(safe-area-inset-bottom,0px))] pt-3 sm:max-w-xl sm:px-4 md:max-w-4xl lg:max-w-3xl ${
         session.starred ? "school-starred" : ""
       }`}
     >

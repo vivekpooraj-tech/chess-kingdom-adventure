@@ -1,10 +1,11 @@
 "use client";
 
-import { cloneElement, isValidElement, useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
+import { cloneElement, isValidElement, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { TeachingOverlay } from "@/components/board/TeachingOverlay";
 import { SchoolCta } from "./SchoolCta";
 import { TEXT } from "@/lib/designSystem";
+import { fitBoardWidth } from "@/lib/school/v2/boardFit";
 import type { TeachingArrow } from "@/lib/board/teachingOverlay";
 import { moveMatches, canonicalSan } from "@/lib/school/v2/moves";
 import { drillOutcome } from "@/lib/school/v2/progress";
@@ -52,10 +53,68 @@ export const BOARD = 720;
  * Sizes the lesson board from available viewport/layout space. ChessBoard uses
  * focusMode inside so width follows this shell instead of the global mobile
  * breakout margins (which assume px-6 parents School does not use).
+ *
+ * Two limits apply. The CSS width caps the board by viewport WIDTH (and a sane
+ * ceiling). The measured fit (lib/school/v2/boardFit.ts) then caps it by viewport
+ * HEIGHT once the rest of the screen — header, coach line, text, primary button —
+ * is accounted for, so a whole step fits on one screen with no scrolling. It is
+ * measured when the step mounts and when the viewport changes, deliberately NOT
+ * as later feedback text appears, so the board never resizes under a child's finger.
  */
 export function SchoolBoardFrame({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [maxWidth, setMaxWidth] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = el.closest<HTMLElement>(".sch-session") ?? document.documentElement;
+    const measure = () => {
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      // Measure the UNCONSTRAINED frame (our own max-width lifted for a moment, with no
+      // paint in between) so the result never depends on a previous fit — no oscillation.
+      const applied = el.style.maxWidth;
+      el.style.maxWidth = "";
+      const frameH = el.offsetHeight;
+      const frameW = el.offsetWidth;
+      const above = root.getBoundingClientRect().top + window.scrollY;
+      const columnHeight = root.scrollHeight;
+      el.style.maxWidth = applied;
+      if (!frameH || !frameW) return;
+      // Everything on the page that is not the board: space above the lesson column,
+      // plus the column's own content, minus the board frame itself.
+      const nonBoardHeight = above + columnHeight - frameH;
+      const fit = fitBoardWidth({ viewportHeight, nonBoardHeight, frameExtra: frameH - frameW, cssWidth: frameW });
+      setMaxWidth((prev) => {
+        if (fit === null) return prev === null ? prev : null;
+        return prev !== null && Math.abs(prev - fit) < 2 ? prev : fit;
+      });
+    };
+
+    measure();
+    // Fonts, images and the resumed step settle in over the first moments after mount;
+    // keep re-measuring until then. After that the board is left alone (so it never
+    // resizes when feedback text appears) and only a viewport change re-fits it.
+    const settle = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    settle?.observe(root);
+    const settled = window.setTimeout(() => settle?.disconnect(), 1500);
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    window.visualViewport?.addEventListener("resize", measure);
+    void document.fonts?.ready.then(measure);
+    return () => {
+      window.clearTimeout(settled);
+      settle?.disconnect();
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+    };
+  }, []);
+
   return (
     <div
+      ref={ref}
+      style={maxWidth === null ? undefined : { maxWidth }}
       className="world-school-board mx-auto w-full max-w-full [width:min(calc(100vw-1rem),calc(100vw-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)-1rem),88dvh,720px)] md:[width:min(calc(100vw-2rem),min(85dvh,720px),720px)] lg:[width:min(100%,min(88dvh,680px),720px)]"
     >
       {children}
@@ -106,12 +165,12 @@ function SchoolBoardWithOverlay({
 }
 
 const PIECE_INTRO_IMAGE: Record<string, string> = {
-  pawn: "/pieces/wood-classic/light/pawn.svg",
-  rook: "/pieces/wood-classic/light/rook.svg",
-  knight: "/pieces/wood-classic/light/knight.svg",
-  bishop: "/pieces/wood-classic/light/bishop.svg",
-  queen: "/pieces/wood-classic/light/queen.svg",
-  king: "/pieces/wood-classic/light/king.svg",
+  pawn: "/pieces/wikimedia-classic/light/pawn.svg",
+  rook: "/pieces/wikimedia-classic/light/rook.svg",
+  knight: "/pieces/wikimedia-classic/light/knight.svg",
+  bishop: "/pieces/wikimedia-classic/light/bishop.svg",
+  queen: "/pieces/wikimedia-classic/light/queen.svg",
+  king: "/pieces/wikimedia-classic/light/king.svg",
 };
 
 interface StepProps<T> {

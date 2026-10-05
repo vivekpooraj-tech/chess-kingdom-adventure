@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChessBoard } from "@/components/board/ChessBoard";
 import { PieceImage } from "@/components/board/PieceImage";
 import { PIECE_SETS, PIECE_SYMBOL_BY_NAME } from "@/content/pieceSets";
-import { BOARD_SKINS } from "@/content/boardSkins";
+import { BOARD_SKINS, effectiveBoardSkinId } from "@/content/boardSkins";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildPieceSet, updateChildBoardSkin } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
@@ -53,7 +53,9 @@ export default function CustomizeChessboardPage() {
       setActiveChildIdClient(child.id);
       setChildId(child.id);
       setPieceSetId(child.piece_set_id);
-      setBoardSkinId(child.board_skin_id);
+      // Show the board that is actually in effect, so a retired/unknown saved id still marks
+      // the Standard board as selected. Display only: nothing is written until the child picks one.
+      setBoardSkinId(effectiveBoardSkinId(child.board_skin_id));
     }
     load();
   }, [router]);
