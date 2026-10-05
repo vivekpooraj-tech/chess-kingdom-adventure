@@ -2042,3 +2042,366 @@ html[data-layout="phone"] .sch-home {
     height: 1.55rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+   MASTER TRAINING ATELIER HOME — `.at-*` (components/home/atelier)
+   Graphite + deep plum + oxblood + warm ivory, with one restrained chartreuse accent.
+   No blue, navy, cyan or sapphire anywhere in this layout.
+   -------------------------------------------------------------------------- */
+html[data-mode="kids"] .world-scope:not([data-world-resolved]) .world-branch--atelier,
+html:not([data-mode="kids"]):not([data-mode="adult"]) .world-scope:not([data-world-resolved]) .world-branch--atelier,
+html[data-mode="adult"] .world-scope:not([data-world-resolved]) .world-branch--other.world-branch--has-atelier {
+  display: none;
+}
+
+.at-home {
+  --at-graphite: 20 17 20;
+  --at-graphite-hi: 31 27 32;
+  --at-plum: 46 27 50;
+  --at-plum-deep: 31 19 35;
+  --at-oxblood: 128 28 42;
+  --at-oxblood-hi: 164 40 58;
+  --at-ivory: 245 236 224;
+  --at-muted: 197 184 176;
+  --at-chart: 184 214 64;
+  --at-line: 245 236 224;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  width: 100%;
+  min-width: 0;
+  color: rgb(var(--at-ivory));
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+}
+
+.at-home *,
+.at-home *::before,
+.at-home *::after {
+  box-sizing: border-box;
+}
+
+.at-eyebrow {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(var(--at-muted));
+}
+.at-eyebrow--accent { color: rgb(var(--at-chart)); }
+.at-eyebrow--oxblood { color: rgb(226 140 150); }
+
+.at-display,
+.at-greeting,
+.at-h2 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: rgb(var(--at-ivory));
+  margin: 0;
+}
+.at-display { font-size: clamp(1.9rem, 1.2rem + 3vw, 3.4rem); line-height: 1.05; font-style: italic; }
+.at-display--sm { font-size: clamp(1.6rem, 1.1rem + 2vw, 2.4rem); font-style: normal; }
+.at-greeting { font-size: clamp(2rem, 1.2rem + 3.6vw, 3.6rem); line-height: 1.04; margin-top: 0.35rem; }
+.at-greeting em { font-style: italic; color: rgb(var(--at-chart)); }
+.at-h2 { font-size: 1.2rem; line-height: 1.25; display: block; }
+
+.at-sub,
+.at-note {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: rgb(var(--at-muted));
+}
+.at-sub { margin-top: 0.6rem; }
+.at-note { font-size: 0.875rem; }
+
+.at-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgb(var(--at-ivory));
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgb(var(--at-ivory) / 0.4);
+}
+.at-link:hover { color: rgb(var(--at-chart)); }
+
+.at-card {
+  position: relative;
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid rgb(var(--at-line) / 0.09);
+  border-radius: 0.875rem;
+  background: linear-gradient(160deg, rgb(var(--at-plum) / 0.82), rgb(var(--at-graphite) / 0.94));
+  box-shadow: 0 24px 40px -28px rgb(0 0 0 / 0.85);
+}
+.at-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.at-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.7rem 1.4rem;
+  border-radius: 0.5rem;
+  background: rgb(var(--at-chart));
+  color: rgb(var(--at-graphite));
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform 100ms ease, filter 100ms ease;
+}
+.at-cta:hover { filter: brightness(1.06); }
+.at-cta:active { transform: scale(0.985); }
+.at-cta--oxblood {
+  align-self: flex-start;
+  background: rgb(var(--at-oxblood));
+  color: rgb(var(--at-ivory));
+  box-shadow: 0 10px 24px -12px rgb(var(--at-oxblood-hi) / 0.8);
+}
+
+/* Header */
+.at-top {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.at-focuschip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-self: flex-start;
+  min-height: 48px;
+  padding: 0.65rem 1rem;
+  border: 1px solid rgb(var(--at-line) / 0.14);
+  border-radius: 0.75rem;
+  background: rgb(var(--at-plum-deep) / 0.7);
+  color: rgb(var(--at-ivory));
+  text-decoration: none;
+}
+.at-focuschip strong { font-family: var(--font-fraunces), Georgia, serif; font-size: 1rem; font-weight: 600; }
+
+/* Grids */
+.at-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.at-side { display: grid; gap: 1.25rem; align-content: start; min-width: 0; }
+
+/* Current training */
+.at-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-color: rgb(var(--at-chart) / 0.28);
+  background:
+    radial-gradient(70% 90% at 100% 0%, rgb(var(--at-oxblood) / 0.34), transparent 60%),
+    linear-gradient(160deg, rgb(var(--at-plum)), rgb(var(--at-graphite)));
+}
+.at-hero__main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.at-hero__visual { display: none; margin: 0; min-width: 0; }
+.at-home { --at-board: 240px; --at-board-scale: 0.8; }
+/* The board is drawn once at 300px and scaled, so the hero text keeps a comfortable column on 1024-1359px screens. */
+.at-hero__boardwrap {
+  width: var(--at-board);
+  height: var(--at-board);
+  margin-inline: auto;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 28px 48px -26px rgb(0 0 0 / 0.9), 0 0 0 1px rgb(var(--at-line) / 0.12);
+}
+.at-hero__boardscale { width: 300px; transform: scale(var(--at-board-scale)); transform-origin: 0 0; }
+.at-hero__visual--board figcaption { margin-top: 0.75rem; text-align: center; max-width: var(--at-board); margin-inline: auto; }
+/* No board to show for this step: a quiet, purely decorative board grid (no pieces, no position). */
+.at-hero__visual--grid {
+  width: var(--at-board);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  border-radius: 0.75rem;
+  background: repeating-conic-gradient(rgb(var(--at-ivory) / 0.07) 0 25%, transparent 0 50%) 0 0 / calc(var(--at-board) / 4) calc(var(--at-board) / 4);
+  -webkit-mask-image: radial-gradient(closest-side, #000 35%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 35%, transparent 100%);
+}
+.at-hero__title { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; min-width: 0; }
+.at-hero__numeral {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: clamp(2.6rem, 1.6rem + 4vw, 5rem);
+  line-height: 0.9;
+  font-weight: 700;
+  color: rgb(var(--at-chart));
+  letter-spacing: -0.04em;
+}
+.at-hero__sub { margin: 0; max-width: 46ch; font-size: 1.0625rem; line-height: 1.5; color: rgb(var(--at-muted)); }
+.at-progress { display: grid; gap: 0.5rem; margin-top: 0.25rem; }
+.at-progress__bar { height: 8px; border-radius: 999px; background: rgb(var(--at-ivory) / 0.12); overflow: hidden; }
+.at-progress__fill { height: 100%; border-radius: 999px; background: rgb(var(--at-chart)); }
+.at-progress__label { display: flex; justify-content: space-between; gap: 0.5rem; margin: 0; font-size: 0.75rem; color: rgb(var(--at-muted)); font-variant-numeric: tabular-nums; }
+.at-hero__actions { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; margin-top: 0.5rem; }
+
+/* Your form */
+.at-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+  margin: 1rem 0 0;
+}
+.at-stats div { min-width: 0; }
+.at-stats dt { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--at-muted)); }
+.at-stats dd {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: rgb(var(--at-ivory));
+  font-variant-numeric: tabular-nums;
+}
+.at-trend { display: grid; gap: 0.4rem; margin-top: 1rem; color: rgb(var(--at-chart)); }
+.at-spark { display: block; width: 100%; height: 44px; }
+.at-form .at-note { margin-top: 0.9rem; }
+
+/* Train next */
+.at-next {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-color: rgb(var(--at-oxblood-hi) / 0.4);
+  background: linear-gradient(160deg, rgb(var(--at-oxblood) / 0.3), rgb(var(--at-graphite)));
+}
+
+/* Training lab */
+.at-lab { display: flex; flex-direction: column; gap: 1rem; }
+.at-lab__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.at-lab__grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); }
+.at-lab__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 168px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.at-lab__card:hover { border-color: rgb(var(--at-chart) / 0.45); }
+.at-lab__card:active { transform: scale(0.992); }
+.at-lab__foot { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: auto; padding-top: 0.75rem; }
+.at-lab__count { font-size: 0.8125rem; color: rgb(var(--at-muted)); }
+.at-lab__count strong { font-family: var(--font-fraunces), Georgia, serif; font-size: 1.35rem; font-weight: 600; color: rgb(var(--at-ivory)); margin-right: 0.2rem; }
+.at-lab__go { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--at-chart)); }
+.at-lab__card--pattern { background: radial-gradient(80% 100% at 100% 0%, rgb(var(--at-chart) / 0.1), transparent 55%), linear-gradient(160deg, rgb(var(--at-plum)), rgb(var(--at-graphite))); }
+.at-lab__card--strategy { background: linear-gradient(160deg, rgb(var(--at-oxblood) / 0.28), rgb(var(--at-graphite))); }
+
+/* Today + momentum */
+.at-today { display: flex; flex-direction: column; gap: 0.85rem; }
+.at-challenge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  min-height: 72px;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgb(var(--at-chart) / 0.35);
+  border-radius: 0.75rem;
+  background: rgb(var(--at-graphite) / 0.7);
+  color: rgb(var(--at-ivory));
+  text-decoration: none;
+}
+.at-challenge--loading { height: 76px; }
+.at-challenge__copy { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.at-challenge__title { font-family: var(--font-fraunces), Georgia, serif; font-size: 1.35rem; font-weight: 600; }
+.at-challenge__cta { flex: none; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: rgb(var(--at-chart)); }
+.at-today [aria-labelledby="daily-quests-heading"] { margin-top: 0.25rem; }
+
+.at-momentum { display: flex; flex-direction: column; gap: 0.5rem; }
+.at-momentum__big { margin: 0.25rem 0 0.5rem; font-size: 0.9375rem; color: rgb(var(--at-muted)); }
+.at-momentum__big span { font-family: var(--font-fraunces), Georgia, serif; font-size: 2.4rem; font-weight: 600; color: rgb(var(--at-ivory)); margin-right: 0.3rem; }
+.at-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.4rem; list-style: none; margin: 0; padding: 0; }
+.at-week__day { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.at-week__dot { width: 100%; max-width: 34px; aspect-ratio: 1; border-radius: 999px; border: 1px solid rgb(var(--at-line) / 0.22); background: rgb(var(--at-graphite) / 0.6); }
+.at-week__day.is-on .at-week__dot { background: rgb(var(--at-chart)); border-color: rgb(var(--at-chart)); }
+.at-week__day.is-today .at-week__dot { box-shadow: 0 0 0 2px rgb(var(--at-ivory) / 0.5); }
+.at-week__label { font-size: 0.6875rem; font-weight: 700; color: rgb(var(--at-muted)); }
+
+/* Phone: the fixed utility pill sits top-right, so keep the greeting line clear of it */
+@media (max-width: 639px) {
+  .at-greeting { margin-top: 1rem; }
+}
+
+/* Hero visual: shown from tablet width up, beside the editorial text */
+@media (min-width: 768px) {
+  .at-hero { grid-template-columns: minmax(0, 1fr) var(--at-board); column-gap: 2.5rem; }
+  .at-hero__visual { display: block; }
+}
+
+/* Tablet */
+@media (min-width: 640px) {
+  .at-top { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+  .at-focuschip { align-self: flex-end; min-width: 14rem; }
+  .at-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .at-lab__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .at-lab__card--reaction { grid-column: 1 / -1; min-height: 140px; }
+  .at-grid--bottom { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+}
+
+/* Desktop — spacious and editorial, with the asymmetric lab */
+@media (min-width: 1024px) {
+  .at-home { gap: 2.75rem; max-width: 1360px; margin-inline: auto; padding-block: 0.5rem 1rem; }
+  .at-card { padding: 1.6rem; }
+  .at-grid--top { grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr); gap: 1.75rem; align-items: stretch; }
+  .at-side { grid-template-columns: minmax(0, 1fr); gap: 1.75rem; }
+  .at-hero { padding: 2.25rem; min-height: 400px; column-gap: 3rem; }
+  .at-hero__main { gap: 1.25rem; }
+  .at-lab__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1.5rem; }
+  .at-lab__card--pattern { grid-column: span 7; min-height: 210px; }
+  .at-lab__card--spatial { grid-column: span 5; min-height: 210px; }
+  .at-lab__card--openings,
+  .at-lab__card--strategy,
+  .at-lab__card--reaction { grid-column: span 4; }
+  .at-grid--bottom { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1.75rem; }
+}
+
+@media (min-width: 1360px) {
+  .at-home { --at-board: 300px; --at-board-scale: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .at-cta, .at-lab__card { transition: none; }
+}
+
+/* Atelier mode: the persistent chrome (side nav, top bar, bottom nav) follows the graphite palette
+   instead of the shared navy, so no blue shows next to the Atelier Home. Scoped to those elements only. */
+html[data-mode="adult"] .app-sidenav,
+html[data-mode="adult"] .app-topbar,
+html[data-mode="adult"] .layout-bottom-nav {
+  --cm-midnight-deep: 14 11 14;
+  --cm-navy: 36 20 24;
+  --cm-navy-light: 58 28 34;
+}
+
+/* Atelier-mode sidebar: the subdued secondary items and the "Explore" label were ivory at 45% / 35%, which on the
+   graphite chrome is ~4.0:1 / ~2.9:1. Raised to 55% / 52% (5.5:1 / 5.0:1; the Collapse control had the same 45% and gets 55%), still a step below the primary items
+   (60%) so the hierarchy is kept. Hover and the active state keep their own colours. */
+html[data-mode="adult"] .app-sidenav a.app-sidenav-item.min-h-\[42px\]:not([aria-current="page"]):not(:hover) {
+  color: rgb(245 236 224 / 0.55);
+}
+html[data-mode="adult"] .app-sidenav p.app-sidenav-label {
+  color: rgb(245 236 224 / 0.52);
+}
+html[data-mode="adult"] .app-sidenav button.app-sidenav-item:not(:hover) {
+  color: rgb(245 236 224 / 0.55);
+}

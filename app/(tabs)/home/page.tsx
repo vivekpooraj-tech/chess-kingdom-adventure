@@ -41,6 +41,7 @@ import { TabPageShell } from "@/components/nav/TabPageShell";
 import { WorldScope } from "@/components/layout/WorldScope";
 import { WorldBranch } from "@/components/layout/WorldBranch";
 import { ClassicHome } from "@/components/home/classic/ClassicHome";
+import { AtelierHome } from "@/components/home/atelier/AtelierHome";
 import { WorldSectionHeader, WorldText } from "@/components/home/WorldText";
 import { TEXT } from "@/lib/designSystem";
 import { parseWorldQuery } from "@/lib/world/worlds";
@@ -204,6 +205,24 @@ export default async function KingdomMapPage({
                 milestones={kingdomBonuses.map((b) => b.label)}
                 ageBand={child.age_band ?? null}
               />
+            }
+            atelier={
+              <>
+                <AtelierHome
+                  childId={child.id}
+                  displayName={child.display_name}
+                  rating={typeof child.rating === "number" ? child.rating : null}
+                  streak={chessMindStreak}
+                  totalSolved={chessMindTotalSolved}
+                  statsByModule={chessMindStatsByModule}
+                  openingCount={openingEncounters.length}
+                  primaryAction={primaryAction}
+                  focus={focusLead}
+                  questSet={questSet}
+                  neutralTone={neutralTone}
+                />
+                <ForParentsLink ageBand={child.age_band} />
+              </>
             }
             other={
           <>

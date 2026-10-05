@@ -48,8 +48,8 @@ interface DailyChallengeCardProps {
    * resolved this user's active child recently.
    */
   childId?: string;
-  /** Classic Pro Home's graphite study card. Same data, same link. */
-  variant?: "default" | "classic";
+  /** Classic Pro Home's graphite study card, or the Atelier Home's plum card. Same data, same link. */
+  variant?: "default" | "classic" | "atelier";
 }
 
 /**
@@ -112,6 +112,9 @@ export function DailyChallengeCard({ childId, variant = "default" }: DailyChalle
   }, []);
 
   if (state === "loading") {
+    if (variant === "atelier") {
+      return <div className="at-challenge at-challenge--loading animate-pulse" aria-hidden="true" />;
+    }
     if (variant === "classic") {
       return <div className="ch-card ch-challenge h-[112px] animate-pulse" aria-hidden="true" />;
     }
@@ -125,6 +128,18 @@ export function DailyChallengeCard({ childId, variant = "default" }: DailyChalle
   if (state === "unavailable") return null;
 
   const solved = state.result === "solved";
+
+  if (variant === "atelier") {
+    return (
+      <Link href={`/puzzles?id=${state.puzzleId}&daily=1`} className="at-challenge">
+        <span className="at-challenge__copy">
+          <span className="at-challenge__title">{solved ? "Solved for today" : `Checkmate in ${state.mateIn}`}</span>
+          {state.theme && <span className="at-note">{state.theme}</span>}
+        </span>
+        <span className="at-challenge__cta">{solved ? "Review" : "Solve puzzle"} <span aria-hidden="true">→</span></span>
+      </Link>
+    );
+  }
 
   if (variant === "classic") {
     const title = solved ? "Solved for today" : `Checkmate in ${state.mateIn}`;

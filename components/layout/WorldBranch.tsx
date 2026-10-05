@@ -12,18 +12,31 @@ import { useWorld, useWorldResolved } from "@/lib/world/WorldContext";
  * is dropped. Each tree keeps its wrapper position, so the visible one is
  * never remounted.
  */
-export function WorldBranch({ classic, other }: { classic: ReactNode; other: ReactNode }) {
+export function WorldBranch({
+  classic,
+  other,
+  atelier,
+}: {
+  classic: ReactNode;
+  other: ReactNode;
+  /** Optional dedicated Atelier layout. Without it, Atelier keeps sharing `other` with Enchanted Kingdom. */
+  atelier?: ReactNode;
+}) {
   const world = useWorld();
   const resolved = useWorldResolved();
   const isClassic = world === "classic";
+  const isAtelier = world === "atelier" && atelier !== undefined;
 
   return (
     <>
       <div className="world-branch world-branch--classic">
         {!resolved || isClassic ? classic : null}
       </div>
-      <div className="world-branch world-branch--other">
-        {!resolved || !isClassic ? other : null}
+      {atelier !== undefined && (
+        <div className="world-branch world-branch--atelier">{!resolved || isAtelier ? atelier : null}</div>
+      )}
+      <div className={`world-branch world-branch--other${atelier !== undefined ? " world-branch--has-atelier" : ""}`}>
+        {!resolved || (!isClassic && !isAtelier) ? other : null}
       </div>
     </>
   );
