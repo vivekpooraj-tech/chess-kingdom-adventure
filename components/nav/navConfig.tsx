@@ -37,14 +37,14 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   {
     label: "Home",
-    href: "/kingdom-map",
+    href: "/home",
     icon: HomeIcon,
     // /lesson (Kingdom Journey) is provisionally grouped under Home — it is
     // entered from a Home section today and has not yet been repositioned
     // into World (that migration is its own later implementation phase).
     // This keeps the active-tab highlight correct without pre-empting that
     // decision.
-    match: ["/kingdom-map", "/discover", "/piece-library", "/lesson"],
+    match: ["/home", "/discover", "/piece-library", "/lesson"],
   },
   {
     label: "School",
@@ -89,7 +89,7 @@ export const UTILITY_NAV_ITEMS: NavItem[] = [
     label: "More",
     href: "/more",
     icon: ProfileIcon,
-    match: ["/more", "/profile", "/kingdom-map/customize", "/parent-gate", "/parent-dashboard"],
+    match: ["/more", "/profile", "/profile/customize", "/parent-gate", "/parent-dashboard"],
   },
 ];
 
@@ -118,7 +118,7 @@ export const UTILITY_NAV_ITEMS: NavItem[] = [
  */
 export const SECONDARY_NAV_ITEMS: NavItem[] = [
   { label: "Academy", href: "/academy", icon: AcademyIcon },
-  { label: "Chess Mind", href: "/chess-mind", icon: ChessMindIcon },
+  { label: "Train Your Mind", href: "/chess-mind", icon: ChessMindIcon },
   { label: "Profile", href: "/profile", icon: ProfileIcon },
   { label: "Discover", href: "/discover", icon: DiscoverIcon },
 ];
@@ -136,7 +136,7 @@ export function isNavItemActive(pathname: string, item: NavItem): boolean {
  * full-screen game / lesson / customize screens) renders bare.
  */
 const APP_PREFIXES = [
-  "/kingdom-map",
+  "/home",
   "/puzzles",
   "/play",
   "/learn",
@@ -155,9 +155,9 @@ const APP_PREFIXES = [
 /** Full-screen sub-routes that never showed the nav even though their
  * parent prefix is an app route. */
 const FORCE_BARE_PREFIXES = [
-  "/kingdom-map/customize",
-  "/kingdom-map/board-skin",
-  "/kingdom-map/piece-set",
+  "/profile/customize",
+  "/profile/customize",
+  "/profile/customize",
   // Chess School V2 session runner: a board-first screen, bare like /lesson.
   "/chess-school/session",
 ];

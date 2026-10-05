@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Screen } from "@/components/layout/Screen";
@@ -186,7 +187,7 @@ export default function ChessMindPage() {
             {bonuses.map((b) => (
               <Link
                 key={b.zoneId}
-                href="/kingdom-map"
+                href="/home"
                 className="font-classic-body text-sm text-premium-ivory/80 underline underline-offset-2"
               >
                 {b.label} →
@@ -237,10 +238,10 @@ export default function ChessMindPage() {
         </div>
 
         <Link
-          href="/kingdom-map"
+          href="/learn"
           className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
         >
-          Back to the Kingdom Map
+          {backLabel("LEARN")}
         </Link>
       </Screen>
     </>

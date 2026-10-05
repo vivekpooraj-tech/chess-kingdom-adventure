@@ -1,3 +1,4 @@
+import { ForParentsEntry } from "@/components/nav/ForParentsEntry";
 import Link from "next/link";
 import { PrimaryCard, ListItemRow } from "@/components/ui/Card";
 import { CHESS_MIND_CATEGORIES } from "@/content/chessMindCategories";
@@ -204,6 +205,7 @@ export default function LearnPage() {
             )}
           </div>
         </section>
+        <ForParentsEntry />
       </div>
     </TabPageShell>
   );

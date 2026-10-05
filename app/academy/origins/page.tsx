@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -244,17 +245,17 @@ export default function ChessOriginsPage() {
                 🏆 Achievement unlocked: {newAchievement}
               </p>
             )}
-            <Link href="/academy">
-              <Button tone="premium" variant="ghost">Back to the Academy</Button>
+            <Link href="/learn">
+              <Button tone="premium" variant="ghost">{backLabel("LEARN")}</Button>
             </Link>
           </div>
         )}
 
         <Link
-          href="/academy"
+          href="/learn"
           className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
         >
-          Back to the Academy
+          {backLabel("LEARN")}
         </Link>
       </Screen>
     </>

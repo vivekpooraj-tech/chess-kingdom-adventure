@@ -37,7 +37,7 @@ export default function UpgradePage() {
         <PremiumCta />
       </div>
       <Link
-        href="/kingdom-map"
+        href="/home"
         className={`${TEXT.caption} underline underline-offset-4 hover:text-premium-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded`}
       >
         Back to Home

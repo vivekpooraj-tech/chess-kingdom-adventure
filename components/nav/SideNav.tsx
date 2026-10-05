@@ -90,7 +90,7 @@ export function SideNav({
   const activities = chessTimeNavActivities(session, expired);
   const primaryItems = hideNav ? [] : filterNavItemsForChessTime(NAV_ITEMS, activities);
   const secondaryItems = locked ? [] : SECONDARY_NAV_ITEMS;
-  const homeHref = locked ? "/chess-time" : "/kingdom-map";
+  const homeHref = locked ? "/chess-time" : "/home";
 
   return (
     <nav

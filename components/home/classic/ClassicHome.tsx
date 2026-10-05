@@ -1,5 +1,7 @@
+import { ForParentsLink } from "@/components/nav/ForParentsLink";
 import Link from "next/link";
 import type { AvatarOption } from "@/lib/types";
+import { ageAudience, type AgeBand } from "@/lib/learner/experienceLevel";
 import type { PrimaryAction } from "@/lib/home/getPrimaryAction";
 import type { DailyQuestSet } from "@/lib/quests/dailyQuests";
 import { PREMIUM_HEADLINE_BENEFITS } from "@/lib/premium/capabilities";
@@ -41,6 +43,7 @@ export function ClassicHome({
   questSet,
   neutralTone,
   milestones,
+  ageBand,
 }: {
   childId: string;
   displayName: string;
@@ -53,6 +56,8 @@ export function ClassicHome({
   questSet: DailyQuestSet;
   neutralTone: boolean;
   milestones: string[];
+  /** children.age_band — decides Ask a parent (under 18 / unknown) vs Get Premium (18+). */
+  ageBand?: AgeBand | null;
 }) {
   const timeControls = [categorySpan("Blitz"), categorySpan("Rapid")].filter(Boolean).join(" · ");
 
@@ -149,9 +154,15 @@ export function ClassicHome({
                     <li key={b}>{b}</li>
                   ))}
                 </ul>
-                <Link href="/parent-gate?next=/upgrade" className="ch-cta ch-cta--champagne">
-                  Ask a parent
-                </Link>
+                {ageAudience(ageBand) === "adult" ? (
+                  <Link href="/upgrade" className="ch-cta ch-cta--champagne">
+                    Get Premium
+                  </Link>
+                ) : (
+                  <Link href="/parent-gate?next=/upgrade" className="ch-cta ch-cta--champagne">
+                    Ask a parent
+                  </Link>
+                )}
               </>
             )}
           </section>
@@ -166,9 +177,7 @@ export function ClassicHome({
             <span aria-hidden="true" className="ch-row__arrow">→</span>
           </Link>
 
-          <Link href="/parent-gate?next=/parent-dashboard" className="ch-parents">
-            For Parents
-          </Link>
+          <ForParentsLink variant="classic" ageBand={ageBand} />
         </div>
       </div>
     </div>

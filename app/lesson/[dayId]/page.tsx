@@ -214,7 +214,7 @@ export default function LessonPage() {
   const next = () => setStepIndex((i) => Math.min(i + 1, lesson.steps.length - 1));
 
   function goToKingdomMap() {
-    router.push("/kingdom-map");
+    router.push("/home");
   }
 
   if (mode === "locked") {
@@ -229,7 +229,7 @@ export default function LessonPage() {
           </p>
           <UpgradeButton tone="premium" />
           <Link
-            href="/kingdom-map"
+            href="/home"
             className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
           >
             Back to Home
@@ -270,7 +270,7 @@ export default function LessonPage() {
               </p>
               <UpgradeButton tone="premium" label="Unlock Full Journey →" />
               <Link
-                href="/kingdom-map"
+                href="/home"
                 className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
               >
                 Keep Exploring

@@ -1,3 +1,4 @@
+import { backLabel } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { Screen } from "@/components/layout/Screen";
 import { TEXT } from "@/lib/designSystem";
@@ -77,7 +78,7 @@ export function DailyLimitCard({ categoryLabel }: { categoryLabel: string }) {
         href="/chess-mind"
         className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
       >
-        Back to Chess Mind
+        {backLabel("TRAIN_YOUR_MIND")}
       </Link>
     </Screen>
   );

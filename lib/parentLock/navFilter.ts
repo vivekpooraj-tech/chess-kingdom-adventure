@@ -30,7 +30,7 @@ export function filterNavItemsForChessTime(
 
   return items.filter((item) => {
     if (item.href === "/more") return false;
-    if (item.href === "/kingdom-map") return false;
+    if (item.href === "/home") return false;
     if (item.href === "/puzzles") return allowed.has("puzzles");
     if (item.href === "/play") return allowed.has("play");
     if (item.href === "/chess-school") return allowed.has("chess_school");

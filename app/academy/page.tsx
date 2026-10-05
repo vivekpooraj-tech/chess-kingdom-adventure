@@ -1,3 +1,4 @@
+import { backLabel } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { Screen } from "@/components/layout/Screen";
 import { ListItemRow } from "@/components/ui/Card";
@@ -14,7 +15,7 @@ const CATEGORIES: AcademyCategory[] = [
     title: "Kingdom Story Map",
     emoji: "🗺️",
     description: "Revisit the story path you played through every Kingdom zone.",
-    href: "/kingdom-map/journey",
+    href: "/home/journey",
   },
   {
     id: "fundamentals",
@@ -102,10 +103,10 @@ export default function AcademyPage() {
         </div>
 
         <Link
-          href="/kingdom-map"
+          href="/learn"
           className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
         >
-          Back to Home
+          {backLabel("LEARN")}
         </Link>
       </Screen>
     </>

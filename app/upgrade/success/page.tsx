@@ -1,3 +1,4 @@
+import { backLabel } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStripe } from "@/lib/stripe/client";
@@ -29,7 +30,7 @@ export default async function UpgradeSuccessPage({
   searchParams: { session_id?: string };
 }) {
   const sessionId = searchParams.session_id;
-  if (!sessionId) redirect("/kingdom-map");
+  if (!sessionId) redirect("/home");
 
   const supabase = createClient();
   const user = await getSessionUser(supabase);
@@ -90,8 +91,8 @@ export default async function UpgradeSuccessPage({
               {expiresAtLabel ? ` Active until ${expiresAtLabel}.` : ""}
             </p>
             <p className="font-body text-xs text-kingdom-night/50">{PREMIUM_BILLING_NOTE}</p>
-            <Link href="/kingdom-map">
-              <Button tone="adventure">Back to the Kingdom →</Button>
+            <Link href="/home">
+              <Button tone="adventure">{backLabel("HOME")} →</Button>
             </Link>
           </>
         ) : (
@@ -99,8 +100,8 @@ export default async function UpgradeSuccessPage({
             <span className="text-6xl">⚠️</span>
             <h1 className="font-display text-xl text-kingdom-night">Something needs a second look</h1>
             <p className="font-body text-kingdom-night/70">{errorMessage}</p>
-            <Link href="/kingdom-map">
-              <Button tone="adventure" variant="ghost">Back to the Kingdom Map</Button>
+            <Link href="/home">
+              <Button tone="adventure" variant="ghost">{backLabel("HOME")}</Button>
             </Link>
           </>
         )}

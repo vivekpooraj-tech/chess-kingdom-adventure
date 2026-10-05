@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -135,10 +136,10 @@ export function TacticsCourseClient({
       </div>
 
       <Link
-        href="/academy"
+        href="/learn"
         className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2 text-center"
       >
-        Back to the Academy
+        {backLabel("LEARN")}
       </Link>
 
       {showPaywall && <TacticsPaywall onDismiss={() => setShowPaywall(false)} />}

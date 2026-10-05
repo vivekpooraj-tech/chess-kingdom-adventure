@@ -16,16 +16,17 @@ import clsx from "clsx";
  * a neutral placeholder. NOT new artwork — it renders whatever the data
  * already provides.
  *
- * Sizes: xs 24 / sm 40 / md 56 / lg 72.
+ * Sizes: xs 24 / sm 40 / md 56 / lg 72. The emoji/initial is drawn at ~55–60% of the circle so the
+ * avatar FILLS its container and reads at a glance (it used to be ~45%, a small glyph in a big disc).
  */
 export type AvatarSize = "xs" | "sm" | "md" | "lg";
 
 const SIZE_PX: Record<AvatarSize, number> = { xs: 24, sm: 40, md: 56, lg: 72 };
 const TEXT_CLASS: Record<AvatarSize, string> = {
-  xs: "text-[13px]",
-  sm: "text-lg",
-  md: "text-2xl",
-  lg: "text-3xl",
+  xs: "text-[14px]",
+  sm: "text-[24px]",
+  md: "text-[32px]",
+  lg: "text-[42px]",
 };
 
 export function Avatar({

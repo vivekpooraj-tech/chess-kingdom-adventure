@@ -215,7 +215,7 @@ async function handleRequest(request: NextRequest) {
     request.nextUrl.pathname !== DEV_AUTO_SIGNIN_PATH
   ) {
     const isEntryPoint = request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/sign-in";
-    const nextPath = isEntryPoint ? "/kingdom-map" : request.nextUrl.pathname;
+    const nextPath = isEntryPoint ? "/home" : request.nextUrl.pathname;
     const autoSigninUrl = new URL(DEV_AUTO_SIGNIN_PATH, request.url);
     autoSigninUrl.searchParams.set("next", nextPath);
     return NextResponse.redirect(autoSigninUrl);

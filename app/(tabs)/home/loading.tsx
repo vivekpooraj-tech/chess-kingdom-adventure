@@ -2,7 +2,7 @@ import { Screen } from "@/components/layout/Screen";
 import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 
 /**
- * Home loading skeleton — mirrors the redesigned kingdom-map layout so
+ * Home loading skeleton — mirrors the redesigned home layout so
  * content does not jump when the real dashboard streams in.
  */
 export default function HomeLoading() {

@@ -1,5 +1,5 @@
 // Route group for the five primary tabs (Home/Puzzles/Play/Learn/More). The
-// parens are invisible to the URL, so /kingdom-map etc. are unchanged.
+// parens are invisible to the URL, so /home etc. are unchanged.
 //
 // The persistent bottom nav / sidebar now lives in AppShell (mounted once
 // in the root layout — components/nav/AppShell.tsx), so this layout no

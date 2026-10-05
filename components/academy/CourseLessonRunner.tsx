@@ -162,7 +162,7 @@ export function CourseLessonRunner({
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-4 px-6">
         <p className={TEXT.body}>That lesson could not be loaded.</p>
         <Link href={courseHref}>
-          <Button tone="premium">Back to the course</Button>
+          <Button tone="premium">Back to {data?.courseTitle ?? "Course"}</Button>
         </Link>
       </main>
     );
@@ -177,7 +177,7 @@ export function CourseLessonRunner({
             href={courseHref}
             className="flex min-h-[44px] items-center font-body text-sm text-premium-ivory/65 underline underline-offset-2"
           >
-            ← Back to the course
+            ← Back to {data?.courseTitle ?? "Course"}
           </Link>
           <PrimaryCard className="flex flex-col gap-4 border-premium-gold/30">
             <span className={`${TEXT.meta} text-premium-gold`}>🔒 Premium Lesson</span>
@@ -279,7 +279,7 @@ export function CourseLessonRunner({
             href={courseHref}
             className="font-body text-sm text-premium-ivory/65 underline underline-offset-2 min-h-[44px] flex items-center"
           >
-            ← {data?.courseTitle ?? "Course"}
+            ← Back to {data?.courseTitle ?? "Course"}
           </Link>
           <span className={TEXT.caption}>
             Lesson {lesson.order} of {data?.lessonIds.length ?? lesson.order}
@@ -477,7 +477,7 @@ export function CourseLessonRunner({
               )}
               <Link href={courseHref}>
                 <Button tone="premium" variant="ghost" className="w-full">
-                  Back to the course
+                  Back to {data?.courseTitle ?? "Course"}
                 </Button>
               </Link>
             </div>

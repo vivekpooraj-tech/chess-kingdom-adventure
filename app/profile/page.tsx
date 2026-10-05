@@ -1,3 +1,4 @@
+import { ForParentsLink } from "@/components/nav/ForParentsLink";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -120,7 +121,7 @@ export default async function ProfilePage() {
 
         <div className="w-full flex flex-col gap-2">
           <SectionHeader title="Customize" />
-          <ListItemRow href="/kingdom-map/customize" className="min-h-[64px]">
+          <ListItemRow href="/profile/customize" className="min-h-[64px]">
             <span className="text-3xl flex-none">{pieceSet.emoji}</span>
             <div className="flex-1 min-w-0">
               <p className="font-classic-display text-sm text-premium-ivory">Change Pieces</p>
@@ -128,7 +129,7 @@ export default async function ProfilePage() {
             </div>
             <span className="text-premium-gold text-lg flex-none">→</span>
           </ListItemRow>
-          <ListItemRow href="/kingdom-map/customize" className="min-h-[64px]">
+          <ListItemRow href="/profile/customize" className="min-h-[64px]">
             <span className="text-3xl flex-none">{boardSkin.emoji}</span>
             <div className="flex-1 min-w-0">
               <p className="font-classic-display text-sm text-premium-ivory">Change Board</p>
@@ -207,6 +208,8 @@ export default async function ProfilePage() {
         </div>
 
         <AchievementBadges earnedKeys={earnedKeys} />
+
+        <ForParentsLink ageBand={child.age_band} />
       </Screen>
     </>
   );

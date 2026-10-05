@@ -56,7 +56,7 @@ export default function RootError({
             Try again
           </button>
           <Link
-            href="/kingdom-map"
+            href="/home"
             className="w-full min-h-[48px] flex items-center justify-center rounded-full border border-white/15 px-6 font-classic-body text-sm text-premium-ivory active:scale-[0.98] transition-transform duration-100 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
           >
             Back to Home

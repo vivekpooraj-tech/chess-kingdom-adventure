@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FUNDAMENTALS_TOPICS } from "@/content/academyFundamentals";
@@ -79,10 +80,10 @@ export default function FundamentalsPage() {
         </div>
 
         <Link
-          href="/academy"
+          href="/learn"
           className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
         >
-          Back to the Academy
+          {backLabel("LEARN")}
         </Link>
       </Screen>
     </>

@@ -1,3 +1,4 @@
+import { backLabel } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { Button } from "@/components/ui/Button";
@@ -64,7 +65,7 @@ export default async function ModulesPage() {
 
         <Link href="/chess-school/classroom">
           <Button tone="premium" block>
-            Back to the classroom
+            {backLabel("CHESS_SCHOOL")}
           </Button>
         </Link>
       </main>

@@ -33,7 +33,7 @@ export default function ChooseChildPage() {
     if (!child.experience_level) {
       router.push("/onboarding/experience");
     } else if (child.avatar_id && child.buddy_id) {
-      router.push("/kingdom-map");
+      router.push("/home");
     } else {
       router.push("/onboarding/avatar");
     }

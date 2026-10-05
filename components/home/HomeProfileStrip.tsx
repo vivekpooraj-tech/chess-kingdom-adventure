@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/ui/Avatar";
 import Link from "next/link";
 import { AvatarOption } from "@/lib/types";
 import { FlameIcon } from "@/components/nav/icons";
@@ -24,16 +25,12 @@ export function HomeProfileStrip({
       aria-label={`${displayName} — open profile`}
       className="world-profile flex w-full min-h-[48px] min-w-0 items-center gap-2.5 rounded-premiumCard border border-white/5 bg-premium-midnight/60 px-3 py-2 shadow-premiumCard transition-[border-color,transform] duration-100 hover:border-premium-gold/20 active:scale-[0.98] sm:w-auto"
     >
-      <div
-        className="flex h-10 w-10 flex-none items-center justify-center rounded-full text-xl"
-        style={{
-          background: avatar
-            ? `linear-gradient(135deg, ${avatar.colorFrom}, ${avatar.colorTo})`
-            : "#28315A",
-        }}
-      >
-        {avatar?.emoji ?? "🧑"}
-      </div>
+      <Avatar
+        size="md"
+        emoji={avatar?.emoji ?? "🧑"}
+        colorFrom={avatar?.colorFrom ?? "#28315A"}
+        colorTo={avatar?.colorTo ?? "#28315A"}
+      />
       <div className="min-w-0 flex-1">
         <p className="truncate font-classic-display text-sm leading-tight text-premium-ivory">
           {displayName}

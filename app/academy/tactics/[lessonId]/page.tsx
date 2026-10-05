@@ -213,7 +213,7 @@ export default function TacticsLessonPage() {
           href="/academy/tactics"
           className="font-classic-body text-sm text-premium-ivory/50 hover:text-premium-ivory underline underline-offset-2"
         >
-          ← Tactics
+          ← Back to Tactics
         </Link>
         <p className={TEXT.caption}>
           Lesson {lesson.order} of {TACTICS_LESSONS.length}

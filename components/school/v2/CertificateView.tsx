@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -62,7 +63,7 @@ export function CertificateView({
         />
         <Link href="/chess-school/classroom">
           <Button tone="premium" block>
-            Back to the classroom
+            {backLabel("CHESS_SCHOOL")}
           </Button>
         </Link>
       </main>
@@ -148,7 +149,7 @@ export function CertificateView({
         href="/chess-school/classroom"
         className={`${TEXT.caption} text-center underline underline-offset-2`}
       >
-        Back to the classroom
+        {backLabel("CHESS_SCHOOL")}
       </Link>
     </main>
   );

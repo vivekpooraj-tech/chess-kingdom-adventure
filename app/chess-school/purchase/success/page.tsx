@@ -1,3 +1,4 @@
+import { backLabel } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStripe } from "@/lib/stripe/client";
@@ -92,7 +93,7 @@ export default async function SchoolPurchaseSuccessPage({
             </section>
             <Link href="/chess-school/classroom">
               <Button tone="premium" block size="lg">
-                Back to the classroom
+                {backLabel("CHESS_SCHOOL")}
               </Button>
             </Link>
           </>
@@ -107,7 +108,7 @@ export default async function SchoolPurchaseSuccessPage({
             </section>
             <Link href="/chess-school/classroom">
               <Button tone="premium" block>
-                Back to the classroom
+                {backLabel("CHESS_SCHOOL")}
               </Button>
             </Link>
           </>

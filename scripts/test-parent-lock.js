@@ -199,7 +199,7 @@ async function run() {
       sessionLock.chessTimeNavActivities(active, false)?.includes("puzzles")
     );
     const mockItems = [
-      { label: "Home", href: "/kingdom-map" },
+      { label: "Home", href: "/home" },
       { label: "Puzzles", href: "/puzzles" },
       { label: "More", href: "/more" },
     ];
@@ -241,7 +241,7 @@ async function run() {
   // --- nav filter active lock ---
   {
     const mockItems = [
-      { label: "Home", href: "/kingdom-map" },
+      { label: "Home", href: "/home" },
       { label: "Puzzles", href: "/puzzles" },
       { label: "Play", href: "/play" },
       { label: "Learn", href: "/learn" },
@@ -259,7 +259,7 @@ async function run() {
   // stay hidden even when a parent explicitly allowed them. -------------
   {
     const fiveTabItems = [
-      { label: "Home", href: "/kingdom-map" },
+      { label: "Home", href: "/home" },
       { label: "School", href: "/chess-school" },
       { label: "Puzzles", href: "/puzzles" },
       { label: "Play", href: "/play" },

@@ -40,7 +40,7 @@ export function ManageChildren({
 
   function playAs(childId: string) {
     setActiveChildIdClient(childId);
-    router.push("/kingdom-map");
+    router.push("/home");
   }
 
   function viewAs(childId: string) {

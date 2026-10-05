@@ -249,7 +249,7 @@ const build = (over = {}, opts = {}) =>
   // The Daily Challenge card must still be present on Home — quests are an
   // addition beside it, not a replacement for it.
   const home = fs.readFileSync(
-    path.join(process.cwd(), "app", "(tabs)", "kingdom-map", "page.tsx"),
+    path.join(process.cwd(), "app", "(tabs)", "home", "page.tsx"),
     "utf8"
   );
   const homeToday = fs.readFileSync(

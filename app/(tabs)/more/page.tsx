@@ -112,10 +112,10 @@ export default async function MorePage() {
             {/* Phase 8A: reframed from "Your 30-day beginner adventure" to a
                 retrospective story map, not a second structured course —
                 Chess School is the only curriculum now (see
-                app/(tabs)/kingdom-map/journey/page.tsx for the matching
+                app/(tabs)/home/journey/page.tsx for the matching
                 in-page copy change). Nothing about the underlying content,
                 current_day, or child_lesson_progress changed. */}
-            <ListItemRow href="/kingdom-map/journey">
+            <ListItemRow href="/home/journey">
               <span className="text-2xl flex-none">🗺️</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">Kingdom Story Map</p>
@@ -123,7 +123,7 @@ export default async function MorePage() {
               </div>
               <span className="text-premium-gold text-lg flex-none">→</span>
             </ListItemRow>
-            <ListItemRow href="/kingdom-map/customize">
+            <ListItemRow href="/profile/customize">
               <span className="text-2xl flex-none">🎨</span>
               <div className="flex-1">
                 <p className="font-classic-display text-base text-premium-ivory">Customize Board & Pieces</p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -486,7 +487,7 @@ export default function OnlineGamePage() {
       game.winner === null &&
       game.started_at === null
     ) {
-      router.push("/kingdom-map");
+      router.push("/play");
     }
   }, [game, router]);
 
@@ -609,8 +610,8 @@ export default function OnlineGamePage() {
           <p className={TEXT.body}>
             This game link isn't valid, or the game no longer exists.
           </p>
-          <Link href="/kingdom-map">
-            <Button tone="premium">Back to the Kingdom Map →</Button>
+          <Link href="/play">
+            <Button tone="premium">{backLabel("PLAY")} →</Button>
           </Link>
         </SecondaryCard>
       </main>
@@ -645,7 +646,7 @@ export default function OnlineGamePage() {
       // No winner is recorded for an abandoned pre-start match, so there's
       // nothing meaningful for the "finished" screen to show — leave for
       // Home rather than rendering a null-result game-over state.
-      router.push("/kingdom-map");
+      router.push("/play");
     } catch {
       setAbandoning(false);
     }
@@ -840,7 +841,7 @@ export default function OnlineGamePage() {
     // implementation). Online games only persist the SAN list, so
     // buildOnlineGameRecord replays it to recover per-move positions.
     if (showReview) {
-      const backHref = game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map";
+      const backHref = game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/play";
       return (
         <PostGameAnalysis
           record={buildOnlineGameRecord({
@@ -861,6 +862,7 @@ export default function OnlineGamePage() {
           source="online"
           onPlayAgain={() => router.push("/play")}
           onBack={() => router.push(backHref)}
+          backLabel={game.tournament_id ? "Back to Tournament" : backLabel("PLAY")}
         />
       );
     }
@@ -956,9 +958,9 @@ export default function OnlineGamePage() {
               Review Game →
             </Button>
           )}
-          <Link href={game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map"}>
+          <Link href={game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/play"}>
             <Button tone="premium" variant={game.moves.length > 0 ? "ghost" : "primary"}>
-              {game.tournament_id ? "Back to Tournament →" : "Back"}
+              {game.tournament_id ? "Back to Tournament →" : backLabel("PLAY")}
             </Button>
           </Link>
 
@@ -1083,7 +1085,7 @@ export default function OnlineGamePage() {
           </>
         }
         onExit={() =>
-          router.push(game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/kingdom-map")
+          router.push(game.tournament_id ? `/play/tournaments/${game.tournament_id}` : "/play")
         }
         opponentRow={
           <PlayOpponentFrame name="Opponent">

@@ -153,6 +153,7 @@ export function PostGameAnalysis({
   source = "free_play",
   onPlayAgain,
   onBack,
+  backLabel = "Back to Play",
 }: {
   record: CompletedGameRecord;
   boardSkinId?: string;
@@ -164,6 +165,8 @@ export function PostGameAnalysis({
   source?: "free_play" | "online";
   onPlayAgain: () => void;
   onBack: () => void;
+  /** Visible label for the back action — it must name where onBack actually goes. */
+  backLabel?: string;
 }) {
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [analysis, setAnalysis] = useState<GameAnalysisResult | null>(null);
@@ -369,7 +372,7 @@ export function PostGameAnalysis({
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-4 px-6">
         <p className={TEXT.body}>Couldn&apos;t analyze this game right now.</p>
         <Button tone="premium" onClick={onBack}>
-          Back to Chess Mind
+          {backLabel}
         </Button>
       </main>
     );
@@ -585,7 +588,7 @@ export function PostGameAnalysis({
           Play Again
         </Button>
         <Button tone="premium" variant="ghost" onClick={onBack}>
-          Back to Chess Mind
+          {backLabel}
         </Button>
       </div>
     </main>

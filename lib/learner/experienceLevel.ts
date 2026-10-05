@@ -42,6 +42,23 @@ export function shouldSkipWelcome(level: ExperienceLevel | null | undefined): bo
   return effective === "knows_basics" || effective === "plays_regularly";
 }
 
+/**
+ * Whether parent-facing UI (the "For Parents" entry, "Ask a parent" Premium approval) applies,
+ * derived from the ONE existing age source — children.age_band, set at onboarding (no DOB stored):
+ *   young / tween / teen (under 18) -> "minor": parent involvement is appropriate;
+ *   adult (18+)                     -> "adult": they decide for themselves, no parent approval UI;
+ *   null / missing                  -> "unknown": never assumed adult, so the safe existing
+ *                                      (parent-facing) behaviour is kept.
+ * This is a UI decision only; the Parent Gate itself is unchanged.
+ */
+export type AgeAudience = "minor" | "adult" | "unknown";
+
+export function ageAudience(ageBand: AgeBand | null | undefined): AgeAudience {
+  if (ageBand === "adult") return "adult";
+  if (ageBand === "young" || ageBand === "tween" || ageBand === "teen") return "minor";
+  return "unknown";
+}
+
 export function prefersNeutralHomeTone(
   level: ExperienceLevel | null | undefined,
   ageBand: AgeBand | null | undefined

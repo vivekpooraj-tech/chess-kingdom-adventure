@@ -46,7 +46,7 @@ const now = () => performance.now();
  * Destination after the video is computed via the exact same
  * postAuthDestination() every login already resolves through — this page
  * is only ever reached for an already-onboarded child in practice, but
- * recomputes properly rather than hardcoding "/kingdom-map", so it can
+ * recomputes properly rather than hardcoding "/home", so it can
  * never send someone to a stale or wrong destination if account state
  * changed in between.
  */
@@ -58,7 +58,7 @@ export default function LoginWelcomePage() {
   const loadFailed = welcome.failure === "error";
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const nextHrefRef = useRef<string>("/kingdom-map");
+  const nextHrefRef = useRef<string>("/home");
   const settledRef = useRef(false);
   const startedRef = useRef(false);
   const machineRef = useRef<WelcomeState>(welcome);

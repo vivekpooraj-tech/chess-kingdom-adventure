@@ -255,3 +255,13 @@ export function ExitFullscreenIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+// Parent area marker for the "For Parents" entry — same single-stroke family.
+export function ShieldIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <path d="M12 3.5 L19 6.2 V11.5 C19 15.6 16 18.9 12 20.5 C8 18.9 5 15.6 5 11.5 V6.2 Z" />
+      <path d="M9.2 12 L11.2 14 L15 10" />
+    </svg>
+  );
+}

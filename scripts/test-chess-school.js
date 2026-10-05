@@ -163,9 +163,9 @@ const prog = (currentDay, completedDays, totalDays) =>
 // main flow to its own route, reachable from More.
 {
   const read = (p) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
-  const home = read("app/(tabs)/kingdom-map/page.tsx");
+  const home = read("app/(tabs)/home/page.tsx");
   const homeHero = read("components/home/HomeHeroSection.tsx");
-  const journey = read("app/(tabs)/kingdom-map/journey/page.tsx");
+  const journey = read("app/(tabs)/home/journey/page.tsx");
   const primaryAction = read("lib/home/getPrimaryAction.ts");
   const header = read("components/lesson/LessonHeader.tsx");
   const lesson = read("app/lesson/[dayId]/page.tsx");
@@ -197,7 +197,7 @@ const prog = (currentDay, completedDays, totalDays) =>
   // The Kingdom Journey itself must still be there — moved, not deleted.
   check("the 30-day journey renders on its own route", /<KingdomMapCards/.test(journey));
   check("the journey route uses real progress data, not hardcoded", /completedDays=\{completedDays\}/.test(journey));
-  check("More links to the relocated journey route", /\/kingdom-map\/journey/.test(more));
+  check("More links to the relocated journey route", /\/home\/journey/.test(more));
   check("Home no longer renders the journey inline", !/<KingdomMapCards/.test(home));
 }
 

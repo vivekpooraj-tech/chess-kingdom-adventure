@@ -726,7 +726,7 @@ html[data-layout="desktop"]:has(.chess-focus-shell--preserve-nav) .app-shell-con
 }
 
 /* Board shell fits in the content column — never under the tab bar or sidebar. */
-/* Home (kingdom-map): phone stacks hero + activity grid; tablet/desktop
+/* Home (home): phone stacks hero + activity grid; tablet/desktop
    split them into two columns — Ollie + primary CTA left, 2×2 grid right. */
 .home-hero-grid {
   display: flex;

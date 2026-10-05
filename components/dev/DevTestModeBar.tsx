@@ -23,7 +23,7 @@ export function DevTestModeBar() {
   }
 
   const links: { label: string; href: string }[] = [
-    { label: "Chess Kingdom", href: "/kingdom-map" },
+    { label: "Home", href: "/home" },
     { label: "Learn", href: "/learn" },
     { label: "Chess Mind", href: "/chess-mind" },
     { label: "Play", href: "/play" },

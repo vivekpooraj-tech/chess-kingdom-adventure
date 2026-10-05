@@ -13,7 +13,7 @@ export function LessonHeader({
   title,
   stepIndex,
   totalSteps,
-  exitHref = "/kingdom-map",
+  exitHref = "/home",
   courseTotalDays,
 }: {
   zoneName?: string;

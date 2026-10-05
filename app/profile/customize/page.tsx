@@ -15,12 +15,13 @@ import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { Button } from "@/components/ui/Button";
 import { CheckIcon } from "@/components/nav/icons";
 import { TEXT } from "@/lib/designSystem";
+import { backLabel, destinationHref } from "@/lib/navigation/destinations";
 
 const PREVIEW_PIECE_ORDER = ["king", "queen", "rook", "bishop", "knight", "pawn"] as const;
 
 /**
  * Unified "Customize Your Chessboard" screen (Phase 13) — replaces the two
- * single-purpose editors (formerly at this route and /kingdom-map/board-skin,
+ * single-purpose editors (formerly at this route and /profile/customize,
  * both now redirect here) with one screen so a child can see piece + board
  * together instead of guessing how they'll look combined. Reuses the exact
  * same per-child persistence as before (children.piece_set_id/board_skin_id
@@ -83,7 +84,14 @@ export default function CustomizeChessboardPage() {
     <ScreenTimeGate childId={childId}>
       <main className="min-h-screen bg-premium-midnight px-4 sm:px-6 py-10 flex flex-col items-center gap-10">
         <div className="text-center max-w-md">
-          <p className={`${TEXT.meta} text-premium-gold`}>Kingdom Map</p>
+          <button
+            type="button"
+            onClick={() => router.push(destinationHref("PROFILE"))}
+            className="mb-2 inline-flex min-h-[44px] items-center font-body text-sm text-premium-ivory/65 underline underline-offset-2"
+          >
+            {backLabel("PROFILE")}
+          </button>
+          <p className={`${TEXT.meta} text-premium-gold`}>Profile</p>
           <h1 className={`${TEXT.display} mt-2`}>Customize Your Chessboard</h1>
           <p className={`${TEXT.body} mt-2`}>
             Mix and match any pieces with any board — your changes save instantly.

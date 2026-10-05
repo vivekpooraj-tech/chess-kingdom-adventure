@@ -48,7 +48,7 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
 // --- 1. The reported bug: a returning, fully set-up user ------------------
 {
   const d = D.postAuthDestination(res(child()));
-  check("onboarded user goes to the dashboard", d.href === "/kingdom-map");
+  check("onboarded user goes to the dashboard", d.href === "/home");
   check("onboarded user is NOT gated", d.requiresParentGate === false);
   check("isOnboardingComplete agrees", D.isOnboardingComplete(res(child())) === true);
 }
@@ -113,7 +113,7 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
   check("null child never lands on onboarding", !d.href.startsWith("/onboarding/"));
   // Sending them to the dashboard with no profile would strand them; re-running
   // onboarding would repeat setup they may already have done.
-  check("null child is not sent to the dashboard", d.href !== "/kingdom-map");
+  check("null child is not sent to the dashboard", d.href !== "/home");
 }
 
 // --- 6. Degenerate field values -------------------------------------------
@@ -154,11 +154,11 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
 
 // --- 8. Agreement with the dashboard's own guards -------------------------
 {
-  // app/(tabs)/kingdom-map/page.tsx re-checks the same conditions server-side.
+  // app/(tabs)/home/page.tsx re-checks the same conditions server-side.
   // If the two disagree, a user is redirected back and forth forever, so the
   // ORDER and the thresholds have to match.
   const km = fs.readFileSync(
-    path.join(process.cwd(), "app", "(tabs)", "kingdom-map", "page.tsx"),
+    path.join(process.cwd(), "app", "(tabs)", "home", "page.tsx"),
     "utf8"
   );
   const order = [];
@@ -168,7 +168,7 @@ const res = (c, needsSelection = false) => ({ needsSelection, child: c });
   if (/!child\.avatar_id \|\| !child\.buddy_id\)\s*redirect\("\/onboarding\/avatar"\)/.test(km))
     order.push("avatar");
   check(
-    "kingdom-map guards are in the same order as postAuthDestination",
+    "home guards are in the same order as postAuthDestination",
     JSON.stringify(order) === JSON.stringify(["choose-child", "experience", "avatar"])
   );
 

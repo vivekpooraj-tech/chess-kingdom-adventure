@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -145,7 +146,7 @@ export function ParentView({
 
       <Link href="/chess-school/classroom">
         <Button tone="premium" block>
-          Back to the classroom
+          {backLabel("CHESS_SCHOOL")}
         </Button>
       </Link>
     </main>

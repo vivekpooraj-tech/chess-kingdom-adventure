@@ -78,7 +78,7 @@ export default function WelcomePage() {
       setChildId(child.id);
 
       if (shouldSkipWelcome(child.experience_level)) {
-        router.replace("/kingdom-map");
+        router.replace("/home");
         return;
       }
 
@@ -88,7 +88,7 @@ export default function WelcomePage() {
         () => null
       );
       if (alreadySeen) {
-        router.replace("/kingdom-map");
+        router.replace("/home");
         return;
       }
       setStage("welcome");
@@ -175,7 +175,7 @@ export default function WelcomePage() {
   }
 
   function enterKingdom() {
-    router.push("/kingdom-map");
+    router.push("/home");
   }
 
   if (!childId || stage === "loading") {

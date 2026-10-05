@@ -40,7 +40,7 @@ export default function ExperienceOnboardingPage() {
       setActiveChildIdClient(child.id);
       setChildId(child.id);
       if (child.experience_level) {
-        router.replace(child.avatar_id && child.buddy_id ? "/kingdom-map" : "/onboarding/avatar");
+        router.replace(child.avatar_id && child.buddy_id ? "/home" : "/onboarding/avatar");
       }
     }
     load();

@@ -1,3 +1,4 @@
+import { backLabel } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -26,10 +27,10 @@ export default async function OpeningExplorerPage() {
       <Screen maxWidth="compact" topSafeArea="icons">
         <OpeningExplorerClient encounters={encounters} />
         <Link
-          href="/academy"
+          href="/learn"
           className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
         >
-          Back to the Academy
+          {backLabel("LEARN")}
         </Link>
       </Screen>
     </>

@@ -16,7 +16,7 @@ import { UtilityNavIcons } from "./UtilityNavIcons";
  */
 
 const SECTION_TITLES: Array<[prefix: string, title: string]> = [
-  ["/kingdom-map", "Home"],
+  ["/home", "Home"],
   ["/chess-school", "School"],
   ["/puzzles", "Puzzles"],
   ["/play/tournaments", "Tournaments"],
@@ -24,7 +24,7 @@ const SECTION_TITLES: Array<[prefix: string, title: string]> = [
   ["/world", "World"],
   ["/learn", "Learn"],
   ["/academy", "Academy"],
-  ["/chess-mind", "Chess Mind"],
+  ["/chess-mind", "Train Your Mind"],
   ["/discover", "Discover"],
   ["/piece-library", "Piece Library"],
   ["/profile", "Profile"],

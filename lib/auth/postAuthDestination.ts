@@ -12,7 +12,7 @@
  * The gate then rendered its arithmetic challenge FIRST and worked out the
  * real destination only after it was solved. So a parent who finished setup
  * months ago still had to answer "6 + 4 = ?" on every single sign-in before
- * reaching /kingdom-map — and, because the gate stores nothing, on the next
+ * reaching /home — and, because the gate stores nothing, on the next
  * sign-in as well, forever.
  *
  * The gate is not, and was never meant to be, a post-login step. Its own
@@ -48,7 +48,7 @@ export interface PostAuthDestination {
   href: string;
   /**
    * True only for the /onboarding/* screens — the "setup" the gate exists to
-   * put an adult in front of. /kingdom-map and /choose-child are ordinary
+   * put an adult in front of. /home and /choose-child are ordinary
    * returning-user destinations and are never gated.
    */
   requiresParentGate: boolean;
@@ -57,12 +57,12 @@ export interface PostAuthDestination {
 export const CHOOSE_CHILD = "/choose-child";
 export const ONBOARDING_EXPERIENCE = "/onboarding/experience";
 export const ONBOARDING_AVATAR = "/onboarding/avatar";
-export const DASHBOARD = "/kingdom-map";
+export const DASHBOARD = "/home";
 
 /**
  * Resolve the destination.
  *
- * The order matches app/(tabs)/kingdom-map/page.tsx's own guards exactly —
+ * The order matches app/(tabs)/home/page.tsx's own guards exactly —
  * needsSelection, then experience_level, then avatar/buddy — which is what
  * keeps the two from disagreeing and bouncing a user back and forth. If you
  * change one, change both.

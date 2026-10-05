@@ -79,7 +79,7 @@ export default function SplashPage() {
         // and is only ever empty again after the process was genuinely
         // killed and relaunched — never on merely reaching this branch
         // twice within the same still-alive session.
-        router.replace(hasShownLoginWelcomeThisSession() ? "/kingdom-map" : "/login-welcome");
+        router.replace(hasShownLoginWelcomeThisSession() ? "/home" : "/login-welcome");
         return;
       }
       if (state.status === "unauthenticated") {

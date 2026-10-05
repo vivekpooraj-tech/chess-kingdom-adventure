@@ -24,7 +24,7 @@ import {
 import { prefersNeutralHomeTone } from "@/lib/learner/experienceLevel";
 
 export const metadata = {
-  title: "Chess Kingdom Journey (Legacy) · Chess Mind",
+  title: "Journey (Legacy) · Chess Mind",
   description: "The original 30-day day-by-day course. Superseded by Chess School's classroom.",
 };
 
@@ -161,7 +161,7 @@ export default async function ChessSchoolLegacyPage() {
       />
 
       <Link
-        href="/kingdom-map/journey"
+        href="/home/journey"
         className={`${TEXT.caption} normal-case underline underline-offset-4 hover:text-premium-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60 rounded`}
       >
         See all {progress.totalDays} days →

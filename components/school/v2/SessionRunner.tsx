@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -205,7 +206,7 @@ export function SessionRunner({
               Session {nextSession.number} · about {nextSession.estimatedMinutes} minutes
             </p>
             <Link href={classroomHref(world)} className={`${TEXT.caption} text-center underline underline-offset-2`}>
-              Back to the classroom
+              {backLabel("CHESS_SCHOOL")}
             </Link>
           </>
         ) : (
@@ -342,7 +343,7 @@ function BackToClassroom() {
   return (
     <Link href={classroomHref(useWorld())} className="w-full">
       <SchoolCta block>
-        Back to the classroom
+        {backLabel("CHESS_SCHOOL")}
       </SchoolCta>
     </Link>
   );

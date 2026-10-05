@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/ui/Avatar";
 import Link from "next/link";
 import { AvatarOption } from "@/lib/types";
 import { KingdomZone } from "@/content/kingdomZones";
@@ -41,16 +42,12 @@ export function HomeHeader({
   return (
     <div className="w-full h-full rounded-premiumCard bg-premium-midnight text-premium-ivory p-5 flex flex-col gap-4 shadow-premiumCard">
       <div className="flex items-center gap-3">
-        <div
-          className="w-14 h-14 rounded-full flex items-center justify-center text-2xl flex-none"
-          style={{
-            background: avatar
-              ? `linear-gradient(135deg, ${avatar.colorFrom}, ${avatar.colorTo})`
-              : "#28315A",
-          }}
-        >
-          {avatar?.emoji ?? "🧑"}
-        </div>
+        <Avatar
+          size="lg"
+          emoji={avatar?.emoji ?? "🧑"}
+          colorFrom={avatar?.colorFrom ?? "#28315A"}
+          colorTo={avatar?.colorTo ?? "#28315A"}
+        />
         <div className="flex-1 min-w-0">
           <p className="font-classic-display text-lg leading-tight truncate">{displayName}</p>
           {zone && (

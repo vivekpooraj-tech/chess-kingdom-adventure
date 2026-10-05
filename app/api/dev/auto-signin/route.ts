@@ -16,7 +16,7 @@ import { LOCAL_TEST_MODE, DEV_TEST_USER_EMAIL, DEV_TEST_USER_PASSWORD } from "@/
  * knew the URL.
  */
 export async function GET(request: NextRequest) {
-  const next = request.nextUrl.searchParams.get("next") || "/kingdom-map";
+  const next = request.nextUrl.searchParams.get("next") || "/home";
 
   if (!LOCAL_TEST_MODE) {
     return NextResponse.redirect(new URL("/sign-in", request.url));

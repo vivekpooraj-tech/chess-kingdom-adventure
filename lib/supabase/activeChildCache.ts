@@ -2,7 +2,7 @@ import type { ActiveChildResolution } from "./queries";
 
 // Shared short-lived cache for resolveActiveChild()'s result -- measured
 // (Phase 4 performance audit) costing 175-610ms per call, and every one of
-// kingdom-map, more, puzzles, and DailyChallengeCard was independently
+// home, more, puzzles, and DailyChallengeCard was independently
 // re-running it from scratch on every single navigation, including
 // navigations seconds apart for the exact same child. This module works
 // identically (and safely) in both runtimes that call it: on the server

@@ -1,6 +1,6 @@
 /**
  * Chess Mind design system — StatCard. Replaces the StatTile pattern that
- * was independently redefined in app/profile/page.tsx and app/kingdom-map/
+ * was independently redefined in app/profile/page.tsx and app/home/
  * page.tsx (same visual intent, two separate implementations) with one
  * shared component so a stats row looks identical everywhere it appears.
  */

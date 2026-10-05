@@ -5,5 +5,5 @@ import { redirect } from "next/navigation";
 // separate single-purpose editors. Kept as a redirect, not deleted, so any
 // existing link/bookmark to this route still works.
 export default function EditPieceSetPage() {
-  redirect("/kingdom-map/customize");
+  redirect("/profile/customize");
 }

@@ -95,10 +95,10 @@ export function PremiumPreviewClient() {
       </div>
 
       <Link
-        href="/kingdom-map"
+        href="/home"
         className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
       >
-        Back to Chess Kingdom
+        Back to Home
       </Link>
 
       {overlay === "game-limit" && (

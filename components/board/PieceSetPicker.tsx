@@ -13,7 +13,7 @@ import { TEXT } from "@/lib/designSystem";
 
 /**
  * Shared by the onboarding step (app/onboarding/pieces) and the anytime
- * editor reachable from Profile (app/kingdom-map/piece-set) — same picker
+ * editor reachable from Profile (app/profile/customize) — same picker
  * UI as BoardSkinPicker, different heading/button copy and post-save
  * destination. Piece choice is independent of board skin, so this doesn't
  * need to know or care which board is selected. `tone` keeps onboarding on

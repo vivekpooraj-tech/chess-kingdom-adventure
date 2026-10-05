@@ -1,3 +1,4 @@
+import { backLabel, courseParent, destinationHref } from "@/lib/navigation/destinations";
 import Link from "next/link";
 import { PrimaryCard } from "@/components/ui/Card";
 import { TEXT } from "@/lib/designSystem";
@@ -48,10 +49,10 @@ export function CourseIndex({
     <main className="min-h-screen bg-premium-midnight px-5 pt-safe-icons pb-nav-safe">
       <div className="mx-auto flex w-full max-w-md flex-col gap-5">
         <Link
-          href="/learn"
+          href={destinationHref(courseParent(summary.id))}
           className="flex min-h-[44px] items-center font-body text-sm text-premium-ivory/65 underline underline-offset-2"
         >
-          ← Learn
+          ← {backLabel(courseParent(summary.id))}
         </Link>
 
         <header className="flex flex-col gap-2">

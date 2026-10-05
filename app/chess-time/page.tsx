@@ -21,7 +21,7 @@ export default function ChessTimePage() {
   useEffect(() => {
     if (!hydrated) return;
     if (!session?.active) {
-      router.replace("/kingdom-map");
+      router.replace("/home");
     }
   }, [hydrated, session, router]);
 

@@ -12,7 +12,7 @@ import { TEXT } from "@/lib/designSystem";
 
 /**
  * Shared by the onboarding step (app/onboarding/board) and the anytime
- * editor reachable from Profile (app/kingdom-map/board-skin) — same
+ * editor reachable from Profile (app/profile/customize) — same
  * picker UI, different heading/button copy and post-save destination.
  * `tone` keeps onboarding on its existing bright style while the anytime
  * editor uses the premium system (same pattern as Button/Card's tone prop).

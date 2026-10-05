@@ -1,3 +1,4 @@
+import { ForParentsLink } from "@/components/nav/ForParentsLink";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -201,6 +202,7 @@ export default async function KingdomMapPage({
                 questSet={questSet}
                 neutralTone={neutralTone}
                 milestones={kingdomBonuses.map((b) => b.label)}
+                ageBand={child.age_band ?? null}
               />
             }
             other={
@@ -254,7 +256,7 @@ export default async function KingdomMapPage({
 
           <section className="world-enter world-enter-delay-2 flex w-full flex-col gap-2">
             <WorldSectionHeader
-              enchanted="Adventure Map"
+              enchanted="Explore"
               atelier="Training Focus"
               classic="The Club"
             />
@@ -311,12 +313,7 @@ export default async function KingdomMapPage({
             <HomeAchievementsPreview {...achievementsProps} />
           </Suspense>
 
-          <Link
-            href="/parent-gate?next=/parent-dashboard"
-            className="inline-flex min-h-[48px] items-center font-body text-sm text-premium-ivory/65 underline underline-offset-2"
-          >
-            For Parents
-          </Link>
+          <ForParentsLink ageBand={child.age_band} />
           </>
             }
           />

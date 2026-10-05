@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Chess, type Square } from "chess.js";
@@ -282,7 +283,7 @@ export function TrainDrill({
       href="/chess-mind"
       className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
     >
-      Back to Chess Mind
+      {backLabel("TRAIN_YOUR_MIND")}
     </Link>
   );
 

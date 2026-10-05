@@ -23,7 +23,7 @@ export function ErrorState({
   onRetry,
   retryLabel = "Try again",
   showHome = true,
-  homeHref = "/kingdom-map",
+  homeHref = "/home",
   className,
   children,
 }: {

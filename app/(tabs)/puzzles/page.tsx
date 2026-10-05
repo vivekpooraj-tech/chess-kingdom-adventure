@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -413,7 +414,7 @@ function PuzzlesPageInner() {
             setShowTower(true);
             return;
           }
-          router.push("/kingdom-map");
+          router.push("/home");
         }}
         // Solving is a board-first moment in any orientation: the board gets
         // the whole viewport and the panel sits beside/below it, rather than
@@ -489,8 +490,8 @@ function PuzzlesPageInner() {
                   Daily Challenge complete ✓ — Checkmate in {puzzle.mateIn} · Accuracy{" "}
                   {Math.round(100 / (dailyAttempts + 1))}%
                 </MoveFeedback>
-                <Link href="/kingdom-map">
-                  <Button tone="premium" className="w-full">Back to the Kingdom →</Button>
+                <Link href="/home">
+                  <Button tone="premium" className="w-full">{backLabel("HOME")} →</Button>
                 </Link>
               </div>
             )}
@@ -570,10 +571,10 @@ function PuzzlesPageInner() {
         <UpgradeButton tone="premium" />
       </SecondaryCard>
       <Link
-        href="/kingdom-map"
+        href="/home"
         className="font-body text-sm text-premium-ivory/65 underline underline-offset-2 min-h-[44px] flex items-center"
       >
-        Back to Home
+        {backLabel("HOME")}
       </Link>
     </main>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { useEffect, useRef, useState } from "react";
 import { TIME_CONTROLS, DEFAULT_TIME_CONTROL_ID } from "@/content/timeControls";
 
@@ -398,10 +399,10 @@ export default function MatchmakingPage() {
       </p>
 
       <Link
-        href="/kingdom-map"
+        href="/play"
         className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
       >
-        Back to Home
+        {backLabel("PLAY")}
       </Link>
 
       {showPaywall && <GameLimitPaywall gameType="multiplayer" onDismiss={() => setShowPaywall(false)} />}

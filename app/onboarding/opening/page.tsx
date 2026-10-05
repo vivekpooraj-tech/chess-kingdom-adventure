@@ -14,8 +14,8 @@ import { OPENING_VIDEO_URL } from "@/content/openingVideo";
  * before whatever it would otherwise have sent them to.
  *
  * Deliberately hands off to the SAME destination pieces already resolved
- * (shouldSkipWelcome ? "/kingdom-map" : "/welcome") rather than hardcoding
- * "/kingdom-map" — this is a splash inserted in front of the existing
+ * (shouldSkipWelcome ? "/home" : "/welcome") rather than hardcoding
+ * "/home" — this is a splash inserted in front of the existing
  * funnel, not a new branch of it. /welcome's own one-time-video logic
  * (Chess Origins) is untouched and still runs normally afterward for
  * learners who haven't skipped it.
@@ -33,7 +33,7 @@ export default function OpeningVideoPage() {
   const [videoUnavailable, setVideoUnavailable] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const nextHrefRef = useRef<string>("/kingdom-map");
+  const nextHrefRef = useRef<string>("/home");
   // Guards against onEnded firing more than once, and against onError firing
   // after onEnded already ran (or vice versa) — either path writes the seen
   // flag and navigates AT MOST once.
@@ -62,7 +62,7 @@ export default function OpeningVideoPage() {
       }
       if (cancelled) return;
 
-      const next = shouldSkipWelcome(child.experience_level) ? "/kingdom-map" : "/welcome";
+      const next = shouldSkipWelcome(child.experience_level) ? "/home" : "/welcome";
       nextHrefRef.current = next;
 
       // Returning user (or a re-visit within the same session) — the video

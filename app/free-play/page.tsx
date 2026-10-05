@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -304,10 +305,10 @@ export default function FreePlayPage() {
           ))}
         </div>
         <Link
-          href="/kingdom-map"
+          href="/play"
           className="mx-auto inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
         >
-          Back to the Kingdom Map
+          {backLabel("PLAY")}
         </Link>
         {showPaywall && <GameLimitPaywall gameType="ai" onDismiss={() => setShowPaywall(false)} />}
       </Screen>
@@ -504,6 +505,7 @@ export default function FreePlayPage() {
         source="free_play"
         onPlayAgain={() => startGame(view.record.difficulty)}
         onBack={() => setView({ status: "picking-difficulty" })}
+        backLabel="Back to Free Play"
       />
     );
   }
@@ -537,8 +539,8 @@ export default function FreePlayPage() {
         </Button>
         <div className="flex gap-3">
           <Button tone="premium" variant="ghost" onClick={() => startGame(record.difficulty)}>Play Again</Button>
-          <Link href="/kingdom-map">
-            <Button tone="premium" variant="ghost">Back to the Kingdom Map</Button>
+          <Link href="/play">
+            <Button tone="premium" variant="ghost">{backLabel("PLAY")}</Button>
           </Link>
         </div>
       </PrimaryCard>

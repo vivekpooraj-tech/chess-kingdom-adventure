@@ -1,5 +1,6 @@
 "use client";
 
+import { backLabel } from "@/lib/navigation/destinations";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChessBoard } from "@/components/board/ChessBoard";
@@ -301,7 +302,7 @@ export function ReactionTrainer() {
           <Button tone="premium">See Premium</Button>
         </Link>
         <Link href="/chess-mind" className="font-body text-sm text-premium-ivory/65 underline underline-offset-2 min-h-[44px] flex items-center">
-          Back to Chess Mind
+          {backLabel("TRAIN_YOUR_MIND")}
         </Link>
       </main>
     );
@@ -312,7 +313,7 @@ export function ReactionTrainer() {
       <main className="min-h-screen bg-premium-midnight flex flex-col items-center justify-center gap-4 px-6">
         <p className={TEXT.body}>Reaction training could not load a position.</p>
         <Link href="/chess-mind">
-          <Button tone="premium">Back to Chess Mind</Button>
+          <Button tone="premium">{backLabel("TRAIN_YOUR_MIND")}</Button>
         </Link>
       </main>
     );
@@ -328,7 +329,7 @@ export function ReactionTrainer() {
             href="/chess-mind"
             className="flex min-h-[44px] items-center font-body text-sm text-premium-ivory/65 underline underline-offset-2"
           >
-            ← Chess Mind
+            ← {backLabel("TRAIN_YOUR_MIND")}
           </Link>
           {challenge && (
             <span className={TEXT.caption}>
