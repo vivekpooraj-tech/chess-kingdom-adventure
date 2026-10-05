@@ -12,7 +12,9 @@ import { Button } from "@/components/ui/Button";
 import { SkeletonBlock } from "@/components/ui/Skeleton";
 import { TEXT } from "@/lib/designSystem";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
-import { resolveActiveChild, completeAcademyContent } from "@/lib/supabase/queries";
+import { resolveActiveChild, completeAcademyContent, localDateString } from "@/lib/supabase/queries";
+import { DailyLimitCard, DailyLimitNotice } from "@/components/trainYourMind/DailyLimitCard";
+import { newCompletionKey, recordTrainYourMindCompletion } from "@/lib/trainYourMind/dailyUsage";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { OllieNote } from "@/components/ollie/OllieNote";
 import {
@@ -78,11 +80,19 @@ export function CourseLessonRunner({
   const [quizChoice, setQuizChoice] = useState<number | null>(null);
   const [savedState, setSavedState] = useState<"idle" | "saving" | "saved">("idle");
   const childIdRef = useRef<string | null>(null);
+  const childReady = useRef<Promise<void>>(Promise.resolve());
+  // Tactical Thinking is one of the eight Train Your Chess Mind categories: it has its own free
+  // daily limit (3 completed exercises per child per day). Each practice exercise is one
+  // completion, keyed per exercise so retries and duplicate moves count once.
+  const sharesDailyLimit = courseId === "tactical-thinking";
+  const completionKeys = useRef<Record<number, string>>({});
+  const [limitReached, setLimitReached] = useState(false);
+  const [limitRefused, setLimitRefused] = useState(false);
   const boardSize = useResponsiveBoardSize(340);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/academy/lesson?course=${encodeURIComponent(courseId)}&lesson=${encodeURIComponent(lessonId)}`)
+    fetch(`/api/academy/lesson?course=${encodeURIComponent(courseId)}&lesson=${encodeURIComponent(lessonId)}&d=${encodeURIComponent(localDateString())}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((json: LessonResponse) => {
         if (!cancelled) setData(json);
@@ -100,7 +110,7 @@ export function CourseLessonRunner({
   // saved — the lesson stays fully usable.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    childReady.current = (async () => {
       try {
         const supabase = createClient();
         const user = await getVerifiedUser(supabase);
@@ -142,6 +152,10 @@ export function CourseLessonRunner({
     },
     [courseId, lesson]
   );
+
+  if (data?.dailyLimit || limitRefused) {
+    return <DailyLimitCard categoryLabel="Tactical Thinking" />;
+  }
 
   if (loadFailed) {
     return (
@@ -205,8 +219,25 @@ export function CourseLessonRunner({
   const isLastExercise = exerciseIndex >= lesson.exercises.length - 1;
   const stageIndex = STAGE_ORDER.indexOf(stage);
 
+  /** The learner has completed this exercise: tell the server, which holds the one global count. */
+  function noteCompletion(index: number) {
+    if (!sharesDailyLimit || !lesson) return;
+    const key = (completionKeys.current[index] ??= newCompletionKey());
+    const exerciseId = `tactical:${lesson.id}:${index}`;
+    void (async () => {
+      await childReady.current;
+      const childId = childIdRef.current;
+      if (!childId) return;
+      const outcome = await recordTrainYourMindCompletion(createClient(), childId, "tactical", key, exerciseId);
+      if (!outcome) return;
+      if (!outcome.allowed) setLimitRefused(true);
+      else if (!outcome.isPremium && (outcome.remaining ?? 0) <= 0) setLimitReached(true);
+    })();
+  }
+
   function handleMove(opts: { from: string; to: string }) {
     if (!exercise || tryStatus === "correct") return;
+    noteCompletion(exerciseIndex);
     const right = opts.from === exercise.solutionFrom && opts.to === exercise.solutionTo;
     if (right) {
       setTryStatus("correct");
@@ -349,9 +380,13 @@ export function CourseLessonRunner({
                     The full line: {exercise.line}
                   </p>
                 )}
-                <Button tone="premium" onClick={nextExercise} className="w-full">
-                  {isLastExercise ? "Continue →" : "Next exercise →"}
-                </Button>
+                {limitReached ? (
+                  <DailyLimitNotice categoryLabel="Tactical Thinking" />
+                ) : (
+                  <Button tone="premium" onClick={nextExercise} className="w-full">
+                    {isLastExercise ? "Continue →" : "Next exercise →"}
+                  </Button>
+                )}
               </div>
             )}
 
@@ -361,6 +396,7 @@ export function CourseLessonRunner({
                 <Button tone="premium" variant="ghost" onClick={retryExercise} className="w-full">
                   Try again
                 </Button>
+                {limitReached && <DailyLimitNotice categoryLabel="Tactical Thinking" />}
                 {/* Never trap a learner: after a couple of attempts the answer
                     is offered rather than withheld. */}
                 {attempts >= 2 && (

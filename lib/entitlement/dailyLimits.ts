@@ -34,8 +34,11 @@ export const DAILY_LIMITS = {
    * the same value for now; the fix here is that this module no longer adds
    * a *third*, independent copy of that number. */
   puzzles: FREE_LIMITS.trainerPuzzlesPerDay,
-  /** Free-tier Train Your Mind challenges, per category, per day. No
-   * existing equivalent was found in lib/premium/capabilities.ts (its
+  /** Free-tier Train Your Mind: 3 completed exercises PER CATEGORY, per child, per calendar
+   * day. The eight categories (Pattern, Visualization, Calculation, Memory, Spatial,
+   * Mathematics, Reaction, Tactical Thinking) are counted independently, so each has its own
+   * 3. Enforced server-side by supabase/migrations/0055_train_your_mind_global_daily_limit.sql
+   * (its literal 3 must stay in sync with this value). No existing equivalent was found in lib/premium/capabilities.ts (its
    * FREE_LIMITS has no Train Your Mind entry) — this is a genuinely new
    * limit, not a duplicate of one that already exists elsewhere. Not yet
    * wired to any page — Phase 4 of the implementation plan. Present here

@@ -1,77 +1,90 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePremium } from "@/lib/premium/usePremium";
 import { createClient } from "@/lib/supabase/client";
 import { dailyLimitFor, isDailyLimitReached, remainingToday } from "@/lib/entitlement";
-import { getTrainYourMindUsageToday, recordTrainYourMindUse } from "./dailyUsage";
+import { getTrainYourMindUsage, recordTrainYourMindCompletion, type CompletionOutcome } from "./dailyUsage";
+import type { TrainModule } from "./dailyLimitRules";
 
 export interface TrainYourMindDailyLimit {
-  /** True until Premium status is known — callers should not show a locked
-   * state while this is true, to avoid a free-looking flash of "limit
-   * reached" for a Premium child on a slow connection. */
+  /** True until Premium status is known — callers should not show a locked state while this
+   * is true, so a Premium child never flashes a "limit reached" card. */
   loading: boolean;
   isPremium: boolean;
+  /** Completed exercises today IN THIS CATEGORY (the server's count). */
   usedToday: number;
   /** null means unlimited (Premium). */
   limit: number | null;
   remaining: number | null;
+  /** FREE and every slot used today in this category. Never true for Premium. */
   reached: boolean;
-  /** Call once per completed activity — records the use server-side
-   * (Phase 5) and syncs local state with the server's authoritative
-   * response. Public interface unchanged from Phase 4; internals now talk
-   * to supabase/migrations/0044_train_your_mind_daily_usage.sql's RPC
-   * instead of localStorage. */
-  recordUse: () => void;
+  /**
+   * Record that the learner completed one exercise in this category. Sends the completion
+   * to the server, which refuses a 4th free one, and adopts the server's authoritative
+   * count. Resolves with the outcome (null if the server could not be reached — the learner
+   * is then not blocked). The same `key` sent twice counts once.
+   */
+  recordCompletion: (key: string, exerciseId?: string) => Promise<CompletionOutcome | null>;
+  /** Adopt a limit state learned elsewhere (e.g. the serve route said it is reached). */
+  markReached: () => void;
 }
 
 /**
- * Train Your Mind's free daily limit — 3 activities per category per day,
- * unlimited on Premium. The limit itself is still configured in
- * lib/entitlement/dailyLimits.ts (unchanged); the actual enforcement is now
- * server-side (Phase 5) via record_train_your_mind_use(), not a client-side
- * localStorage count (Phase 4) — a child can no longer reset their count by
- * clearing site data, switching browsers, or switching devices.
+ * Train Your Mind's free daily limit for ONE category — 3 completed exercises per child per
+ * day in that category (each of the eight categories has its own 3), unlimited on Premium.
+ *
+ * The count lives in the database (migration 0055), not in React state or browser storage:
+ * refreshing, opening another browser, or using another device cannot reset it. The state
+ * held here is only a mirror of what the server last said.
  */
-export function useTrainYourMindDailyLimit(
-  childId: string | null,
-  moduleId: string
-): TrainYourMindDailyLimit {
+export function useTrainYourMindDailyLimit(childId: string | null, moduleId: TrainModule): TrainYourMindDailyLimit {
   const { state, loading: premiumLoading } = usePremium();
   const [usedToday, setUsedToday] = useState(0);
+  const [serverPremium, setServerPremium] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!childId) return;
     let cancelled = false;
-    getTrainYourMindUsageToday(createClient(), childId, moduleId).then((count) => {
-      if (!cancelled) setUsedToday(count);
+    getTrainYourMindUsage(createClient(), childId, moduleId).then((snap) => {
+      if (cancelled || !snap) return;
+      setUsedToday(snap.usedToday);
+      setServerPremium(snap.isPremium);
     });
     return () => {
       cancelled = true;
     };
   }, [childId, moduleId]);
 
-  const limit = dailyLimitFor("trainYourMindPerCategory", state.isPremium);
+  const isPremium = serverPremium ?? state.isPremium;
+  const limit = dailyLimitFor("trainYourMindPerCategory", isPremium);
   const reached = !!childId && !premiumLoading && isDailyLimitReached(usedToday, limit);
 
-  function recordUse() {
-    if (!childId) return;
-    // Optimistic bump for instant feedback; recordTrainYourMindUse() below
-    // corrects it to the server's authoritative count a moment later (e.g.
-    // if another device already used up today's quota).
-    setUsedToday((n) => n + 1);
-    recordTrainYourMindUse(createClient(), childId, moduleId).then((result) => {
-      setUsedToday(result.usedToday);
-    });
-  }
+  const recordCompletion = useCallback(
+    async (key: string, exerciseId?: string) => {
+      if (!childId) return null;
+      const outcome = await recordTrainYourMindCompletion(createClient(), childId, moduleId, key, exerciseId);
+      if (outcome) {
+        setUsedToday(outcome.usedToday);
+        setServerPremium(outcome.isPremium);
+      }
+      return outcome;
+    },
+    [childId, moduleId]
+  );
+
+  const markReached = useCallback(() => {
+    setUsedToday((n) => Math.max(n, dailyLimitFor("trainYourMindPerCategory", false) ?? 3));
+  }, []);
 
   return {
     loading: premiumLoading,
-    isPremium: state.isPremium,
+    isPremium,
     usedToday,
     limit,
     remaining: remainingToday(usedToday, limit),
     reached,
-    recordUse,
+    recordCompletion,
+    markReached,
   };
 }

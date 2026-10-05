@@ -78,47 +78,34 @@ function runStaticChecks() {
     return !/current_date/.test(body);
   })());
 
-  console.log("\n=== B. Client wiring ===");
+  console.log("\n=== B. Client wiring (per-category ledger — see scripts/test-train-your-mind-daily-limit.js) ===");
+  // The per-category counter of migration 0044 (record_train_your_mind_use) is superseded by the
+  // server-enforced, idempotent per-category ledger of 0055. Sections A/A2 and the DB suite below still describe and
+  // exercise that legacy RPC, which remains deployed but is no longer called by the app.
   const usage = read("lib/trainYourMind/dailyUsage.ts");
-  check("dailyUsage.ts no longer calls localStorage.*", !/localStorage\./.test(usage));
-  check("the read path queries the new table", /child_train_your_mind_activity/.test(usage));
-  check("the write path calls the new RPC, not a raw insert", /record_train_your_mind_use/.test(usage) && !/\.insert\(/.test(usage));
+  check("dailyUsage.ts does not use localStorage", !/localStorage\./.test(usage));
+  check("the read path calls the per-category usage RPC", /get_train_your_mind_usage/.test(usage));
+  check("the write path calls the completion RPC, not a raw insert", /record_train_your_mind_completion/.test(usage) && !/\.insert\(/.test(usage));
   check("dailyUsage.ts imports the canonical localDateString, not a second date helper", /import \{ localDateString \} from "@\/lib\/supabase\/queries"/.test(usage));
   check("no ad-hoc date-string construction (a second date helper) was introduced", !/getFullYear\(\)/.test(usage));
-  check("the read explicitly filters on localDateString()", /\.eq\("activity_date", localDateString\(\)\)/.test(usage));
-  check(
-    "the RPC call explicitly passes p_activity_date — never relies on the RPC's default current_date",
-    /p_activity_date:\s*localDateString\(\)/.test(usage)
-  );
+  check("both RPC calls explicitly pass p_activity_date from localDateString()", (usage.match(/p_activity_date:\s*localDateString\(\)/g) || []).length === 2);
 
   const hook = read("lib/trainYourMind/useDailyLimit.ts");
-  check("useTrainYourMindDailyLimit keeps its Phase 4 public interface", /loading:/.test(hook) && /isPremium:/.test(hook) && /usedToday,/.test(hook) && /reached,/.test(hook) && /recordUse,/.test(hook));
+  check("useTrainYourMindDailyLimit exposes loading / isPremium / usedToday / limit / remaining / reached / recordCompletion", /loading:/.test(hook) && /isPremium,/.test(hook) && /usedToday,/.test(hook) && /reached,/.test(hook) && /recordCompletion,/.test(hook));
   check("the hook still consumes the Phase 1 entitlement layer for the configured limit", /from "@\/lib\/entitlement"/.test(hook));
-  check("lib/entitlement/dailyLimits.ts is untouched as the configured-limit source", fs.existsSync(path.join(ROOT, "lib/entitlement/dailyLimits.ts")));
+  check("lib/entitlement/dailyLimits.ts is the configured-limit source (trainYourMindPerCategory = 3)", /trainYourMindPerCategory: 3/.test(read("lib/entitlement/dailyLimits.ts")));
 
-  console.log("\n=== J. PAGE WIRING: all 7 Chess Mind modules actually invoke the entitlement hook/RPC ===");
-  // Static, source-level confirmation that each module (not just the shared
-  // hook/RPC in isolation) is wired to the daily limit: imports the hook,
-  // actually calls recordUse() somewhere in its completion flow, and renders
-  // DailyLimitCard once dailyLimit.reached. This does not replace reading
-  // each file to confirm recordUse() sits inside the correct
-  // success-only branch (done separately, by hand) — it only guards against
-  // the hook being imported and then silently never invoked.
-  const chessMindModules = [
-    { label: "Pattern", file: "app/chess-mind/pattern/page.tsx" },
-    { label: "Calculation", file: "app/chess-mind/calculation/page.tsx" },
-    { label: "Mathematics", file: "app/chess-mind/mathematics/page.tsx" },
-    { label: "Spatial", file: "app/chess-mind/spatial/page.tsx" },
-    { label: "Memory", file: "app/chess-mind/memory/page.tsx" },
-    { label: "Visualization", file: "app/chess-mind/visualization/page.tsx" },
-    { label: "Reaction", file: "components/chessMind/ReactionTrainer.tsx" },
-  ];
-  for (const mod of chessMindModules) {
-    const src = read(mod.file);
-    check(`${mod.label}: imports useTrainYourMindDailyLimit`, /import \{ useTrainYourMindDailyLimit \} from "@\/lib\/trainYourMind\/useDailyLimit"/.test(src));
-    check(`${mod.label}: calls dailyLimit.recordUse() somewhere in its completion flow`, /dailyLimit\.recordUse\(\)/.test(src));
-    check(`${mod.label}: renders DailyLimitCard when dailyLimit.reached`, /dailyLimit\.reached/.test(src) && /<DailyLimitCard\b/.test(src));
+  console.log("\n=== J. WIRING: every Chess Mind surface records completions against its own category's limit ===");
+  const drill = read("components/trainYourMind/TrainDrill.tsx");
+  for (const label of ["pattern", "visualization", "calculation", "memory", "spatial", "mathematics"]) {
+    const src = read(`app/chess-mind/${label}/page.tsx`);
+    check(`${label}: renders the shared TrainDrill for its own module id`, /<TrainDrill/.test(src) && src.includes(`category="${label}"`));
   }
+  check("TrainDrill imports the hook and records a completion when an exercise is answered", /useTrainYourMindDailyLimit/.test(drill) && /dailyLimit\.recordCompletion\(key/.test(drill));
+  check("TrainDrill renders the limit state when the limit is reached", /dailyLimit\.reached/.test(drill) && /<DailyLimitCard\b/.test(drill));
+  const react = read("components/chessMind/ReactionTrainer.tsx");
+  check("Reaction: imports the hook, records a completion and renders the limit state", /useTrainYourMindDailyLimit/.test(react) && /dailyLimit\.recordCompletion\(key/.test(react) && /<DailyLimitCard\b/.test(react));
+  check("Tactical Thinking records completions and shows the same limit state", /recordTrainYourMindCompletion\(createClient\(\), childId, "tactical"/.test(read("components/academy/CourseLessonRunner.tsx")) && /<DailyLimitCard\b/.test(read("components/academy/CourseLessonRunner.tsx")));
 }
 
 // ---------------------------------------------------------------------------

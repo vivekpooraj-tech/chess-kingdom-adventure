@@ -39,42 +39,44 @@ const read = (p) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
     path.join(process.cwd(), "lib", "entitlement", "index.ts")
   );
 
-  check("free limit is 2 per category", DAILY_LIMITS.trainYourMindPerCategory === 2);
-  check("premium has no limit", dailyLimitFor("trainYourMindPerCategory", true) === null);
-  check("free has the real limit", dailyLimitFor("trainYourMindPerCategory", false) === 2);
+  // The limit: 3 completed exercises PER CATEGORY, per child, per day (the eight Train Your Mind
+  // categories are counted independently; enforced server-side by migration 0055).
+  const KEY = "trainYourMindPerCategory";
+  check("free limit is 3 per category per day", DAILY_LIMITS[KEY] === 3);
+  check("premium has no limit", dailyLimitFor(KEY, true) === null);
+  check("free has the real limit", dailyLimitFor(KEY, false) === 3);
 
-  const limit = dailyLimitFor("trainYourMindPerCategory", false);
+  const limit = dailyLimitFor(KEY, false);
   check("0 uses: not reached", isDailyLimitReached(0, limit) === false);
   check("1 use: not reached", isDailyLimitReached(1, limit) === false);
-  check("2 uses: reached (the 2nd use fills the limit)", isDailyLimitReached(2, limit) === true);
-  check("3rd use attempt: still reached", isDailyLimitReached(3, limit) === true);
-  check("premium never reached regardless of count", isDailyLimitReached(999, dailyLimitFor("trainYourMindPerCategory", true)) === false);
-  check("remaining at 0 uses is 2", remainingToday(0, limit) === 2);
-  check("remaining at 1 use is 1", remainingToday(1, limit) === 1);
-  check("remaining at 2 uses is 0, not negative", remainingToday(2, limit) === 0);
-  check("remaining at 3 uses clamps at 0", remainingToday(3, limit) === 0);
-  check("remaining is null for premium (unlimited)", remainingToday(5, dailyLimitFor("trainYourMindPerCategory", true)) === null);
+  check("2 uses: not reached", isDailyLimitReached(2, limit) === false);
+  check("3 uses: reached (the 3rd completion fills the limit)", isDailyLimitReached(3, limit) === true);
+  check("4th attempt: still reached", isDailyLimitReached(4, limit) === true);
+  check("premium never reached regardless of count", isDailyLimitReached(999, dailyLimitFor(KEY, true)) === false);
+  check("remaining at 0 uses is 3", remainingToday(0, limit) === 3);
+  check("remaining at 1 use is 2", remainingToday(1, limit) === 2);
+  check("remaining at 3 uses is 0, not negative", remainingToday(3, limit) === 0);
+  check("remaining at 4 uses clamps at 0", remainingToday(4, limit) === 0);
+  check("remaining is null for premium (unlimited)", remainingToday(5, dailyLimitFor(KEY, true)) === null);
 
-  // Wiring: every Train Your Mind page/component reads the shared hook —
-  // never a second hardcoded "2" per category.
-  const tymFiles = [
-    "app/chess-mind/calculation/page.tsx",
-    "app/chess-mind/mathematics/page.tsx",
-    "app/chess-mind/memory/page.tsx",
-    "app/chess-mind/pattern/page.tsx",
-    "app/chess-mind/spatial/page.tsx",
-    "app/chess-mind/visualization/page.tsx",
-    "components/chessMind/ReactionTrainer.tsx",
-  ];
-  for (const f of tymFiles) {
-    const src = read(f);
-    check(`${f} uses the shared daily-limit hook`, /useTrainYourMindDailyLimit\(/.test(src));
-    check(`${f} records a use on solve`, /dailyLimit\.recordUse\(\)/.test(src));
-    check(`${f} has no second hardcoded daily limit`, !/dailyLimitPerCategory\s*[:=]\s*\d/.test(src));
+  // Wiring: every Train Your Mind surface goes through the ONE shared engine/hook — never a
+  // second hardcoded limit, never a per-page counter.
+  const drill = read("components/trainYourMind/TrainDrill.tsx");
+  const wrapperPages = ["calculation", "mathematics", "memory", "pattern", "spatial", "visualization"];
+  for (const name of wrapperPages) {
+    const src = read("app/chess-mind/" + name + "/page.tsx");
+    check("app/chess-mind/" + name + "/page.tsx is a thin wrapper around the shared TrainDrill", /<TrainDrill/.test(src) && !/dailyLimit/.test(src));
   }
+  check("TrainDrill uses the shared daily-limit hook and records a completion", drill.includes("useTrainYourMindDailyLimit(") && drill.includes("recordCompletion(key"));
+  const reaction = read("components/chessMind/ReactionTrainer.tsx");
+  check("ReactionTrainer uses the shared daily-limit hook and records a completion", reaction.includes("useTrainYourMindDailyLimit(") && reaction.includes('recordCompletion(key'));
+  for (const f of ["components/trainYourMind/TrainDrill.tsx", "components/chessMind/ReactionTrainer.tsx", "components/academy/CourseLessonRunner.tsx"]) {
+    check(f + " has no second hardcoded daily limit", !/dailyLimitPerCategory\s*[:=]\s*\d|LIMIT\s*=\s*[23]\b/.test(read(f)));
+  }
+  check("Tactical Thinking records completions against its own 3-per-day limit", read("components/academy/CourseLessonRunner.tsx").includes('recordTrainYourMindCompletion(createClient(), childId, "tactical"'));
 
   const hookSrc = read("lib/trainYourMind/useDailyLimit.ts");
-  check("the hook consumes the Phase 1 entitlement layer, not a private constant", /from "@\/lib\/entitlement"/.test(hookSrc));
+  check("the hook consumes the Phase 1 entitlement layer, not a private constant", hookSrc.includes('from "@/lib/entitlement"'));
 }
 
 // --- B. Learn gating --------------------------------------------------------

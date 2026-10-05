@@ -1,17 +1,12 @@
 /**
- * Subtle "N of 2 today" line for a Train Your Mind activity page — the
- * proactive counterpart to DailyLimitCard's terminal blocked state.
+ * Subtle "N / 3 today" line for a Train Your Mind page — the proactive
+ * counterpart to DailyLimitCard's terminal state. The 3 is the GLOBAL free limit
+ * (completed exercises across every Train Your Mind category), mirrored from the
+ * server by useTrainYourMindDailyLimit(); this component never counts or hardcodes
+ * anything itself.
  *
- * Reads directly from useTrainYourMindDailyLimit()'s own state (usedToday/
- * limit/isPremium) — no second counter, no localStorage, no re-derived
- * limit. `limit` already comes from lib/entitlement/dailyLimits.ts via the
- * hook; this component never hardcodes the "2" itself.
- *
- * Deliberately invisible in the two cases where showing it would be wrong:
- *   - before any use today (nothing to report yet — showing "0 of 2" reads
- *     as a limit warning before the child has done anything)
- *   - Premium (limit is null/unlimited — "2 of 2" would misrepresent an
- *     unlimited account as capped)
+ * Invisible before the first completion today (showing "0 / 3" reads as a limit
+ * warning before the child has done anything) and for Premium (unlimited).
  */
 export function DailyUsageIndicator({
   usedToday,
@@ -27,7 +22,7 @@ export function DailyUsageIndicator({
 
   return (
     <p className="font-classic-body text-[11px] text-premium-ivory/40 text-center">
-      {usedToday} of {limit} today
+      {Math.min(usedToday, limit)} / {limit} today
     </p>
   );
 }

@@ -3,6 +3,14 @@ import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { getCourse, getLesson, isLessonFree } from "@/lib/academy/courses.server";
 import { PARENT_PREMIUM_COLUMNS, resolvePremiumState } from "@/lib/premium/entitlement";
 import type { LessonResponse } from "@/lib/academy/courseTypes";
+import { cookies } from "next/headers";
+import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
+import { resolveActiveChildCached } from "@/lib/supabase/queries";
+import { readServeGate } from "@/lib/trainYourMind/dailyLimitServer";
+
+/** Tactical Thinking is one of the eight Train Your Chess Mind categories, so it has its own
+ *  free daily limit: 3 completed exercises per child per day. */
+const TRAIN_YOUR_MIND_COURSE = "tactical-thinking";
 
 /**
  * Serve ONE Academy lesson.
@@ -40,6 +48,31 @@ export async function GET(req: NextRequest) {
       { lesson: null, courseId, courseTitle: "", lessonIds: [], nextLessonId: null } satisfies LessonResponse,
       { status: 404 }
     );
+  }
+
+  if (courseId === TRAIN_YOUR_MIND_COURSE) {
+    const { data: parentRow } = await supabase
+      .from("parents")
+      .select(PARENT_PREMIUM_COLUMNS)
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+    if (!resolvePremiumState(parentRow).isPremium) {
+      const resolution = await resolveActiveChildCached(supabase, user.id, cookies().get(ACTIVE_CHILD_COOKIE_NAME)?.value ?? null);
+      const gate = resolution.child ? await readServeGate(supabase, resolution.child.id, "tactical", url.searchParams.get("d")) : null;
+      if (gate && !gate.allowed) {
+        return NextResponse.json(
+          {
+            lesson: null,
+            courseId,
+            courseTitle: course.summary.title,
+            lessonIds: course.lessons.map((l) => l.id),
+            nextLessonId: null,
+            dailyLimit: { used: gate.used, limit: gate.limit },
+          } satisfies LessonResponse,
+          { status: 200, headers: { "Cache-Control": "no-store" } }
+        );
+      }
+    }
   }
 
   const lessonIds = course.lessons.map((l) => l.id);

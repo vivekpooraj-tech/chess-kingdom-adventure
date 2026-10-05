@@ -90,4 +90,7 @@ export interface LessonResponse {
    * content. Absent/false for courses with no free limit. */
   locked?: boolean;
   lockedPreview?: LockedLessonPreview | null;
+  /** Tactical Thinking only: a FREE child has used today's 3 completed Tactical Thinking
+   *  exercises. `lesson` is null and no content is sent. */
+  dailyLimit?: { used: number; limit: number };
 }

@@ -6,6 +6,8 @@ import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { resolveActiveChildCached } from "@/lib/supabase/queries";
 import { selectTacticsPuzzle } from "@/lib/puzzles/tacticsLibrary.server";
 import type { TacticsTier } from "@/lib/puzzles/tacticsTypes";
+import { loadExerciseHistory } from "@/lib/trainYourMind/exerciseHistory";
+import { recentIdSet } from "@/lib/trainYourMind/exerciseSelection";
 import type { ReactionChallenge, ReactionOption, ReactionResponse } from "@/lib/chessMind/reactionTypes";
 
 /**
@@ -68,6 +70,13 @@ export async function GET(req: NextRequest) {
       .filter(Boolean)
       .slice(0, 50)
   );
+
+  // Persistent, per-CHILD memory: also avoid puzzles this child was recently
+  // shown on any device/session (fail-open — an empty history changes nothing).
+  const history = await loadExerciseHistory(supabase, resolution.child.id, "reaction");
+  for (const id of recentIdSet(history)) {
+    if (id.startsWith("p:")) exclude.add(id.slice(2));
+  }
 
   // A reaction challenge must be decidable at a glance, so ask for a one-move
   // idea: anything needing a long line is a calculation exercise, not this.

@@ -24,6 +24,14 @@ import type { ExperienceLevel, AgeBand } from "@/lib/learner/experienceLevel";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { FlameIcon } from "@/components/nav/icons";
 import { TEXT } from "@/lib/designSystem";
+import { useMode } from "@/lib/mode/useMode";
+import { worldFromMode } from "@/lib/world/worlds";
+import { WORLD_VOICE } from "@/lib/trainYourMind/worldVoice";
+import { loadAllProgress } from "@/lib/trainYourMind/progressClient";
+import { getTrainYourMindUsageAll, type UsageSnapshot } from "@/lib/trainYourMind/dailyUsage";
+import type { TrainModule } from "@/lib/trainYourMind/dailyLimitRules";
+import { levelProgress, statusLabel, type ProgressState } from "@/lib/trainYourMind/progression";
+import { isTrainCategory } from "@/lib/trainYourMind/curriculum";
 
 export default function ChessMindPage() {
   const [stats, setStats] = useState<Record<string, number>>({});
@@ -36,6 +44,12 @@ export default function ChessMindPage() {
   const [ageBand, setAgeBand] = useState<AgeBand | null>(null);
   const [profile, setProfile] = useState<OllieLearnerProfile>({});
   const [brain, setBrain] = useState<ChessBrainView | null>(null);
+  const [progress, setProgress] = useState<Record<string, ProgressState>>({});
+  // Today's free usage PER CATEGORY (3 completed exercises per child per day in each of the eight
+  // categories) — the server's counts, never local ones.
+  const [usage, setUsage] = useState<Partial<Record<TrainModule, UsageSnapshot>> | null>(null);
+  const { mode } = useMode();
+  const voice = WORLD_VOICE[worldFromMode(mode)];
 
   useEffect(() => {
     async function load() {
@@ -53,13 +67,17 @@ export default function ChessMindPage() {
       const childId = resolution.child.id;
       // The two signal reads join the existing batch rather than adding a new
       // sequential layer, so Ollie's awareness costs no extra round-trip.
-      const [statsResult, streakResult, todayResult, signals, reviews] = await Promise.all([
+      const [statsResult, streakResult, todayResult, signals, reviews, progressResult, usageResult] = await Promise.all([
         getChessMindStatsByModule(supabase, childId).catch(() => ({})),
         getChessMindStreak(supabase, childId).catch(() => 0),
         getTodayChessMindModules(supabase, childId).catch(() => []),
         getSkillSignals(supabase, childId).catch(() => ({})),
         getRecentGameReviews(supabase, childId).catch(() => []),
+        loadAllProgress(supabase, childId),
+        getTrainYourMindUsageAll(supabase, childId),
       ]);
+      setProgress(progressResult);
+      setUsage(usageResult);
       setStats(statsResult);
       setStreak(streakResult);
       setTodayModules(todayResult);
@@ -91,13 +109,16 @@ export default function ChessMindPage() {
     <>
       <Screen maxWidth="medium" topSafeArea="icons">
         <div className="mx-auto max-w-xl text-center">
-          <h1 className={TEXT.display}>Chess Mind</h1>
-          <p className={`${TEXT.body} mt-2`}>Train the way you think about chess.</p>
-          <p className={`${TEXT.caption} normal-case mt-2`}>
-            Pattern recognition, calculation, visualization, memory, and spatial reasoning —
-            good practice for the game, not a claim about IQ.
-          </p>
+          <h1 className={TEXT.display}>{voice.title}</h1>
+          <p className={`${TEXT.body} mt-2`}>{voice.subtitle}</p>
+          <p className={`${TEXT.caption} normal-case mt-2`}>{voice.caption}</p>
         </div>
+
+        {loaded && usage && !Object.values(usage).some((u) => u?.isPremium) && (
+          <p className={`${TEXT.caption} normal-case text-center`} role="status">
+            Free training: 3 exercises per category, every day.
+          </p>
+        )}
 
         {loaded && streak > 0 && (
           <div className="flex items-center gap-2 rounded-full bg-premium-navy border border-premium-gold/30 px-4 py-1.5">
@@ -204,10 +225,9 @@ export default function ChessMindPage() {
                 <div className="flex-1">
                   <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
                   <p className="font-classic-body text-xs text-premium-ivory/50">{cat.description}</p>
-                  {score > 0 && (
-                    <p className="font-classic-body text-[11px] text-premium-gold/80 mt-1">
-                      {cat.title} Score: {score}
-                    </p>
+                  <UsageLine usage={usage?.[cat.id as TrainModule] ?? null} />
+                  {isTrainCategory(cat.id) && (
+                    <TrainStatus state={progress[cat.id] ?? null} category={cat.id} fallbackScore={score} />
                   )}
                 </div>
                 <span className="text-premium-gold text-lg">→</span>
@@ -224,5 +244,52 @@ export default function ChessMindPage() {
         </Link>
       </Screen>
     </>
+  );
+}
+
+/** Level + progress for one training path: a name and five small steps, no dashboards. */
+function TrainStatus({
+  state,
+  category,
+  fallbackScore,
+}: {
+  state: ProgressState | null;
+  category: Parameters<typeof statusLabel>[1];
+  fallbackScore: number;
+}) {
+  const label = statusLabel(state, category);
+  if (!state || state.attempts === 0) {
+    return (
+      <p className="font-classic-body text-[11px] text-premium-ivory/40 mt-1">
+        {fallbackScore > 0 ? "Pick up where you left off — now with levels" : "Not started · begins at Foundation"}
+      </p>
+    );
+  }
+  const p = levelProgress(state);
+  return (
+    <div className="mt-1 flex items-center gap-2">
+      <p className="font-classic-body text-[11px] text-premium-gold/90">
+        {label}
+        {state.mastered ? " ★" : ""}
+      </p>
+      {!state.mastered && (
+        <span className="flex gap-0.5" aria-label={`${p.have} of ${p.need} to the next level`}>
+          {Array.from({ length: p.need }, (_, i) => (
+            <span key={i} className={`h-1 w-3 rounded-full ${i < p.have ? "bg-premium-gold" : "bg-premium-ivory/15"}`} />
+          ))}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** "n / 3 today" for one category (free accounts only) — the server's count. */
+function UsageLine({ usage }: { usage: UsageSnapshot | null }) {
+  if (!usage || usage.isPremium || usage.limit === null) return null;
+  const done = usage.usedToday >= usage.limit;
+  return (
+    <p className={`font-classic-body text-[11px] mt-1 ${done ? "text-premium-gold/90" : "text-premium-ivory/45"}`}>
+      {Math.min(usage.usedToday, usage.limit)} / {usage.limit} today{done ? " · done for today" : ""}
+    </p>
   );
 }
