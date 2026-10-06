@@ -52,7 +52,7 @@ const PROBE = `(()=>{const vw=innerWidth,de=document.documentElement;
 async function openSession(v, cookies) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "cust-"));
   const chrome = spawn(CHROME, ["--headless=new", "--remote-debugging-port=9339", "--user-data-dir=" + profile, "--no-first-run", "--disable-gpu", `--window-size=${v.w},${v.h}`, "about:blank"], { stdio: "ignore" });
-  let tabs; for (let i = 0; i < 120; i++) { try { tabs = await (await fetch("http://127.0.0.1:9339/json")).json(); if (tabs.length) break; } catch {} await sleep(250); } // up to 30s: Chrome can start slowly while the dev server compiles
+  let tabs; for (let i = 0; i < 120; i++) { try { tabs = await (await fetch("http://127.0.0.1:9339/json")).json(); if (tabs.some((t) => t.type === "page")) break; } catch {} await sleep(250); } // up to 30s; wait for the PAGE target (the endpoint lists service workers / browser UI first)
   const page = tabs && tabs.find((t) => t.type === "page"); if (!page) throw new Error("could not attach to Chrome");
   const ws = new WebSocket(page.webSocketDebuggerUrl); await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
   let id = 0; const pending = new Map(); const logs = [];
@@ -84,7 +84,7 @@ async function openSession(v, cookies) {
   const saved = async () => (await sb.from("children").select("board_skin_id,piece_set_id").eq("id", CHILD).single()).data;
   const original = await saved();
   const BOARDS = ["standard-green", "tournament-green", "slate", "walnut-ivory", "wood-classic"];
-  const PIECES = ["wikimedia-classic", "aurelia", "neostaunton-hand", "wood-classic", "royal-legends", "kingdom-characters"];
+  const PIECES = ["wikimedia-classic", "neostaunton-hand", "wood-classic", "royal-legends"];
   const effBoard = BOARDS.includes(original.board_skin_id) ? original.board_skin_id : "standard-green";
   const effPiece = PIECES.includes(original.piece_set_id) ? original.piece_set_id : "wikimedia-classic";
   console.log(`QA child saved: ${JSON.stringify(original)} -> effective ${effBoard} / ${effPiece}${WRITE ? "  (write mode: will restore)" : "  (read-only)"}`);
@@ -99,7 +99,7 @@ async function openSession(v, cookies) {
       try {
         const r = await s.customize();
         const cards = r.board.concat(r.piece);
-        check(`${v.name}: 5 board cards and 6 piece cards render (Standard Green and Classic first)`, r.board.length === 5 && r.piece.length === 6 && r.board[0].id === "standard-green" && r.piece[0].id === "wikimedia-classic", `${r.board.length}/${r.piece.length} ${r.board[0] && r.board[0].id} ${r.piece[0] && r.piece[0].id}`);
+        check(`${v.name}: 5 board cards and 4 piece cards render (Standard Green and Classic first)`, r.board.length === 5 && r.piece.map((c) => c.id).join() === "wikimedia-classic,neostaunton-hand,wood-classic,royal-legends" && r.board[0].id === "standard-green" && r.piece[0].id === "wikimedia-classic", `${r.board.length}/${r.piece.length} ${r.board[0] && r.board[0].id} ${r.piece[0] && r.piece[0].id}`);
         check(`${v.name}: no horizontal overflow`, r.docW <= r.vw && r.over === 0, `doc ${r.docW} vs ${r.vw}, ${r.over} elements past the edge`);
         check(`${v.name}: ${v.cols} board cards per row (${Math.ceil(5 / v.cols)} rows)`, new Set(r.board.map((c) => c.top)).size === Math.ceil(5 / v.cols), JSON.stringify(r.board.map((c) => c.top)));
         check(`${v.name}: every card is a real preview (64 squares / 8 piece images) and inert`, r.board.every((c) => c.squares === 64 && c.inert) && r.piece.every((c) => c.imgs === 8 && c.inert));
@@ -115,7 +115,7 @@ async function openSession(v, cookies) {
       for (const v of [VIEWPORTS[0], VIEWPORTS[3]]) {
         const s = await openSession(v, cookies);
         try {
-          for (const [pg, attr, expect, count] of [["onboarding/board", "data-board-option", expectBoard, 5], ["onboarding/pieces", "data-piece-option", expectPiece, 6]]) {
+          for (const [pg, attr, expect, count] of [["onboarding/board", "data-board-option", expectBoard, 5], ["onboarding/pieces", "data-piece-option", expectPiece, 4]]) {
             await s.open(pg); await s.waitFor(`document.querySelectorAll('[${attr}]').length>=1`); await sleep(1200);
             const r = JSON.parse(await s.ev(`JSON.stringify({n:document.querySelectorAll('[${attr}]').length,sel:[...document.querySelectorAll('[${attr}][aria-pressed="true"]')].map(e=>e.getAttribute('${attr}')),docW:document.documentElement.scrollWidth,vw:innerWidth,broken:[...document.images].filter(i=>!(i.complete&&i.naturalWidth>0)).length})`));
             check(`${label} ${pg} @${v.w}: ${count} options, selected = ${expect} (the effective id), no overflow, no broken images, no errors`, r.n === count && JSON.stringify(r.sel) === JSON.stringify([expect]) && r.docW <= r.vw && r.broken === 0 && s.logs.length === 0, JSON.stringify(r) + " " + s.logs.slice(0, 2).join("|"));
@@ -135,14 +135,14 @@ async function openSession(v, cookies) {
         check("... and it is saved", (await saved()).board_skin_id === "slate");
         r = await s.customize();
         check("... and it is still selected after a reload", JSON.stringify(sel(r.board)) === '["slate"]' && r.a1 === rgb("#5C5F63"));
-        await s.click('[data-piece-card="aurelia"] > button'); await sleep(1500); r = JSON.parse(await s.ev(PROBE));
-        check("choosing Atelier pieces selects them; the main preview and every board card now draw them", JSON.stringify(sel(r.piece)) === '["aurelia"]' && JSON.stringify(r.mainPieces) === '["aurelia"]' && JSON.stringify(r.boardCardPieces) === '["aurelia"]', JSON.stringify([sel(r.piece), r.mainPieces, r.boardCardPieces]));
-        check("... and they are saved", (await saved()).piece_set_id === "aurelia");
+        await s.click('[data-piece-card="neostaunton-hand"] > button'); await sleep(1500); r = JSON.parse(await s.ev(PROBE));
+        check("choosing NeoStaunton pieces selects them; the main preview and every board card now draw them", JSON.stringify(sel(r.piece)) === '["neostaunton-hand"]' && JSON.stringify(r.mainPieces) === '["neostaunton-hand"]' && JSON.stringify(r.boardCardPieces) === '["neostaunton-hand"]', JSON.stringify([sel(r.piece), r.mainPieces, r.boardCardPieces]));
+        check("... and they are saved", (await saved()).piece_set_id === "neostaunton-hand");
         r = await s.customize();
-        check("... and they are still selected after a reload", JSON.stringify(sel(r.piece)) === '["aurelia"]' && JSON.stringify(sel(r.board)) === '["slate"]');
+        check("... and they are still selected after a reload", JSON.stringify(sel(r.piece)) === '["neostaunton-hand"]' && JSON.stringify(sel(r.board)) === '["slate"]');
         await s.open("puzzles/tactics"); await s.waitFor(`document.querySelectorAll('[data-square]').length===64`, 40000); await sleep(1500);
         const g = JSON.parse(await s.ev(`JSON.stringify({a1:getComputedStyle(document.querySelector('[data-square=a1]')).backgroundColor,b1:getComputedStyle(document.querySelector('[data-square=b1]')).backgroundColor,sets:[...new Set([...document.querySelectorAll('[data-square] img')].map(i=>i.src.split('/pieces/')[1].split('/')[0]))]})`));
-        check("the real game board shows the chosen board and pieces", g.a1 === rgb("#5C5F63") && g.b1 === rgb("#D2CFC9") && JSON.stringify(g.sets) === '["aurelia"]', JSON.stringify(g));
+        check("the real game board shows the chosen board and pieces", g.a1 === rgb("#5C5F63") && g.b1 === rgb("#D2CFC9") && JSON.stringify(g.sets) === '["neostaunton-hand"]', JSON.stringify(g));
         check("no console errors during the write flow", s.logs.length === 0, s.logs.slice(0, 2).join(" | "));
       } finally { s.close(); }
 
@@ -165,13 +165,13 @@ async function openSession(v, cookies) {
       } finally { r2.close(); }
 
       // Retired saved ids — including the three dropped boards — must show the defaults as selected everywhere, writing nothing.
-      for (const [boardId, pieceId] of [["sunset-desert", "classic"], ["ocean-ice", "classic"], ["walnut-classic", "classic"], ["classic-forest", "classic"]]) {
+      for (const [boardId, pieceId] of [["sunset-desert", "classic"], ["ocean-ice", "classic"], ["walnut-classic", "classic"], ["classic-forest", "classic"], ["standard-green", "aurelia"], ["standard-green", "atelier"], ["standard-green", "kingdom-characters"]]) {
         await sb.from("children").update({ board_skin_id: boardId, piece_set_id: pieceId }).eq("id", CHILD);
         const retired = await saved();
         const r3 = await openSession({ w: 390, h: 844, dpr: 3 }, cookies);
         try {
           const r = await r3.customize();
-          check(`saved '${boardId}' / '${pieceId}': Customize shows Standard Green and Classic as selected, and no card is named Sunset Desert / Ocean Ice / Walnut Classic`, JSON.stringify(sel(r.board)) === '["standard-green"]' && JSON.stringify(sel(r.piece)) === '["wikimedia-classic"]' && r.board.length === 5, `${sel(r.board)} ${sel(r.piece)} ${r.board.length}`);
+          check(`saved '${boardId}' / '${pieceId}': Customize shows Standard Green and Classic as selected, and exactly 5 board / 4 piece cards (no Sunset Desert, Ocean Ice, Walnut Classic, Atelier or Kingdom Characters)`, JSON.stringify(sel(r.board)) === '["standard-green"]' && JSON.stringify(sel(r.piece)) === '["wikimedia-classic"]' && r.board.length === 5 && r.piece.length === 4, `${sel(r.board)} ${sel(r.piece)} ${r.board.length}`);
         } finally { r3.close(); }
         await pickers("standard-green", "wikimedia-classic", `saved '${boardId}':`);
         check(`opening Customize and both pickers with '${boardId}' saved wrote nothing (the saved id is untouched)`, JSON.stringify(await saved()) === JSON.stringify(retired), JSON.stringify(await saved()));

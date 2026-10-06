@@ -26,9 +26,10 @@ export const PIECE_SYMBOL_BY_NAME: Record<string, PieceSymbol> = {
  * The piece library. Classic is THE default and the universal fallback: the widely used Staunton-style
  * Cburnett set (see public/pieces/wikimedia-classic/ATTRIBUTION.md). Every other set here is real artwork
  * that exists in public/pieces/<folder>/{light,dark}/{king,queen,rook,bishop,knight,pawn}.svg; a set is
- * only registered once its assets are in the repository. Atelier (aurelia) is a current set; Wood Carved,
- * NeoStaunton, Kingdom Characters and Royal Legends are RESTORED from before the standardisation (commit
- * b42037c) with their original ids, names and optical scales, and their artwork restored byte-for-byte.
+ * only registered once its assets are in the repository. NeoStaunton, Wood Carved and Royal Legends are
+ * RESTORED from before the standardisation (commit b42037c) with their original ids, names and optical scales,
+ * and their artwork restored byte-for-byte. Any other saved id (including sets that were dropped from the
+ * library) resolves to Classic.
  *
  * Any child whose saved piece_set_id is not in this list — including every set that used to exist —
  * falls back to DEFAULT_PIECE_SET_ID via getPieceSet().
@@ -47,22 +48,8 @@ export const PIECE_SETS: PieceSetOption[] = [
     intrinsicSize: { width: 45, height: 45 },
     opticalScale: { k: 0.85, q: 0.81, b: 0.81, n: 0.78, r: 0.76, p: 0.73 },
   },
-  {
-    id: "aurelia",
-    name: "Atelier",
-    emoji: "♕",
-    description: "Tall, refined, softly shaded.",
-    folder: "aurelia",
-    // Cropped viewBoxes (public/pieces/aurelia/*/*.svg) share one 1024-unit canvas, so the real height
-    // relationships are king 809, queen 748, knight 715, rook 704, bishop 704, pawn 578. The king targets
-    // the same ~85% of a square as Classic and every other piece keeps its true proportion to it.
-    // Every piece is taller than wide, so the square slot in PieceImage is always height-limited.
-    intrinsicSize: { width: 438, height: 809 },
-    opticalScale: { k: 0.85, q: 0.785, b: 0.74, n: 0.75, r: 0.74, p: 0.607 },
-    worlds: ["atelier"],
-  },
 
-  // ── Restored: the sets that existed before the standardisation (commit b42037c). Original ids,
+  // ── Restored: sets that existed before the standardisation (commit b42037c). Original ids,
   //    names, folders and optical scales. Selectable; none of them is the default.
   {
     id: "neostaunton-hand",
@@ -98,19 +85,6 @@ export const PIECE_SETS: PieceSetOption[] = [
     // these values impose the Staunton hierarchy the raster doesn't carry.
     intrinsicSize: { width: 213, height: 420 },
     opticalScale: { k: 1.0, q: 0.94, b: 0.90, n: 0.89, r: 0.88, p: 0.84 },
-  },
-  {
-    id: "kingdom-characters",
-    name: "Kingdom Characters",
-    emoji: "🛡️",
-    description: "Standing characters, not classic pieces.",
-    folder: "kingdom-characters",
-    // Every file in this set shares the same "0 0 100 100" viewBox exactly —
-    // stylised standing characters drawn to fill their frame. Keep them
-    // chunky, but still king > … > pawn so the hierarchy reads.
-    intrinsicSize: { width: 100, height: 100 },
-    opticalScale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.89, p: 0.86 },
-    worlds: ["enchanted"],
   },
 ];
 

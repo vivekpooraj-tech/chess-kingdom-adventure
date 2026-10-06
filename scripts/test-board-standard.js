@@ -52,11 +52,11 @@ check("viewing Customize never writes the preference (no update call inside load
 check("the preference is still saved only when a card is chosen", /function selectBoardSkin[\s\S]*?updateChildBoardSkin\(/.test(customize));
 check("Classic (the standard Staunton-style set) is the first piece set and the default (the universal fallback)", sets.PIECE_SETS[0].id === "wikimedia-classic" && sets.DEFAULT_PIECE_SET_ID === "wikimedia-classic");
 // Only genuinely retired / unknown ids fall back. The sets restored from before the standardisation
-// (neostaunton-hand, wood-classic, royal-legends, kingdom-characters) are selectable again.
-for (const legacy of ["classic", "", null, undefined, "nonsense"]) {
+// (neostaunton-hand, wood-classic, royal-legends) are selectable again; aurelia / atelier / kingdom-characters were dropped.
+for (const legacy of ["aurelia", "atelier", "kingdom-characters", "classic", "", null, undefined, "nonsense"]) {
   check(`saved piece-set id ${JSON.stringify(legacy)} falls back to the standard pieces`, sets.getPieceSet(legacy).id === "wikimedia-classic");
 }
-for (const restored of ["neostaunton-hand", "wood-classic", "royal-legends", "kingdom-characters"]) {
+for (const restored of ["neostaunton-hand", "wood-classic", "royal-legends"]) {
   check(`restored piece set ${restored} is selectable and is NOT the default`, sets.getPieceSet(restored).id === restored && restored !== sets.DEFAULT_PIECE_SET_ID);
 }
 const folder = sets.PIECE_SETS[0].folder;
@@ -78,7 +78,7 @@ function walk(dir, out = []) {
 const live = ["app", "components", "content", "lib", "public"].flatMap((d) => (fs.existsSync(path.join(ROOT, d)) ? walk(path.join(ROOT, d)) : []));
 const grep = (re) => live.filter((f) => re.test(fs.readFileSync(f, "utf8")));
 // The restored legacy art is reached only through the registries (folder ids / one boardImageUrl) — no screen hard-codes a legacy path.
-const legacyPathRefs = grep(/pieces\/(wood-classic|neostaunton-hand|royal-legends|kingdom-characters)\/|boards\/wood-classic/).map((f) => path.relative(ROOT, f).split(path.sep).join("/"));
+const legacyPathRefs = grep(/pieces\/(wood-classic|neostaunton-hand|royal-legends)\/|boards\/wood-classic/).map((f) => path.relative(ROOT, f).split(path.sep).join("/"));
 check("legacy asset paths appear only in the board registry", legacyPathRefs.every((f) => f === "content/boardSkins.ts"), legacyPathRefs.join(","));
 
 const board = read("components/board/ChessBoard.tsx");

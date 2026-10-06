@@ -22,18 +22,20 @@ const sets = R("content/pieceSets.ts");
 const worlds = R("lib/world/worlds.ts");
 const PIECES = Object.values(sets.PIECE_FILE_NAME);
 const COLOR = /^(#[0-9A-Fa-f]{6}|rgba?\([^)]+\))$/;
-const legacyIds = ["sunset-desert", "ocean-ice", "walnut-classic", "classic-forest", "classic", "tournament", "modern", "", null, undefined, "nonsense"]; // retired, dropped or never existed
+const legacyIds = ["aurelia", "atelier", "kingdom-characters", "sunset-desert", "ocean-ice", "walnut-classic", "classic-forest", "classic", "tournament", "modern", "", null, undefined, "nonsense"]; // retired, dropped or never existed
 
 // --- The library (what is actually implemented).
 const CURRENT_BOARDS = ["standard-green", "tournament-green", "slate"];
 const RESTORED_BOARDS = ["walnut-ivory", "wood-classic"];
 const DROPPED_BOARDS = ["sunset-desert", "ocean-ice", "walnut-classic"]; // removed from the library on purpose
-const CURRENT_SETS = ["wikimedia-classic", "aurelia"];
-const RESTORED_SETS = ["neostaunton-hand", "wood-classic", "royal-legends", "kingdom-characters"];
+const CURRENT_SETS = ["wikimedia-classic"];
+const RESTORED_SETS = ["neostaunton-hand", "wood-classic", "royal-legends"];
+const DROPPED_SETS = ["aurelia", "atelier", "kingdom-characters"]; // removed from the library, and their art deleted, on purpose
 check("boards: the current four first (Standard Green is the default), then the two restored boards (Walnut & Ivory, Wood Classic)", skins.BOARD_SKINS.map((s) => s.id).join() === [...CURRENT_BOARDS, ...RESTORED_BOARDS].join(), skins.BOARD_SKINS.map((s) => s.id).join());
-check("pieces: Classic (default), Atelier, then the four restored sets", sets.PIECE_SETS.map((s) => s.id).join() === [...CURRENT_SETS, ...RESTORED_SETS].join(), sets.PIECE_SETS.map((s) => s.id).join());
+check("pieces: Classic (default), then the three restored sets (NeoStaunton, Wood Carved, Royal Legends)", sets.PIECE_SETS.map((s) => s.id).join() === [...CURRENT_SETS, ...RESTORED_SETS].join(), sets.PIECE_SETS.map((s) => s.id).join());
 check("board names are Standard Green, Tournament Green, Slate, Walnut & Ivory, Wood Classic", skins.BOARD_SKINS.map((s) => s.name).join("|") === "Standard Green|Tournament Green|Slate|Walnut & Ivory|Wood Classic");
-check("current piece names are Classic and Atelier; Modern / Tournament (no real artwork) are NOT registered", sets.PIECE_SETS.slice(0, 2).map((s) => s.name).join("|") === "Classic|Atelier" && !sets.PIECE_SETS.some((s) => /modern|tournament/i.test(s.name + s.id)));
+check("there are exactly 4 piece sets: Classic, NeoStaunton, Wood Carved, Royal Legends", sets.PIECE_SETS.length === 4 && sets.PIECE_SETS.map((s) => s.name).join("|") === "Classic|NeoStaunton|Wood Carved|Royal Legends", sets.PIECE_SETS.map((s) => s.name).join("|"));
+check("Atelier / Aurelia and Kingdom Characters are not registered; no invented replacements (Modern / Tournament) either", DROPPED_SETS.every((id) => !sets.PIECE_SETS.some((s) => s.id === id)) && !sets.PIECE_SETS.some((s) => /atelier|aurelia|kingdom|modern|tournament/i.test(s.name + s.id + s.folder)));
 check("the defaults are Standard Green and Classic, they come first, and no restored entry is a default", skins.DEFAULT_BOARD_SKIN_ID === "standard-green" && skins.BOARD_SKINS[0].id === "standard-green" && sets.DEFAULT_PIECE_SET_ID === "wikimedia-classic" && sets.PIECE_SETS[0].id === "wikimedia-classic" && !RESTORED_BOARDS.includes(skins.DEFAULT_BOARD_SKIN_ID) && !RESTORED_SETS.includes(sets.DEFAULT_PIECE_SET_ID));
 check("ids are unique within each registry", new Set(skins.BOARD_SKINS.map((s) => s.id)).size === skins.BOARD_SKINS.length && new Set(sets.PIECE_SETS.map((s) => s.id)).size === sets.PIECE_SETS.length);
 check("every option has a name and a short description", [...skins.BOARD_SKINS, ...sets.PIECE_SETS].every((o) => o.name && o.description && o.description.length < 60));
@@ -44,7 +46,7 @@ for (const [id, want] of Object.entries(OLD_BOARDS)) {
   const got = skins.getBoardSkin(id);
   check(`restored board ${id}: original name, emoji and colours/frame/image`, Object.entries(want).every(([k, v]) => got[k] === v) && got.id === id, JSON.stringify(got));
 }
-const OLD_SETS = { "neostaunton-hand": { name: "NeoStaunton", emoji: "♞", folder: "neostaunton-hand", w: 257, h: 545, scale: { k: 1.0, q: 0.95, b: 0.91, n: 0.90, r: 0.89, p: 0.86 } }, "wood-classic": { name: "Wood Carved", emoji: "🪵", folder: "wood-classic", w: 200, h: 300, scale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.88, p: 0.86 } }, "royal-legends": { name: "Royal Legends", emoji: "⚜️", folder: "royal-legends", w: 213, h: 420, scale: { k: 1.0, q: 0.94, b: 0.90, n: 0.89, r: 0.88, p: 0.84 } }, "kingdom-characters": { name: "Kingdom Characters", emoji: "🛡️", folder: "kingdom-characters", w: 100, h: 100, scale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.89, p: 0.86 } } };
+const OLD_SETS = { "neostaunton-hand": { name: "NeoStaunton", emoji: "♞", folder: "neostaunton-hand", w: 257, h: 545, scale: { k: 1.0, q: 0.95, b: 0.91, n: 0.90, r: 0.89, p: 0.86 } }, "wood-classic": { name: "Wood Carved", emoji: "🪵", folder: "wood-classic", w: 200, h: 300, scale: { k: 0.94, q: 0.92, b: 0.90, r: 0.89, n: 0.88, p: 0.86 } }, "royal-legends": { name: "Royal Legends", emoji: "⚜️", folder: "royal-legends", w: 213, h: 420, scale: { k: 1.0, q: 0.94, b: 0.90, n: 0.89, r: 0.88, p: 0.84 } } };
 for (const [id, want] of Object.entries(OLD_SETS)) {
   const got = sets.getPieceSet(id);
   check(`restored pieces ${id}: original name, emoji, folder, size and optical scale`, got.id === id && got.name === want.name && got.emoji === want.emoji && got.folder === want.folder && got.intrinsicSize.width === want.w && got.intrinsicSize.height === want.h && JSON.stringify(got.opticalScale) === JSON.stringify(want.scale), JSON.stringify(got));
@@ -132,13 +134,20 @@ try { git("cat-file", "-e", SRC + "^{commit}"); } catch { haveSource = false; }
 if (!haveSource) console.log(`NOTE: commit ${SRC} is not in this clone; the restored-art byte-for-byte check was not run`);
 else {
   const files = git("ls-tree", "-r", "--name-only", SRC, "--", ...RESTORED_SETS.map((id) => "public/pieces/" + OLD_SETS[id].folder), "public/boards/wood-classic.svg").split("\n").filter(Boolean);
-  check("the original commit has all 49 restored files (4 sets x 12 + 1 board)", files.length === 49, String(files.length));
+  check("the original commit has all 37 restored files (3 sets x 12 + 1 board)", files.length === 37, String(files.length));
   const bad = files.filter((f) => { try { return git("hash-object", f) !== git("rev-parse", `${SRC}:${f}`); } catch { return true; } });
   check("every restored file is byte-for-byte identical to the original in Git", bad.length === 0, bad.slice(0, 4).join(","));
 }
 check("all asset URLs the library can produce start with /pieces/<registered folder>/", /`\/pieces\/\$\{folder\}\$\{shade\}\/\$\{PIECE_FILE_NAME\[piece\]\}\.svg`/.test(read("components/board/PieceImage.tsx")) && sets.PIECE_SETS.every((s) => /^[a-z-]+$/.test(s.folder)));
 const walkSrc = (dir) => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkSrc(dir + "/" + e.name) : /\.(tsx?|css)$/.test(e.name) ? [dir + "/" + e.name] : []));
-check("restored art is reached only through the registries: no screen hard-codes a legacy asset path", ["app", "components"].every((d) => walkSrc(d).every((f) => !/pieces\/(wood-classic|neostaunton-hand|royal-legends|kingdom-characters)\/|boards\/wood-classic/.test(read(f)))));
+check("restored art is reached only through the registries: no screen hard-codes a legacy asset path", ["app", "components"].every((d) => walkSrc(d).every((f) => !/pieces\/(wood-classic|neostaunton-hand|royal-legends)\/|boards\/wood-classic/.test(read(f)))));
+
+// --- The two dropped piece sets are gone completely: art, registry and source.
+check("their asset folders are deleted", DROPPED_SETS.every((d) => !fs.existsSync(path.join(ROOT, "public/pieces", d))));
+const srcFiles = ["app", "components", "content", "lib"].flatMap((d) => walkSrc(d).concat(fs.readdirSync(path.join(ROOT, d), { withFileTypes: true }).filter((e) => e.isFile() && /\.(tsx?|css)$/.test(e.name)).map((e) => d + "/" + e.name)));
+check("no production source references aurelia, kingdom-characters or the Kingdom Characters set", [...new Set(srcFiles)].every((f) => !/aurelia|kingdom-characters|Kingdom Characters/i.test(read(f))), [...new Set(srcFiles)].filter((f) => /aurelia|kingdom-characters|Kingdom Characters/i.test(read(f))).join(","));
+check("no piece-set 'Atelier' in the registry or the Customize UI (the Atelier WORLD is unrelated)", !/name: "Atelier"|Atelier \(/.test(read("content/pieceSets.ts") + read("components/customize/StyleCards.tsx") + read("app/profile/customize/page.tsx")));
+check("no piece set carries world metadata any more; the generic world filter still keeps Classic", sets.PIECE_SETS.every((s) => !s.worlds) && [...worlds.WORLD_IDS, null].every((w) => sets.availablePieceSets(w)[0].id === "wikimedia-classic"));
 
 // --- Onboarding pickers: effective ids, nothing written on open.
 for (const [file, eff, key] of [["components/board/BoardSkinPicker.tsx", "effectiveBoardSkinId\\(child\\.board_skin_id\\)", "board"], ["components/board/PieceSetPicker.tsx", "effectivePieceSetId\\(child\\.piece_set_id\\)", "piece"]]) {
