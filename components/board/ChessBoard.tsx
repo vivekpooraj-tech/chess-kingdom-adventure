@@ -809,12 +809,11 @@ export function ChessBoard({
             // already bake their own labels into the image.
             const showFileLabel = !skin.boardImageUrl && rIdx === 7;
             const showRankLabel = !skin.boardImageUrl && fIdx === 0;
-            const labelColorClass = skin.coordinateColor
-              ? undefined
-              : isDark
-              ? "text-[#EEEED2]"
-              : "text-[#769656]";
-            const labelColorStyle = skin.coordinateColor ? { color: skin.coordinateColor } : undefined;
+            // A skin's own coordinateColor wins. Otherwise each label takes the OTHER square colour of the
+            // board (the light colour on a dark square, the dark colour on a light one), so it reads on
+            // every board in the library — on Standard Green it is exactly the familiar cream / green pair.
+            const otherSquare = isDark ? skin.lightSquare : skin.darkSquare;
+            const labelColorStyle = { color: skin.coordinateColor ?? otherSquare };
 
             return (
               <button
@@ -841,8 +840,7 @@ export function ChessBoard({
                 {showFileLabel && (
                   <span
                     className={clsx(
-                      "absolute bottom-0.5 left-1 font-body text-[10px] sm:text-xs font-bold leading-none pointer-events-none",
-                      labelColorClass
+                      "absolute bottom-0.5 left-1 font-body text-[10px] sm:text-xs font-bold leading-none pointer-events-none"
                     )}
                     style={labelColorStyle}
                   >
@@ -852,8 +850,7 @@ export function ChessBoard({
                 {showRankLabel && (
                   <span
                     className={clsx(
-                      "absolute top-0.5 left-1 font-body text-[10px] sm:text-xs font-bold leading-none pointer-events-none",
-                      labelColorClass
+                      "absolute top-0.5 left-1 font-body text-[10px] sm:text-xs font-bold leading-none pointer-events-none"
                     )}
                     style={labelColorStyle}
                   >

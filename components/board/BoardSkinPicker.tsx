@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { BOARD_SKINS, DEFAULT_BOARD_SKIN_ID } from "@/content/boardSkins";
+import { BOARD_SKINS, DEFAULT_BOARD_SKIN_ID, effectiveBoardSkinId } from "@/content/boardSkins";
 import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildBoardSkin } from "@/lib/supabase/queries";
@@ -50,7 +50,9 @@ export function BoardSkinPicker({
       const child = resolution.child!;
       setActiveChildIdClient(child.id);
       setChildId(child.id);
-      setSelected(child.board_skin_id);
+      // The board that is actually in effect, so a retired/unknown saved id visibly selects the default
+      // (Standard Green). Display only: nothing is written until the player confirms.
+      setSelected(effectiveBoardSkinId(child.board_skin_id));
     }
     load();
   }, [router]);
@@ -89,6 +91,8 @@ export function BoardSkinPicker({
             <motion.button
               key={skin.id}
               onClick={() => setSelected(skin.id)}
+              aria-pressed={isSelected}
+              data-board-option={skin.id}
               whileTap={{ scale: 0.95 }}
               className={
                 premium

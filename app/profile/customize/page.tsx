@@ -3,21 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChessBoard } from "@/components/board/ChessBoard";
-import { PieceImage } from "@/components/board/PieceImage";
-import { PIECE_SETS, PIECE_SYMBOL_BY_NAME } from "@/content/pieceSets";
+import { BoardStyleCard, PieceStyleCard } from "@/components/customize/StyleCards";
+import { PIECE_SETS, effectivePieceSetId } from "@/content/pieceSets";
 import { BOARD_SKINS, effectiveBoardSkinId } from "@/content/boardSkins";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildPieceSet, updateChildBoardSkin } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
-import { PrimaryCard, SecondaryCard } from "@/components/ui/Card";
+import { PrimaryCard } from "@/components/ui/Card";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { Button } from "@/components/ui/Button";
-import { CheckIcon } from "@/components/nav/icons";
 import { TEXT } from "@/lib/designSystem";
 import { backLabel, destinationHref } from "@/lib/navigation/destinations";
-
-const PREVIEW_PIECE_ORDER = ["king", "queen", "rook", "bishop", "knight", "pawn"] as const;
 
 /**
  * Unified "Customize Your Chessboard" screen (Phase 13) — replaces the two
@@ -28,6 +25,10 @@ const PREVIEW_PIECE_ORDER = ["king", "queen", "rook", "bishop", "knight", "pawn"
  * via updateChildPieceSet/updateChildBoardSkin) — no new table, no new
  * picker component for onboarding, which keeps its own separate sequential
  * PieceSetPicker/BoardSkinPicker steps untouched.
+ *
+ * The choices are a small curated library read straight from the registries
+ * (content/boardSkins.ts, content/pieceSets.ts); each card previews itself with
+ * the real board / piece renderers (components/customize/StyleCards.tsx).
  */
 export default function CustomizeChessboardPage() {
   const router = useRouter();
@@ -52,9 +53,10 @@ export default function CustomizeChessboardPage() {
       const child = resolution.child!;
       setActiveChildIdClient(child.id);
       setChildId(child.id);
-      setPieceSetId(child.piece_set_id);
-      // Show the board that is actually in effect, so a retired/unknown saved id still marks
-      // the Standard board as selected. Display only: nothing is written until the child picks one.
+      // Show the board and pieces that are actually in effect, so a retired/unknown saved id (or the
+      // legacy database default) still marks the Standard Green board and Classic pieces as selected.
+      // Display only: nothing is written until the child picks one.
+      setPieceSetId(effectivePieceSetId(child.piece_set_id));
       setBoardSkinId(effectiveBoardSkinId(child.board_skin_id));
     }
     load();
@@ -110,110 +112,43 @@ export default function CustomizeChessboardPage() {
           </p>
         )}
 
-        <section className="w-full max-w-2xl">
-          <h2 className={`${TEXT.heading} mb-4`}>Pieces</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {PIECE_SETS.map((set) => {
-              const isSelected = pieceSetId === set.id;
-              return (
-                <SecondaryCard key={set.id} className="!p-0 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => selectPieceSet(set.id)}
-                    aria-pressed={isSelected}
-                    aria-label={`${set.name}${isSelected ? " — selected" : ""}`}
-                    className="w-full h-full flex flex-col items-center gap-3 p-4 rounded-premiumCard border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
-                    style={{
-                      borderColor: isSelected ? "#D4AF37" : "rgba(255,255,255,0.08)",
-                      borderWidth: isSelected ? 2 : 1,
-                    }}
-                  >
-                    <div className="grid grid-cols-3 gap-1 w-full">
-                      {PREVIEW_PIECE_ORDER.map((piece) => (
-                        <div key={piece} className="relative aspect-square">
-                          <PieceImage set={set} piece={PIECE_SYMBOL_BY_NAME[piece]} color="w" />
-                        </div>
-                      ))}
-                    </div>
-                    <span className="font-classic-display text-sm text-premium-ivory text-center">
-                      {set.emoji} {set.name}
-                    </span>
-                    <span
-                      className={`flex items-center gap-1 rounded-full px-2.5 py-1 font-classic-body text-xs font-semibold ${
-                        isSelected
-                          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-400/30"
-                          : "bg-transparent text-premium-ivory/0 border border-transparent"
-                      }`}
-                    >
-                      {isSelected && (
-                        <>
-                          <CheckIcon className="w-3.5 h-3.5" /> Selected
-                        </>
-                      )}
-                    </span>
-                  </button>
-                </SecondaryCard>
-              );
-            })}
+        <section className="w-full max-w-3xl" aria-labelledby="customize-board-heading">
+          <h2
+            id="customize-board-heading"
+            className="mb-3 font-classic-body text-xs font-bold uppercase tracking-[0.16em] text-premium-gold"
+          >
+            Board style
+          </h2>
+          <div role="group" aria-labelledby="customize-board-heading" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {BOARD_SKINS.map((skin) => (
+              <BoardStyleCard
+                key={skin.id}
+                skin={skin}
+                pieceSetId={pieceSetId}
+                selected={boardSkinId === skin.id}
+                onSelect={selectBoardSkin}
+              />
+            ))}
           </div>
         </section>
 
-        <section className="w-full max-w-2xl">
-          <h2 className={`${TEXT.heading} mb-4`}>Board</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {BOARD_SKINS.map((skin) => {
-              const isSelected = boardSkinId === skin.id;
-              return (
-                <SecondaryCard key={skin.id} className="!p-0 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => selectBoardSkin(skin.id)}
-                    aria-pressed={isSelected}
-                    aria-label={`${skin.name}${isSelected ? " — selected" : ""}`}
-                    className="w-full h-full flex flex-col items-center gap-3 p-4 rounded-premiumCard border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
-                    style={{
-                      borderColor: isSelected ? "#D4AF37" : "rgba(255,255,255,0.08)",
-                      borderWidth: isSelected ? 2 : 1,
-                    }}
-                  >
-                    <div
-                      className="grid grid-cols-4 grid-rows-2 w-full aspect-[2/1] rounded-md overflow-hidden"
-                      style={{
-                        border: skin.frameColor ? `3px solid ${skin.frameColor}` : "1px solid rgba(255,255,255,0.1)",
-                      }}
-                    >
-                      {Array.from({ length: 8 }).map((_, i) => {
-                        const row = Math.floor(i / 4);
-                        const col = i % 4;
-                        const dark = (row + col) % 2 === 1;
-                        return (
-                          <div
-                            key={i}
-                            style={{ backgroundColor: dark ? skin.darkSquare : skin.lightSquare }}
-                          />
-                        );
-                      })}
-                    </div>
-                    <span className="font-classic-display text-sm text-premium-ivory text-center">
-                      {skin.emoji} {skin.name}
-                    </span>
-                    <span
-                      className={`flex items-center gap-1 rounded-full px-2.5 py-1 font-classic-body text-xs font-semibold ${
-                        isSelected
-                          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-400/30"
-                          : "bg-transparent text-premium-ivory/0 border border-transparent"
-                      }`}
-                    >
-                      {isSelected && (
-                        <>
-                          <CheckIcon className="w-3.5 h-3.5" /> Selected
-                        </>
-                      )}
-                    </span>
-                  </button>
-                </SecondaryCard>
-              );
-            })}
+        <section className="w-full max-w-3xl" aria-labelledby="customize-piece-heading">
+          <h2
+            id="customize-piece-heading"
+            className="mb-3 font-classic-body text-xs font-bold uppercase tracking-[0.16em] text-premium-gold"
+          >
+            Piece style
+          </h2>
+          <div role="group" aria-labelledby="customize-piece-heading" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {PIECE_SETS.map((set) => (
+              <PieceStyleCard
+                key={set.id}
+                set={set}
+                boardSkinId={boardSkinId}
+                selected={pieceSetId === set.id}
+                onSelect={selectPieceSet}
+              />
+            ))}
           </div>
         </section>
 

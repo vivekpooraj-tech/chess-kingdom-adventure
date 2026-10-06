@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { PIECE_SETS, DEFAULT_PIECE_SET_ID } from "@/content/pieceSets";
+import { PIECE_SETS, DEFAULT_PIECE_SET_ID, effectivePieceSetId } from "@/content/pieceSets";
 import { PieceImage } from "@/components/board/PieceImage";
 import { Button } from "@/components/ui/Button";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -55,7 +55,9 @@ export function PieceSetPicker({
       const child = resolution.child!;
       setActiveChildIdClient(child.id);
       setChildId(child.id);
-      setSelected(child.piece_set_id);
+      // The set that is actually in effect, so a retired/unknown saved id (including the legacy database
+      // default) visibly selects the default (Classic). Display only: nothing is written until the player confirms.
+      setSelected(effectivePieceSetId(child.piece_set_id));
     }
     load();
   }, [router]);
@@ -96,6 +98,8 @@ export function PieceSetPicker({
             <motion.button
               key={set.id}
               onClick={() => setSelected(set.id)}
+              aria-pressed={isSelected}
+              data-piece-option={set.id}
               whileTap={{ scale: 0.95 }}
               className={
                 premium

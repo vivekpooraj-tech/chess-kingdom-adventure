@@ -1,4 +1,5 @@
 import type { PieceSymbol } from "chess.js";
+import type { WorldId } from "@/lib/world/worlds";
 
 export type Piece = "pawn" | "knight" | "bishop" | "rook" | "queen" | "king";
 
@@ -48,6 +49,11 @@ export interface BoardSkinOption {
    * skins that omit them render exactly as before. */
   frameColor?: string;
   coordinateColor?: string;
+  /** One short, factual line shown under the name in the Customize library. */
+  description?: string;
+  /** Worlds this board suits. Omitted = every world (universal). Registry metadata for world-aware
+   * filtering (see availableBoardSkins); the default board is always available whatever this says. */
+  worlds?: readonly WorldId[];
 }
 
 export interface PieceSetOption {
@@ -82,6 +88,11 @@ export interface PieceSetOption {
    * interactive square underneath is never resized by this.
    */
   opticalScale: Record<PieceSymbol, number>;
+  /** One short, factual line shown under the name in the Customize library. */
+  description?: string;
+  /** Worlds this set suits. Omitted = every world (universal). Registry metadata for world-aware
+   * filtering (see availablePieceSets); the default set is always available whatever this says. */
+  worlds?: readonly WorldId[];
 }
 
 export interface ChessPuzzle {
