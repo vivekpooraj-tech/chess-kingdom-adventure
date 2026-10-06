@@ -33,6 +33,7 @@ import { WorldScope } from "@/components/layout/WorldScope";
 import { PlayBoardMeta } from "@/components/game/play/PlayBoardMeta";
 import { PlayOpponentFrame, PlaySideChrome } from "@/components/game/play/PlaySideChrome";
 import { PlayArenaHeading } from "@/components/game/play/PlayArenaHeading";
+import { FreePlayPicker } from "@/components/play/FreePlayPicker";
 
 const STANDARD_START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -262,56 +263,33 @@ export default function FreePlayPage() {
     }
   }
 
+  // The two pre-game screens sit in the active world's scope (the same one the arena uses below), so the world holds from
+  // /play through this screen into the game. A `?world=` pin applies here too.
   if (view.status === "loading") {
     return (
-      <Screen maxWidth="medium" align="center">
-        <div className="mx-auto h-9 w-56 rounded bg-premium-navy/70 animate-pulse" />
-        <div className="auto-grid mx-auto w-full max-w-2xl" style={{ "--grid-min": "18rem" } as React.CSSProperties}>
-          <SkeletonBlock className="h-[4.5rem]" />
-          <SkeletonBlock className="h-[4.5rem]" />
-          <SkeletonBlock className="h-[4.5rem]" />
-          <SkeletonBlock className="h-[4.5rem]" />
-        </div>
-      </Screen>
+      <WorldScope world={pinnedWorld}>
+        <Screen maxWidth="medium" align="center">
+          <div className="pl-loading contents" />
+          <div className="mx-auto h-9 w-56 rounded bg-premium-navy/70 animate-pulse" />
+          <div className="auto-grid mx-auto w-full max-w-2xl" style={{ "--grid-min": "18rem" } as React.CSSProperties}>
+            <SkeletonBlock className="h-[4.5rem]" />
+            <SkeletonBlock className="h-[4.5rem]" />
+            <SkeletonBlock className="h-[4.5rem]" />
+            <SkeletonBlock className="h-[4.5rem]" />
+          </div>
+        </Screen>
+      </WorldScope>
     );
   }
 
   if (view.status === "picking-difficulty") {
     return (
-      <Screen maxWidth="medium" align="center">
-        <div className="text-center">
-          <h1 className={TEXT.display}>Free Play Arena</h1>
-          <p className={`${TEXT.body} mx-auto mt-2 max-w-sm`}>
-            Choose your opponent's strength and play a full game, start to finish!
-          </p>
-        </div>
-        <div
-          className="auto-grid mx-auto w-full max-w-2xl"
-          style={{ "--grid-min": "18rem" } as React.CSSProperties}
-        >
-          {DIFFICULTY_INFO.map((d) => (
-            <button
-              key={d.key}
-              onClick={() => startGame(d.key)}
-              disabled={startingGame}
-              className="flex min-h-[4.5rem] items-center gap-4 rounded-premiumCard bg-premium-navy p-5 text-left shadow-premiumCard transition-transform duration-100 active:scale-[0.98] hover:border-premium-gold/30 border border-white/5"
-            >
-              <span className="flex-none text-4xl">{d.emoji}</span>
-              <div className="min-w-0">
-                <p className="font-classic-display text-lg text-premium-ivory">{d.label}</p>
-                <p className="font-classic-body text-sm text-premium-ivory/50">{d.blurb}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-        <Link
-          href="/play"
-          className="mx-auto inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
-        >
-          {backLabel("PLAY")}
-        </Link>
-        {showPaywall && <GameLimitPaywall gameType="ai" onDismiss={() => setShowPaywall(false)} />}
-      </Screen>
+      <WorldScope world={pinnedWorld}>
+        <Screen maxWidth="wide" align="center">
+          <FreePlayPicker options={DIFFICULTY_INFO} starting={startingGame} onStart={startGame} />
+          {showPaywall && <GameLimitPaywall gameType="ai" onDismiss={() => setShowPaywall(false)} />}
+        </Screen>
+      </WorldScope>
     );
   }
 

@@ -13,6 +13,8 @@ import { SkeletonBlock, SkeletonRow } from "@/components/ui/Skeleton";
 export default function PlayLoading() {
   return (
     <TabPageShell maxWidth="wide">
+      {/* `pl-loading` gives the skeleton the active world's ground (app/worlds.css) instead of the shared navy. */}
+      <div className="pl-loading contents" />
       <div className="flex flex-col gap-2">
         <div className="h-9 w-28 rounded bg-premium-navy/70 animate-pulse" />
         <div className="h-4 w-64 max-w-full rounded bg-premium-navy/60 animate-pulse" />

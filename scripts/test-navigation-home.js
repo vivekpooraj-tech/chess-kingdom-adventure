@@ -75,7 +75,7 @@ const badRaw = rawBack.filter((b) => byLabel[b.label] && b.href !== byLabel[b.la
 check(`hard-coded 'Back to X' links also match their destination (${rawBack.length} checked)`, badRaw.length === 0, badRaw.join("; "));
 const play = read("app/online/[gameId]/page.tsx");
 check("Online game: back goes to Play, labelled Back to Play (tournament games go back to the tournament)", /: "\/play"/.test(play) && /backLabel\("PLAY"\)/.test(play) && !/"\/home"/.test(play));
-check("Matchmaking and Free Play go back to Play", /href="\/play"[^>]*>\s*\{backLabel\("PLAY"\)\}/.test(read("app/matchmaking/page.tsx")) && /href="\/play"[^>]*>\s*\{backLabel\("PLAY"\)\}/.test(read("app/free-play/page.tsx")));
+check("Matchmaking and Free Play (its picker, components/play/FreePlayPicker.tsx) go back to Play", /href="\/play"[^>]*>\s*\{backLabel\("PLAY"\)\}/.test(read("app/matchmaking/page.tsx")) && /href="\/play"[^>]*>\s*\{backLabel\("PLAY"\)\}/.test(read("components/play/FreePlayPicker.tsx")));
 check("Chess School screens say Back to Chess School", /backLabel\("CHESS_SCHOOL"\)/.test(read("components/school/v2/CertificateView.tsx")) && /backLabel\("CHESS_SCHOOL"\)/.test(read("components/school/v2/SessionRunner.tsx")));
 check("Train Your Mind drills / limit card / Reaction say Back to Train Your Mind", ["components/trainYourMind/TrainDrill.tsx", "components/trainYourMind/DailyLimitCard.tsx", "components/chessMind/ReactionTrainer.tsx"].every((f) => /backLabel\("TRAIN_YOUR_MIND"\)/.test(read(f))));
 check("Train Your Mind hub and Learn pages go back to Learn", /href="\/learn"[^>]*>\s*\{backLabel\("LEARN"\)\}/.test(read("app/chess-mind/page.tsx")) && /href="\/learn"[^>]*>\s*\{backLabel\("LEARN"\)\}/.test(read("app/academy/page.tsx")));

@@ -22,7 +22,9 @@ const prog = read("components/learn/atelier/AtelierProgramme.tsx");
 const next = read("components/learner/NextLessonCard.tsx");
 const chip = read("components/learner/CourseStatusChip.tsx");
 const css = read("app/worlds.css");
-const ta = css.slice(css.indexOf('html[data-mode="kids"] .world-branch--ta-atelier'));
+const taStart = css.indexOf('html[data-mode="kids"] .world-branch--ta-atelier');
+const taEnd = css.indexOf("PLAY LANDING (/play"); // the Play landing styles follow the Academy block
+const ta = css.slice(taStart, taEnd > taStart ? taEnd : undefined);
 
 // --- Architecture: one page, a presentation branch, shared data.
 check("Learn mounts the Atelier layout through AtelierBranch", /<AtelierBranch atelier=\{<AtelierLearn lessonIdsByCourse=\{courseLessonIds\} \/>\}>/.test(page));

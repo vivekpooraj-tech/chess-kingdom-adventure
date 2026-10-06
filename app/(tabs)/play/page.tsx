@@ -1,110 +1,28 @@
-import Link from "next/link";
-import { InviteFriendButton } from "@/components/multiplayer/InviteFriendButton";
-import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
-import { SecondaryCard } from "@/components/ui/Card";
-import { FeatureCard } from "@/components/ui/FeatureCard";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { WorldScope } from "@/components/layout/WorldScope";
+import { WorldBranch } from "@/components/layout/WorldBranch";
 import { TabPageShell } from "@/components/nav/TabPageShell";
-import { ComputerIcon, GlobeIcon, PersonAddIcon, TrophyIcon } from "@/components/nav/icons";
-import { TEXT } from "@/lib/designSystem";
+import { EnchantedPlay } from "@/components/play/EnchantedPlay";
+import { AtelierPlay } from "@/components/play/AtelierPlay";
+import { ClassicPlay } from "@/components/play/ClassicPlay";
 
+/**
+ * Play — the landing page before a game starts. It is scoped to the active world exactly like Home: WorldScope
+ * puts the world's palette (and atmosphere) on the page, and WorldBranch renders that world's own layout.
+ * Enchanted Kingdom ("Choose Your Quest"), Master Training Atelier ("Match Training") and Classic Pro ("Play")
+ * each present the SAME destinations (components/play/playLanding.ts) in their own visual language.
+ *
+ * Only the presentation branches. Every destination (computer match, online match, tournaments, Chess Mind
+ * World, invite a friend, the daily challenge) is the same shared route/component in all three worlds, and the
+ * game arenas behind them keep their own world presentations.
+ *
+ * Still a static server page: no auth check and no server-side data of its own.
+ */
 export default function PlayPage() {
   return (
-    <TabPageShell maxWidth="wide">
-      <div>
-        <h1 className={TEXT.display}>Play</h1>
-        <p className={`${TEXT.body} mt-2`}>Pick your opponent. The board does the rest.</p>
-      </div>
-
-      <div
-        className="auto-grid mx-auto w-full max-w-3xl"
-        style={{ "--grid-min": "16rem" } as React.CSSProperties}
-      >
-        <FeatureCard
-          href="/free-play"
-          title="Play Computer"
-          description="A full game against an opponent your size."
-          icon={ComputerIcon}
-        />
-
-        <FeatureCard
-          href="/play/tournaments"
-          title="Group Tournament"
-          description="Join a Swiss-style tournament — multiple rounds, real standings."
-          icon={TrophyIcon}
-        />
-
-        {/* Chess Mind World. It lives here rather than in the five primary
-            tabs — see the note in components/nav/navConfig.tsx on why five is
-            the ceiling on a phone — and this is where a player is already
-            deciding what kind of game to start. */}
-        <FeatureCard
-          href="/world"
-          title="Chess Mind World"
-          description="Play in extraordinary places. Same rules, remarkable view."
-          icon={GlobeIcon}
-        />
-      </div>
-
-      <SecondaryCard className="w-full flex flex-col gap-3">
-        <p className="font-classic-display text-lg text-premium-ivory">Play Online</p>
-        <Link
-          href="/matchmaking"
-          className="rounded-premiumBtn bg-premium-navy/70 border border-white/5 hover:border-premium-gold/30 active:scale-[0.98] transition-all duration-100 px-4 py-3 min-h-[64px] flex items-center gap-3"
-        >
-          <div className="w-9 h-9 rounded-premiumBtn bg-premium-gold/15 text-premium-gold flex items-center justify-center flex-none">
-            <GlobeIcon className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-classic-body text-sm text-premium-ivory">Random Match</p>
-            <p className={TEXT.caption}>A fair match against another player, worldwide.</p>
-          </div>
-          <span className="text-premium-gold text-lg flex-none">→</span>
-        </Link>
-        <div className="rounded-premiumBtn bg-premium-navy/70 border border-white/5 px-4 py-3 flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-premiumBtn bg-premium-gold/15 text-premium-gold flex items-center justify-center flex-none">
-              <PersonAddIcon className="w-5 h-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-classic-body text-sm text-premium-ivory">Invite a Friend</p>
-              <p className={TEXT.caption}>Send them a link to a game just for you two.</p>
-            </div>
-          </div>
-          <InviteFriendButton />
-        </div>
-      </SecondaryCard>
-
-      <section className="w-full flex flex-col gap-2">
-        <SectionHeader title="Today" />
-        <div
-          className="auto-grid items-start"
-          style={{ "--grid-min": "20rem" } as React.CSSProperties}
-        >
-          <DailyChallengeCard />
-          <Link
-            href="/puzzles/tactics"
-            className="list-row w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-4 flex items-center gap-4"
-          >
-            <span className="text-2xl" aria-hidden="true">⚔️</span>
-            <div className="flex-1 min-w-0">
-              <p className="font-classic-body text-[11px] font-semibold text-premium-ivory/50 uppercase tracking-wide">
-                Tactics Trainer
-              </p>
-              <p className="font-classic-display text-base text-premium-ivory">
-                Forks, pins, skewers and more
-              </p>
-            </div>
-            <span className="text-premium-ivory/40 text-lg" aria-hidden="true">→</span>
-          </Link>
-          <Link
-            href="/puzzles"
-            className="font-body text-sm text-premium-ivory/65 underline underline-offset-2 min-h-[44px] flex items-center"
-          >
-            Practice more puzzles
-          </Link>
-        </div>
-      </section>
-    </TabPageShell>
+    <WorldScope>
+      <TabPageShell maxWidth="wide">
+        <WorldBranch classic={<ClassicPlay />} atelier={<AtelierPlay />} other={<EnchantedPlay />} />
+      </TabPageShell>
+    </WorldScope>
   );
 }
