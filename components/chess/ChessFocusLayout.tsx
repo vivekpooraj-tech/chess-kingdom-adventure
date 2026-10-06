@@ -32,6 +32,8 @@ function readViewport(): { width: number; height: number } {
 
 const BOARD_COLUMN_GAPS = 10;
 const MEASURE_BUFFER = 6;
+/** The fit guard may correct the estimate at most this many times per viewport size, so it can never run away. */
+const MAX_FIT_RUNS = 3;
 /** Side-panel width band — must stay in step with the CSS clamp() below and
  * with the sidePanelWidth passed into computeChessFocusBoardSize. */
 const SIDE_PANEL_MIN = CHESS_FOCUS_SIDE_PANEL_WIDTH; // 272
@@ -88,6 +90,13 @@ export function ChessFocusLayout({
   const stackedPlayerRef = useRef<HTMLDivElement | null>(null);
   const rowRef = useRef<HTMLDivElement | null>(null);
   const boardColRef = useRef<HTMLDivElement | null>(null);
+  // Fit-guard state. `fitCap` is the largest board the REAL layout was measured to hold; recompute() honours it
+  // until the viewport changes, so an observer-driven recompute cannot put back the estimate the guard just
+  // corrected (that ping-pong is what made the board shake). `applied` is the size last handed to setBoardSize.
+  const fitCapRef = useRef(Infinity);
+  const fitRunsRef = useRef(0);
+  const viewportSigRef = useRef("");
+  const appliedRef = useRef(480);
 
   const [boardSize, setBoardSize] = useState(480);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -120,6 +129,13 @@ export function ChessFocusLayout({
           ? { width: shellEl.clientWidth, height: shellEl.clientHeight }
           : readViewport();
       const sideBySide = isChessFocusSideBySide(metrics.width, metrics.height);
+      // A new viewport (or layout mode) starts the fit from scratch.
+      const sig = `${metrics.width}x${metrics.height}|${sideBySide}|${isFullscreen}`;
+      if (sig !== viewportSigRef.current) {
+        viewportSigRef.current = sig;
+        fitCapRef.current = Infinity;
+        fitRunsRef.current = 0;
+      }
       setIsSideBySide(sideBySide);
       setIsCompactLandscape(sideBySide && metrics.height <= 520);
 
@@ -140,8 +156,14 @@ export function ChessFocusLayout({
         : (stackedOpponentRef.current?.offsetHeight ?? 0) +
           (stackedPlayerRef.current?.offsetHeight ?? 0);
 
+      // Space the row itself holds back above the board column. It is 0 unless a world adds top padding to the
+      // row, in which case the estimate must know about it or it overshoots by exactly that much. Side-by-side
+      // only: that is the layout whose shell clips; the stacked layout scrolls and keeps its sizes as they were.
+      const rowPadTop =
+        sideBySide && rowRef.current ? parseFloat(getComputedStyle(rowRef.current).paddingTop) || 0 : 0;
+
       const boardColumnChrome =
-        headerH + metaH + stackedRowsH + BOARD_COLUMN_GAPS + MEASURE_BUFFER + shellPadV;
+        headerH + metaH + stackedRowsH + BOARD_COLUMN_GAPS + MEASURE_BUFFER + shellPadV + rowPadTop;
 
       const sidePanelWidth = sideBySide
         ? Math.min(SIDE_PANEL_MAX, Math.max(SIDE_PANEL_MIN, Math.floor(metrics.width * 0.3)))
@@ -180,12 +202,15 @@ export function ChessFocusLayout({
         verticalPadding: isFullscreen ? 4 : 8,
       });
 
-      setBoardSize(next);
+      const target = Math.min(next, fitCapRef.current);
+      appliedRef.current = target;
+      setBoardSize(target);
 
       // FIT GUARD. The size above is an estimate from measured chrome. Once it has rendered, check the REAL
       // board column against the REAL row: if the column (meta + board) is taller than the room it has, the
       // shell's overflow:hidden would clip the board (the 8th rank), so take the overflow off the board.
-      // It only ever reduces the size, and a fresh recompute (resize, chrome change) starts again from the estimate.
+      // The corrected size is remembered (fitCap) and survives later recomputes at this viewport, and the guard
+      // runs at most MAX_FIT_RUNS times per viewport: it converges, it cannot oscillate.
       if (sideBySide) {
         window.requestAnimationFrame(() =>
           window.requestAnimationFrame(() => {
@@ -195,7 +220,13 @@ export function ChessFocusLayout({
             const rs = getComputedStyle(row);
             const room = row.clientHeight - parseFloat(rs.paddingTop) - parseFloat(rs.paddingBottom);
             const over = Math.ceil(col.offsetHeight - room);
-            if (over > 1) setBoardSize((s) => Math.max(CHESS_FOCUS_MIN_BOARD, Math.min(s, next) - over));
+            if (over > 1 && fitRunsRef.current < MAX_FIT_RUNS) {
+              fitRunsRef.current += 1;
+              const fitted = Math.max(CHESS_FOCUS_MIN_BOARD, appliedRef.current - over);
+              fitCapRef.current = fitted;
+              appliedRef.current = fitted;
+              setBoardSize(fitted);
+            }
           })
         );
       }
@@ -205,7 +236,24 @@ export function ChessFocusLayout({
     // Observe only the FIXED chrome (header, meta, player rows) and the
     // shell itself — never the info/move-list panel, whose height is
     // content-driven and must not feed back into the board size.
-    const ro = new ResizeObserver(recompute);
+    // Only a change in HEIGHT of the chrome (or any change of the shell) can change the answer. The chrome's
+    // WIDTH follows the board, so reacting to it would feed our own sizing straight back into itself.
+    const seen = new Map<Element, string>();
+    const ro = new ResizeObserver((entries) => {
+      let changed = false;
+      for (const entry of entries) {
+        const r = entry.contentRect;
+        const key =
+          entry.target === shellRef.current
+            ? `${Math.round(r.width)}x${Math.round(r.height)}`
+            : `${Math.round(r.height)}`;
+        if (seen.get(entry.target) !== key) {
+          seen.set(entry.target, key);
+          changed = true;
+        }
+      }
+      if (changed) recompute();
+    });
     [headerRef, metaRef, stackedOpponentRef, stackedPlayerRef, shellRef].forEach((ref) => {
       if (ref.current) ro.observe(ref.current);
     });
