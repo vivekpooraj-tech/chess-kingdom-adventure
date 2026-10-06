@@ -9,6 +9,9 @@ import { CourseStatusChip } from "@/components/learner/CourseStatusChip";
 import { LearningPathPanel } from "@/components/learner/LearningPathPanel";
 import { getCourse } from "@/lib/academy/courses.server";
 import { COURSE_NAME } from "@/lib/school/chessSchool";
+import { LEARN_CHESS } from "@/content/learnIndex";
+import { AtelierBranch } from "@/components/layout/AtelierBranch";
+import { AtelierLearn } from "@/components/learn/atelier/AtelierLearn";
 
 /**
  * Learn (Phase 19) — a single combined index over the existing Academy and
@@ -30,53 +33,6 @@ import { COURSE_NAME } from "@/lib/school/chessSchool";
  * client island: this shell still renders and paints exactly as before, and
  * the recommendation fills in afterwards without ever blocking it.
  */
-const LEARN_CHESS = [
-  {
-    id: "fundamentals",
-    title: "Chess Fundamentals",
-    emoji: "📐",
-    description: "The board, the pieces, and the rules — from scratch.",
-    href: "/academy/fundamentals",
-  },
-  {
-    id: "origins",
-    title: "Chess Origins",
-    emoji: "🏛️",
-    description: "How a 1,500-year-old game reached your board today.",
-    href: "/academy/origins",
-  },
-  {
-    id: "tactics",
-    title: "Tactics",
-    emoji: "⚔️",
-    description: "Forks, pins, skewers, and the patterns that win material.",
-    href: "/academy/tactics",
-  },
-  {
-    id: "openings",
-    title: "Chess Openings",
-    emoji: "♞",
-    description: "28 named openings, principles, and how to choose one.",
-    href: "/academy/openings",
-  },
-  {
-    id: "strategy",
-    title: "Strategy",
-    emoji: "🧭",
-    description: "Outposts, pawn breaks, king safety, and how to form a plan.",
-    href: "/academy/strategy",
-    courseId: "strategy",
-  },
-  {
-    id: "endgames",
-    title: "Endgames",
-    emoji: "🏰",
-    description: "King activity, passed pawns, rook endings, and converting a win.",
-    href: "/academy/endgames",
-    courseId: "endgames",
-  },
-];
-
 export default function LearnPage() {
   const trainCategories = CHESS_MIND_CATEGORIES;
 
@@ -91,6 +47,9 @@ export default function LearnPage() {
 
   return (
     <TabPageShell maxWidth="wide">
+      {/* Master Training Atelier gets its own Training Academy layout; Enchanted Kingdom and Classic Pro render
+          exactly the page below, unchanged. See AtelierBranch. */}
+      <AtelierBranch atelier={<AtelierLearn lessonIdsByCourse={courseLessonIds} />}>
       <div>
         <h1 className={TEXT.display}>Learn</h1>
         <p className={`${TEXT.body} mt-2`}>
@@ -207,6 +166,7 @@ export default function LearnPage() {
         </section>
         <ForParentsEntry />
       </div>
+      </AtelierBranch>
     </TabPageShell>
   );
 }

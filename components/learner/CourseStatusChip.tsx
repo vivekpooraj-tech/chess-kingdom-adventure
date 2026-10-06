@@ -21,9 +21,12 @@ import { loadCompletedLessonIds, countCompleted } from "@/lib/learner/academyPro
 export function CourseStatusChip({
   courseId,
   lessonIds,
+  variant = "default",
 }: {
   courseId: string;
   lessonIds: string[];
+  /** "atelier" is the Training Academy styling of the same count (same label rules). */
+  variant?: "default" | "atelier";
 }) {
   const [done, setDone] = useState<number | null>(null);
 
@@ -43,6 +46,10 @@ export function CourseStatusChip({
   const total = lessonIds.length;
   const label = done === 0 ? "Start" : done >= total ? "Mastered" : `${done} of ${total}`;
   const complete = done >= total && total > 0;
+
+  if (variant === "atelier") {
+    return <span className={`ta-chip${complete ? " ta-chip--done" : ""}`}>{label}</span>;
+  }
 
   return (
     <span

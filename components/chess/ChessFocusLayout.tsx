@@ -6,6 +6,7 @@ import { IconButton } from "@/components/ui/Button";
 import {
   computeChessFocusBoardSize,
   isChessFocusSideBySide,
+  CHESS_FOCUS_MIN_BOARD,
   CHESS_FOCUS_SIDE_PANEL_WIDTH,
   CHESS_FOCUS_STACKED_PANEL_RESERVE,
 } from "@/lib/chessFocus/computeBoardSize";
@@ -85,6 +86,8 @@ export function ChessFocusLayout({
   const metaRef = useRef<HTMLDivElement | null>(null);
   const stackedOpponentRef = useRef<HTMLDivElement | null>(null);
   const stackedPlayerRef = useRef<HTMLDivElement | null>(null);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const boardColRef = useRef<HTMLDivElement | null>(null);
 
   const [boardSize, setBoardSize] = useState(480);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -178,6 +181,24 @@ export function ChessFocusLayout({
       });
 
       setBoardSize(next);
+
+      // FIT GUARD. The size above is an estimate from measured chrome. Once it has rendered, check the REAL
+      // board column against the REAL row: if the column (meta + board) is taller than the room it has, the
+      // shell's overflow:hidden would clip the board (the 8th rank), so take the overflow off the board.
+      // It only ever reduces the size, and a fresh recompute (resize, chrome change) starts again from the estimate.
+      if (sideBySide) {
+        window.requestAnimationFrame(() =>
+          window.requestAnimationFrame(() => {
+            const row = rowRef.current;
+            const col = boardColRef.current;
+            if (!row || !col) return;
+            const rs = getComputedStyle(row);
+            const room = row.clientHeight - parseFloat(rs.paddingTop) - parseFloat(rs.paddingBottom);
+            const over = Math.ceil(col.offsetHeight - room);
+            if (over > 1) setBoardSize((s) => Math.max(CHESS_FOCUS_MIN_BOARD, Math.min(s, next) - over));
+          })
+        );
+      }
     }
 
     recompute();
@@ -317,10 +338,12 @@ export function ChessFocusLayout({
       {!isSideBySide && header}
 
       <div
+        ref={rowRef}
         className="chess-focus-row flex flex-1 min-h-0 w-full gap-2 px-2 pb-1"
         data-side={isSideBySide ? "true" : "false"}
       >
         <div
+          ref={boardColRef}
           className="chess-focus-board-col flex flex-col items-center min-w-0 w-full"
           style={isSideBySide ? { width: boardSize } : undefined}
         >
