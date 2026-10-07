@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { AVATARS } from "@/content/avatars";
-import { Button } from "@/components/ui/Button";
+import { WorldScope } from "@/components/layout/WorldScope";
+import { CompanionPicker } from "@/components/onboarding/CompanionPicker";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildAvatar } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
@@ -45,33 +45,13 @@ export default function AvatarPickerPage() {
     router.push("/onboarding/buddy");
   }
 
+  // Presentation only: the picker draws the same AVATARS and calls the same handlers (select / confirm). WorldScope pins the Enchanted Kingdom look
+  // for this signup step; nothing about the load, the selection state, the save or the redirect above has changed.
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6 py-12">
-      <h1 className="font-display text-3xl text-kingdom-night text-center">
-        Choose your character
-      </h1>
-
-      <div className="grid grid-cols-2 gap-5 max-w-md w-full">
-        {AVATARS.map((a) => (
-          <motion.button
-            key={a.id}
-            onClick={() => setSelected(a.id)}
-            whileTap={{ scale: 0.95 }}
-            className="flex flex-col items-center gap-2 rounded-card p-5 shadow-toy"
-            style={{
-              background: `linear-gradient(135deg, ${a.colorFrom}33, ${a.colorTo}33)`,
-              outline: selected === a.id ? "4px solid #FFC53D" : "none",
-            }}
-          >
-            <span className="text-6xl">{a.emoji}</span>
-            <span className="font-display text-lg text-kingdom-night">{a.name}</span>
-          </motion.button>
-        ))}
-      </div>
-
-      <Button tone="adventure" size="lg" disabled={!selected || saving} onClick={confirm}>
-        {saving ? "Saving..." : "Next →"}
-      </Button>
-    </main>
+    <WorldScope world="enchanted">
+      <main className="cp min-h-screen">
+        <CompanionPicker avatars={AVATARS} selected={selected} saving={saving} onSelect={setSelected} onConfirm={confirm} />
+      </main>
+    </WorldScope>
   );
 }

@@ -28,6 +28,8 @@ import "./world-discover.css";
 import "./world-world.css";
 // Profile Customize (/profile/customize) per world; scoped to .cz.
 import "./world-customize.css";
+// Signup character screen (/onboarding/avatar); scoped to .cp.
+import "./world-onboarding.css";
 import { CapacitorDeepLinkHandler } from "@/components/CapacitorDeepLinkHandler";
 import { MotionProvider } from "@/components/MotionProvider";
 import { DevTestModeBar } from "@/components/dev/DevTestModeBar";
