@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { BUDDIES } from "@/content/buddies";
-import { Button } from "@/components/ui/Button";
+import { WorldScope } from "@/components/layout/WorldScope";
+import { GuidePicker } from "@/components/onboarding/GuidePicker";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildBuddy } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
@@ -45,36 +45,15 @@ export default function BuddyPickerPage() {
     router.push("/onboarding/board");
   }
 
+  // Presentation only: the five guides that are not built yet are no longer drawn at all (they were disabled "Soon!" cards that could never be
+  // selected, so nothing about the saved value changes). The guide shown is the one built-in entry of content/buddies.ts, which is left untouched
+  // because Home, lessons, the parent dashboard and the post-game screen still read the whole list. Load, selection state, save and redirect are as before.
+  const guide = BUDDIES.find((b) => b.builtIn) ?? BUDDIES[0];
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6 py-12">
-      <h1 className="font-display text-3xl text-kingdom-night text-center">
-        Choose your guide
-      </h1>
-
-      <div className="grid grid-cols-3 gap-4 max-w-lg w-full">
-        {BUDDIES.map((b) => (
-          <motion.button
-            key={b.id}
-            disabled={!b.builtIn}
-            onClick={() => b.builtIn && setSelected(b.id)}
-            whileTap={b.builtIn ? { scale: 0.95 } : {}}
-            className="relative flex flex-col items-center gap-2 rounded-card p-4 shadow-toy bg-white/70 disabled:opacity-40"
-            style={{ outline: selected === b.id ? "4px solid #FFC53D" : "none" }}
-          >
-            <span className="text-5xl">{b.emoji}</span>
-            <span className="font-display text-sm text-kingdom-night text-center">{b.name}</span>
-            {!b.builtIn && (
-              <span className="absolute -top-2 -right-2 bg-kingdom-coral text-white text-[11px] font-bold px-2 py-1 rounded-full">
-                Soon!
-              </span>
-            )}
-          </motion.button>
-        ))}
-      </div>
-
-      <Button tone="adventure" size="lg" disabled={saving} onClick={confirm}>
-        {saving ? "Saving..." : `Meet ${BUDDIES.find((b) => b.id === selected)?.name}! →`}
-      </Button>
-    </main>
+    <WorldScope world="enchanted">
+      <main className="cp cp--guide min-h-screen">
+        <GuidePicker guide={guide} saving={saving} onConfirm={confirm} />
+      </main>
+    </WorldScope>
   );
 }

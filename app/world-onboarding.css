@@ -227,6 +227,94 @@
     font-size: 0.75rem;
   }
 }
+/* ===== Guide screen (/onboarding/buddy): "Meet your guide": one large Ollie. Reuses the .cp ground, heading and primary button above. ===== */
+.cp--guide {
+  align-items: center;
+}
+.gd-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 22rem;
+  margin: 0;
+  padding: 0.75rem 0.75rem 1.4rem;
+  border-radius: 1.75rem;
+  border: 2px solid rgb(var(--cm-gold));
+  background: linear-gradient(160deg, rgb(var(--world-teal) / 0.26), rgb(var(--cm-navy) / 0.95));
+  box-shadow: 0 0 0 4px rgb(var(--cm-gold) / 0.2), 0 0 44px -6px rgb(var(--cm-gold) / 0.5), 0 22px 40px -22px rgb(var(--world-purple) / 0.8);
+  text-align: center;
+}
+.gd-plate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(60% 55% at 50% 52%, rgb(var(--cm-gold) / 0.38), transparent 70%),
+    linear-gradient(150deg, rgb(var(--world-purple) / 0.85), rgb(var(--world-teal) / 0.7));
+  box-shadow: inset 0 0 0 1px rgb(var(--cm-ivory) / 0.2), inset 0 -30px 46px -22px rgb(0 0 0 / 0.5);
+}
+.gd-plate--art {
+  aspect-ratio: 3 / 4;
+}
+.gd-plate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.6px 1.6px at 16% 20%, rgb(255 255 255 / 0.9), transparent),
+    radial-gradient(1.2px 1.2px at 80% 16%, rgb(255 255 255 / 0.75), transparent),
+    radial-gradient(1.6px 1.6px at 72% 74%, rgb(255 255 255 / 0.65), transparent),
+    radial-gradient(1.2px 1.2px at 24% 80%, rgb(255 255 255 / 0.75), transparent),
+    radial-gradient(1px 1px at 52% 12%, rgb(255 255 255 / 0.7), transparent);
+  pointer-events: none;
+}
+.gd-emoji {
+  position: relative;
+  font-size: clamp(7rem, 5rem + 12vw, 10rem);
+  line-height: 1;
+  filter: drop-shadow(0 10px 22px rgb(0 0 0 / 0.45));
+}
+.gd-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+.gd-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-inline: 0.5rem;
+}
+.gd-name {
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-size: 1.75rem;
+  line-height: 1.1;
+  color: rgb(var(--cm-gold));
+}
+.gd-blurb {
+  font-size: 1rem;
+  line-height: 1.45;
+  color: rgb(var(--cm-ivory) / 0.88);
+}
+
+/* Tablets and desktops: the card is sized from the viewport HEIGHT so the primary button always stays on screen (the 3:4 portrait is tall; on a 1280x800 or
+   1024x768 screen a full-size card pushed "Meet Ollie" below the fold). The portrait keeps its 3:4 shape, it only gets smaller on short screens: plate height =
+   viewport height - 31rem (everything else on the page), never below 15rem wide, never above 22rem. Phones are width-limited and are not touched. */
+@media (min-width: 40rem) {
+  .gd-card {
+    max-width: min(22rem, max(15rem, calc((100vh - 31rem) * 0.75 + 1.5rem)));
+    max-width: min(22rem, max(15rem, calc((100dvh - 31rem) * 0.75 + 1.5rem)));
+  }
+}
 /* Small phones (<= 400px wide, e.g. 390x844): only the padding and gaps tighten, so the whole choice and the button sit inside the first screen with real
    breathing room under the button (and its glow). The plates, the artwork, the title and all type are unchanged; nothing above 400px is touched. */
 @media (max-width: 25rem) {
