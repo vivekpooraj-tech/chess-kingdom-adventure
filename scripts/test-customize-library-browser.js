@@ -66,11 +66,15 @@ async function openSession(v, cookies) {
   await send("Page.addScriptToEvaluateOnNewDocument", { source: "try{localStorage.setItem('chessmind-mode','adult')}catch(e){}" });
   const ev = async (expr) => { const r = (await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true })).result; if (r.exceptionDetails) throw new Error("page script failed: " + (r.exceptionDetails.exception?.description || r.exceptionDetails.text)); return r.result.value; };
   const waitFor = async (expr, ms = 30000) => { const t = Date.now(); while (Date.now() - t < ms) { if (await ev(expr)) return true; await sleep(400); } return false; };
+  // Every <img> has FINISHED (loaded or failed) before anything is measured, up to 15s. A fixed sleep is not enough on a busy dev server: the page draws
+  // ~226 previews, and an image still downloading reads as "broken" (complete=false). Waiting on `complete` (not naturalWidth) means a genuinely failed
+  // image (complete=true, naturalWidth=0) is still reported as broken.
+  const imagesReady = () => waitFor(`[...document.images].every(i=>i.complete)`, 15000);
   const open = async (p) => { await send("Page.navigate", { url: BASE + "/" + p }); await sleep(2500); };
-  const customize = async () => { await open("profile/customize"); await waitFor(`document.querySelectorAll('[data-board-card]').length>=1`); await sleep(1200); return JSON.parse(await ev(PROBE)); };
+  const customize = async () => { await open("profile/customize"); await waitFor(`document.querySelectorAll('[data-board-card]').length>=1`); await imagesReady(); await sleep(1200); return JSON.parse(await ev(PROBE)); };
   const click = async (sel) => { const pt = await ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(!e)return null;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]})()`); if (!pt) return false; await sleep(200);
     for (const t of ["mouseMoved", "mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type: t, x: pt[0], y: pt[1], button: "left", clickCount: 1 }); return true; };
-  return { ev, waitFor, open, customize, click, logs, close() { ws.close(); chrome.kill(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch {} } };
+  return { ev, waitFor, imagesReady, open, customize, click, logs, close() { ws.close(); chrome.kill(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch {} } };
 }
 
 (async () => {
@@ -116,7 +120,7 @@ async function openSession(v, cookies) {
         const s = await openSession(v, cookies);
         try {
           for (const [pg, attr, expect, count] of [["onboarding/board", "data-board-option", expectBoard, 5], ["onboarding/pieces", "data-piece-option", expectPiece, 4]]) {
-            await s.open(pg); await s.waitFor(`document.querySelectorAll('[${attr}]').length>=1`); await sleep(1200);
+            await s.open(pg); await s.waitFor(`document.querySelectorAll('[${attr}]').length>=1`); await s.imagesReady(); await sleep(1200);
             const r = JSON.parse(await s.ev(`JSON.stringify({n:document.querySelectorAll('[${attr}]').length,sel:[...document.querySelectorAll('[${attr}][aria-pressed="true"]')].map(e=>e.getAttribute('${attr}')),docW:document.documentElement.scrollWidth,vw:innerWidth,broken:[...document.images].filter(i=>!(i.complete&&i.naturalWidth>0)).length})`));
             check(`${label} ${pg} @${v.w}: ${count} options, selected = ${expect} (the effective id), no overflow, no broken images, no errors`, r.n === count && JSON.stringify(r.sel) === JSON.stringify([expect]) && r.docW <= r.vw && r.broken === 0 && s.logs.length === 0, JSON.stringify(r) + " " + s.logs.slice(0, 2).join("|"));
           }

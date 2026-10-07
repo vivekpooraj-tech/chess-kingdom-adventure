@@ -241,7 +241,8 @@ console.log("\n=== J. UI behaviour at 3/3 in a category ===");
   const card = read("components/trainYourMind/DailyLimitCard.tsx");
   const drill = read("components/trainYourMind/TrainDrill.tsx");
   const react = read("components/chessMind/ReactionTrainer.tsx");
-  const hub = read("app/chess-mind/page.tsx");
+  // The hub: the page (data) plus TrainBody (the per-world presentation of the same values).
+  const hub = read("app/chess-mind/page.tsx") + read("components/trainYourMind/TrainBody.tsx");
   // The card is a .tsx component; evaluate just its two message builders from source.
   const FREE_DAILY_COMPLETIONS = rules.FREE_DAILY_COMPLETIONS;
   const titleSrc = card.match(/export const limitTitle = ([^\n]*);/)[1];
@@ -254,7 +255,7 @@ console.log("\n=== J. UI behaviour at 3/3 in a category ===");
   check("opening a category at 3/3 shows the limit state instead of serving an exercise", /phase === "limit"/.test(drill) && /resp\?\.dailyLimit/.test(drill) && /resp\?\.dailyLimit/.test(react) && /setLimitState\(true\)/.test(react));
   check("the server refusing a completion also switches to the limit state", /setRefused\(true\)/.test(drill) && /setLimitState\(true\)/.test(react));
   check("the hook is per category: it reads and records for the module it is given", /useTrainYourMindDailyLimit\(childId: string \| null, moduleId: TrainModule\)/.test(read("lib/trainYourMind/useDailyLimit.ts")) && /useTrainYourMindDailyLimit\(child\.childId, category\)/.test(drill) && /useTrainYourMindDailyLimit\(child\.childId, "reaction"\)/.test(react));
-  check("the hub shows 'n / 3 today' on EVERY category row, including Tactical Thinking, from the server's counts", /UsageLine usage=\{usage\?\.\[cat\.id as TrainModule\] \?\? null\}/.test(hub) && /getTrainYourMindUsageAll/.test(hub) && /\/ \{usage\.limit\} today/.test(hub));
+  check("the hub shows 'n / 3 today' on EVERY category row, including Tactical Thinking, from the server's counts", /usage: p\.usage\?\.\[cat\.id as TrainModule\] \?\? null/.test(hub) && /<UsageLine usage=\{usage\}/.test(hub) && /getTrainYourMindUsageAll/.test(hub) && /\/ \{usage\.limit\} today/.test(hub));
   check("the hub states the rule: 3 exercises per category, every day", /Free training: 3 exercises per category, every day\./.test(hub));
   check("the per-page indicator reads 'N / 3 today' and hides for Premium and before the first completion", /\/ \{limit\} today/.test(read("components/trainYourMind/DailyUsageIndicator.tsx")) && /isPremium \|\| limit === null/.test(read("components/trainYourMind/DailyUsageIndicator.tsx")));
   check("no database/RPC details appear in any learner-facing text", !/rpc|supabase|migration|advisory/i.test(card.replace(/import[^\n]*\n/g, "")));

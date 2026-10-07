@@ -766,7 +766,7 @@ function makeFakeDb() {
   check("progress and history stay per-child in the database (no localStorage for either)", !/localStorage/.test(drill) && !/localStorage/.test(read("lib/trainYourMind/useProgression.ts")) && !/localStorage/.test(read("lib/trainYourMind/progressClient.ts")));
   check("'Show board' help is recorded as assisted and not counted towards promotion", /assisted/.test(drill) && /Show board \(counts as help\)/.test(drill));
   check("Next prefetch is held in a ref and only recorded when presented", /prefetched\.current = fetchExercise\(levelRef\.current\)/.test(drill) && /const present = useCallback/.test(drill));
-  check("the hub shows per-category level and progress for the active child", /loadAllProgress/.test(read("app/chess-mind/page.tsx")) && /TrainStatus/.test(read("app/chess-mind/page.tsx")));
+  check("the hub shows per-category level and progress for the active child", /loadAllProgress/.test(read("app/chess-mind/page.tsx")) && /TrainStatus/.test(read("components/trainYourMind/TrainBody.tsx")));
   check("hub copy varies by World only through wording (all three Worlds defined, no fourth)", Object.keys(R("lib/trainYourMind/worldVoice.ts").WORLD_VOICE).sort().join() === "atelier,classic,enchanted");
   check("Reaction offers five modes and tracks accuracy, time and consistency", (read("components/chessMind/ReactionTrainer.tsx").match(/id: "rx\./g) || []).length === 5 && /Consistency/.test(read("components/chessMind/ReactionTrainer.tsx")));
   check("Tactical Thinking stays an Academy course (not converted to a drill)", /href: "\/academy\/tactical-thinking"/.test(read("content/chessMindCategories.ts")) && !engine.FAMILIES.some((f) => /tactical/i.test(f.id)));

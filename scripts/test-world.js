@@ -273,7 +273,8 @@ const check = (n, c) => (c ? pass++ : failures.push(n));
   const backdrop = strip(read("components/world/WorldSceneBackdrop.tsx"));
   const locationsSrc = strip(read("lib/world/locations.ts"));
   const passportSrc = strip(read("lib/world/passport.ts"));
-  const worldPage = strip(read("app/world/page.tsx"));
+  // The page keeps the state and logic; components/world/WorldBody.tsx is its per-world presentation of the same values and controls.
+  const worldPage = strip(read("app/world/page.tsx")) + strip(read("components/world/WorldBody.tsx"));
   const freePlay = read("app/free-play/page.tsx");
   const eyeScene = strip(read("components/world/scenes/LondonEyeScene.tsx"));
   const chatScene = strip(read("components/world/scenes/ChaturangaScene.tsx"));

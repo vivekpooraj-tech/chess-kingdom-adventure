@@ -100,7 +100,7 @@ console.log("=== Nothing else was changed ===");
 let changed = "";
 try { changed = execSync("git diff --name-only", { cwd: ROOT }).toString(); } catch (e) {}
 check("Classic Home, Enchanted tiles, hero and profile strip are untouched", !/components\/home\/classic|HomeHeroSection|ActivityTileGrid|HomeProfileStrip|HomeTodaySection/.test(changed));
-check("no Supabase, migration, pricing, auth, progression or limit files touched", !/supabase\/|lib\/pricing|lib\/premium|lib\/entitlement|lib\/auth|lib\/trainYourMind|middleware/.test(changed));
+check("no Supabase, migration, pricing, auth, progression or limit files touched", !/supabase\/|lib\/pricing|lib\/premium|lib\/entitlement|lib\/auth|lib\/trainYourMind\/(?!worldVoice)|middleware/.test(changed));
 check("DailyChallengeCard: default and classic variants keep their markup (atelier added alongside)", /variant === "classic"/.test(read("components/home/DailyChallengeCard.tsx")) && /variant === "atelier"/.test(read("components/home/DailyChallengeCard.tsx")));
 
 console.log(`\n=== ATELIER HOME: ${pass} passed, ${fails.length} failed ===`);

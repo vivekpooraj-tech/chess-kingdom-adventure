@@ -123,7 +123,9 @@ check("no world filter returns the whole library", skins.availableBoardSkins().l
 check("a skin's `worlds` list filters only that skin, never the defaults", skins.availableBoardSkins("enchanted").every((s) => !s.worlds || s.worlds.includes("enchanted") || s.id === "standard-green") && sets.availablePieceSets("classic").every((s) => !s.worlds || s.worlds.includes("classic") || s.id === "wikimedia-classic"));
 check("world ids used in metadata are real worlds", [...skins.BOARD_SKINS, ...sets.PIECE_SETS].every((o) => (o.worlds || []).every((w) => worlds.WORLD_IDS.includes(w))));
 check("the default entries carry no world restriction", !skins.BOARD_SKINS[0].worlds && !sets.PIECE_SETS[0].worlds);
-check("the Customize page does not depend on world-specific assets (it does not read the world)", !/useWorld|WorldScope|data-world/.test(page + cards));
+// The page is wrapped in WorldScope for presentation only (its tokens and ground; app/world-customize.css). What must stay true: the options
+// are not filtered by, and the page logic does not read, the world.
+check("the Customize page does not depend on world-specific assets (it does not read the world; WorldScope is presentation only)", !/useWorld|data-world|worldFromMode/.test(page + cards) && !/availableBoardSkins|availablePieceSets/.test(page));
 
 // --- 15. Restored art is the ORIGINAL art (byte-for-byte from Git), not a re-creation.
 const { execFileSync } = require("child_process");

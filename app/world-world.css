@@ -1,0 +1,563 @@
+/* ==========================================================================
+   CHESS MIND — WORLD (/world) in three worlds  (components/world/WorldBody)
+   One section per world; edit one without touching the others:
+     .wd-en  Enchanted Kingdom: realm portals     .wd-at  Master Training Atelier: an editorial pair
+     .wd-cl  Classic Pro: rooms
+   Everything is scoped to its own `.wd-<world>` root (rendered only in that world). Colours come from the world's own tokens (Enchanted /
+   Classic: [data-world]; Atelier: the approved palette declared below). The shared bits (.wd-fav, .wd-look, .wd-play, .wd-passport ...) are
+   restyled per world inside each section. The scenes themselves (the painted location art) are untouched.
+   ========================================================================== */
+.wd {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+}
+.wd *,
+.wd *::before,
+.wd *::after {
+  box-sizing: border-box;
+}
+.wd a {
+  color: inherit;
+  text-decoration: none;
+}
+.wd h1,
+.wd h2,
+.wd p,
+.wd ul {
+  margin: 0;
+  padding: 0;
+}
+.wd ul {
+  list-style: none;
+}
+html[data-layout="phone"] .wd > header {
+  margin-top: 2.5rem;
+}
+.wd-en-cards,
+.wd-at-cards,
+.wd-cl-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+.wd-card,
+.wd-en-card,
+.wd-at-card,
+.wd-cl-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.wd-en-scene,
+.wd-at-scene,
+.wd-cl-scene {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+.wd-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.wd-fav {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #fff;
+  background: rgb(0 0 0 / 0.38);
+}
+.wd-fav:hover {
+  background: rgb(0 0 0 / 0.55);
+}
+.wd-fav:focus-visible,
+.wd-look:focus-visible,
+.wd-play:focus-visible {
+  outline: 3px solid rgb(255 255 255 / 0.85);
+  outline-offset: 2px;
+}
+.wd-scene__foot {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0.9rem;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.wd-scene__titles {
+  min-width: 0;
+}
+.wd-scene__title {
+  color: #fff;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.55);
+}
+.wd-scene__tag {
+  font-size: 0.8125rem;
+  color: rgb(255 255 255 / 0.85);
+  text-shadow: 0 1px 4px rgb(0 0 0 / 0.55);
+}
+.wd-look {
+  flex: none;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  background: rgb(0 0 0 / 0.36);
+  color: #fff;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wd-look:hover {
+  background: rgb(0 0 0 / 0.55);
+}
+.wd-en-body,
+.wd-at-body,
+.wd-cl-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem 1.3rem;
+}
+.wd-atmos {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.wd-story {
+  flex: 1;
+  line-height: 1.55;
+}
+.wd-played,
+.wd-visited {
+  font-size: 0.8125rem;
+}
+.wd-play {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.4rem;
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+.wd-passport {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.2rem 1.3rem;
+}
+.wd-passport__title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.wd-passport__sub,
+.wd-passport__note {
+  font-size: 0.8125rem;
+}
+.wd-passport__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+.wd-passport__chips li {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.75rem;
+}
+
+/* ===== ENCHANTED — realm portals ===== */
+.wd-en {
+  max-width: 62rem;
+  color: rgb(var(--cm-ivory));
+  font-family: var(--font-nunito), system-ui, sans-serif;
+}
+.wd-en-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+.wd-en-title {
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-size: clamp(1.8rem, 1.3rem + 2.6vw, 3rem);
+  line-height: 1.1;
+  text-shadow: 0 0 28px rgb(var(--world-purple) / 0.55);
+}
+.wd-en-lede {
+  max-width: 32rem;
+  color: rgb(var(--cm-ivory) / 0.8);
+}
+@media (min-width: 48rem) {
+  .wd-en-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+.wd-en-card {
+  position: relative;
+  height: 100%;
+  border-radius: 1.6rem;
+  border: 2px solid rgb(var(--world-teal) / 0.45);
+  background: linear-gradient(160deg, rgb(var(--cm-navy-light) / 0.8), rgb(var(--cm-navy) / 0.95));
+  box-shadow: 0 22px 44px -26px rgb(var(--world-purple) / 0.7);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.wd-en-card.is-favourite {
+  border-color: rgb(var(--cm-gold));
+  box-shadow: 0 0 0 4px rgb(var(--cm-gold) / 0.2), 0 0 38px -6px rgb(var(--cm-gold) / 0.55);
+}
+.wd-en-card.is-favourite::after {
+  content: "★ Your favourite realm";
+  position: absolute;
+  top: 0.8rem;
+  left: 0.8rem;
+  z-index: 3;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--cm-midnight-deep));
+  background: linear-gradient(135deg, rgb(var(--cm-gold)), rgb(255 226 140));
+}
+.wd-en-scene {
+  aspect-ratio: 16 / 10;
+}
+.wd-en .wd-scrim {
+  background: linear-gradient(0deg, rgb(var(--cm-midnight-deep) / 0.85), transparent 55%);
+}
+.wd-en .wd-scene__title {
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+.wd-en .wd-fav {
+  box-shadow: 0 0 0 2px rgb(var(--cm-gold) / 0.55);
+}
+.wd-en .wd-atmos {
+  color: rgb(var(--cm-gold));
+}
+.wd-en .wd-story {
+  color: rgb(var(--cm-ivory) / 0.88);
+}
+.wd-en .wd-played {
+  color: rgb(var(--world-teal));
+  font-weight: 700;
+}
+.wd-en .wd-visited {
+  color: rgb(var(--cm-ivory) / 0.65);
+}
+.wd-en .wd-play {
+  border-radius: 999px;
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-size: 1.05rem;
+  color: rgb(var(--cm-midnight-deep));
+  background: linear-gradient(135deg, rgb(var(--cm-gold)), rgb(255 226 140));
+  box-shadow: 0 0 0 3px rgb(var(--cm-gold) / 0.25);
+}
+.wd-en .wd-passport {
+  border-radius: 1.4rem;
+  border: 1px solid rgb(var(--cm-gold) / 0.45);
+  background: linear-gradient(135deg, rgb(var(--cm-gold) / 0.14), rgb(var(--cm-navy) / 0.9));
+}
+.wd-en .wd-passport__title {
+  color: rgb(var(--cm-gold));
+}
+.wd-en .wd-passport__sub,
+.wd-en .wd-passport__note {
+  color: rgb(var(--cm-ivory) / 0.75);
+}
+.wd-en .wd-passport__chips li {
+  border-radius: 999px;
+  border: 1px solid rgb(var(--cm-gold) / 0.45);
+  background: rgb(var(--cm-gold) / 0.1);
+}
+
+/* ===== ATELIER — an editorial pair ===== */
+.wd-at {
+  --wd-graphite: 17 16 15;
+  --wd-surface: 25 23 22;
+  --wd-plum: 41 21 34;
+  --wd-oxblood: 90 31 45;
+  --wd-chart: 199 240 0;
+  --wd-ivory: 244 239 230;
+  --wd-stone: 184 176 165;
+  --wd-copper: 184 115 74;
+  max-width: 70rem;
+  gap: clamp(1.75rem, 1rem + 2.4vw, 3rem);
+  color: rgb(var(--wd-ivory));
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+}
+.wd-at-eyebrow {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(var(--wd-copper));
+}
+.wd-at-mast {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgb(var(--wd-ivory) / 0.14);
+}
+.wd-at-title {
+  max-width: 40rem;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(2.1rem, 1.2rem + 4.2vw, 3.8rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+.wd-at-lede {
+  max-width: 34rem;
+  font-size: 1.0625rem;
+  color: rgb(var(--wd-stone));
+}
+@media (min-width: 62rem) {
+  .wd-at-cards {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+  }
+}
+.wd-at-card {
+  border: 1px solid rgb(var(--wd-ivory) / 0.1);
+  border-radius: 0.5rem;
+  background: rgb(var(--wd-surface));
+  position: relative;
+}
+.wd-at-card.is-favourite {
+  border-color: rgb(var(--wd-chart) / 0.55);
+  box-shadow: inset 4px 0 0 rgb(var(--wd-chart));
+}
+.wd-at-card.is-favourite::after {
+  content: "Favourite";
+  position: absolute;
+  top: 0.9rem;
+  left: 1rem;
+  z-index: 3;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--wd-graphite));
+  background: rgb(var(--wd-chart));
+}
+.wd-at-scene {
+  aspect-ratio: 16 / 9;
+}
+@media (min-width: 62rem) {
+  .wd-at-card[data-index="0"] .wd-at-scene {
+    aspect-ratio: 16 / 8.5;
+  }
+  .wd-at-card[data-index="1"] .wd-at-scene {
+    aspect-ratio: 4 / 3;
+  }
+}
+.wd-at .wd-scrim {
+  background: linear-gradient(0deg, rgb(var(--wd-graphite) / 0.9), transparent 58%);
+}
+.wd-at .wd-scene__title {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.wd-at .wd-fav,
+.wd-at .wd-look {
+  border-radius: 0.375rem;
+}
+.wd-at .wd-atmos {
+  color: rgb(var(--wd-copper));
+}
+.wd-at .wd-story {
+  color: rgb(var(--wd-stone));
+}
+.wd-at .wd-played {
+  color: rgb(var(--wd-ivory));
+  font-weight: 600;
+}
+.wd-at .wd-visited {
+  color: rgb(var(--wd-stone));
+}
+.wd-at .wd-play {
+  border-radius: 0.375rem;
+  color: rgb(var(--wd-graphite));
+  background: rgb(var(--wd-chart));
+}
+.wd-at .wd-passport {
+  border-top: 1px solid rgb(var(--wd-ivory) / 0.14);
+  padding: 1.25rem 0 0;
+}
+.wd-at .wd-passport__title {
+  color: rgb(var(--wd-copper));
+}
+.wd-at .wd-passport__line {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 1.4rem;
+}
+.wd-at .wd-passport__sub,
+.wd-at .wd-passport__note {
+  color: rgb(var(--wd-stone));
+}
+.wd-at .wd-passport__chips li {
+  border-radius: 0.25rem;
+  color: rgb(var(--wd-stone));
+  border: 1px solid rgb(var(--wd-ivory) / 0.25);
+}
+
+/* ===== CLASSIC — rooms ===== */
+.wd-cl {
+  max-width: 60rem;
+  gap: 1.75rem;
+  color: rgb(var(--world-parchment));
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+}
+.wd-cl-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid rgb(var(--world-champagne) / 0.25);
+}
+.wd-cl-title {
+  max-width: 40rem;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.9rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+.wd-cl-lede {
+  color: rgb(var(--world-silver));
+}
+@media (min-width: 48rem) {
+  .wd-cl-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.75rem;
+  }
+}
+.wd-cl-card {
+  position: relative;
+  border: 1px solid rgb(var(--world-parchment) / 0.09);
+  border-top: 2px solid rgb(var(--world-champagne) / 0.5);
+  border-radius: 0.5rem;
+  background: rgb(var(--world-graphite));
+}
+.wd-cl-card.is-favourite {
+  border-top-color: rgb(var(--cm-emerald));
+  box-shadow: inset 0 0 0 1px rgb(var(--cm-emerald) / 0.5);
+}
+.wd-cl-card.is-favourite::after {
+  content: "Favourite";
+  position: absolute;
+  top: 0.9rem;
+  left: 1rem;
+  z-index: 3;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(var(--world-parchment));
+  background: rgb(var(--world-forest));
+}
+.wd-cl-scene {
+  aspect-ratio: 16 / 10;
+}
+.wd-cl .wd-scrim {
+  background: linear-gradient(0deg, rgb(var(--world-obsidian) / 0.88), transparent 58%);
+}
+.wd-cl .wd-scene__title {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+.wd-cl .wd-fav,
+.wd-cl .wd-look {
+  border-radius: 0.375rem;
+}
+.wd-cl .wd-atmos {
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+  color: rgb(var(--world-champagne));
+}
+.wd-cl .wd-story {
+  color: rgb(var(--world-silver));
+}
+.wd-cl .wd-played {
+  color: rgb(var(--cm-emerald));
+  font-weight: 600;
+}
+.wd-cl .wd-visited {
+  color: rgb(var(--world-silver));
+}
+.wd-cl .wd-play {
+  border-radius: 0.375rem;
+  color: rgb(var(--world-parchment));
+  background: rgb(var(--world-forest));
+}
+.wd-cl .wd-passport {
+  border: 1px solid rgb(var(--world-parchment) / 0.09);
+  border-left: 3px solid rgb(var(--cm-emerald));
+  border-radius: 0.5rem;
+  background: rgb(var(--world-graphite));
+}
+.wd-cl .wd-passport__title {
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+  color: rgb(var(--world-champagne));
+}
+.wd-cl .wd-passport__line {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 1.25rem;
+}
+.wd-cl .wd-passport__sub,
+.wd-cl .wd-passport__note {
+  color: rgb(var(--world-silver));
+}
+.wd-cl .wd-passport__chips li {
+  border-radius: 0.25rem;
+  color: rgb(var(--world-silver));
+  border: 1px solid rgb(var(--world-parchment) / 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wd-en-card {
+    transition: none;
+  }
+}

@@ -10,6 +10,7 @@ import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, updateChildPieceSet, updateChildBoardSkin } from "@/lib/supabase/queries";
 import { getActiveChildIdClient, setActiveChildIdClient } from "@/lib/childSession";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
+import { WorldScope } from "@/components/layout/WorldScope";
 import { PrimaryCard } from "@/components/ui/Card";
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 import { Button } from "@/components/ui/Button";
@@ -81,12 +82,19 @@ export default function CustomizeChessboardPage() {
   }
 
   if (!childId || !pieceSetId || !boardSkinId) {
-    return <ScreenSkeleton maxWidth="wide" />;
+    return (
+      <WorldScope>
+        <ScreenSkeleton maxWidth="wide" />
+      </WorldScope>
+    );
   }
 
+  // WorldScope carries the active world's tokens and ground onto this full-screen page (it has no app chrome of its own); `cz` scopes the
+  // per-world presentation in app/world-customize.css. Nothing below it changes: the same registries, the same effective ids, the same saves.
   return (
+    <WorldScope>
     <ScreenTimeGate childId={childId}>
-      <main className="min-h-screen bg-premium-midnight px-4 sm:px-6 py-10 flex flex-col items-center gap-10">
+      <main className="cz min-h-screen bg-premium-midnight px-4 sm:px-6 py-10 flex flex-col items-center gap-10">
         <div className="text-center max-w-md">
           <button
             type="button"
@@ -157,5 +165,6 @@ export default function CustomizeChessboardPage() {
         </Button>
       </main>
     </ScreenTimeGate>
+    </WorldScope>
   );
 }

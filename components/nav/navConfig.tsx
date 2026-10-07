@@ -39,12 +39,14 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Home",
     href: "/home",
     icon: HomeIcon,
+    // /discover is NOT grouped here: it is its own Explore destination (SECONDARY_NAV_ITEMS), so on the desktop sidebar Discover is the
+    // single active item there and Home is not also highlighted.
     // /lesson (Kingdom Journey) is provisionally grouped under Home — it is
     // entered from a Home section today and has not yet been repositioned
     // into World (that migration is its own later implementation phase).
     // This keeps the active-tab highlight correct without pre-empting that
     // decision.
-    match: ["/home", "/discover", "/piece-library", "/lesson"],
+    match: ["/home", "/piece-library", "/lesson"],
   },
   {
     label: "School",

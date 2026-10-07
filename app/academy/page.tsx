@@ -1,114 +1,26 @@
-import { backLabel } from "@/lib/navigation/destinations";
-import Link from "next/link";
 import { Screen } from "@/components/layout/Screen";
-import { ListItemRow } from "@/components/ui/Card";
-import { BRAND } from "@/lib/brand";
-import { TEXT } from "@/lib/designSystem";
+import { WorldScope } from "@/components/layout/WorldScope";
+import { AcademyBody } from "@/components/academy/AcademyBody";
+import { getCourse } from "@/lib/academy/courses.server";
 
-type AcademyCategory =
-  | { id: string; title: string; emoji: string; description: string; href: string }
-  | { id: string; title: string; emoji: string; description: string; soon: true };
-
-const CATEGORIES: AcademyCategory[] = [
-  {
-    id: "journey",
-    title: "Kingdom Story Map",
-    emoji: "🗺️",
-    description: "Revisit the story path you played through every Kingdom zone.",
-    href: "/home/journey",
-  },
-  {
-    id: "fundamentals",
-    title: "Chess Fundamentals",
-    emoji: "📐",
-    description: "The board, the pieces, and the rules — from scratch.",
-    href: "/academy/fundamentals",
-  },
-  {
-    id: "origins",
-    title: "Chess Origins",
-    emoji: "🏛️",
-    description: "How a 1,500-year-old game reached your board today.",
-    href: "/academy/origins",
-  },
-  {
-    id: "tactics",
-    title: "Tactics",
-    emoji: "⚔️",
-    description: "Forks, pins, skewers, and the patterns that win material.",
-    href: "/academy/tactics",
-  },
-  {
-    id: "strategy",
-    title: "Strategy",
-    emoji: "🧭",
-    description: "Outposts, pawn breaks, king safety, and how to form a plan.",
-    href: "/academy/strategy",
-  },
-  {
-    id: "endgames",
-    title: "Endgames",
-    emoji: "🏰",
-    description: "King activity, passed pawns, rook endings, and converting a win.",
-    href: "/academy/endgames",
-  },
-  {
-    id: "openings",
-    title: "Chess Openings",
-    emoji: "♞",
-    description: "28 named openings, principles, and how to choose one.",
-    href: "/academy/openings",
-  },
-];
-
+/**
+ * Academy: the index of every Academy section.
+ *
+ * The data (content/academyIndex.ts) and the learner's real progress (the learning path) are shared; the composition is
+ * per world (components/academy/AcademyBody): Enchanted journey trail, Atelier programme, Classic syllabus.
+ * A static server page like Learn: only lesson ids are read here, personal progress fills in on the client.
+ */
 export default function AcademyPage() {
+  const courseLessonIds: Record<string, string[]> = {};
+  for (const id of ["strategy", "endgames", "tactical-thinking"]) {
+    const course = getCourse(id);
+    if (course) courseLessonIds[id] = course.lessons.map((l) => l.id);
+  }
   return (
-    <>
-      <Screen maxWidth="medium" topSafeArea="icons">
-        <div className="mx-auto max-w-xl text-center">
-          <p className={`${TEXT.meta} text-premium-gold`}>{BRAND.academyName}</p>
-          <h1 className={`${TEXT.display} mt-1`}>{BRAND.academyTagline}</h1>
-          <p className={`${TEXT.body} mt-2`}>
-            History, tactics, strategy, endgames, and openings — everything beyond the daily
-            lesson.
-          </p>
-        </div>
-
-        {/* A flat list of rows, not a stack of individually-shadowed cards —
-            ListItemRow keeps the same content as one coherent list. */}
-        <div className="flex w-full flex-col gap-1.5">
-          {CATEGORIES.map((cat) =>
-            "soon" in cat ? (
-              <ListItemRow key={cat.id} className="opacity-50">
-                <span className="text-2xl flex-none">{cat.emoji}</span>
-                <div className="flex-1">
-                  <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
-                  <p className={TEXT.caption}>{cat.description}</p>
-                </div>
-                <span className="font-classic-body text-[11px] font-semibold text-premium-gold/70 border border-premium-gold/30 rounded-full px-2 py-1 whitespace-nowrap flex-none">
-                  SOON
-                </span>
-              </ListItemRow>
-            ) : (
-              <ListItemRow key={cat.id} href={cat.href}>
-                <span className="text-2xl flex-none">{cat.emoji}</span>
-                <div className="flex-1">
-                  <p className="font-classic-display text-base text-premium-ivory">{cat.title}</p>
-                  <p className={TEXT.caption}>{cat.description}</p>
-                </div>
-                <span className="text-premium-gold text-lg flex-none">→</span>
-              </ListItemRow>
-            )
-          )}
-        </div>
-
-        <Link
-          href="/learn"
-          className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/65 underline underline-offset-2"
-        >
-          {backLabel("LEARN")}
-        </Link>
+    <WorldScope>
+      <Screen maxWidth="wide" topSafeArea="icons">
+        <AcademyBody lessonIdsByCourse={courseLessonIds} />
       </Screen>
-    </>
+    </WorldScope>
   );
 }

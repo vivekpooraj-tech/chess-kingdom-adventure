@@ -45,7 +45,7 @@ export function AppTopBar() {
 
   return (
     <header
-      className="app-topbar sticky top-0 z-30 h-14 flex-none items-center gap-3 border-b border-premium-gold/10 bg-premium-midnightDeep/85 px-4 backdrop-blur-md"
+      className="app-topbar world-shell sticky top-0 z-30 h-14 flex-none items-center gap-3 border-b border-premium-gold/10 bg-premium-midnightDeep/85 px-4 backdrop-blur-md"
       style={{ minHeight: "var(--topbar-h)" }}
     >
       {/* Brand — only on tablet, where there is no sidebar to carry it. */}

@@ -1,5 +1,4 @@
 import { ForParentsLink } from "@/components/nav/ForParentsLink";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { LESSONS } from "@/content/lessons";
@@ -23,16 +22,13 @@ import {
 } from "@/lib/supabase/queries";
 import { ACTIVE_CHILD_COOKIE_NAME } from "@/lib/childSession";
 import { Screen } from "@/components/layout/Screen";
-import { HomeHeader } from "@/components/home/HomeHeader";
+import { WorldScope } from "@/components/layout/WorldScope";
+import { ProfileBody } from "@/components/profile/ProfileBody";
 import { AchievementBadges } from "@/components/achievements/AchievementBadges";
-import { ListItemRow } from "@/components/ui/Card";
-import { StatCard } from "@/components/ui/StatCard";
-import { SectionHeader } from "@/components/ui/SectionHeader";
 import { buildChessJourney } from "@/lib/learner/chessJourney";
 import { ChessJourneyPanel } from "@/components/learner/ChessJourneyPanel";
 import { getPieceSet } from "@/content/pieceSets";
 import { getBoardSkin } from "@/content/boardSkins";
-import { TEXT } from "@/lib/designSystem";
 
 export default async function ProfilePage() {
   const supabase = createClient();
@@ -95,122 +91,46 @@ export default async function ProfilePage() {
     .map((e) => OPENINGS.find((o) => o.id === e.opening_id))
     .filter((o): o is (typeof OPENINGS)[number] => !!o);
 
+  const journeyDay = Math.min(child.current_day, LESSONS.length);
+  const dayPercent = Math.min(100, Math.round((Math.min(child.current_day - 1, LESSONS.length) / LESSONS.length) * 100));
+
   return (
-    <>
-      <Screen maxWidth="medium">
-        <HomeHeader
-          displayName={child.display_name}
-          avatar={avatar}
-          zone={currentZone}
-          currentDay={child.current_day}
-          totalDays={LESSONS.length}
+    <WorldScope>
+      <Screen maxWidth="wide">
+        {/* The page owns every query and lookup above; ProfileBody only lays the same real values out per world (Enchanted Kingdom
+            identity, Atelier dossier, Classic player record). The shared panels are passed in as they are. */}
+        <ProfileBody
+          name={child.display_name}
+          avatar={{ emoji: avatar?.emoji ?? "🧑", colorFrom: avatar?.colorFrom ?? "#28315A", colorTo: avatar?.colorTo ?? "#28315A" }}
+          zone={currentZone ? { emoji: currentZone.emoji, name: currentZone.name } : null}
+          day={{ current: journeyDay, total: LESSONS.length, percent: dayPercent }}
           streak={chessMindStreak}
+          rating={child.rating}
+          todayRatingChange={todayRatingChange}
+          pieces={{ emoji: pieceSet.emoji, name: pieceSet.name }}
+          board={{ emoji: boardSkin.emoji, name: boardSkin.name }}
+          stats={[
+            { emoji: "🗺️", value: `${completedDays.length}/${LESSONS.length}`, label: "Kingdom Story Map" },
+            { emoji: "🏛️", value: `${completedAcademyIds.length}`, label: "Academy Completed" },
+            { emoji: "🧩", value: `${puzzleStats.puzzlesSolved}`, label: "Puzzles Solved" },
+            { emoji: "🧠", value: `${chessMindTotalSolved}`, label: "Chess Mind Solved" },
+            { emoji: "🧭", value: `${discovered.length}`, label: "Openings Discovered" },
+            { emoji: "🥇", value: `${onlineWins}`, label: "Online Wins" },
+          ]}
+          openings={{
+            discovered: discovered.length,
+            gambits: gambitsDiscovered,
+            studied: studied.length,
+            total: OPENINGS.length,
+            recent: recentlyDiscovered.map((o) => ({ id: o.id, name: o.name, isGambit: !!o.isGambit })),
+          }}
+          /* The time dimension, above the lifetime totals: "am I improving?" is a more useful first answer than "how much have I
+             done?". Renders nothing until there are enough rated games to say something honest. */
+          journey={<ChessJourneyPanel journey={journey} />}
+          achievements={<AchievementBadges earnedKeys={earnedKeys} />}
+          parents={<ForParentsLink ageBand={child.age_band} />}
         />
-
-        <div className="w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex items-center justify-between">
-          <div>
-            <p className={`${TEXT.caption} uppercase tracking-wide`}>Chess Rating</p>
-            <p className="font-classic-display text-3xl text-premium-gold">{child.rating.toLocaleString()}</p>
-          </div>
-          {todayRatingChange !== 0 && (
-            <p className={`font-classic-body text-sm font-semibold ${todayRatingChange > 0 ? "text-emerald-400" : "text-red-300"}`}>
-              {todayRatingChange > 0 ? `+${todayRatingChange}` : todayRatingChange} today
-            </p>
-          )}
-        </div>
-
-        <div className="w-full flex flex-col gap-2">
-          <SectionHeader title="Customize" />
-          <ListItemRow href="/profile/customize" className="min-h-[64px]">
-            <span className="text-3xl flex-none">{pieceSet.emoji}</span>
-            <div className="flex-1 min-w-0">
-              <p className="font-classic-display text-sm text-premium-ivory">Change Pieces</p>
-              <p className={`${TEXT.caption} normal-case`}>Currently {pieceSet.name}</p>
-            </div>
-            <span className="text-premium-gold text-lg flex-none">→</span>
-          </ListItemRow>
-          <ListItemRow href="/profile/customize" className="min-h-[64px]">
-            <span className="text-3xl flex-none">{boardSkin.emoji}</span>
-            <div className="flex-1 min-w-0">
-              <p className="font-classic-display text-sm text-premium-ivory">Change Board</p>
-              <p className={`${TEXT.caption} normal-case`}>Currently {boardSkin.name}</p>
-            </div>
-            <span className="text-premium-gold text-lg flex-none">→</span>
-          </ListItemRow>
-        </div>
-
-        {/* The time dimension, above the lifetime totals: "am I improving?"
-            is a more useful first answer than "how much have I done?". Renders
-            nothing until there are enough rated games to say something honest. */}
-        <ChessJourneyPanel journey={journey} />
-
-        <div className="w-full flex flex-col gap-2">
-          <SectionHeader title="Your Stats" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatCard emoji="🗺️" value={`${completedDays.length}/${LESSONS.length}`} label="Kingdom Story Map" />
-            <StatCard emoji="🏛️" value={`${completedAcademyIds.length}`} label="Academy Completed" />
-            <StatCard emoji="🧩" value={`${puzzleStats.puzzlesSolved}`} label="Puzzles Solved" />
-            <StatCard emoji="🧠" value={`${chessMindTotalSolved}`} label="Chess Mind Solved" />
-            <StatCard emoji="🧭" value={`${discovered.length}`} label="Openings Discovered" />
-            <StatCard emoji="🥇" value={`${onlineWins}`} label="Online Wins" />
-          </div>
-        </div>
-
-        <div className="w-full rounded-premiumCard bg-premium-navy shadow-premiumCard p-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <p className="font-classic-display text-base text-premium-ivory">Openings Discovered</p>
-            <Link
-              href="/academy/openings"
-              className="inline-flex items-center min-h-[44px] font-classic-body text-xs text-premium-gold underline underline-offset-2"
-            >
-              Explore Openings →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <p className="font-classic-display text-xl text-premium-ivory">{discovered.length}</p>
-              <p className="font-classic-body text-xs text-premium-ivory/50">Discovered</p>
-            </div>
-            <div>
-              <p className="font-classic-display text-xl text-premium-ivory">{gambitsDiscovered}</p>
-              <p className="font-classic-body text-xs text-premium-ivory/50">Gambits</p>
-            </div>
-            <div>
-              <p className="font-classic-display text-xl text-premium-ivory">
-                {studied.length}/{OPENINGS.length}
-              </p>
-              <p className="font-classic-body text-xs text-premium-ivory/50">Studied</p>
-            </div>
-          </div>
-
-          {recentlyDiscovered.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <p className="font-classic-body text-[11px] uppercase tracking-wider text-premium-gold/70 font-semibold">
-                Recently Discovered
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {recentlyDiscovered.map((o) => (
-                  <span
-                    key={o.id}
-                    className={`font-classic-body text-[11px] rounded-full px-3 py-1 border ${
-                      o.isGambit
-                        ? "border-red-400/30 text-red-300"
-                        : "border-premium-gold/30 text-premium-gold"
-                    }`}
-                  >
-                    {o.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <AchievementBadges earnedKeys={earnedKeys} />
-
-        <ForParentsLink ageBand={child.age_band} />
       </Screen>
-    </>
+    </WorldScope>
   );
 }

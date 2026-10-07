@@ -20,7 +20,7 @@ import { UtilityNavIcons } from "./UtilityNavIcons";
 export function PhoneUtilityIcons() {
   return (
     <div
-      className="phone-utility-icons fixed z-40 rounded-full bg-premium-midnightDeep/90 backdrop-blur-md border border-premium-gold/10 px-1 py-0.5"
+      className="phone-utility-icons world-shell fixed z-40 rounded-full bg-premium-midnightDeep/90 backdrop-blur-md border border-premium-gold/10 px-1 py-0.5"
       style={{
         // Top-right, not top-left: nearly every page's own heading/brand
         // text starts top-left, so a fixed element there collides with page

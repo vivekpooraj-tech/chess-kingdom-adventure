@@ -25,7 +25,7 @@ export const WORLD_VOICE: Record<WorldId, WorldVoice> = {
   atelier: {
     title: "Train Your Mind",
     subtitle: "Train the skills behind stronger chess.",
-    caption: "Seven cognitive disciplines. Structured progression from Foundation to Master.",
+    caption: "Eight cognitive disciplines. Structured progression from Foundation to Master.",
     levelNoun: "Level",
   },
   classic: {

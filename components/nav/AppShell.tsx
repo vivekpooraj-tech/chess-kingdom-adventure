@@ -79,13 +79,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const showChrome = isAppChromeRoute(pathname);
 
   if (!showChrome) {
+    // The tactics-lesson runner is a full-screen board page without the app chrome. It still belongs to the Academy, so it carries the
+    // active world's tokens and the Academy marker (app/world-academy.css) — otherwise it would fall back to the shared navy.
+    if (/^\/academy\/tactics\/.+/.test(pathname)) {
+      return (
+        <div className="world-shell" data-section="academy-deep">
+          {children}
+        </div>
+      );
+    }
     return <>{children}</>;
   }
 
   return (
     <>
       <SideNav collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
-      <div className="app-shell-content">
+      {/* Marks the Academy sections and lessons (everything under /academy/, not the index, which has its own per-world layout) so
+          app/world-academy.css can give them the active world's headings, calls to action and progress bars without per-page edits. */}
+      <div className="app-shell-content world-shell" data-section={pathname.startsWith("/academy/") ? "academy-deep" : pathname.startsWith("/chess-mind/") ? "train-deep" : undefined}>
         <AppTopBar />
         {children}
       </div>

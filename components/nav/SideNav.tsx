@@ -38,6 +38,7 @@ function SideNavLink({
       href={item.href}
       aria-current={active ? "page" : undefined}
       title={item.label}
+      data-nav={item.label.toLowerCase()}
       className={`app-sidenav-item relative flex items-center gap-3 rounded-premiumBtn px-3 font-classic-body transition-colors duration-100 ${
         subdued ? "min-h-[42px] text-[13px]" : "min-h-[48px] text-sm"
       } ${
@@ -51,7 +52,7 @@ function SideNavLink({
       {active && (
         <span
           aria-hidden="true"
-          className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-premium-gold"
+          className="app-sidenav-bar absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-premium-gold"
         />
       )}
       <Icon className={subdued ? "h-[18px] w-[18px] flex-none" : "h-5 w-5 flex-none"} />
@@ -95,9 +96,9 @@ export function SideNav({
   return (
     <nav
       aria-label="Primary"
-      className="app-sidenav fixed inset-y-0 left-0 z-40 w-[var(--app-sidenav-w)] flex-col border-r border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
+      className="app-sidenav world-shell fixed inset-y-0 left-0 z-40 w-[var(--app-sidenav-w)] flex-col border-r border-premium-gold/15 bg-premium-midnightDeep/95 backdrop-blur-md"
     >
-      <div className="flex h-14 flex-none items-center px-4">
+      <div className="app-sidenav-brand flex h-14 flex-none items-center px-4">
         <Link href={homeHref} aria-label="Chess Mind — Home" className="inline-flex items-center">
           <span className="app-sidenav-crest">
             <Logo variant="compact" size={28} />
@@ -108,13 +109,13 @@ export function SideNav({
         </Link>
       </div>
 
-      <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
+      <div className="app-sidenav-main flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
         {primaryItems.map((item) => (
           <SideNavLink key={item.label} item={item} active={isNavItemActive(pathname, item)} />
         ))}
 
         {secondaryItems.length > 0 && (
-        <div className="mt-3 border-t border-white/5 pt-3">
+        <div className="app-sidenav-explore mt-3 border-t border-white/5 pt-3">
           <p className="app-sidenav-label px-3 pb-1 font-classic-body text-[10px] font-semibold uppercase tracking-wider text-premium-ivory/35">
             Explore
           </p>
@@ -132,7 +133,7 @@ export function SideNav({
         )}
       </div>
 
-      <div className="flex-none border-t border-white/5 px-2 py-2">
+      <div className="app-sidenav-foot flex-none border-t border-white/5 px-2 py-2">
         <button
           type="button"
           onClick={onToggleCollapsed}

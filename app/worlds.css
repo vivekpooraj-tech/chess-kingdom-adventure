@@ -42,7 +42,8 @@
    ENCHANTED KINGDOM — kids / adventure home
    Turquoise, purple, magical gold, coral. Magical, never babyish.
    -------------------------------------------------------------------------- */
-[data-world="enchanted"] {
+[data-world="enchanted"],
+html[data-mode="kids"] .world-shell {
   --cm-midnight: 8 32 42;
   --cm-midnight-deep: 4 18 26;
   --cm-navy: 14 54 68;
@@ -167,7 +168,8 @@
    MASTER TRAINING ATELIER — serious training home
    Crimson, copper, charcoal, warm ivory. Not teal. Not magical.
    -------------------------------------------------------------------------- */
-[data-world="atelier"] {
+[data-world="atelier"],
+html[data-mode="adult"] .world-shell {
   --cm-midnight: 18 14 16;
   --cm-midnight-deep: 10 8 10;
   --cm-navy: 36 20 24;
@@ -280,7 +282,8 @@
    `--world-forest` / `--world-parchment` keep their names (every Classic rule
    below reads them) but now carry emerald / ivory.
    -------------------------------------------------------------------------- */
-[data-world="classic"] {
+[data-world="classic"],
+html:not([data-mode="kids"]):not([data-mode="adult"]) .world-shell {
   --cm-midnight: 12 15 20;
   --cm-midnight-deep: 7 9 12;
   --cm-navy: 25 30 39;

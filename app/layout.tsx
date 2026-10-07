@@ -14,6 +14,20 @@ import "./modes.css";
 // After mode: world (Enchanted / Atelier / Classic) is a third axis, scoped
 // to `data-world` subtrees — see app/worlds.css. Kingdom Map/Home is first.
 import "./worlds.css";
+// The persistent shell (sidebar / top bar / tabs) per world. After worlds.css: it reads the world tokens defined there.
+import "./world-shell.css";
+// Academy (/academy) per world; scoped to .ac-<world>, so it cannot reach another page.
+import "./world-academy.css";
+// Train Your Mind (/chess-mind) per world; scoped to .tm-<world>.
+import "./world-train.css";
+// Profile (/profile) per world; scoped to .pf-<world>.
+import "./world-profile.css";
+// Discover (/discover) per world; scoped to .dc-<world>.
+import "./world-discover.css";
+// World (/world) per world; scoped to .wd-<world>.
+import "./world-world.css";
+// Profile Customize (/profile/customize) per world; scoped to .cz.
+import "./world-customize.css";
 import { CapacitorDeepLinkHandler } from "@/components/CapacitorDeepLinkHandler";
 import { MotionProvider } from "@/components/MotionProvider";
 import { DevTestModeBar } from "@/components/dev/DevTestModeBar";

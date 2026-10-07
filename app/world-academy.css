@@ -1,0 +1,670 @@
+/* ==========================================================================
+   CHESS MIND — ACADEMY (/academy) in three worlds  (components/academy/AcademyBody)
+   One section per world; edit one without touching the others:
+     .ac-en  Enchanted Kingdom: a journey trail      .ac-at  Master Training Atelier: an editorial programme
+     .ac-cl  Classic Pro: a spacious syllabus
+   Everything is scoped to its own `.ac-<world>` root (rendered only in that world), so nothing here can reach another page or world.
+   Colours come from the world's own tokens (Enchanted / Classic: [data-world]; Atelier: the approved palette declared below).
+   ========================================================================== */
+.ac {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+}
+.ac *,
+.ac *::before,
+.ac *::after {
+  box-sizing: border-box;
+}
+.ac a {
+  color: inherit;
+  text-decoration: none;
+}
+.ac-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.9375rem;
+  text-decoration: underline !important;
+  text-underline-offset: 0.25em;
+  opacity: 0.8;
+}
+.ac-back:hover {
+  opacity: 1;
+}
+.ac-chip {
+  flex: none;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+/* the phone's floating Learn/More pill sits at the top right: leave room for it (same clearance the other world pages use) */
+html[data-layout="phone"] .ac > header {
+  margin-top: 2.5rem;
+}
+
+/* ===== ENCHANTED — a journey trail ===== */
+.ac-en {
+  max-width: 54rem;
+  color: rgb(var(--cm-ivory));
+  font-family: var(--font-nunito), system-ui, sans-serif;
+}
+.ac-en__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+.ac-en__title {
+  margin: 0;
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-size: clamp(2rem, 1.4rem + 3vw, 3.25rem);
+  line-height: 1.05;
+  text-shadow: 0 0 28px rgb(var(--world-purple) / 0.55);
+}
+.ac-en__lede {
+  margin: 0;
+  max-width: 28rem;
+  color: rgb(var(--cm-ivory) / 0.78);
+}
+.ac-en-now {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "orb text" "cta cta";
+  gap: 0.9rem 1.1rem;
+  align-items: center;
+  padding: 1.25rem;
+  border-radius: 1.6rem;
+  border: 2px solid rgb(var(--cm-gold) / 0.7);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(var(--world-purple) / 0.4), transparent 62%),
+    linear-gradient(145deg, rgb(var(--cm-navy-light) / 0.85), rgb(var(--cm-navy)));
+  box-shadow: 0 0 0 4px rgb(var(--cm-gold) / 0.12), 0 22px 40px -22px rgb(var(--world-purple) / 0.7);
+}
+.ac-en-now__orb {
+  grid-area: orb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  color: rgb(var(--cm-midnight-deep));
+  background: radial-gradient(circle at 30% 25%, rgb(255 226 140), rgb(var(--cm-gold)));
+  box-shadow: 0 0 26px rgb(var(--cm-gold) / 0.6);
+}
+.ac-en-now__text {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.ac-en-now__label {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--cm-gold));
+}
+.ac-en-now__title {
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+.ac-en-now__sub {
+  font-size: 0.9375rem;
+  color: rgb(var(--cm-ivory) / 0.8);
+}
+.ac-en-now__cta {
+  grid-area: cta;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 52px;
+  border-radius: 999px;
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-size: 1.15rem;
+  color: rgb(var(--cm-midnight-deep));
+  background: linear-gradient(135deg, rgb(var(--cm-gold)), rgb(255 226 140));
+  box-shadow: 0 0 0 3px rgb(var(--cm-gold) / 0.25);
+}
+@media (min-width: 40rem) {
+  .ac-en-now {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "orb text cta";
+  }
+  .ac-en-now__cta {
+    padding: 0 1.6rem;
+  }
+}
+.ac-en-trail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* the trail: a dashed path the stops hang off */
+.ac-en-trail::before {
+  content: "";
+  position: absolute;
+  top: 1rem;
+  bottom: 1rem;
+  left: 50%;
+  border-left: 2px dashed rgb(var(--world-teal) / 0.3);
+  transform: translateX(-1px);
+  display: none;
+}
+@media (min-width: 48rem) {
+  .ac-en-trail::before {
+    display: block;
+  }
+  .ac-en-stop {
+    width: calc(50% - 1.25rem);
+  }
+  .ac-en-stop.is-right {
+    align-self: flex-end;
+  }
+}
+.ac-en-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 84px;
+  padding: 0.95rem 1.1rem;
+  border-radius: 1.4rem;
+  border: 1px solid rgb(var(--world-teal) / 0.35);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(var(--world-teal) / 0.18), transparent 62%),
+    linear-gradient(145deg, rgb(var(--cm-navy-light) / 0.7), rgb(var(--cm-navy) / 0.9));
+  transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+.ac-en-stop:nth-child(3n + 2) .ac-en-card {
+  border-color: rgb(var(--world-purple) / 0.4);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(var(--world-purple) / 0.22), transparent 62%),
+    linear-gradient(145deg, rgb(var(--cm-navy-light) / 0.7), rgb(var(--cm-navy) / 0.9));
+}
+.ac-en-stop:nth-child(3n) .ac-en-card {
+  border-color: rgb(var(--world-coral) / 0.35);
+}
+.ac-en-card:hover {
+  transform: translateY(-2px);
+  border-color: rgb(var(--cm-gold) / 0.8);
+  box-shadow: 0 18px 34px -20px rgb(var(--world-teal) / 0.55);
+}
+.ac-en-card.is-current {
+  border-color: rgb(var(--cm-gold));
+  box-shadow: 0 0 0 3px rgb(var(--cm-gold) / 0.2), 0 0 30px -6px rgb(var(--cm-gold) / 0.5);
+}
+.ac-en-card:focus-visible {
+  outline: 3px solid rgb(var(--cm-gold));
+  outline-offset: 3px;
+}
+.ac-en-card__medal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  background: rgb(var(--cm-midnight) / 0.6);
+  box-shadow: 0 0 0 2px rgb(var(--cm-gold) / 0.45), 0 0 16px rgb(var(--world-teal) / 0.4);
+}
+.ac-en-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.ac-en-card__title {
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-size: 1.15rem;
+  line-height: 1.15;
+}
+.ac-en-card__desc {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: rgb(var(--cm-ivory) / 0.72);
+}
+.ac-en-card__go {
+  color: rgb(var(--cm-gold));
+}
+.ac-en .ac-chip {
+  color: rgb(var(--cm-gold));
+  border: 1px solid rgb(var(--cm-gold) / 0.5);
+  background: rgb(var(--cm-gold) / 0.1);
+}
+.ac-en .ac-chip.is-done {
+  color: rgb(var(--cm-midnight-deep));
+  background: rgb(var(--cm-gold));
+}
+.ac-en .ac-back {
+  align-self: center;
+}
+
+/* ===== ATELIER — an editorial programme ===== */
+.ac-at {
+  --ac-graphite: 17 16 15;
+  --ac-surface: 25 23 22;
+  --ac-plum: 41 21 34;
+  --ac-oxblood: 90 31 45;
+  --ac-chart: 199 240 0;
+  --ac-ivory: 244 239 230;
+  --ac-stone: 184 176 165;
+  --ac-copper: 184 115 74;
+  max-width: 68rem;
+  gap: clamp(1.75rem, 1rem + 2.4vw, 3rem);
+  color: rgb(var(--ac-ivory));
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+}
+.ac-at :focus-visible {
+  outline: 2px solid rgb(var(--ac-ivory));
+  outline-offset: 3px;
+}
+.ac-at-eyebrow {
+  display: block;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(var(--ac-copper));
+}
+.ac-at-mast {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgb(var(--ac-ivory) / 0.14);
+}
+.ac-at-title {
+  margin: 0;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(2.4rem, 1.2rem + 5vw, 4.4rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+.ac-at-title em {
+  font-style: italic;
+  font-weight: 500;
+  color: rgb(var(--ac-stone));
+}
+.ac-at-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+@media (min-width: 62rem) {
+  .ac-at-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 3rem;
+    align-items: start;
+  }
+  .ac-at-lead {
+    position: sticky;
+    top: 5rem;
+    min-height: 18rem;
+  }
+}
+.ac-at-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: clamp(1.25rem, 0.8rem + 1.8vw, 2.25rem);
+  border: 1px solid rgb(var(--ac-ivory) / 0.1);
+  border-radius: 0.5rem;
+  background: linear-gradient(155deg, rgb(var(--ac-plum)), rgb(var(--ac-surface)) 72%);
+  box-shadow: inset 3px 0 0 rgb(var(--ac-oxblood));
+}
+.ac-at-lead__title {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(1.9rem, 1.2rem + 2.6vw, 3rem);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+}
+.ac-at-lead__desc {
+  max-width: 28rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: rgb(var(--ac-stone));
+}
+.ac-at-meter {
+  display: block;
+  height: 4px;
+  background: rgb(var(--ac-ivory) / 0.14);
+}
+.ac-at-meter > span {
+  display: block;
+  height: 100%;
+  background: rgb(var(--ac-chart));
+}
+.ac-at-lead__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.5rem;
+}
+.ac-at-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 1.4rem;
+  border-radius: 0.375rem;
+  background: rgb(var(--ac-chart));
+  color: rgb(var(--ac-graphite));
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.ac-at-count {
+  font-size: 0.875rem;
+  color: rgb(var(--ac-stone));
+}
+.ac-at-index {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid rgb(var(--ac-ivory) / 0.14);
+}
+.ac-at-index > li {
+  border-bottom: 1px solid rgb(var(--ac-ivory) / 0.1);
+}
+.ac-at-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 76px;
+  padding: 0.9rem 0;
+}
+.ac-at-row__no {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-style: italic;
+  font-size: 1.5rem;
+  color: rgb(var(--ac-ivory) / 0.3);
+}
+.ac-at-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.ac-at-row__title {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 1.2rem;
+  line-height: 1.2;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.25em;
+  transition: text-decoration-color 120ms ease;
+}
+.ac-at-row:hover .ac-at-row__title {
+  text-decoration-color: rgb(var(--ac-copper));
+}
+.ac-at-row__desc {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: rgb(var(--ac-stone));
+}
+.ac-at-row__go {
+  color: rgb(var(--ac-copper));
+}
+.ac-at .ac-chip {
+  border-radius: 0.25rem;
+  color: rgb(var(--ac-stone));
+  border: 1px solid rgb(var(--ac-ivory) / 0.25);
+}
+.ac-at .ac-chip.is-done {
+  color: rgb(var(--ac-graphite));
+  background: rgb(var(--ac-chart));
+  border-color: rgb(var(--ac-chart));
+}
+.ac-at .ac-back {
+  color: rgb(var(--ac-stone));
+}
+
+/* ===== CLASSIC — a spacious syllabus ===== */
+.ac-cl {
+  max-width: 52rem;
+  gap: 2rem;
+  color: rgb(var(--world-parchment));
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+}
+.ac-cl :focus-visible {
+  outline: 2px solid rgb(var(--world-champagne));
+  outline-offset: 3px;
+}
+.ac-cl-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid rgb(var(--world-champagne) / 0.25);
+}
+.ac-cl-title {
+  margin: 0;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.ac-cl-lede {
+  margin: 0;
+  color: rgb(var(--world-silver));
+}
+.ac-cl-label {
+  display: block;
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(var(--world-parchment) / 0.72);
+}
+.ac-cl-current {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 1.5rem 1.5rem 1.5rem 1.6rem;
+  border: 1px solid rgb(var(--world-parchment) / 0.09);
+  border-left: 3px solid rgb(var(--cm-emerald));
+  border-radius: 0.5rem;
+  background: rgb(var(--world-graphite));
+}
+.ac-cl-current__title {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem);
+  line-height: 1.1;
+}
+.ac-cl-current__desc {
+  color: rgb(var(--world-silver));
+}
+.ac-cl-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  margin-top: 0.5rem;
+  padding: 0 1.5rem;
+  border-radius: 0.375rem;
+  background: rgb(var(--world-forest));
+  font-weight: 700;
+  color: rgb(var(--world-parchment));
+}
+.ac-cl-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid rgb(var(--world-champagne) / 0.25);
+}
+.ac-cl-list > li {
+  border-bottom: 1px solid rgb(var(--world-parchment) / 0.08);
+}
+.ac-cl-row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 80px;
+  padding: 1rem 0.25rem;
+  transition: background-color 150ms ease;
+}
+.ac-cl-row:hover {
+  background: rgb(var(--world-parchment) / 0.03);
+}
+.ac-cl-row__no {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  color: rgb(var(--world-champagne));
+}
+.ac-cl-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.ac-cl-row__title {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1.15;
+}
+.ac-cl-row__desc {
+  font-size: 0.9rem;
+  color: rgb(var(--world-silver));
+}
+.ac-cl-row__go {
+  color: rgb(var(--world-champagne));
+}
+.ac-cl .ac-chip {
+  border-radius: 0.25rem;
+  color: rgb(var(--world-silver));
+  border: 1px solid rgb(var(--world-parchment) / 0.2);
+}
+.ac-cl .ac-chip.is-done {
+  color: rgb(var(--world-parchment));
+  background: rgb(var(--world-forest));
+  border-color: rgb(var(--cm-emerald));
+}
+.ac-cl .ac-back {
+  color: rgb(var(--world-silver));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-en-card,
+  .ac-cl-row,
+  .ac-at-row__title {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   ACADEMY SECTIONS AND LESSONS  (/academy/<section>, /academy/<section>/<lesson>)
+   AppShell marks these routes with data-section="academy-deep" (everything under /academy/, not the index). They keep their own components,
+   data and chess interaction; this block only carries the active world through them: heading voice, the primary call to action, and the
+   lesson progress bar. Palette, ground and card shape already come from app/world-shell.css. One block per world, edit independently.
+   ========================================================================== */
+[data-section="academy-deep"] main {
+  --acd-pad: 0px;
+}
+/* 44px for the page's own buttons and links (the chess board squares are not touched) */
+[data-section="academy-deep"] main :is(button, a[href]):not([data-square]):not([data-square] *) {
+  min-height: 44px;
+}
+/* plain text links (the back links) centre their text in that 44px so they line up with what sits beside them */
+[data-section="academy-deep"] main a[href]:not([class*="block"]):not([class*="flex"]):not([class*="grid"]):not([data-square]) {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ---- Enchanted ---- */
+html[data-mode="kids"] [data-section="academy-deep"] main h1 {
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  text-shadow: 0 0 26px rgb(var(--world-purple) / 0.5);
+}
+html[data-mode="kids"] [data-section="academy-deep"] main button[class*="bg-premium-gold"],
+html[data-mode="kids"] [data-section="academy-deep"] main a[class*="bg-premium-gold"] {
+  border-radius: 999px;
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  background-image: linear-gradient(135deg, rgb(var(--cm-gold)), rgb(255 226 140));
+  box-shadow: 0 0 0 3px rgb(var(--cm-gold) / 0.25), 0 12px 28px -12px rgb(var(--cm-gold) / 0.6);
+}
+html[data-mode="kids"] [data-section="academy-deep"] main div[class*="bg-premium-gold"][class*="rounded-full"] {
+  background-image: linear-gradient(90deg, rgb(var(--world-teal)), rgb(var(--cm-gold)));
+  box-shadow: 0 0 10px rgb(var(--world-teal) / 0.5);
+}
+
+/* ---- Atelier ---- chartreuse only for the one primary action and the progress */
+html[data-mode="adult"] [data-section="academy-deep"] main h1 {
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+html[data-mode="adult"] [data-section="academy-deep"] main button[class*="bg-premium-gold"],
+html[data-mode="adult"] [data-section="academy-deep"] main a[class*="bg-premium-gold"] {
+  border-radius: 0.375rem;
+  background-color: rgb(199 240 0);
+  color: rgb(17 16 15);
+  box-shadow: none;
+}
+html[data-mode="adult"] [data-section="academy-deep"] main div[class*="bg-premium-gold"][class*="rounded-full"] {
+  background-color: rgb(199 240 0);
+}
+
+/* ---- Classic ---- emerald for the primary action and the progress */
+html:not([data-mode="kids"]):not([data-mode="adult"]) [data-section="academy-deep"] main h1 {
+  letter-spacing: -0.02em;
+}
+html:not([data-mode="kids"]):not([data-mode="adult"]) [data-section="academy-deep"] main button[class*="bg-premium-gold"],
+html:not([data-mode="kids"]):not([data-mode="adult"]) [data-section="academy-deep"] main a[class*="bg-premium-gold"] {
+  border-radius: 0.375rem;
+  background-color: rgb(var(--world-forest));
+  color: rgb(var(--world-parchment));
+  box-shadow: none;
+}
+html:not([data-mode="kids"]):not([data-mode="adult"]) [data-section="academy-deep"] main div[class*="bg-premium-gold"][class*="rounded-full"] {
+  background-color: rgb(var(--cm-emerald));
+}
+
+/* The full-screen tactics lesson has no app chrome (AppShell wraps it in .world-shell only), so it needs its own world ground. */
+html[data-mode="kids"] .world-shell[data-section="academy-deep"] > main {
+  background-color: rgb(var(--ws-ground));
+  background-image:
+    radial-gradient(110% 60% at 10% -8%, rgb(var(--ws-glow-a) / 0.26), transparent 58%),
+    radial-gradient(80% 50% at 100% 6%, rgb(var(--ws-glow-b) / 0.16), transparent 55%);
+}
+html[data-mode="adult"] .world-shell[data-section="academy-deep"] > main {
+  background-color: rgb(var(--ws-ground));
+  background-image:
+    radial-gradient(70% 38% at 100% 0%, rgb(var(--ws-plum) / 0.8), transparent 62%),
+    radial-gradient(60% 30% at 0% 100%, rgb(var(--ws-oxblood) / 0.14), transparent 60%);
+}
+html:not([data-mode="kids"]):not([data-mode="adult"]) .world-shell[data-section="academy-deep"] > main {
+  background-color: rgb(var(--ws-obsidian));
+  background-image: linear-gradient(180deg, rgb(var(--ws-forest) / 0.08), transparent 30%);
+}
