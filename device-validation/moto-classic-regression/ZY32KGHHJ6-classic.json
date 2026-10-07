@@ -1,0 +1,92 @@
+﻿{
+  "href": "http://localhost:3000/kingdom-map?world=classic",
+  "world": "classic",
+  "vw": 411,
+  "vh": 914,
+  "dpr": 1.75,
+  "clientW": 411,
+  "scrollW": 411,
+  "overflowX": 0,
+  "overflowBody": 0,
+  "midnight": "28 22 18",
+  "forest": "34 92 58",
+  "burgundy": "122 36 48",
+  "teal": "",
+  "purple": "",
+  "crimson": "",
+  "copper": "",
+  "gold": "",
+  "bg": "rgba(0, 0, 0, 0)",
+  "rootColor": "rgb(0, 0, 0)",
+  "ctaH": 48,
+  "ctaText": "Continue",
+  "ctaBg": "rgb(34, 92, 58)",
+  "ctaHref": "/chess-school/session/s04-knight",
+  "tiles": [
+    {
+      "text": "Play",
+      "href": "/play",
+      "h": 0
+    },
+    {
+      "text": "Continue",
+      "href": "/chess-school/session/s04-knight",
+      "h": 48
+    },
+    {
+      "text": "Syllabus",
+      "href": "/chess-school",
+      "h": 48
+    },
+    {
+      "text": "Play",
+      "href": "/play",
+      "h": 108
+    },
+    {
+      "text": "Training",
+      "href": "/puzzles",
+      "h": 108
+    },
+    {
+      "text": "Games",
+      "href": "/games",
+      "h": 108
+    },
+    {
+      "text": "Analysis",
+      "href": "/stats",
+      "h": 108
+    },
+    {
+      "text": "ΓÖƒ∩╕ÅPlay a game0 / 1",
+      "href": "/play",
+      "h": 53
+    },
+    {
+      "text": "0Online Wins5/30Achievements6Openings8Ch",
+      "href": "/profile",
+      "h": 114
+    },
+    {
+      "text": "Play",
+      "href": "/play",
+      "h": 60
+    }
+  ],
+  "kickers": [
+    "Classic Pro"
+  ],
+  "hasClassicPro": true,
+  "hasEnchanted": false,
+  "hasAtelier": false,
+  "hasStudy": true,
+  "hasClub": true,
+  "hasRecord": true,
+  "hasAchievements": true,
+  "hasPlay": true,
+  "hasTraining": true,
+  "hasGames": true,
+  "hasAnalysis": true,
+  "snippet": "CLASSIC PRO\n\nChess Mind\n\nReady to play.\n\n≡ƒºæΓÇì≡ƒÄñ\n\nDev Test Child\n\nΓÖƒ 400\n\nSTUDY\n\n3 / 30\n\nMeet the Knight\n\nThe only piece that jumps over walls.\n\nCONTINUE\nSyllabus\n≡ƒªë\n\nOllie says:\nContinue Chess School ΓÇö Meet the Knight.\n\nPlay\nTraining\nGames\nAnalysis\n\nTODAY\n\nΓÖƒ∩╕Å\n\nDAILY CHALLENGE\n\nΓÖƒ Checkmate in 3\n\nCheckmate in 3\n\nSolve ΓåÆ\nQUESTS\n\n0 / 3\n\n≡ƒº⌐\n\nSolve 4 puzzles\n\n0 / 4\nΓÖƒ∩╕Å\n\nPlay a game\n\n0 / 1\n≡ƒºá\n\nComplete a lesson\n\n0 / 1\n\n3 to go today.\n\nTHE CLUB\n\nTrain Your Mind\n\nShort daily brain workouts, built for chess\n\nExplore\n\nRECORD\n\n0\n\nONLINE WINS\n\n5/30\n\nACHIEVEMENTS\n\n6\n\nOPENINGS\n\n8\n\nCHESS MIND\n\nAchievements (5/30)\nSee all\n≡ƒÑ│\nFirst Victory\n≡ƒÄû∩╕Å\nRising Contender\n≡ƒº¡\nOpening Explorer\nΓÖƒ∩╕Å\nGambit Player\nFor Parents\nLearn\nMore\nHome\nSchool\nPuzzles\nPlay\nWorld\nDEV TEST MODE"
+}

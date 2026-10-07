@@ -1,0 +1,104 @@
+{
+  "tag": "moto",
+  "homeLinks": {},
+  "playNow": {
+    "ok": true,
+    "href": "/matchmaking",
+    "h": 52
+  },
+  "afterPlayNow": {
+    "href": "/matchmaking"
+  },
+  "classicPlay": {
+    "href": "/free-play",
+    "vw": 411,
+    "vh": 766,
+    "overflowX": 0,
+    "world": "classic",
+    "h1": "Championship Match Chamber",
+    "board": {
+      "l": 26,
+      "t": 147,
+      "r": 385,
+      "b": 506,
+      "inside": true,
+      "n": 64
+    },
+    "shell": "fixed h766",
+    "btns": [
+      "Exit:48",
+      "Enter fullscreen:48",
+      "Change Difficulty:48"
+    ],
+    "small": []
+  },
+  "e2": {
+    "ok": true
+  },
+  "e4": {
+    "ok": true
+  },
+  "afterMove": {
+    "text": "Exit Championship Match Chamber CLASSIC PRO Engine · Medium · Untimed OPPONENT ⚔️ Stockfish — Medium ← Review previous moves ♟️ You OFFICIAL SCORESHEET White to move MOVES 1. e4 d5 Change Difficulty DEV TEST MODE",
+    "hasE4": true,
+    "href": "/free-play"
+  },
+  "fullscreen": {
+    "ok": true,
+    "h": 48
+  },
+  "exit": {
+    "ok": true
+  },
+  "afterExit": "/free-play",
+  "homeScroll": {
+    "hits": {
+      "Command deck": true,
+      "Career ledger": true,
+      "Recent duels": true,
+      "Grandmaster salon": true,
+      "Chess Mind Premium": true,
+      "Play now": true,
+      "Today": true
+    },
+    "overflowX": 0,
+    "sh": 2148
+  },
+  "deck": {
+    "tactics": {
+      "href": "/puzzles/tactics",
+      "h1": "Chess Study",
+      "error": false,
+      "overflowX": 0
+    },
+    "play": {
+      "href": "/play",
+      "h1": "Play",
+      "error": false,
+      "overflowX": 0
+    },
+    "games": {
+      "href": "/games",
+      "h1": "Your Games",
+      "error": false,
+      "overflowX": 0
+    },
+    "stats": {
+      "href": "/stats",
+      "h1": "Your Chess",
+      "error": false,
+      "overflowX": 0
+    }
+  },
+  "salon": true,
+  "salonClick": {
+    "ok": true,
+    "text": "ASK A PARENT",
+    "href": "/parent-gate?next=/upgrade"
+  },
+  "salonAfter": {
+    "href": "/parent-gate",
+    "h1": null,
+    "body": "DEV TEST MODE"
+  }
+}

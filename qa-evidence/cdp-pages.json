@@ -1,0 +1,10 @@
+[ {
+   "description": "{\"attached\":true,\"empty\":false,\"height\":1600,\"never_attached\":false,\"screenX\":0,\"screenY\":0,\"visible\":true,\"width\":720}",
+   "devtoolsFrontendUrl": "https://chrome-devtools-frontend.appspot.com/serve_rev/@5df7e32796d06d9e5109a67ef2502b13567bb42c/inspector.html?ws=127.0.0.1:9222/devtools/page/54E854358A4170CA889E7CB48738F067",
+   "faviconUrl": "http://localhost:3000/icon.png?489ed0afeda32c6b",
+   "id": "54E854358A4170CA889E7CB48738F067",
+   "title": "Chess Mind",
+   "type": "page",
+   "url": "http://localhost:3000/",
+   "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/54E854358A4170CA889E7CB48738F067"
+} ]

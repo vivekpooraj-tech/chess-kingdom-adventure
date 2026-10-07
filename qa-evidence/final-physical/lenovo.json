@@ -1,0 +1,208 @@
+{
+  "tag": "lenovo",
+  "puzzlesHub": {
+    "href": "/puzzles?world=enchanted",
+    "vw": 800,
+    "vh": 1309,
+    "layout": "tablet",
+    "world": "enchanted",
+    "worlds": [
+      "enchanted"
+    ],
+    "overflowX": 0,
+    "h1": "Kingdom Chambers",
+    "runtimeError": false,
+    "safeTop": "0px",
+    "pill": {
+      "pill": "hidden",
+      "hits": []
+    },
+    "h1Rect": [
+      16,
+      101,
+      309,
+      136
+    ],
+    "solve": [
+      {
+        "t": "🧩 Solve a Puzzle",
+        "h": 64
+      }
+    ]
+  },
+  "puzzleEnter": "daily-format deep link id=lichess-ZQnwo",
+  "puzzleBoard": {
+    "href": "/puzzles?id=lichess-ZQnwo&daily=1&world=enchanted",
+    "vw": 800,
+    "vh": 1309,
+    "layout": "tablet",
+    "world": "enchanted",
+    "worlds": [
+      "enchanted"
+    ],
+    "overflowX": 0,
+    "h1": "Puzzle Quest",
+    "runtimeError": false,
+    "safeTop": "0px",
+    "pill": {
+      "pill": "hidden",
+      "hits": []
+    },
+    "chips": [
+      {
+        "t": "Puzzle Explorer",
+        "clipped": false,
+        "w": 154,
+        "h": 22
+      },
+      {
+        "t": "Pattern Hunter",
+        "clipped": false,
+        "w": 154,
+        "h": 22
+      },
+      {
+        "t": "Calculation Climber",
+        "clipped": false,
+        "w": 154,
+        "h": 22
+      },
+      {
+        "t": "First Tactician",
+        "clipped": false,
+        "w": 154,
+        "h": 22
+      },
+      {
+        "t": "Tower Master",
+        "clipped": false,
+        "w": 154,
+        "h": 22
+      }
+    ],
+    "boardNow": {
+      "left": 44,
+      "right": 756,
+      "width": 713,
+      "bottom": 922
+    },
+    "boardWithOldChipStyle": {
+      "left": 44,
+      "right": 756,
+      "width": 713,
+      "bottom": 922
+    },
+    "controls": [],
+    "smallControls": []
+  },
+  "school": {
+    "enchanted": {
+      "href": "/chess-school/classroom?world=enchanted",
+      "vw": 800,
+      "vh": 1309,
+      "layout": "tablet",
+      "world": "enchanted",
+      "worlds": [
+        "enchanted"
+      ],
+      "overflowX": 0,
+      "h1": "Kingdom Learning Journey",
+      "runtimeError": false,
+      "safeTop": "0px",
+      "kicker": "Enchanted Kingdom · Chess School",
+      "structure": [
+        ".sch-journey"
+      ],
+      "pill": {
+        "pill": "hidden",
+        "hits": []
+      },
+      "labelsSeen": [
+        "Chess School Lifetime Access",
+        "Chess School Lifetime Access — $3.99"
+      ],
+      "rupeeInCard": false,
+      "cardFound": true,
+      "ctaH": 48,
+      "ctaTop": 839,
+      "smallControls": [
+        {
+          "t": "Or get Premium — it includes Chess Schoo",
+          "h": 19
+        }
+      ]
+    },
+    "atelier": {
+      "href": "/chess-school/classroom?world=atelier",
+      "vw": 800,
+      "vh": 1309,
+      "layout": "tablet",
+      "world": "atelier",
+      "worlds": [
+        "atelier"
+      ],
+      "overflowX": 0,
+      "h1": "Academy Curriculum",
+      "runtimeError": false,
+      "safeTop": "0px",
+      "kicker": "Master Training Atelier",
+      "structure": [
+        ".sch-academy"
+      ],
+      "pill": {
+        "pill": "hidden",
+        "hits": []
+      },
+      "labelsSeen": [
+        "Chess School Lifetime Access",
+        "Chess School Lifetime Access — $3.99"
+      ],
+      "rupeeInCard": false,
+      "cardFound": true,
+      "ctaH": 56,
+      "ctaTop": 658,
+      "smallControls": [
+        {
+          "t": "Or get Premium — it includes Chess Schoo",
+          "h": 19
+        }
+      ]
+    },
+    "classic": {
+      "href": "/chess-school/classroom?world=classic",
+      "vw": 800,
+      "vh": 1309,
+      "layout": "tablet",
+      "world": "classic",
+      "worlds": [
+        "classic"
+      ],
+      "overflowX": 0,
+      "h1": "Classical Chess Study Program",
+      "runtimeError": false,
+      "safeTop": "0px",
+      "kicker": "Classic Pro · Chess School",
+      "structure": [
+        ".sch-study"
+      ],
+      "pill": {
+        "pill": "hidden",
+        "hits": []
+      },
+      "labelsSeen": [
+        "Chess School Lifetime Access",
+        "Chess School Lifetime Access — $3.99"
+      ],
+      "rupeeInCard": false,
+      "cardFound": true,
+      "ctaH": 56,
+      "ctaTop": 1159,
+      "smallControls": [
+        {
+          "t": "Or get Premium — it includes Chess Schoo",
+          "h": 19
+        }
+      ]
+    }
+  }
+}

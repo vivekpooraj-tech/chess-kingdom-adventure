@@ -1,11 +1,18 @@
 ext {
     minSdkVersion = 24
-    // 36's download turned out to be incomplete (missing android.jar) —
-    // 37 is what's actually fully present locally. Note: 37 is a preview
-    // API level on this machine right now, fine for a debug test build,
-    // but repair/reinstall a proper stable Platform 36 (or whatever's
-    // current-stable by then) via Android Studio's SDK Manager before any
-    // real release build.
+    // Re-verified 2026-09-14 for the release-candidate build: android-36 is
+    // STILL an incomplete local install on this machine (its platform
+    // folder has no android.jar at all — confirmed by direct inspection),
+    // so it cannot compile anything, debug or release. android-37.0 IS
+    // fully installed (android.jar present, ~43MB) and its own
+    // source.properties carries no CodeName/BetaVersion and
+    // PreviewSdkInt=0 — i.e. it is registered as a stable release, not a
+    // preview channel package. The original "37 is a preview API level"
+    // note above was accurate when written but is stale now that a
+    // complete, stable 37 platform is installed. 37 is therefore the
+    // correct, verified choice for both compileSdk and targetSdk — not a
+    // guess, and not something to downgrade to 36 (which would simply fail
+    // to build on this machine).
     compileSdkVersion = 37
     targetSdkVersion = 37
     androidxActivityVersion = '1.11.0'

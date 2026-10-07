@@ -1,0 +1,110 @@
+{
+  "tag": "lenovo",
+  "homeLinks": {},
+  "playNow": {
+    "ok": false
+  },
+  "afterPlayNow": {
+    "href": "/kingdom-map"
+  },
+  "classicPlay": {
+    "href": "/free-play",
+    "vw": 800,
+    "vh": 1213,
+    "overflowX": 0,
+    "world": "classic",
+    "h1": "Championship Match Chamber",
+    "board": {
+      "l": 44,
+      "t": 164,
+      "r": 756,
+      "b": 877,
+      "inside": true,
+      "n": 64
+    },
+    "shell": "fixed h1213",
+    "btns": [
+      "Exit:48",
+      "Enter fullscreen:48",
+      "Change Difficulty:48"
+    ],
+    "small": []
+  },
+  "e2": {
+    "ok": true
+  },
+  "e4": {
+    "ok": true
+  },
+  "afterMove": {
+    "text": "Exit Championship Match Chamber CLASSIC PRO Engine · Medium · Untimed OPPONENT ⚔️ Stockfish — Medium ← Review previous moves ♟️ You OFFICIAL SCORESHEET White to move MOVES 1. e4 e5 Change Difficulty DEV TEST MODE",
+    "hasE4": true,
+    "href": "/free-play"
+  },
+  "fullscreen": {
+    "ok": true,
+    "h": 48
+  },
+  "exit": {
+    "ok": true
+  },
+  "afterExit": "/free-play",
+  "homeScroll": {
+    "hits": {
+      "Command deck": false,
+      "Career ledger": false,
+      "Recent duels": false,
+      "Grandmaster salon": false,
+      "Chess Mind Premium": false,
+      "Play now": false,
+      "Today": false
+    },
+    "overflowX": 0,
+    "sh": 1213
+  },
+  "deck": {
+    "tactics": {
+      "href": "/puzzles/tactics",
+      "h1": "Chess Study",
+      "error": false,
+      "overflowX": 0
+    },
+    "play": {
+      "href": "/play",
+      "h1": "Play",
+      "error": false,
+      "overflowX": 0
+    },
+    "games": {
+      "href": "/games",
+      "h1": "Your Games",
+      "error": false,
+      "overflowX": 0
+    },
+    "stats": {
+      "href": "/stats",
+      "h1": "Your Chess",
+      "error": false,
+      "overflowX": 0
+    }
+  },
+  "salon": true,
+  "salonClick": {
+    "ok": false,
+    "texts": [
+      "More",
+      "Learn",
+      "More",
+      "Home",
+      "School",
+      "Puzzles",
+      "Play",
+      "World"
+    ]
+  },
+  "salonAfter": {
+    "href": "/kingdom-map",
+    "h1": null,
+    "body": "CHESS MIND Home Learn More Home School Puzzles Play World DEV TEST MODE"
+  }
+}

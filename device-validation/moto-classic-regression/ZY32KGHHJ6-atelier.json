@@ -1,0 +1,50 @@
+﻿{
+  "href": "http://localhost:3000/kingdom-map?world=atelier",
+  "world": null,
+  "vw": 411,
+  "vh": 914,
+  "dpr": 1.75,
+  "clientW": 411,
+  "scrollW": 411,
+  "overflowX": 0,
+  "overflowBody": 0,
+  "midnight": "15 22 41",
+  "forest": "",
+  "burgundy": "",
+  "teal": "",
+  "purple": "",
+  "crimson": "",
+  "copper": "",
+  "gold": "",
+  "bg": "rgba(0, 0, 0, 0)",
+  "rootColor": "rgb(0, 0, 0)",
+  "ctaH": null,
+  "ctaText": null,
+  "ctaBg": null,
+  "ctaHref": null,
+  "tiles": [
+    {
+      "text": "Play",
+      "href": "/play",
+      "h": 0
+    },
+    {
+      "text": "Play",
+      "href": "/play",
+      "h": 60
+    }
+  ],
+  "kickers": [],
+  "hasClassicPro": false,
+  "hasEnchanted": false,
+  "hasAtelier": false,
+  "hasStudy": false,
+  "hasClub": false,
+  "hasRecord": false,
+  "hasAchievements": false,
+  "hasPlay": true,
+  "hasTraining": false,
+  "hasGames": false,
+  "hasAnalysis": false,
+  "snippet": "Learn\nMore\nHome\nSchool\nPuzzles\nPlay\nWorld\nDEV TEST MODE"
+}

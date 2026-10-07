@@ -1,0 +1,103 @@
+{
+  "homeChecks": {
+    "url": "http://localhost:3000/kingdom-map",
+    "screenTimeBlocked": false,
+    "hasChessMindTitle": true,
+    "hasPlay": true,
+    "hasPuzzles": true,
+    "hasWorld": true,
+    "hasLearn": true,
+    "hasToday": true,
+    "hasDiscover": true,
+    "hasTrainYourMind": true,
+    "hasProgress": true,
+    "hasAchievements": true,
+    "hasSeeAll": true,
+    "hasForParents": true,
+    "hasOllie": true,
+    "hasChessSchool": true,
+    "heroTwoColumn": false,
+    "scrollWidth": 411,
+    "clientWidth": 411,
+    "scrollHeight": 1817,
+    "clientHeight": 914
+  },
+  "routes": [
+    {
+      "label": "Play tile",
+      "clickResult": "A:/play",
+      "url": "http://localhost:3000/play",
+      "pass": true,
+      "bodySnippet": "Play\n\nPick your opponent. The board does the rest.\n\nPlay Computer\n\nA full game against an opponent your size.\n\nGroup Tournament\n\nJoin a Swiss-style tournament — multiple rounds, real standings.\n\nChess Mind World\n\nPlay in extraordinary places. Same rules, remarkable view.\n\nPlay Online\n\nRandom Match\n\nA fair match against another player, worldwide.\n\n→\n\nInvite a Friend\n\nSend them a link to a game just for you two.\n\nGAME TYPE\nBlitz\nRapid\nTIME CONTROL\n3 + 0\n3 + 2\n5 + 0\n5 + 3\nInvite a Friend to Play →\n"
+    },
+    {
+      "label": "Puzzles tile",
+      "clickResult": "A:/puzzles",
+      "url": "http://localhost:3000/puzzles",
+      "pass": true,
+      "bodySnippet": "🧩 PUZZLES\n\nThe Puzzle Tower\n\nSolve today. Climb higher. Grow sharper.\n\nEvery move makes you sharper.\n\n🧩\n0 Puzzles Solved\n🦉\n\nOllie says:\nEvery master started with one move.\n\n👑\n🚩\n🚩\n\nEASY PATH · PUZZLES 1 – 10\n\n0\n🧗\n1\n2\n3\n4\n5\n6\n7\n8\n9\n\nSmall puzzles. Big minds.\n\n👑\n\nMaster\n\nSee what others miss\n\n100+\n🔒 101 more puzzles to unlock\n🧠\n\nExpert\n\nThink like a tactician\n\n61 – 100\n🔒 61 more puzzles to unlock\n⚔️\n\nHard\n\nCalculate carefully\n\n31 – 60\n🔒 31 more puzzles to unlock\n♟️\n\nMedium\n\nSee deeper\n\n"
+    },
+    {
+      "label": "World tile",
+      "clickResult": "A:/world",
+      "url": "http://localhost:3000/world",
+      "pass": true,
+      "bodySnippet": "🌍 CHESS MIND WORLD\n\nPlay the same game somewhere extraordinary.\n\nThe rules never change. Everything around them can. Choose a place, and play there.\n\n☆\n\n🇬🇧 London Eye\n\nPlay above the city.\n\nLook around\n\nSUNSET OVER THE RIVER\n\nA glass capsule turning slowly above the river, with the whole city laid out beneath you. The light goes gold, then amber, then dark — and the game goes on either way.\n\n♟ Play here →\n⭐\n\n🇮🇳 Chaturanga\n\nWhere the game began.\n\nLook around\n\nAFTERNOON IN THE COURTYARD\n\nWarm"
+    },
+    {
+      "label": "Learn tile",
+      "clickResult": "/learn",
+      "url": "http://localhost:3000/learn",
+      "pass": true,
+      "bodySnippet": "Learn\n\nStructured lessons on the game, and training for how you think about it.\n\nYOUR LEARNING PATH\n\n0 / 15\n\n15 lessons ahead of you.\n\n1\n\nTactical Thinking\n\nYOU ARE HERE\n\nSeeing what a position offers before you move.\n\n0 / 4\n2\n\nStrategy\n\nForming a plan once nothing is hanging.\n\n0 / 5\n3\n\nEndgames\n\nConverting an advantage when the board empties.\n\n0 / 6\n🗺️\n\n🏫 CHESS SCHOOL\n\nFrom zero to playing real people\n\n30 sessions with Ollie as your coach, at your own pace.\n\nLEARN CHESS\n\n📐\n\nChess Fundamental"
+    },
+    {
+      "label": "Train Your Mind",
+      "clickResult": "A:/chess-mind",
+      "url": "http://localhost:3000/chess-mind",
+      "pass": true,
+      "bodySnippet": "Chess Mind\n\nTrain the way you think about chess.\n\nPattern recognition, calculation, visualization, memory, and spatial reasoning — good practice for the game, not a claim about IQ.\n\n🔢\n\nTODAY'S CHALLENGE\n\nChess Mathematics\n\nStart\n🎯\n\nCONTINUE TRAINING\n\nPattern Recognition\n\n→\n🎯\n\nPattern Recognition\n\nSpot forks, pins, checks, and hanging pieces on a real board.\n\n→\n👁️\n\nVisualization\n\nSee a position, then picture it in your mind.\n\n→\n🧮\n\nCalculation\n\nFind the best move, then look further ahead.\n\n→\n"
+    },
+    {
+      "label": "Chess School Start",
+      "clickResult": "A:/chess-school/session/s01-welcome",
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "pass": true,
+      "bodySnippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nToday we learn the board. You've got this.\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nSixty-four squares\n\nA chess board is eight squares across and eight squares down.\n\n1 of 3\n\nNext"
+    },
+    {
+      "label": "Profile strip",
+      "clickResult": "/profile",
+      "url": "http://localhost:3000/profile",
+      "pass": true,
+      "bodySnippet": "🤴\n\nAdventurer\n\n🌾\nPawn Village\n\nDay 1 of 30\n\n0%\n\nCHESS RATING\n\n400\n\nCUSTOMIZE\n\n♔\n\nChange Pieces\n\nCurrently Classic\n\n→\n👑\n\nChange Board\n\nCurrently Walnut & Ivory\n\n→\n\nYOUR STATS\n\n🗺️\n\n0/30\n\nKingdom Story Map\n\n🏛️\n\n1\n\nAcademy Completed\n\n🧩\n\n0\n\nPuzzles Solved\n\n🧠\n\n0\n\nChess Mind Solved\n\n🧭\n\n0\n\nOpenings Discovered\n\n🥇\n\n0\n\nOnline Wins\n\nOpenings Discovered\n\nExplore Openings →\n\n0\n\nDiscovered\n\n0\n\nGambits\n\n0/28\n\nStudied\n\nAchievements (1/30)\n\nLEARNING\n\n🔒\nFirst Steps\n🔒\nKnight Master\n🔒\nBishop Master\n🔒\nRo"
+    },
+    {
+      "label": "For Parents",
+      "clickResult": "A:/parent-gate?next=/parent-dashboard",
+      "url": "http://localhost:3000/parent-gate?next=/parent-dashboard",
+      "pass": true,
+      "bodySnippet": "One quick check for a grown-up\n\nPlease solve this to continue setup.\n\n8 + 8 = ?\n\nContinue"
+    },
+    {
+      "label": "Achievements See all",
+      "clickResult": "A:/profile",
+      "url": "http://localhost:3000/profile",
+      "pass": false,
+      "bodySnippet": "🤴\n\nAdventurer\n\n🌾\nPawn Village\n\nDay 1 of 30\n\n0%\n\nCHESS RATING\n\n400\n\nCUSTOMIZE\n\n♔\n\nChange Pieces\n\nCurrently Classic\n\n→\n👑\n\nChange Board\n\nCurrently Walnut & Ivory\n\n→\n\nYOUR STATS\n\n🗺️\n\n0/30\n\nKingdom Story Map\n\n🏛️\n\n1\n\nAcademy Completed\n\n🧩\n\n0\n\nPuzzles Solved\n\n🧠\n\n0\n\nChess Mind Solved\n\n🧭\n\n0\n\nOpenings Discovered\n\n🥇\n\n0\n\nOnline Wins\n\nOpenings Discovered\n\nExplore Openings →\n\n0\n\nDiscovered\n\n0\n\nGambits\n\n0/28\n\nStudied\n\nAchievements (1/30)\n\nLEARNING\n\n🔒\nFirst Steps\n🔒\nKnight Master\n🔒\nBishop Master\n🔒\nRo"
+    }
+  ],
+  "school": {
+    "startClick": "NOT_FOUND",
+    "schoolUrl": "http://localhost:3000/chess-school/classroom",
+    "pieceFound": [
+      "Pawn",
+      "Rook",
+      "Knight",
+      "Bishop",
+      "Queen",
+      "King"
+    ],
+    "bodySnippet": "CHESS SCHOOL\n\nFrom zero to playing real people.\n\nThirty sessions. Your own pace. No streaks.\n\n🦉\n\nWelcome, Adventurer. Session 1 takes about ten minutes, and by the end of it you'll have made your first chess move.\n\nStart session 1\nACT 1 — I SPEAK CHESS\nMODULE 1 · LEARN THE BOARD\n\nUP NEXT\n\nWelcome to Chess School\n\nThe board, and where everything stands.\n\nAbout 10 minutes\n\nCOMING UP · BIG MOMENT\n\n★ Meet the Pawn\n\nThe soldier that can become a Queen.\n\n1 session away\n\nWHAT YOU CAN DO NOW\n\nYou haven't started yet. Session 1 takes about ten minutes.\n\nFor parents\n\nWhat they’ve learned, and what to try together tonight.\n\n→\n\nTHE WHOLE COURSE\n\nAct 1 — I speak chess\n\n1. Learn the Board\n\n1\n\n★ Welcome to Chess School\n\nThe board, and where everything stands.\n\n2\n\n★ Meet the Pawn\n\nThe soldier that can be"
+  }
+}

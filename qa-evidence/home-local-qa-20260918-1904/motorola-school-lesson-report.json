@@ -1,0 +1,151 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": null,
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nToday we learn the board. You've got this.\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nSixty-four squares\n\nA chess board is eight squares across and eight squares down.\n\n1 of 3\n\nNext"
+    },
+    {
+      "step": 2,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": null,
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nToday we learn the board. You've got this.\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nSixty-four squares\n\nWhite always starts at the bottom. The board turns so that YOUR pieces are closest to you.\n\n2 of 3\n\nNext"
+    },
+    {
+      "step": 3,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": null,
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nToday we learn the board. You've got this.\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nSixty-four squares\n\nHere is what it looks like when everything is home.\n\n3 of 3\n\nGot it — let's try"
+    },
+    {
+      "step": 4,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Pawn",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nBefore we play, let's meet every piece — one at a time.\n\nThe Pawn\n\nPiece 1 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nPawns are the small soldiers on your front row.\n\nNext"
+    },
+    {
+      "step": 5,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Pawn",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nThey walk straight forward. On their first move they can go one or two squares.\n\nThe Pawn\n\nPiece 1 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nThey walk straight forward. On their first move they can go one or two squares.\n\nNext"
+    },
+    {
+      "step": 6,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Rook",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nThe Rook looks like a castle tower.\n\nThe Rook\n\nPiece 2 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nThe Rook looks like a castle tower.\n\nNext"
+    },
+    {
+      "step": 7,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Rook",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nIt slides straight — up, down, left, or right — as far as it wants.\n\nThe Rook\n\nPiece 2 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nIt slides straight — up, down, left, or right — as far as it wants.\n\nNext"
+    },
+    {
+      "step": 8,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Knight",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nThe Knight looks like a horse.\n\nThe Knight\n\nPiece 3 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nThe Knight looks like a horse.\n\nNext"
+    },
+    {
+      "step": 9,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Knight",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nIt jumps in an L-shape — two squares one way, then one to the side.\n\nThe Knight\n\nPiece 3 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nIt jumps in an L-shape — two squares one way, then one to the side.\n\nNext"
+    },
+    {
+      "step": 10,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Bishop",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nThe Bishop has a pointy hat.\n\nThe Bishop\n\nPiece 4 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nThe Bishop has a pointy hat.\n\nNext"
+    },
+    {
+      "step": 11,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Bishop",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nIt slides on diagonals — the slanted lines, corner to corner.\n\nThe Bishop\n\nPiece 4 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nIt slides on diagonals — the slanted lines, corner to corner.\n\nNext"
+    },
+    {
+      "step": 12,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Queen",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nThe Queen is the tallest piece — she wears a crown.\n\nThe Queen\n\nPiece 5 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nThe Queen is the tallest piece — she wears a crown.\n\nNext"
+    },
+    {
+      "step": 13,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "Rook",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nShe can move like a Rook AND like a Bishop. She is very powerful.\n\nThe Queen\n\nPiece 5 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nShe can move like a Rook AND like a Bishop. She is very powerful.\n\nNext"
+    },
+    {
+      "step": 14,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "King",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nThe King wears a cross on his crown.\n\nThe King\n\nPiece 6 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nThe King wears a cross on his crown.\n\nNext"
+    },
+    {
+      "step": 15,
+      "url": "http://localhost:3000/chess-school/session/s01-welcome",
+      "board": "board-present",
+      "layout": "{\"w\":411,\"h\":914,\"dataLayout\":\"phone\"}",
+      "pieceMatch": "King",
+      "snippet": "LEARN THE BOARD\n★ BIG MOMENT\nSession 1 · Welcome to Chess School\n✕\n🦉\n\nHe moves one square at a time, in any direction. You must protect him.\n\nThe King\n\nPiece 6 of 6\n\n8\n7\n6\n5\n4\n3\n2\na\n1\nb\nc\nd\ne\nf\ng\nh\n\nHe moves one square at a time, in any direction. You must protect him.\n\nLet's play!"
+    }
+  ],
+  "pieceMentions": [
+    {
+      "piece": "Pawn",
+      "found": true
+    },
+    {
+      "piece": "Rook",
+      "found": true
+    },
+    {
+      "piece": "Knight",
+      "found": true
+    },
+    {
+      "piece": "Bishop",
+      "found": true
+    },
+    {
+      "piece": "Queen",
+      "found": true
+    },
+    {
+      "piece": "King",
+      "found": true
+    }
+  ],
+  "finalUrl": "http://localhost:3000/chess-school/session/s01-welcome"
+}
