@@ -6,6 +6,7 @@ import {
   ChessMindIcon,
   DiscoverIcon,
   ProfileIcon,
+  WatchIcon,
   WorldIcon,
 } from "./icons";
 
@@ -32,6 +33,8 @@ export type NavItem = {
   href: string;
   icon: (props: { className?: string }) => JSX.Element;
   match?: string[];
+  /** Future feature: shown, visibly inactive, and never navigates. */
+  disabled?: boolean;
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -70,6 +73,28 @@ export const NAV_ITEMS: NavItem[] = [
     icon: WorldIcon,
   },
 ];
+
+/**
+ * PHONE / TABLET bottom bar: Home, School, Puzzles, Watch, Profile — with a
+ * separate Play button above the bar (PHONE_PLAY_ITEM). Desktop is unaffected:
+ * its sidebar still renders NAV_ITEMS above. World stays a real route
+ * (/world) and a desktop sidebar item; it is simply not a bottom-bar tab.
+ * Watch is a future feature: `disabled`, no real href is ever navigated to.
+ */
+export const PHONE_NAV_ITEMS: NavItem[] = [
+  { label: "Home", href: "/home", icon: HomeIcon, match: NAV_ITEMS[0].match },
+  { label: "School", href: "/chess-school", icon: AcademyIcon },
+  { label: "Puzzles", href: "/puzzles", icon: PuzzlePieceIcon },
+  { label: "Watch", href: "/watch", icon: WatchIcon, disabled: true },
+  { label: "Profile", href: "/profile", icon: ProfileIcon },
+];
+
+export const PHONE_PLAY_ITEM: NavItem = {
+  label: "Play",
+  href: "/play",
+  icon: PlayIcon,
+  match: ["/play", "/free-play", "/matchmaking", "/online"],
+};
 
 /**
  * Utility destinations — not one of the five primary tabs, but each still

@@ -978,20 +978,14 @@ html:not([data-mode="kids"]):not([data-mode="adult"]) .layout-bottom-nav a[aria-
   color: rgb(214 190 140);
 }
 
-html:not([data-mode="kids"]):not([data-mode="adult"]) .layout-bottom-nav a[data-nav="play"] svg {
-  box-sizing: content-box;
-  margin-top: -0.35rem;
-  padding: 0.4rem;
-  border-radius: 999px;
-  background: rgb(22 120 80);
+html:not([data-mode="kids"]):not([data-mode="adult"]) .layout-bottom-nav a.nav-play-cta {
   color: rgb(242 236 224);
+  background: rgb(22 120 80);
   box-shadow: 0 8px 18px -10px rgb(38 166 110);
 }
 
-html:not([data-mode="kids"]):not([data-mode="adult"]) .layout-bottom-nav a[data-nav="play"][aria-current="page"] svg {
-  box-shadow:
-    0 0 0 2px rgb(214 190 140 / 0.7),
-    0 8px 18px -10px rgb(38 166 110);
+html:not([data-mode="kids"]):not([data-mode="adult"]) .layout-bottom-nav .nav-soon {
+  color: rgb(242 236 224 / 0.3);
 }
 
 /* --------------------------------------------------------------------------

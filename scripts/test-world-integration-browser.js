@@ -109,7 +109,7 @@ const ROUTES = [
   ["/chess-mind/memory", "Train Your Mind"], ["/chess-mind/spatial", "Train Your Mind"], ["/chess-mind/mathematics", "Train Your Mind"], ["/chess-mind/reaction", "Train Your Mind"],
   ["/profile", "Profile"], ["/profile/customize", null, "bare"], ["/discover", "Discover"], ["/world", "World"], ["/chess-school", "School"],
 ];
-const PRIMARY = ["Home", "School", "Puzzles", "Play", "World"];
+const PRIMARY = ["Home", "School", "Puzzles", "Profile"]; // phone bottom tabs (Play is a button above the bar, Watch is disabled, World is not a tab)
 // The world-specific roots each redesigned page renders (one per world); any root of ANOTHER world on a page is leakage.
 const ROOTS = {
   enchanted: [".pl-en", ".fp-en", ".ac-en", ".tm-en", ".pf-en", ".dc-en", ".wd-en"],

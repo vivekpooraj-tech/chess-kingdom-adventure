@@ -131,6 +131,8 @@ const blueish = (c) => { const m = /rgba?\((\d+), (\d+), (\d+)/.exec(c || ""); i
   let pass = 0; const fails = [];
   const check = (n, ok, d) => { if (ok) pass++; else { fails.push(n); console.log("FAIL:", n, d || ""); } };
   const NAV = ["Home", "School", "Puzzles", "Play", "World"];
+  // Phone/tablet bottom bar: the Play button above Home / School / Puzzles / (Watch, a disabled button) / Profile; World is not a bottom tab.
+  const BAR = ["Play", "Home", "School", "Puzzles", "Profile"];
   const ACTIVE = { home: "Home", "chess-school": "School", puzzles: "Puzzles", play: "Play", world: "World", academy: "Academy", "chess-mind": "Train Your Mind", profile: "Profile", discover: "Discover" };
   const EXPLORE = ["Academy", "Train Your Mind", "Profile", "Discover"];
   for (const w of WORLDS.filter((x) => worlds.includes(x.id))) for (const v of VIEWPORTS.filter((x) => !only.length || only.includes(String(x.w)))) {
@@ -145,9 +147,9 @@ const blueish = (c) => { const m = /rgba?\((\d+), (\d+), (\d+)/.exec(c || ""); i
         if (route !== "puzzles") check(`${tag}: no horizontal overflow`, r.docW <= r.vw && r.over === 0, `doc ${r.docW}/${r.vw}, ${r.over}`);
         if (route === "puzzles") { /* the Puzzle Trainer is a chess-focus page whose own layout manages the chrome (identical before this change): only overflow-independent checks apply */ }
         else if (v.w >= 1024) check(`${tag}: desktop sidebar shows ${[...NAV, ...EXPLORE].join(", ")}`, r.sideVisible && [...NAV, ...EXPLORE].every((l) => r.labels.some((x) => x.includes(l))), JSON.stringify(r.labels));
-        else check(`${tag}: bottom tabs show ${NAV.join(", ")} at >= 44px`, r.barVisible && NAV.every((l) => r.tabs.includes(l)) && r.navItems.every((h) => h >= 44), JSON.stringify([r.tabs, r.navItems]));
+        else check(`${tag}: bottom bar shows ${BAR.join(", ")} (no World) at >= 44px`, r.barVisible && JSON.stringify(r.tabs) === JSON.stringify(BAR) && r.navItems.every((h) => h >= 44), JSON.stringify([r.tabs, r.navItems]));
         if (route in ACTIVE && route !== "puzzles") { // (the Puzzle Trainer is a chess-focus page that manages its own chrome, as before) // exactly the right item is highlighted: the sidebar on desktop, the bottom tabs otherwise (secondary items are not tabs)
-          const want = v.w >= 1024 ? ACTIVE[route] : (NAV.includes(ACTIVE[route]) ? ACTIVE[route] : null);
+          const want = v.w >= 1024 ? ACTIVE[route] : (BAR.includes(ACTIVE[route]) && ACTIVE[route] !== "Play" ? ACTIVE[route] : null);
           check(`${tag}: active navigation is ${want || "none of the tabs"}`, JSON.stringify(r.actives) === JSON.stringify(want ? [want] : []), JSON.stringify(r.actives));
         }
         if (w.id === "atelier") check(`${tag}: no blue/navy in the shell or page ground`, !r.colors.some((c) => blueish(c[1])) && !blueish(r.navyMain), JSON.stringify(r.colors));

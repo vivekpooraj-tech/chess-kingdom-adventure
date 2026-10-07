@@ -38,7 +38,11 @@ body {
 :root {
   /* PrimaryNav's content height (its items are min-h-[56px]). Single
      source of truth for how much space a fixed bottom bar occupies. */
-  --bottom-nav-h: 3.5rem;
+  --bottom-nav-row-h: 3.5rem;
+  /* The Play button that sits directly above the tab row (PrimaryNav .nav-play-cta): 2.75rem button + .5rem above + .25rem below. */
+  --play-cta-h: 3.5rem;
+  /* The whole bottom bar: Play button + tab row. A literal (not calc) so ChessFocusLayout can still parseFloat it. */
+  --bottom-nav-h: 7rem;
   /* Device chrome insets — 0 on the web, real values in a native WebView
      with viewport-fit=cover (see app/layout.tsx). */
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -150,6 +154,8 @@ html[data-layout="desktop"] {
    breathing gap, and PrimaryNav is display:none'd below. */
 html[data-layout="desktop"] {
   --bottom-nav-h: 0px;
+  --bottom-nav-row-h: 0px;
+  --play-cta-h: 0px;
 }
 
 html[data-sidenav="collapsed"] {
@@ -595,6 +601,44 @@ html.chess-focus-active:not(:has(.chess-focus-shell--preserve-nav)) main.min-h-s
 
 .layout-bottom-nav {
   display: flex;
+}
+
+/* Play: the app's main action, directly above the tab row. World colours are in world-shell.css (Enchanted, Atelier) and worlds.css (Classic). */
+.layout-bottom-nav .nav-play-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.75rem;
+  margin: 0.5rem 0.75rem 0.25rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition: transform 100ms, filter 100ms;
+}
+.layout-bottom-nav .nav-play-cta:active {
+  transform: scale(0.98);
+}
+
+/* Watch is a future feature: visibly inactive, with a small "Soon" tag that does not add height to the row. */
+.layout-bottom-nav .nav-soon {
+  position: relative;
+}
+.layout-bottom-nav .nav-soon-tag {
+  position: absolute;
+  top: 0.3rem;
+  left: 50%;
+  margin-left: 0.55rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.5625rem;
+  line-height: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 /* Bottom-nav clearance now lives in the shared .pb-nav-safe utility above

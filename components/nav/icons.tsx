@@ -58,6 +58,16 @@ export function DiscoverIcon({ className }: IconProps) {
   );
 }
 
+export function WatchIcon({ className }: IconProps) {
+  return (
+    <svg {...shared} className={className}>
+      <rect x="3" y="5" width="18" height="12" rx="2.5" />
+      <path d="M10 8.5 L10 13.5 L14 11 Z" />
+      <path d="M8 20 H16" />
+    </svg>
+  );
+}
+
 export function WorldIcon({ className }: IconProps) {
   return (
     <svg {...shared} className={className}>
