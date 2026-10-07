@@ -1,0 +1,334 @@
+CHESS SCHOOL V2 — COMPLETE AUTONOMOUS BUILD PROMPT
+Copy everything below this line into Claude or ChatGPT.
+
+================================================================================
+
+You are building Chess School v2 inside the Chess Kingdom Adventure repository (Next.js 14 App Router, TypeScript, Supabase, chess.js, Tailwind, Capacitor Android). The product owner will be away for several hours. Work fully autonomously from start to finish. Do not ask clarifying questions. Use every decision in this document. When done, write CHESS_SCHOOL_V2_HANDOFF.md with what you built, how to test, gaps, and files changed.
+
+OPERATING RULES
+- Do NOT git commit, push, or open PRs.
+- Do NOT break Kingdom Journey (content/lessons.ts, /lesson/[dayId], kingdom map), Premium Stripe checkout (app/api/stripe/*), Chess Mind, Academy, puzzles, or online play.
+- Run npm run build before finishing and fix TypeScript errors you introduce.
+- Add and pass: node scripts/test-chess-school-v2.js
+- Match existing code style (server components where possible, RLS-safe Supabase, TEXT from lib/designSystem, premium tokens).
+- If blocked on env or migration apply, implement graceful fallbacks and document in handoff.
+
+================================================================================
+PRODUCT NORTH STAR
+================================================================================
+
+Chess School is NOT a repackaged Kingdom Journey. It is a separate premium product whose only job is this identity shift:
+
+Before: "Chess is confusing."
+After: "I am someone who plays chess."
+
+The child finishes feeling wow, plays chess with a real person (parent or friend), is extremely happy, and tells friends at school.
+
+Marketing line: From zero to playing with real people — in 30 extraordinary sessions (self-paced).
+
+Future pricing to design for: Chess School Rs 199 lifetime (separate SKU); Premium includes School forever plus other app features. Stub paywall and entitlement hooks OK this session; live Stripe checkout for Rs 199 optional.
+
+Differentiators to build toward:
+1. Tutor-first Ollie coach (not puzzle dump)
+2. Parent-legible module progress in plain English (no fake IQ percentages)
+3. Confidence Ladder toward real humans (bot = practice, graduation = person)
+4. Piece superpowers kids repeat to friends
+5. Five wow moments with ceremony UI
+6. Shareable milestones (Fork Master card, graduate certificate)
+7. Parent Mode where app coaches parent on same device
+8. Mastery gates with remedial path (self-paced, not calendar-locked)
+9. Kid-safe (no stranger chat in School flow)
+
+DO NOT:
+- Reuse content/lessons.ts or kingdom zone gating for School
+- Present School as same course with different label
+- End with generic badge only
+- Build unlimited open-ended Ollie chat
+- Delete or rewrite Kingdom Journey
+
+DO:
+- Create new content in content/school/
+- New logic in lib/school/v2/
+- New progress in Supabase migration 0032_chess_school_v2.sql
+- New routes and distinct classroom/tutor UI
+- Reuse components/board/ChessBoard.tsx, chess.js, Supabase patterns, design system, Ollie scoped to session context
+- Server-enforce gating like existing premium patterns
+
+================================================================================
+30-SESSION ARC
+================================================================================
+
+Author all 30 session IDs. Fully implement the 10 starred sessions with real playable content. Others may be thin stubs marked comingSoon in runner but must exist in content.
+
+ACT 1 — I speak chess (Sessions 1-8)
+- Session 1* Welcome to Chess School (board setup)
+- Session 2* Meet the Pawn — superpower: "The soldier that can become a queen"
+- Session 3 Pawn Captures
+- Session 4 Meet the Knight — superpower: "The only piece that jumps over walls"
+- Session 5 Meet the Bishop — superpower: "The laser on diagonals"
+- Session 6 Meet the Rook — superpower: "The train on straight lines"
+- Session 7 Meet the Queen and King — superpower: "The boss" / "The one you protect"
+- Session 8* Boss First Mini Game
+
+ACT 2 — I see traps (Sessions 9-16)
+- Session 9 What is Check?
+- Session 10* First Full Game (wow moment 1)
+- Session 11 Hanging Pieces
+- Session 12* Fork Festival (wow moment 2, share unlock Fork Master)
+- Session 13* Parent Mode: Try Your Fork (wow moment — real person)
+- Session 14 Pins and Skewers
+- Session 15 Back-Rank Ideas
+- Session 16 Boss Tactics Check
+
+ACT 3 — I play for real (Sessions 17-24)
+- Session 17 Escape from Check
+- Session 18* First Checkmate (wow moment 3 celebration replay)
+- Session 19 Castling
+- Session 20 Don't Hang Pieces
+- Session 21 Play a Full Game (guided bot)
+- Session 22 Opening Ideas
+- Session 23 Keep Your King Safe
+- Session 24* Win Without Hints (wow moment 4 bot, no hints)
+
+ACT 4 — I challenge someone (Sessions 25-30)
+- Session 25 Planning Your Moves
+- Session 26 Endgame King Power
+- Session 27 Pass-and-Play Practice
+- Session 28 Teach a Friend
+- Session 29 Graduation Prep recap
+- Session 30* GRADUATION DUEL (wow moment 5 — event not lesson: duel + ceremony + certificate + share card; win or lose both graduate; Ollie says: You're not learning chess anymore. You're a chess player.)
+
+Eight modules for parents:
+1. Learn the Board
+2. Pawns and Captures
+3. Knights and Bishops
+4. Rooks and Queen
+5. King and Safety
+6. Tactics
+7. Full Game Skills
+8. Graduate Challenge
+
+================================================================================
+SESSION LOOP
+================================================================================
+
+Every session (15-25 min) follows:
+teach -> guided_board -> puzzle_drill -> apply (bot_match OR parent_mode OR pass_and_play) -> recap -> checkpoint
+
+Pass puzzle_drill if >= passCriteria (e.g. 2/3 correct). Fail -> remedial (one easier puzzle) -> retry. Never hard-block forever.
+
+Step types to implement:
+- teach: Ollie text + optional FEN demo
+- guided_board: ChessBoard, legal moves, hints fade after wrong tries
+- puzzle_drill: 2-3 puzzles with verified solutions
+- bot_match: weak bot or movesRequired like existing mini_match
+- parent_mode: parent instruction panel + child board same device
+- pass_and_play: two-player same tablet
+- exam, ceremony, recap
+
+Ollie copy (embed in content, keep short):
+- Intro: Today we learn {skill}. You've got this.
+- Mistake: That's okay. Even I did that when I was learning.
+- Win: You didn't get lucky. You saw the move.
+- Fork Festival: Today you learn the sneakiest trick in chess.
+- Pre-graduation: Tomorrow you play for real. I'm proud of you.
+- Graduation: You're not learning chess anymore. You're a chess player.
+
+Scope Ollie to today's skill. Text-first OK.
+
+FORK FESTIVAL (Session 12):
+- Distinct header/theme
+- 3 escalating fork puzzles (chess.js verified FENs)
+- Bot or guided fork scenario
+- Unlock shareUnlock: { id: "fork_master", title: "Fork Master" }
+- Share card after completion: Fork Master — Challenge me
+- Ollie: Who will you try this on first — Papa or a friend?
+
+PARENT MODE (Session 13 + Graduation):
+- Component: components/school/ParentModePanel.tsx
+- Pre-scripted steps: { fen, parentInstruction, childGoal, successMove optional }
+- Parent sees: Make this move — let them fork you
+- Child sees normal board
+- On success: celebration + Ollie: You did that to a REAL person.
+
+GRADUATION DAY (Session 30):
+1. Ceremony: Today is Graduation Day
+2. Recap montage of 3 skills from completed skillTags
+3. Duel: pass_and_play or parent_mode, no hints
+4. Ceremony: Graduate title
+5. Route to /chess-school/graduate certificate (name, date, skills)
+6. Share card: {Name} — Chess School Graduate — Challenge me to a game!
+
+Confidence ladder: guided_bot (hints) -> ollie_bot (weak) -> parent_mode -> pass_and_play -> graduation_duel
+
+================================================================================
+CONTENT SCHEMA
+================================================================================
+
+Create content/school/types.ts, modules.ts, sessions.ts
+
+Types needed:
+
+SchoolStepType = teach | guided_board | puzzle_drill | bot_match | parent_mode | pass_and_play | exam | ceremony | recap
+
+SchoolPuzzle: fen, prompt, solutionMoves (SAN or UCI, verify with chess.js), hint optional
+
+ParentModeStep: fen, parentInstruction, childGoal, successMove optional
+
+SchoolStep: id, type, title, ollieText optional, fen optional, puzzles optional, parentSteps optional, botFen optional, movesRequired optional, prompt optional
+
+SchoolSession: id, sessionNumber, moduleId, title, tagline, skillTags, isBoss, isCeremony, ollieIntro, ollieOutro, steps, passCriteria { minCorrect, total }, shareUnlock optional, comingSoon optional
+
+SchoolModule: id, name, emoji, blurb, sessionIds
+
+All puzzle FENs and solution moves must be verified at authoring time. Test script must load every starred session FEN in chess.js.
+
+================================================================================
+DATABASE AND ENTITLEMENTS
+================================================================================
+
+Create supabase/migrations/0032_chess_school_v2.sql mirroring 0031_premium_entitlements.sql patterns:
+
+Table child_school_progress:
+- child_id
+- completed_sessions (jsonb session ids)
+- share_unlocks (jsonb)
+- graduated_at
+- remedial_session_id nullable
+- updated_at
+
+Parent school access: parents.school_access_at timestamptz nullable OR school_entitlements table with lifetime rows.
+
+SQL function parent_has_school_access(parent_id). Premium grant may also set school access forever (wire if time allows).
+
+RPCs:
+- record_school_session_complete(p_child_id, p_session_id)
+- get_school_progress(p_child_id)
+RLS: parent owns child only.
+
+Client lib/supabase/schoolQueries.ts:
+- getSchoolProgress
+- recordSchoolSessionComplete
+- canAccessSchoolSession (sessions 1-3 free, 4+ require school access)
+
+Pure logic lib/school/v2/progress.ts:
+- schoolProgressView
+- resumeSessionId (never resume completed unless all done then session 30)
+- isGraduationEligible
+- skillsLearnedLabels
+
+Test in scripts/test-chess-school-v2.js
+
+Entitlement helper lib/school/entitlement.ts: resolveSchoolAccess(parentRow)
+
+================================================================================
+UI COMPONENTS TO CREATE
+================================================================================
+
+- components/school/SchoolSessionRunner.tsx (client step state machine)
+- components/school/SchoolStepTeach.tsx
+- components/school/SchoolStepPuzzleDrill.tsx
+- components/school/SchoolStepBotMatch.tsx
+- components/school/ParentModePanel.tsx
+- components/school/SchoolCeremony.tsx
+- components/school/GraduateCertificate.tsx
+- components/school/SchoolPaywall.tsx (Session 4+ locked, Chess School Rs 199 lifetime stub CTA)
+- components/school/SchoolCourseHome.tsx
+
+Reuse: ChessBoard, Screen, TabPageShell, TEXT from design system.
+
+================================================================================
+PAGES
+================================================================================
+
+REPLACE app/chess-school/page.tsx:
+- Server component: child, school progress, entitlement
+- Show Speak Chess in 30 Days, progress bar, 8 modules, Continue to resume
+- REMOVE dependency on content/lessons.ts and kingdom isDayFree
+
+CREATE app/chess-school/session/[sessionId]/page.tsx:
+- Load session, check access (1-3 free else school access), render SchoolSessionRunner, paywall if blocked
+
+CREATE app/chess-school/graduate/page.tsx:
+- Certificate if graduated_at set, else redirect to session 30
+
+Update components/school/ChessSchoolCard.tsx on Home to use v2 progress if feasible.
+
+Deprecate kingdom-duplicated logic in lib/school/chessSchool.ts for School v2 UI (keep files if kingdom still imports).
+
+================================================================================
+TEST SCRIPT
+================================================================================
+
+Create scripts/test-chess-school-v2.js
+
+Verify:
+- 30 sessions exist numbered 1-30 with unique ids
+- 8 modules cover all sessions
+- All fully-implemented session FENs load in chess.js
+- Puzzle solutions are legal from FEN
+- resumeSessionId never returns completed session unless course complete
+- Sessions 1-3 free, 4+ blocked without entitlement
+- Graduation requires session 30
+- Fork Festival has shareUnlock
+
+Run: node scripts/test-chess-school-v2.js
+
+================================================================================
+REUSE vs IGNORE
+================================================================================
+
+REUSE:
+- components/board/ChessBoard.tsx
+- lib/supabase/client.ts, server.ts, queries.ts patterns
+- lib/premium/entitlement.ts
+- resolveActiveChild, getActiveChildIdClient
+- content/buddies.ts for Ollie
+- design system
+- mini_match movesRequired pattern from lessons
+
+IGNORE for School content:
+- content/lessons.ts
+- content/kingdomZones.ts gating
+- old lib/school/chessSchool.ts kingdom framing for new pages
+
+================================================================================
+IMPLEMENTATION ORDER
+================================================================================
+
+1. Read repo structure first
+2. Content schema and all 30 session entries (10 full, 20 stub OK)
+3. lib/school/v2/progress.ts and tests
+4. Migration and schoolQueries
+5. SchoolSessionRunner with all step types
+6. Session pages — fully wire sessions 1, 2, 12, 13, 30 minimum plus 10, 18, 24
+7. Replace chess-school home
+8. ParentModePanel and Fork Festival share card
+9. Graduate certificate page
+10. Paywall stub
+11. npm run build
+12. Write CHESS_SCHOOL_V2_HANDOFF.md
+
+If time runs out, never ship without fully playable sessions 1, 12, 13, 30 and green build.
+
+================================================================================
+DEFINITION OF DONE
+================================================================================
+
+- Chess School v2 uses new content/school/* not kingdom lessons
+- User can play 1 -> 2 -> 12 -> 13 -> 30 with progress saved
+- Graduation certificate renders
+- Fork Master share unlock works
+- Parent Mode shows parent instructions
+- /chess-school shows module progress
+- Paywall on session 4+ for non-entitled
+- npm run build passes
+- node scripts/test-chess-school-v2.js passes
+- CHESS_SCHOOL_V2_HANDOFF.md written
+- Kingdom Journey unchanged and still builds
+
+START NOW. Do not wait for user input. Build the extraordinary Chess School described above.
+
+================================================================================
+END OF PROMPT
+================================================================================

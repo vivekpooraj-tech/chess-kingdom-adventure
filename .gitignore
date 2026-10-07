@@ -25,3 +25,10 @@ scripts/puzzle-content.proposed.txt
 scripts/puzzle-launch-validated-pool.json
 scripts/puzzle-launch-human-review.md
 scripts/puzzle-launch-12c-decisions.json
+
+# Local-only QA / device-validation artifacts and IDE state (never commit)
+/qa-evidence/
+/device-validation/
+/tablet-test-screenshots/
+/android/.idea/
+/android/gradle.properties
