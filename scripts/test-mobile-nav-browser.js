@@ -1,7 +1,7 @@
 /**
  * Phone bottom navigation + Play button, in real headless Chrome: 390x844 and 411x914 (with a 34px safe-area inset), three worlds.
  *   node scripts/test-mobile-nav-browser.js     (NAV_SHOTS=<dir> to save viewport screenshots)
- * Order Home/School/Puzzles/Watch/Profile, no World tab, Watch disabled + inert, Play above the bar -> /play, no overlap/overflow.
+ * Order Home/School/Puzzles/Watch/Profile, no World tab, Watch a real link to /watch (no Soon), Play above the bar -> /play, no overlap/overflow.
  * Needs the dev server on :3000, Chrome and the local dev-test account; otherwise SKIPPED (exit 2). Read-only.
  */
 const fs = require("fs");
@@ -111,7 +111,7 @@ const BAR = `(()=>{const vw=innerWidth,vh=innerHeight,de=document.documentElemen
         const m = JSON.parse(await s.ev(BAR));
         check(`${t}: bottom order Home, School, Puzzles, Watch, Profile`, JSON.stringify(m.order) === JSON.stringify(ORDER) && JSON.stringify(m.labels) === JSON.stringify(["Home", "School", "Puzzles", "Watch", "Profile"]), JSON.stringify([m.order, m.labels]));
         check(`${t}: no World tab`, !m.hasWorld);
-        check(`${t}: Watch is a disabled button with no href and a Soon tag`, m.watch && m.watch.tag === "BUTTON" && m.watch.disabled && m.watch.aria === "true" && !m.watch.href && m.watch.soon, JSON.stringify(m.watch));
+        check(`${t}: Watch is a real link to /watch (not disabled, no Soon tag), >=44px`, m.watch && m.watch.tag === "A" && !m.watch.disabled && m.watch.aria !== "true" && m.watch.href === "/watch" && !m.watch.soon && m.watch.h >= 44, JSON.stringify(m.watch));
         check(`${t}: Play CTA exists, "Play", -> /play, >=44px tall`, m.cta && m.cta.text === "Play" && m.cta.href === "/play" && m.cta.h >= 44, JSON.stringify(m.cta));
         check(`${t}: Play is immediately above the tab row (0-8px gap, no overlap)`, m.cta && m.cta.gapToRow >= 0 && m.cta.gapToRow <= 8, JSON.stringify(m.cta));
         check(`${t}: Play inside the screen with side margin`, m.cta && m.cta.left >= 8 && m.cta.right <= m.vw - 8, JSON.stringify(m.cta));
@@ -123,11 +123,11 @@ const BAR = `(()=>{const vw=innerWidth,vh=innerHeight,de=document.documentElemen
         check(`${t}: active tab is ${JSON.stringify(want)}`, JSON.stringify(m.active) === JSON.stringify(want), JSON.stringify(m.active));
         if (shots && route === "home") { await s.ev("window.scrollTo(0,0)"); fs.writeFileSync(path.join(shots, `nav-${v.name}-${w.id}.png`), Buffer.from(await s.shotVp(), "base64")); }
       }
-      // Watch cannot navigate
+      // Watch opens /watch
       await s.open("home"); await s.waitFor(WAIT, 40000); await sleep(800);
-      const before = await s.ev("location.href");
-      await s.click(".layout-bottom-nav [data-nav=watch]"); await sleep(900);
-      check(`${tag}: tapping Watch does not navigate`, (await s.ev("location.href")) === before, await s.ev("location.href"));
+      await s.click(".layout-bottom-nav [data-nav=watch]"); await s.waitFor(`location.pathname==="/watch"`, 20000);
+      check(`${tag}: tapping Watch opens /watch`, (await s.ev("location.pathname")) === "/watch", await s.ev("location.pathname"));
+      await s.open("home"); await s.waitFor(WAIT, 40000); await sleep(800);
       // Play opens /play
       await s.waitFor(`!!document.querySelector('.nav-play-cta')`, 30000);
       await s.click(".nav-play-cta"); await s.waitFor(`location.pathname==="/play"`, 20000);

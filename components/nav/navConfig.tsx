@@ -79,13 +79,13 @@ export const NAV_ITEMS: NavItem[] = [
  * separate Play button above the bar (PHONE_PLAY_ITEM). Desktop is unaffected:
  * its sidebar still renders NAV_ITEMS above. World stays a real route
  * (/world) and a desktop sidebar item; it is simply not a bottom-bar tab.
- * Watch is a future feature: `disabled`, no real href is ever navigated to.
+ * Watch is live: it opens /watch (live Lichess chess), free for everyone.
  */
 export const PHONE_NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/home", icon: HomeIcon, match: NAV_ITEMS[0].match },
   { label: "School", href: "/chess-school", icon: AcademyIcon },
   { label: "Puzzles", href: "/puzzles", icon: PuzzlePieceIcon },
-  { label: "Watch", href: "/watch", icon: WatchIcon, disabled: true },
+  { label: "Watch", href: "/watch", icon: WatchIcon },
   { label: "Profile", href: "/profile", icon: ProfileIcon },
 ];
 
@@ -146,6 +146,7 @@ export const UTILITY_NAV_ITEMS: NavItem[] = [
 export const SECONDARY_NAV_ITEMS: NavItem[] = [
   { label: "Academy", href: "/academy", icon: AcademyIcon },
   { label: "Train Your Mind", href: "/chess-mind", icon: ChessMindIcon },
+  { label: "Watch", href: "/watch", icon: WatchIcon },
   { label: "Profile", href: "/profile", icon: ProfileIcon },
   { label: "Discover", href: "/discover", icon: DiscoverIcon },
 ];
@@ -165,6 +166,7 @@ export function isNavItemActive(pathname: string, item: NavItem): boolean {
 const APP_PREFIXES = [
   "/home",
   "/puzzles",
+  "/watch",
   "/play",
   "/learn",
   "/more",

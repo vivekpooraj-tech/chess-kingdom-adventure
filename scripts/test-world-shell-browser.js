@@ -131,10 +131,10 @@ const blueish = (c) => { const m = /rgba?\((\d+), (\d+), (\d+)/.exec(c || ""); i
   let pass = 0; const fails = [];
   const check = (n, ok, d) => { if (ok) pass++; else { fails.push(n); console.log("FAIL:", n, d || ""); } };
   const NAV = ["Home", "School", "Puzzles", "Play", "World"];
-  // Phone/tablet bottom bar: the Play button above Home / School / Puzzles / (Watch, a disabled button) / Profile; World is not a bottom tab.
-  const BAR = ["Play", "Home", "School", "Puzzles", "Profile"];
+  // Phone/tablet bottom bar: the Play button above Home / School / Puzzles / Watch / Profile; World is not a bottom tab.
+  const BAR = ["Play", "Home", "School", "Puzzles", "Watch", "Profile"];
   const ACTIVE = { home: "Home", "chess-school": "School", puzzles: "Puzzles", play: "Play", world: "World", academy: "Academy", "chess-mind": "Train Your Mind", profile: "Profile", discover: "Discover" };
-  const EXPLORE = ["Academy", "Train Your Mind", "Profile", "Discover"];
+  const EXPLORE = ["Academy", "Train Your Mind", "Watch", "Profile", "Discover"];
   for (const w of WORLDS.filter((x) => worlds.includes(x.id))) for (const v of VIEWPORTS.filter((x) => !only.length || only.includes(String(x.w)))) {
     const s = await openSession({ ...v, mode: w.mode }, cookies);
     try {

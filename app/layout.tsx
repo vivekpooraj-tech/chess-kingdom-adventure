@@ -24,6 +24,7 @@ import "./world-train.css";
 import "./world-profile.css";
 // Discover (/discover) per world; scoped to .dc-<world>.
 import "./world-discover.css";
+import "./world-watch.css";
 // World (/world) per world; scoped to .wd-<world>.
 import "./world-world.css";
 // Profile Customize (/profile/customize) per world; scoped to .cz.
