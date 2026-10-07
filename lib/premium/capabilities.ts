@@ -26,10 +26,6 @@ export const FREE_LIMITS = {
   engineAnalysesPerDay: 2,
   /** Best-move suggestions per day. */
   bestMoveSuggestionsPerDay: 5,
-  /** Free games vs computer per rolling 24h (migration 0019). */
-  aiGamesPer24h: 2,
-  /** Free multiplayer games per rolling 24h (migration 0019). */
-  multiplayerGamesPer24h: 2,
 } as const;
 
 export type PremiumCapability =

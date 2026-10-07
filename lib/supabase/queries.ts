@@ -542,8 +542,8 @@ export interface FreeGameStatus {
   mpNextAvailableAt: string | null;
 }
 
-/** Read-only — never consumes a credit. For the "X of 2 free games
- * remaining today" indicator, shown before any game starts. */
+/** Read-only — never consumes a credit. Legacy free-game status;
+ * chess play is free now, so the UI no longer shows a limit. */
 export async function getFreeGameStatus(supabase: SupabaseClient, childId: string): Promise<FreeGameStatus> {
   const { data, error } = await supabase.rpc("get_free_game_status", { p_child_id: childId });
   if (error) throw error;
@@ -656,8 +656,8 @@ export interface OnlineGame {
 
 export interface CreateInviteGameResult {
   id: string | null;
-  /** True if the host has used their 2 free multiplayer games today
-   * (premium hosts never see this) — no game row was created. */
+  /** Legacy flag; the server no longer limits multiplayer games,
+   * so this is not expected to be true. */
   blocked: boolean;
 }
 
@@ -706,8 +706,8 @@ export async function getOnlineGame(
  */
 export interface JoinOnlineGameResult {
   joined: boolean;
-  /** True if the join was rejected because the host or guest has used
-   * their 2 free multiplayer games today (never true for premium). */
+  /** Legacy flag; the server no longer limits multiplayer games,
+   * so this is not expected to be true. */
   blocked: boolean;
 }
 
@@ -899,14 +899,14 @@ export async function sendReaction(
   if (error) throw error;
 }
 
-// --- Random matchmaking (rating-based; gated by the free multiplayer
-// daily limit above, not by lesson completion) ----------------------------
+// --- Random matchmaking (rating-based; not gated by a daily limit or by
+// lesson completion) ------------------------------------------------------
 
 export interface MatchmakingResult {
   matched: boolean;
   gameId: string | null;
-  /** True if the caller has used their 2 free multiplayer games today —
-   * never joined the queue (never true for premium). */
+  /** Legacy flag; the server no longer limits multiplayer games,
+   * so this is not expected to be true. */
   blocked: boolean;
 }
 

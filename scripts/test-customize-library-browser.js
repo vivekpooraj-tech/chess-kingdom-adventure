@@ -50,6 +50,8 @@ const PROBE = `(()=>{const vw=innerWidth,de=document.documentElement;
   boardCardPieces:[...new Set([...document.querySelectorAll('[data-board-card] img')].filter(i=>i.currentSrc.includes('/pieces/')).map(i=>i.currentSrc.split('/pieces/')[1].split('/')[0]))]})})()`;
 
 async function openSession(v, cookies) {
+  // The previous test browser may still be shutting down and holding the debug port: wait until it is really free.
+  for (let i = 0; i < 80; i++) { try { await fetch("http://127.0.0.1:9339/json"); await sleep(250); } catch { break; } }
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "cust-"));
   const chrome = spawn(CHROME, ["--headless=new", "--remote-debugging-port=9339", "--user-data-dir=" + profile, "--no-first-run", "--disable-gpu", `--window-size=${v.w},${v.h}`, "about:blank"], { stdio: "ignore" });
   let tabs; for (let i = 0; i < 120; i++) { try { tabs = await (await fetch("http://127.0.0.1:9339/json")).json(); if (tabs.some((t) => t.type === "page")) break; } catch {} await sleep(250); } // up to 30s; wait for the PAGE target (the endpoint lists service workers / browser UI first)
@@ -74,7 +76,7 @@ async function openSession(v, cookies) {
   const customize = async () => { await open("profile/customize"); await waitFor(`document.querySelectorAll('[data-board-card]').length>=1`); await imagesReady(); await sleep(1200); return JSON.parse(await ev(PROBE)); };
   const click = async (sel) => { const pt = await ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(!e)return null;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]})()`); if (!pt) return false; await sleep(200);
     for (const t of ["mouseMoved", "mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type: t, x: pt[0], y: pt[1], button: "left", clickCount: 1 }); return true; };
-  return { ev, waitFor, imagesReady, open, customize, click, logs, close() { ws.close(); chrome.kill(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch {} } };
+  return { ev, waitFor, imagesReady, open, customize, click, logs, close() { ws.close(); chrome.kill(); chrome.unref(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch {} } };
 }
 
 (async () => {
