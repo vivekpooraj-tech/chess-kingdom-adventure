@@ -46,7 +46,6 @@ import { Button } from "@/components/ui/Button";
 import { OpeningBadge } from "@/components/game/OpeningBadge";
 import { MoveList } from "@/components/game/MoveList";
 import { GameEndOpeningSummary } from "@/components/game/GameEndOpeningSummary";
-import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { PostGameAnalysis } from "@/components/game/analysis/PostGameAnalysis";
 import { playMoveSound } from "@/lib/sound/moveSound";
 import { buildOnlineGameRecord } from "@/lib/analysis/gameRecord";
@@ -118,6 +117,66 @@ function isOlderRow(current: OnlineGame | null | "loading", next: OnlineGame): b
   return next.moves.length < current.moves.length;
 }
 
+/**
+ * Prev / Live / Next for move review. Rendered twice (see the board slot and the side panel below) and shown in only one place at a time, using the arena
+ * layout's own `data-side` marker: under the board when the layout is stacked (there is spare height), in the side panel when it is side-by-side (the board
+ * fills the column, so a row under it would fall off the screen). Purely a view control: it only changes which position the board displays.
+ */
+function MoveReviewControls({
+  shownPly,
+  totalPlies,
+  inReview,
+  onPrev,
+  onNext,
+  onLive,
+  className,
+}: {
+  shownPly: number;
+  totalPlies: number;
+  inReview: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  onLive: () => void;
+  className: string;
+}) {
+  return (
+    <div role="group" aria-label="Move history" className={`flex w-full items-center justify-center gap-2 ${className}`}>
+      <Button tone="premium" variant="ghost" size="md" aria-label="Previous move" className="!px-3 whitespace-nowrap" disabled={shownPly <= 0} onClick={onPrev}>
+        ← Prev
+      </Button>
+      {inReview ? (
+        <Button tone="premium" size="md" className="!px-3 whitespace-nowrap" onClick={onLive}>
+          Return to Live
+        </Button>
+      ) : (
+        <span className="min-w-[7rem] text-center font-classic-body text-xs uppercase tracking-wide text-premium-ivory/55">Live</span>
+      )}
+      <Button tone="premium" variant="ghost" size="md" aria-label="Next move" className="!px-3 whitespace-nowrap" disabled={!inReview} onClick={onNext}>
+        Next →
+      </Button>
+      <span className="sr-only" aria-live="polite">
+        {inReview ? `Reviewing move ${shownPly} of ${totalPlies}. Moves are disabled.` : "Live game"}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The position after the first `ply` moves of this game, rebuilt by replaying the stored SAN history from the standard start (the same history the
+ * server replays). null if a move cannot be replayed, in which case the page simply stays live. View-only: nothing here touches the live game.
+ */
+function fenAtPly(moves: string[], ply: number): string | null {
+  const replay = new Chess();
+  for (let i = 0; i < ply; i++) {
+    try {
+      replay.move(moves[i]);
+    } catch {
+      return null;
+    }
+  }
+  return replay.fen();
+}
+
 export default function OnlineGamePage() {
   const params = useParams<{ gameId: string }>();
   const router = useRouter();
@@ -172,8 +231,8 @@ export default function OnlineGamePage() {
   const [dismissedOpeningId, setDismissedOpeningId] = useState<string | null>(null);
   const seenOpeningIdsRef = useRef<Set<string>>(new Set());
   const supabaseRef = useRef(createClient());
-  const [joinBlocked, setJoinBlocked] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
+  // Move review: null = live. A number is the ply (0 = start position) shown read-only on the board; the live game underneath is untouched.
+  const [reviewPly, setReviewPly] = useState<number | null>(null);
   const [resignConfirm, setResignConfirm] = useState(false);
   const [showReview, setShowReview] = useState(false);
   // "matched" (random-match ready-gate) waiting screen: the cancel option is
@@ -625,14 +684,7 @@ export default function OnlineGamePage() {
   async function handleJoin() {
     const supabase = supabaseRef.current;
     const result = await joinOnlineGame(supabase, params.gameId, childId!);
-    if (result.blocked) {
-      // Either the host or the guest has used their 2 free multiplayer
-      // games today — see supabase/migrations/0019_daily_free_game_limits.sql.
-      // Nothing was created; stay on this screen and show the paywall.
-      setJoinBlocked(true);
-      return;
-    }
-    // Either joined successfully, or someone else claimed the guest slot
+    // Multiplayer has no daily limit (migration 0047). Either joined successfully, or someone else claimed the guest slot
     // first — either way, refetch to show reality.
     const fresh = await getOnlineGame(supabase, params.gameId);
     applyFreshGame(fresh);
@@ -803,18 +855,8 @@ export default function OnlineGamePage() {
               Time Control: <span className="text-premium-ivory">{joinTimeControl.label}</span> ({joinTimeControl.description})
             </p>
           )}
-          {joinBlocked ? (
-            <>
-              <p className={TEXT.body}>Your 2 free multiplayer games for today are used.</p>
-              <Button tone="premium" onClick={() => setShowPaywall(true)}>
-                Unlock Unlimited Play
-              </Button>
-            </>
-          ) : (
-            <Button tone="premium" onClick={handleJoin}>Accept Game →</Button>
-          )}
+          <Button tone="premium" onClick={handleJoin}>Accept Game →</Button>
         </SecondaryCard>
-        {showPaywall && <GameLimitPaywall gameType="multiplayer" onDismiss={() => setShowPaywall(false)} />}
       </main>
     );
   }
@@ -1055,6 +1097,21 @@ export default function OnlineGamePage() {
         ? `Tournament — Round ${game.round_number}`
         : "Friend Match";
 
+    // Move review (view-only). reviewPly is an index into the stored history, so the view stays put if the opponent moves meanwhile; at the live
+    // position (or if a move cannot be replayed) the board simply shows the live game.
+    const totalPlies = game.moves?.length ?? 0;
+    const reviewFen = reviewPly !== null && reviewPly < totalPlies ? fenAtPly(game.moves, reviewPly) : null;
+    const inReview = reviewFen !== null;
+    const shownPly = inReview ? (reviewPly as number) : totalPlies;
+    const reviewControls = {
+      shownPly,
+      totalPlies,
+      inReview,
+      onPrev: () => setReviewPly(Math.max(0, shownPly - 1)),
+      onNext: () => setReviewPly(shownPly + 1 >= totalPlies ? null : shownPly + 1),
+      onLive: () => setReviewPly(null),
+    };
+
     return (
       <WorldScope world={pinnedWorld} fit="play">
       <GameArenaLayout
@@ -1136,7 +1193,15 @@ export default function OnlineGamePage() {
               onMove={(opts) => handleMove(opts.from, opts.to)}
               onGameOver={handleGameOver}
               remoteMove={remoteMove ?? undefined}
+              displayFen={reviewFen ?? undefined}
+              readOnly={inReview}
             />
+            {totalPlies > 0 && (
+              <MoveReviewControls
+                {...reviewControls}
+                className="mv-under pt-2 pb-2 [[data-side=true]_&]:hidden"
+              />
+            )}
           </div>
         )}
         sidePanel={
@@ -1218,6 +1283,10 @@ export default function OnlineGamePage() {
                   setOpeningMatch(null);
                 }}
               />
+            )}
+
+            {totalPlies > 0 && (
+              <MoveReviewControls {...reviewControls} className="mv-panel [[data-side=false]_&]:hidden" />
             )}
 
             <div className="flex min-h-0 flex-1 flex-col gap-1.5 rounded-premiumCard bg-premium-navy p-3 shadow-premiumCard">

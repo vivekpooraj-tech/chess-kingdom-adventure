@@ -25,14 +25,11 @@ import {
   supportsTimeControlMatchmaking,
   cancelMatchmaking,
   getMatchmakingQueueStatus,
-  getFreeGameStatus,
   hasRatingHistory,
-  FreeGameStatus,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { TEXT } from "@/lib/designSystem";
 
 type ViewState =
@@ -44,8 +41,6 @@ type ViewState =
 export default function MatchmakingPage() {
   const router = useRouter();
   const [view, setView] = useState<ViewState>({ status: "loading" });
-  const [gameStatus, setGameStatus] = useState<FreeGameStatus | null>(null);
-  const [showPaywall, setShowPaywall] = useState(false);
   const [isFirstTimer, setIsFirstTimer] = useState(false);
   // The speed the player wants. Only offered when the server can honour it
   // (migration 0035); a picker that is silently ignored is worse than none.
@@ -92,11 +87,7 @@ export default function MatchmakingPage() {
         .then((ok) => setCanPickSpeed(ok))
         .catch(() => setCanPickSpeed(false));
 
-      const [status, hasHistory] = await Promise.all([
-        getFreeGameStatus(supabase, child.id),
-        hasRatingHistory(supabase, child.id).catch(() => true),
-      ]);
-      setGameStatus(status);
+      const hasHistory = await hasRatingHistory(supabase, child.id).catch(() => true);
       setIsFirstTimer(!hasHistory);
       setView({ status: "idle", rating: child.rating });
     }
@@ -146,10 +137,9 @@ export default function MatchmakingPage() {
       return;
     }
 
+    // Multiplayer has no daily limit (migration 0047), so the server never reports a game as blocked; if it ever did, nothing was queued, so say so plainly.
     if (result.blocked) {
-      const fresh = await getFreeGameStatus(supabase, childId);
-      setGameStatus(fresh);
-      setShowPaywall(true);
+      setView({ status: "error", rating, message: "Couldn't start matchmaking — please try again." });
       return;
     }
 
@@ -316,13 +306,6 @@ export default function MatchmakingPage() {
           )}
         </div>
 
-        {gameStatus && !gameStatus.isPremium && (
-          <div className="flex flex-col items-center gap-0.5">
-            <p className={TEXT.caption}>Multiplayer</p>
-            <p className={TEXT.body}>{gameStatus.mpRemaining} of 2 free games remaining today</p>
-          </div>
-        )}
-
         {view.status === "idle" && (
           <>
             <p className={TEXT.body}>
@@ -404,8 +387,6 @@ export default function MatchmakingPage() {
       >
         {backLabel("PLAY")}
       </Link>
-
-      {showPaywall && <GameLimitPaywall gameType="multiplayer" onDismiss={() => setShowPaywall(false)} />}
     </main>
   );
 }

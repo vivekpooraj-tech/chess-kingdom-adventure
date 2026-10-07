@@ -6,35 +6,30 @@ import { ModalOverlay } from "@/components/ui/ModalOverlay";
 import { TEXT } from "@/lib/designSystem";
 
 const CHECKLIST = [
-  "Unlimited games vs Computer",
-  "Unlimited Multiplayer",
-  "No daily gameplay limits",
+  "All 21 Tactics lessons",
+  "Extra learning features",
   "Full Chess Mind experience",
 ];
 
 /**
- * Shown when a free child has used their 2 daily games in a category
- * (AI or multiplayer — separate counters, see
- * supabase/migrations/0019_daily_free_game_limits.sql). Reuses UpgradeButton
- * for the actual price/checkout/discount-code flow rather than
- * duplicating it — passing a custom `label` there already renders the
- * regional price as its own line with the discount toggle beneath it.
+ * Safety-net Premium prompt for Play vs Computer, shown only if the server
+ * ever refuses to start a computer game (it does not today: daily game limits
+ * were removed in supabase/migrations/0047_remove_free_game_daily_limits.sql).
+ * Playing chess is free; the copy must never imply Premium is needed to play.
+ * Reuses UpgradeButton for the actual price/checkout/discount-code flow rather
+ * than duplicating it.
  */
 export function GameLimitPaywall({
-  gameType,
   onDismiss,
 }: {
-  gameType: "ai" | "multiplayer";
+  gameType?: "ai";
   onDismiss: () => void;
 }) {
   return (
-    <ModalOverlay ariaLabel="Unlock unlimited play">
+    <ModalOverlay ariaLabel="Chess Mind Premium">
         <Logo variant="compact" size={48} />
-        <p className={`${TEXT.meta} text-premium-gold`}>♟ Unlimited Play</p>
-        <p className={TEXT.body}>
-          You've used your 2 free {gameType === "ai" ? "computer" : "multiplayer"} games for today.
-        </p>
-        <p className={TEXT.body}>Keep playing without daily limits.</p>
+        <p className={`${TEXT.meta} text-premium-gold`}>♟ Chess Mind Premium</p>
+        <p className={TEXT.body}>Chess games are free. Premium adds more ways to learn.</p>
 
         <ul className="flex flex-col items-start gap-1.5 w-full">
           {CHECKLIST.map((item) => (
@@ -44,7 +39,7 @@ export function GameLimitPaywall({
           ))}
         </ul>
 
-        <UpgradeButton tone="premium" label="Unlock Unlimited Play" />
+        <UpgradeButton tone="premium" label="Explore Premium" />
 
         <button
           type="button"

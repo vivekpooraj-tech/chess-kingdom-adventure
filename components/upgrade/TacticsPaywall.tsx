@@ -9,13 +9,12 @@ const CHECKLIST = [
   "All 21 Tactics lessons",
   "Forks, pins, skewers, and every pattern in between",
   "Full Chess Mind experience",
-  "Unlimited games vs Computer and Multiplayer",
 ];
 
 /**
  * Shown when a free child taps a locked Tactics lesson — same shape as
  * GameLimitPaywall (components/upgrade/GameLimitPaywall.tsx), just with
- * Tactics-specific copy instead of daily-game-limit copy. Reuses
+ * Tactics-specific copy. Reuses
  * UpgradeButton for the actual price/checkout/discount-code flow rather
  * than duplicating it.
  */

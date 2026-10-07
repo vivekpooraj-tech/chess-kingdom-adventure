@@ -6,7 +6,6 @@ import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, createInviteGame } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { Button } from "@/components/ui/Button";
-import { GameLimitPaywall } from "@/components/upgrade/GameLimitPaywall";
 import { getTimeControlsByCategory, TimeControl } from "@/content/timeControls";
 import { TEXT } from "@/lib/designSystem";
 
@@ -32,7 +31,7 @@ export function InviteFriendButton() {
   const blitzOptions = getTimeControlsByCategory("Blitz");
   const rapidOptions = getTimeControlsByCategory("Rapid");
   const [timeControlId, setTimeControlId] = useState(blitzOptions[3]?.id ?? blitzOptions[0].id);
-  const [showPaywall, setShowPaywall] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const options = category === "Blitz" ? blitzOptions : rapidOptions;
 
@@ -46,6 +45,7 @@ export function InviteFriendButton() {
 
   async function handleClick() {
     setLoading(true);
+    setError(null);
     try {
       const supabase = createClient();
       const user = await getVerifiedUser(supabase);
@@ -58,13 +58,10 @@ export function InviteFriendButton() {
         router.push("/choose-child");
         return;
       }
-      // create_invite_game checks the host's free-multiplayer eligibility
-      // server-side before creating anything — no credit is spent here
-      // either way, since sharing a link nobody joins isn't a game that
-      // started (see supabase/migrations/0019_daily_free_game_limits.sql).
+      // Multiplayer is free for everyone (no daily limit, migration 0047), so a missing id is a plain failure, not a paywall.
       const result = await createInviteGame(supabase, resolution.child!.id, timeControlId);
       if (result.blocked || !result.id) {
-        setShowPaywall(true);
+        setError("Couldn't create the game — please try again.");
         return;
       }
       router.push(`/online/${result.id}`);
@@ -107,7 +104,11 @@ export function InviteFriendButton() {
       <Button onClick={handleClick} disabled={loading} className="w-full sm:w-auto sm:self-end">
         {loading ? "Creating..." : "Invite a Friend to Play →"}
       </Button>
-      {showPaywall && <GameLimitPaywall gameType="multiplayer" onDismiss={() => setShowPaywall(false)} />}
+      {error && (
+        <p role="alert" className="font-classic-body text-sm text-red-300">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
