@@ -31,4 +31,3 @@ scripts/puzzle-launch-12c-decisions.json
 /device-validation/
 /tablet-test-screenshots/
 /android/.idea/
-/android/gradle.properties
