@@ -65,6 +65,16 @@
                 <data android:scheme="chesskingdom" />
             </intent-filter>
 
+            <!-- Lichess connection callback. Lichess rejects a custom scheme without a dot (so not "chesskingdom://"), and accepts a
+                 reverse-domain one: the app id. Received by CapacitorDeepLinkHandler, which sends it to /lichess/callback. Separate from the
+                 Supabase sign-in filter above, which is unchanged. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.chesskingdom.adventure" android:host="lichess" />
+            </intent-filter>
+
         </activity>
 
         <provider

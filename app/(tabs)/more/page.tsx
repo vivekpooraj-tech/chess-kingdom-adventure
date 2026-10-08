@@ -11,6 +11,7 @@ import { SignOutRow } from "@/components/more/SignOutRow";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { TEXT } from "@/lib/designSystem";
 import { ModePicker } from "@/components/mode/ModePicker";
+import { LichessConnectRow } from "@/components/lichess/LichessConnectRow";
 
 /**
  * More (mobile UI/UX redesign) — the 5th primary tab. Chess Kingdom moved
@@ -140,6 +141,9 @@ export default async function MorePage() {
               <html> + localStorage. */}
           <ModePicker />
         </section>
+
+        {/* Renders nothing unless this profile is an adult (18+): minors and profiles with no age band never see it. */}
+        <LichessConnectRow childId={child.id} ageBand={child.age_band ?? null} />
 
         <section className="w-full flex flex-col gap-2">
           <p className={`${TEXT.caption} uppercase tracking-wide`}>Family</p>

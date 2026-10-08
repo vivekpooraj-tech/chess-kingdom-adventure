@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Capacitor } from "@capacitor/core";
 import { createClient } from "@/lib/supabase/client";
+import { LICHESS_NATIVE_SCHEME, WEB_CALLBACK_PATH } from "@/lib/lichess/oauth";
 
 // OAuth deep-link idempotency guards. Deliberately module scope — NOT React
 // state or a ref — so they survive a component remount / StrictMode
@@ -12,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 // a second exchangeCodeForSession() on an already-consumed code fails and
 // would bounce a successfully signed-in user to /sign-in?error=auth_failed.
 const handledOAuthCodes = new Set<string>();
+const LICHESS_HANDLED_KEY = "cm:lichess:handled-link";
 let oauthExchangeInFlight = false;
 
 /**
@@ -59,6 +61,22 @@ export function CapacitorDeepLinkHandler() {
       try {
         url = new URL(rawUrl);
       } catch {
+        return;
+      }
+      // Lichess connection callback (Phase 1 of the Lichess fallback). Lichess rejects a dot-less custom scheme, so this one is the app id.
+      // It is routed to the in-app callback page, which validates state and exchanges the code; the Supabase branch below is untouched.
+      if (url.protocol === `${LICHESS_NATIVE_SCHEME}:` && url.host === "lichess") {
+        // Capacitor keeps returning a cold-start launch URL from getLaunchUrl() for the life of the app, and appUrlOpen can repeat it, so this
+        // handler would re-route to the (single-use) callback on every full page load. Each real callback carries a unique state, so a link
+        // already handled in this WebView session is simply ignored. sessionStorage dies with the process, so a genuine new cold start works.
+        try {
+          if (sessionStorage.getItem(LICHESS_HANDLED_KEY) === url.href) return;
+          sessionStorage.setItem(LICHESS_HANDLED_KEY, url.href);
+        } catch {
+          /* storage unavailable: fall through, the callback page is itself idempotent per state */
+        }
+        await closeBrowserTab();
+        router.push(`${WEB_CALLBACK_PATH}${url.search}`);
         return;
       }
       if (url.protocol !== "chesskingdom:") return;
@@ -116,7 +134,7 @@ export function CapacitorDeepLinkHandler() {
       // on that alone, since a plain https launch URL (App Links) isn't
       // this flow's concern either.
       const launch = await App.getLaunchUrl();
-      if (!cancelled && launch?.url?.startsWith("chesskingdom://")) {
+      if (!cancelled && (launch?.url?.startsWith("chesskingdom://") || launch?.url?.startsWith(`${LICHESS_NATIVE_SCHEME}://`))) {
         await handleUrl(launch.url);
       }
 
