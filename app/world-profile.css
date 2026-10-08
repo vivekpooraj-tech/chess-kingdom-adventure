@@ -823,3 +823,113 @@ html[data-layout="phone"] .pf > header {
     transition: none;
   }
 }
+
+/* ==========================================================================
+   Chess Mind Experience selector on Profile (components/mode/ModePicker, variant="profile").
+   The options reuse each world's own "Customize" rows (.pf-*-custom__*); this only adds what a selectable row needs: a button reset, a
+   selected state (a check mark, never colour alone) and focus. Same three experiences in every world; nothing is blue in Atelier.
+   ========================================================================== */
+.pf-en-xp,
+.pf-at-xp,
+.pf-cl-xp {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.pf-en-xp__help,
+.pf-at-xp__help,
+.pf-cl-xp__help {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: rgb(var(--cm-ivory) / 0.75);
+}
+.pf-at-xp__help {
+  color: rgb(var(--pf-stone));
+}
+.pf-cl-xp__help {
+  color: rgb(var(--world-silver));
+}
+.pf-en-xp__opt,
+.pf-at-xp__opt,
+.pf-cl-xp__opt {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.pf-at-xp__opt,
+.pf-cl-xp__opt {
+  background: transparent;
+  border: 0;
+  padding-left: 0.75rem; /* room for the selected marker, so selecting never shifts the row */
+}
+.pf-at-xp__item {
+  border-bottom: 1px solid rgb(var(--pf-ivory) / 0.1);
+}
+.pf-cl-xp__item {
+  border-bottom: 1px solid rgb(var(--world-parchment) / 0.08);
+}
+.pf-en-xp__list {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 64rem) {
+  .pf-en-xp__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.pf-en-xp__check,
+.pf-at-xp__check,
+.pf-cl-xp__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--cm-ivory) / 0.35);
+}
+.pf-en-xp__opt[data-selected] {
+  border-color: rgb(var(--cm-gold) / 0.95);
+  box-shadow: 0 0 0 1px rgb(var(--cm-gold) / 0.6), 0 8px 24px rgb(var(--cm-gold) / 0.12);
+}
+.pf-en-xp__opt[data-selected] .pf-en-xp__check {
+  background: rgb(var(--cm-gold));
+  border-color: rgb(var(--cm-gold));
+  color: rgb(28 19 48);
+}
+.pf-at-xp__opt[data-selected] {
+  box-shadow: inset 3px 0 0 rgb(var(--pf-copper));
+}
+.pf-at-xp__check {
+  border-color: rgb(var(--pf-ivory) / 0.35);
+}
+.pf-at-xp__opt[data-selected] .pf-at-xp__check {
+  background: rgb(var(--pf-copper));
+  border-color: rgb(var(--pf-copper));
+  color: rgb(17 16 15);
+}
+.pf-cl-xp__opt[data-selected] {
+  background: rgb(var(--world-parchment) / 0.05);
+  box-shadow: inset 3px 0 0 rgb(var(--world-champagne));
+}
+.pf-cl-xp__check {
+  border-color: rgb(var(--world-champagne) / 0.45);
+}
+.pf-cl-xp__opt[data-selected] .pf-cl-xp__check {
+  background: rgb(var(--world-champagne));
+  border-color: rgb(var(--world-champagne));
+  color: rgb(8 14 12);
+}
+.pf-en-xp__opt:focus-visible {
+  outline: 3px solid rgb(var(--cm-gold));
+  outline-offset: 2px;
+}
+.pf-at-xp__opt:focus-visible {
+  outline: 3px solid rgb(var(--pf-copper));
+  outline-offset: -3px;
+}
+.pf-cl-xp__opt:focus-visible {
+  outline: 3px solid rgb(var(--world-champagne));
+  outline-offset: -3px;
+}

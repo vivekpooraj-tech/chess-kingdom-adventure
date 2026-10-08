@@ -26,7 +26,7 @@ export const DEFAULT_MODE: ModeId = "classic-pro";
 
 export interface ModeDefinition {
   id: ModeId;
-  /** The Chess Mind "world" name, e.g. "Enchanted Kingdom". */
+  /** The user-facing experience name, e.g. "Enchanted Kingdom". */
   name: string;
   /** Short tagline shown under the name, e.g. "Play & Discover". */
   tagline: string;
@@ -53,7 +53,7 @@ export const MODES: ModeDefinition[] = [
   },
   {
     id: "classic-pro",
-    name: "Classic / Pro",
+    name: "Classic Pro",
     tagline: "Play & Compete",
     description: "The familiar, chess-first Chess Mind experience.",
     emoji: "♙",

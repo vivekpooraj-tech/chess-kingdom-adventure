@@ -36,6 +36,14 @@ export function WorldScope({
       setWorld(worldFromMode(mode));
     }
     setResolved(true);
+
+    if (pinned) return;
+    // The Chess Mind Experience selector can sit on a world-scoped page (Profile): follow `html[data-mode]` when it changes while
+    // mounted, so the page re-skins at once instead of waiting for the next navigation. Never fires if the mode does not change.
+    const root = document.documentElement;
+    const observer = new MutationObserver(() => setWorld(worldFromMode(root.getAttribute("data-mode"))));
+    observer.observe(root, { attributes: true, attributeFilter: ["data-mode"] });
+    return () => observer.disconnect();
   }, [pinned]);
 
   return (

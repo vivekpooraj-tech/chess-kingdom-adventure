@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { WorldBranch } from "@/components/layout/WorldBranch";
 import { Avatar } from "@/components/ui/Avatar";
 import { FlameIcon } from "@/components/nav/icons";
+import { ModePicker } from "@/components/mode/ModePicker";
 
 /**
  * Profile in three world presentations. The page (app/profile/page.tsx, a server component) owns ALL data and logic: the child, every
@@ -13,6 +14,7 @@ import { FlameIcon } from "@/components/nav/icons";
  *   Enchanted: a Kingdom identity card, medal stats and quest-style customise cards.
  *   Atelier:   a player dossier: a large editorial name, a ruled record, customisation as an index.
  *   Classic:   a player record: spacious identity, a ledger of figures, ruled customisation.
+ * The Chess Mind Experience selector (components/mode/ModePicker, the same control and the same state as More) sits under Customize.
  * Nothing here changes data, links or behaviour. Styles: `.pf-*` in app/world-profile.css, one section per world.
  */
 
@@ -142,6 +144,8 @@ function Enchanted(p: ProfileBodyProps) {
         <Customize p={p} cls="pf-en" />
       </section>
 
+      <ModePicker variant="profile" cls="pf-en" />
+
       {p.journey}
 
       <section className="pf-en-section" aria-labelledby="pf-en-stats">
@@ -190,6 +194,7 @@ function Atelier(p: ProfileBodyProps) {
             <h2 id="pf-at-custom" className="pf-at-eyebrow">Customize</h2>
             <Customize p={p} cls="pf-at" />
           </section>
+          <ModePicker variant="profile" cls="pf-at" />
         </div>
 
         <div className="pf-at-side">
@@ -242,6 +247,8 @@ function Classic(p: ProfileBodyProps) {
         <h2 id="pf-cl-custom" className="pf-cl-label">Customize</h2>
         <Customize p={p} cls="pf-cl" />
       </section>
+
+      <ModePicker variant="profile" cls="pf-cl" />
 
       {p.journey}
 

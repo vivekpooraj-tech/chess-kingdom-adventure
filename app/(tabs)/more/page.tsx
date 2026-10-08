@@ -135,7 +135,7 @@ export default async function MorePage() {
         </section>
 
         <section className="w-full flex flex-col gap-2">
-          {/* ModePicker draws its own "Chess Mind Worlds" label/explanation,
+          {/* ModePicker draws its own "Chess Mind Experience" label/explanation,
               so no section heading here. Client island: mode lives on
               <html> + localStorage. */}
           <ModePicker />
