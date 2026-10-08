@@ -151,6 +151,9 @@ const HAS_ROOT = `!!document.querySelector('.wt')`;
         await s.shot(`${w.id}-${v.name}-game`);
         check(`${tag}: Back to Watch returns to /watch`, (await s.click(`a.wt-back`)) && (await s.waitFor(`location.pathname==='/watch' && !location.search && !!document.querySelector('.wt-title-h1')`)));
         // ---- broadcast round ----
+        // Back to Watch remounts the home view, which re-fetches: the title is there at once but the cards arrive later. Wait for the
+        // broadcast card itself (the thing about to be tapped), not just the heading.
+        check(`${tag}: broadcast card is back after returning to Watch`, await s.waitFor(`!!document.querySelector('.wt-card[data-kind=broadcast]')`));
         check(`${tag}: open a live broadcast`, await s.click(`.wt-card[data-kind=broadcast]`));
         check(`${tag}: broadcast shows board + game list from PGN`, await s.waitFor(`document.querySelectorAll('.wt-roundlist__item').length === 2 && document.querySelectorAll('.wt-sq').length === 64`));
         check(`${tag}: broadcast game list second game opens`, (await s.click(`.wt-roundlist__item:nth-child(1)`, true), await s.click(`li:nth-child(2) .wt-roundlist__item`)) && (await s.waitFor(`/Carol Fixture/.test(document.querySelector('.wt-stage').innerText) && /FINISHED/.test(document.querySelector('.wt-stage').innerText)`)));
