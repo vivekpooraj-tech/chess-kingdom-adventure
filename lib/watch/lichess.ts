@@ -4,7 +4,7 @@ import { Chess, type Square } from "chess.js";
  * Chess Mind Watch — the ONE data layer, shared by every world. Official, documented, public Lichess endpoints only (no scraping, no
  * secrets, no account, no proxy): they send CORS headers, so the browser calls them directly.
  *   GET /api/tv/channels                    live TV game per channel (Top Rated, Rapid, Blitz, Classical, Bullet)
- *   GET /api/broadcast?nb=N                 official broadcasts (NDJSON); each carries its rounds with `ongoing`
+ *   GET /api/broadcast?nb=N                 official broadcasts (NDJSON); each carries its rounds with `ongoing` / `startsAt`
  *   GET /api/broadcast/round/{id}.pgn       a broadcast round's games, as PGN
  *   GET /game/export/{id}                   one game (JSON): players, ratings, status, moves
  * Shapes and paths were checked against the official OpenAPI spec (github.com/lichess-org/api, doc/specs): TvGame / BroadcastWithRounds /
@@ -44,7 +44,7 @@ export type WatchGame = {
   event?: string;
   /** Standard chess only; anything else is shown as unsupported rather than guessed at. */
   unsupported?: boolean;
-  /** Set when the source is documented to run a few moves behind (Lichess delays ongoing TV games by 3 moves). */
+  /** Set when the source is documented to run a few moves behind (ongoing TV games are delayed by 3 moves). */
   delayNote?: string;
 };
 
@@ -75,9 +75,26 @@ export async function fetchTv(signal: AbortSignal): Promise<TvEntry[]> {
   return out;
 }
 
-export async function fetchLiveBroadcasts(signal: AbortSignal): Promise<BroadcastCard[]> {
-  const text = await getText("/api/broadcast?nb=30&live=true", signal, "application/x-ndjson");
-  const out: BroadcastCard[] = [];
+/** A scheduled round that has not started: shown by Watch as an upcoming event. `startsAt` is Lichess's own scheduled start (ms). */
+export type UpcomingEvent = { tourId: string; name: string; roundId: string; startsAt: number };
+
+export type Broadcasts = { live: BroadcastCard[]; upcoming: UpcomingEvent[] };
+
+/** A round that should already have begun but has not is still shown (at its scheduled time) for this long; after that it is dropped. */
+const LATE_START_GRACE_MS = 3 * 60 * 60 * 1000;
+
+/**
+ * Official broadcasts: ONE request feeds both "Live now" and "Upcoming". The endpoint lists tournaments that have a round scheduled or
+ * ongoing (sorted by tier), each with its rounds, so nothing is inferred and nothing is invented:
+ *   live     = a round Lichess flags `ongoing` and not finished.
+ *   upcoming = the tournament's next round with a real scheduled `startsAt` that has not started (rounds that start "after the previous
+ *              one" carry no time, so they are left out rather than guessed). One entry per tournament, earliest first.
+ * `nb` is how many tournaments to ask for (the API's maximum is 100).
+ */
+export async function fetchBroadcasts(signal: AbortSignal, nb = 40, now = Date.now()): Promise<Broadcasts> {
+  const text = await getText(`/api/broadcast?nb=${nb}`, signal, "application/x-ndjson");
+  const live: BroadcastCard[] = [];
+  const upcoming: UpcomingEvent[] = [];
   for (const line of text.split("\n")) {
     if (!line.trim()) continue;
     let b: any;
@@ -89,20 +106,27 @@ export async function fetchLiveBroadcasts(signal: AbortSignal): Promise<Broadcas
     const tour = b?.tour;
     if (!tour?.id || !tour?.name) continue;
     const rounds: any[] = Array.isArray(b.rounds) ? b.rounds : b.round ? [b.round] : [];
-    // The round that is being played right now. Nothing is inferred from start times: only Lichess's own `ongoing` flag counts as live.
-    const live = rounds.filter((r) => r?.ongoing === true && !r?.finished).pop();
-    if (!live?.id) continue;
-    out.push({
-      tourId: String(tour.id),
-      name: String(tour.name),
-      tier: typeof tour.tier === "number" ? tour.tier : undefined,
-      description: typeof tour.description === "string" ? tour.description : undefined,
-      roundId: String(live.id),
-      roundName: String(live.name ?? "Live round"),
-      roundUrl: typeof live.url === "string" ? live.url : undefined,
-    });
+    const ongoing = rounds.filter((r) => r?.ongoing === true && !r?.finished).pop();
+    if (ongoing?.id) {
+      live.push({
+        tourId: String(tour.id),
+        name: String(tour.name),
+        tier: typeof tour.tier === "number" ? tour.tier : undefined,
+        description: typeof tour.description === "string" ? tour.description : undefined,
+        roundId: String(ongoing.id),
+        roundName: String(ongoing.name ?? "Live round"),
+        roundUrl: typeof ongoing.url === "string" ? ongoing.url : undefined,
+      });
+    }
+    const next = rounds
+      .filter((r) => r?.id && !r.ongoing && !r.finished && !r.finishedAt && typeof r.startsAt === "number" && r.startsAt >= now - LATE_START_GRACE_MS)
+      .sort((a, c) => a.startsAt - c.startsAt)[0];
+    if (next) upcoming.push({ tourId: String(tour.id), name: String(tour.name), roundId: String(next.id), startsAt: next.startsAt });
   }
-  return out.sort((a, b) => (b.tier ?? 0) - (a.tier ?? 0));
+  return {
+    live: live.sort((a, c) => (c.tier ?? 0) - (a.tier ?? 0)),
+    upcoming: upcoming.sort((a, c) => a.startsAt - c.startsAt),
+  };
 }
 
 function replay(sans: string[]): { fen: string; lastMove?: { from: Square; to: Square }; moves: string[]; ok: boolean } {
@@ -168,7 +192,7 @@ export async function fetchTvGame(gameId: string, signal: AbortSignal): Promise<
     statusText,
     event: typeof g.perf === "string" ? g.perf[0].toUpperCase() + g.perf.slice(1) : undefined,
     unsupported: (g.variant && g.variant !== "standard") || !r.ok || undefined,
-    delayNote: live ? "Shown a few moves behind, as Lichess requires for games in progress." : undefined,
+    delayNote: live ? "Shown a few moves behind, as live games are delayed." : undefined,
   };
 }
 

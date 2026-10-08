@@ -25,10 +25,29 @@ let pass = 0, fail = 0; const failures = [];
 const check = (name, ok, detail) => { if (ok) pass++; else { fail++; failures.push(name + (detail ? "  -> " + detail : "")); } };
 
 const MOVES = "e4 e5 Nf3 Nc6 Bb5 a6";
+
+// Local-time offsets so "Tomorrow · 10:00 AM" is deterministic whatever day the test runs.
+const AT = (days, h, m) => { const d = new Date(); d.setDate(d.getDate() + days); d.setHours(h, m, 0, 0); return d.getTime(); };
+const ND = (o) => JSON.stringify(o) + "\n";
+// Shape of the real /api/broadcast NDJSON: { tour, rounds[{id,name,ongoing,startsAt,finished,...}] }. Includes things that must NOT show:
+// a finished tournament, a round whose start passed long ago and never began (stale), and a round with no scheduled time.
+function BROADCASTS(liveOnly) {
+  const live = ND({ tour: { id: "t1", name: "Fixture Open 2099", tier: 4 }, rounds: [{ id: "r0", name: "Round 1", finished: true }, { id: "r1abcdef", name: "Round 2", ongoing: true }, ...(liveOnly ? [] : [{ id: "r2abcdef", name: "Round 3", startsAt: AT(1, 10, 0) }])] });
+  if (liveOnly) return live;
+  return live
+    + ND({ tour: { id: "t2", name: "Not Live Cup" }, rounds: [{ id: "r9", name: "Round 1", finished: true, finishedAt: AT(-3, 18, 0) }] })
+    + ND({ tour: { id: "t3", name: "Evening Cup" }, rounds: [{ id: "r3abcdef", name: "Round 1", startsAt: AT(1, 14, 30) }] })
+    + ND({ tour: { id: "t4", name: "Grand Fixture Swiss" }, rounds: [{ id: "r4abcdef", name: "Round 1", startsAt: AT(6, 11, 0) }] })
+    + ND({ tour: { id: "t5", name: "Far Future Classic" }, rounds: [{ id: "r5abcdef", name: "Round 1", startsAt: AT(40, 9, 0) }] })
+    + ND({ tour: { id: "t6", name: "Stale Fixture Cup" }, rounds: [{ id: "r6abcdef", name: "Round 1", startsAt: AT(-2, 10, 0) }] })
+    + ND({ tour: { id: "t7", name: "Untimed Fixture Cup" }, rounds: [{ id: "r7abcdef", name: "Round 1", startsAfterPrevious: true }] });
+}
+
 const FIX = {
   // Keys and shape as in the real /api/tv/channels response (camelCase; each is a TvGame: user{id,name,title?}, rating, gameId, color).
   tv: { best: { user: { name: "FixtureGM", id: "fixturegm", title: "GM" }, rating: 2750, gameId: "tvTop0001", color: "white" }, rapid: { user: { name: "RapidFixture", id: "rapidfixture" }, rating: 2400, gameId: "tvRapid01", color: "black" }, blitz: { user: { name: "BlitzFixture", id: "blitzfixture", title: "IM" }, rating: 2600, gameId: "tvBlitz01", color: "white" }, classical: { user: { name: "ClassicalFixture", id: "classicalfixture" }, rating: 2500, gameId: "tvClass01", color: "white" }, bullet: { user: { name: "BulletFixture", id: "bulletfixture" }, rating: 2900, gameId: "tvBull001", color: "black" }, bot: { user: { name: "BotFixture", id: "botfixture" }, rating: 2000, gameId: "tvBot00001", color: "white" } },
-  broadcast: JSON.stringify({ tour: { id: "t1", name: "Fixture Open 2099", tier: 4 }, rounds: [{ id: "r0", name: "Round 1", finished: true }, { id: "r1abcdef", name: "Round 2", ongoing: true }] }) + "\n" + JSON.stringify({ tour: { id: "t2", name: "Not Live Cup" }, rounds: [{ id: "r9", name: "Round 1", finished: true }] }) + "\n",
+  broadcast: BROADCASTS(),
+  broadcastLiveOnly: BROADCASTS(true),
   round: `[Event "Fixture Open 2099"]\n[White "Alice Fixture"]\n[Black "Bob Fixture"]\n[WhiteElo "2600"]\n[BlackElo "2550"]\n[WhiteTitle "GM"]\n[Result "*"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 *\n\n[Event "Fixture Open 2099"]\n[White "Carol Fixture"]\n[Black "Dan Fixture"]\n[Result "1-0"]\n\n1. d4 d5 2. c4 e6 3. Nc3 Nf6 1-0\n`,
   game: { id: "tvTop0001", variant: "standard", speed: "blitz", perf: "blitz", status: "started", players: { white: { user: { name: "FixtureGM", title: "GM" }, rating: 2750 }, black: { user: { name: "OtherFixture" }, rating: 2700 } }, moves: MOVES },
 };
@@ -54,8 +73,9 @@ async function session(v, scenario) {
       if (state.scenario === "error") return reply(p, 503, "down", "text/plain");
       if (state.scenario === "slow") { await sleep(4000); }
       const empty = state.scenario === "empty";
+      if (state.scenario === "bcerror" && u.pathname === "/api/broadcast") return reply(p, 503, "down", "text/plain");
       if (u.pathname === "/api/tv/channels") return reply(p, 200, JSON.stringify(empty ? {} : FIX.tv), "application/json");
-      if (u.pathname === "/api/broadcast") return reply(p, 200, empty ? "" : FIX.broadcast, "application/x-ndjson");
+      if (u.pathname === "/api/broadcast") return reply(p, 200, empty ? "" : state.scenario === "noup" ? FIX.broadcastLiveOnly : FIX.broadcast, "application/x-ndjson");
       if (u.pathname.startsWith("/api/broadcast/round/")) return reply(p, 200, FIX.round, "application/x-chess-pgn");
       if (u.pathname.startsWith("/game/export/")) return reply(p, 200, JSON.stringify(FIX.game), "application/json");
       return reply(p, 404, "no", "text/plain");
@@ -71,7 +91,7 @@ async function session(v, scenario) {
   await send("Emulation.setDeviceMetricsOverride", { width: v.w, height: v.h, deviceScaleFactor: v.dpr || 2, mobile: v.w < 600 });
   await send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, bottom: v.safeBottom || 0, left: 0, right: 0 } });
   await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{localStorage.setItem('chessmind-mode','${v.mode}')}catch(e){}` });
-  const ev = async (expr) => { const r = (await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true })).result; if (r.exceptionDetails) throw new Error("page script failed: " + (r.exceptionDetails.exception?.description || r.exceptionDetails.text)); return r.result.value; };
+  const ev = async (expr) => { const resp = await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true }); const r = resp.result; if (!r) throw new Error("devtools rejected expression: " + JSON.stringify(resp.error) + " :: " + String(expr).slice(0, 160)); if (r.exceptionDetails) throw new Error("page script failed: " + (r.exceptionDetails.exception?.description || r.exceptionDetails.text)); return r.result.value; };
   const waitFor = async (expr, ms = 20000) => { const t = Date.now(); while (Date.now() - t < ms) { try { if (await ev(expr)) return true; } catch {} await sleep(300); } return false; };
   const open = async (p) => { await send("Page.navigate", { url: BASE + p }); await sleep(1200); };
   const click = async (sel) => { const pt = await ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(!e)return null;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]})()`); if (!pt) return false; await sleep(200);
@@ -104,22 +124,33 @@ const HAS_ROOT = `!!document.querySelector('.wt')`;
         check(`${tag}: loading state says "Finding live chess..."`, await s.waitFor(`document.body.innerText.includes('Finding live chess...')`, 8000));
         // ---- ok ----
         s.state.scenario = "ok"; await s.open("/watch");
-        const ok = await s.waitFor(`document.querySelectorAll('.wt-card').length >= 5`);
+        const ok = await s.waitFor(`document.querySelectorAll('.wt-card').length >= 2 && document.querySelectorAll('.wt-up').length >= 3`);
         check(`${tag}: live sections render from the (fixture) feed`, ok, await s.ev("document.body.innerText.slice(0,300)"));
         const t = await s.ev(`({h1: document.querySelector('.wt-title-h1')?.innerText, sub: document.querySelector('.wt-sub')?.innerText, kick: document.querySelector('.wt-kicker')?.innerText, secs:[...document.querySelectorAll('.wt-h2')].map(e=>e.innerText.trim()), world: document.querySelector('[data-world]')?.getAttribute('data-world')})`);
         check(`${tag}: world is ${w.id}`, t.world === w.id, t.world);
         check(`${tag}: title`, t.h1 === (w.id === "enchanted" ? "Watch a Chess Adventure" : "Live Chess"), t.h1);
         check(`${tag}: kicker WATCH + subtitle`, /watch/i.test(t.kick) && t.sub === "Watch chess happening around the world.", JSON.stringify(t));
-        check(`${tag}: sections Live now / Tournaments / Rapid & blitz / Featured`, ["Live now", "Tournaments", "Rapid & blitz", "Featured"].every((x) => t.secs.some((y) => y.replace(/^[^A-Za-z]+/, "").toLowerCase() === x.toLowerCase())), JSON.stringify(t.secs));
+        check(`${tag}: the page has exactly two areas: Live now, Upcoming`, JSON.stringify(t.secs.map((y) => y.replace(/^[^A-Za-z]+/, "").toLowerCase())) === JSON.stringify(["live now", "upcoming"]), JSON.stringify(t.secs));
         const cards = await s.ev(`[...document.querySelectorAll('.wt-card')].map(c=>({t:c.innerText, h:c.getBoundingClientRect().height, live:!!c.querySelector('.wt-live')}))`);
-        check(`${tag}: every card has a LIVE word (not colour only) and >= 44px height`, cards.every((c) => c.live && /LIVE/.test(c.t) && c.h >= 44), JSON.stringify(cards.map((c) => c.h)));
-        check(`${tag}: only real feed items shown (finished broadcast absent, no invented games)`, !/Not Live Cup/.test(await s.ev("document.body.innerText")) && /Fixture Open 2099/.test(await s.ev("document.body.innerText")));
+        check(`${tag}: live cards: one broadcast + one live game, each with LIVE (a word, not just colour), "Watch Live", >= 44px`, cards.length === 2 && cards.every((c) => c.live && /LIVE/.test(c.t) && /Watch Live/.test(c.t) && c.h >= 44), JSON.stringify(cards));
+        const body = await s.ev("document.querySelector('.wt').innerText");
+        check(`${tag}: live broadcast shows its name and round, not a roster/board list`, /Fixture Open 2099/.test(body) && /Round 2/.test(body) && !/Alice Fixture|Bob Fixture/.test(body));
+        const ups = await s.ev(`[...document.querySelectorAll('.wt-up')].map(e=>({name:e.querySelector('.wt-up__name')?.innerText, when:e.querySelector('.wt-up__when')?.innerText, iso:e.querySelector('time')?.getAttribute('datetime')}))`);
+        check(`${tag}: upcoming shows only the next 3 real events, soonest first, as "Tomorrow · h:mm AM/PM" / "Mon D · h:mm"`, ups.length === 3 && ups[0].name === "Fixture Open 2099" && ups[1].name === "Evening Cup" && ups[2].name === "Grand Fixture Swiss" && /^Tomorrow · \d{1,2}:\d{2}\s?[AP]M$/.test(ups[0].when) && /^Tomorrow · /.test(ups[1].when) && /^[A-Z][a-z]{2} \d{1,2} · \d{1,2}:\d{2}/.test(ups[2].when) && ups.every((u) => !isNaN(Date.parse(u.iso))), JSON.stringify(ups));
+        check(`${tag}: upcoming times are the real scheduled times (10:00 and 14:30 local)`, new Date(ups[0].iso).getHours() === 10 && new Date(ups[0].iso).getMinutes() === 0 && new Date(ups[1].iso).getHours() === 14 && new Date(ups[1].iso).getMinutes() === 30, JSON.stringify(ups.slice(0, 2)));
+        check(`${tag}: no invented / ineligible events (finished, stale, untimed, beyond the next 3)`, !/Not Live Cup|Stale Fixture Cup|Untimed Fixture Cup|Far Future Classic/.test(body), body.slice(0, 400));
+        check(`${tag}: "View Calendar →" is present`, (await s.ev("!!document.querySelector('a[data-cal]')")) && /View Calendar →/.test(body));
+        check(`${tag}: no Lichess wording, logo or external link anywhere on Watch`, !/lichess/i.test(await s.ev("document.querySelector('.wt').innerText + ' ' + [...document.querySelectorAll('.wt a, .wt img')].map(e=>(e.getAttribute('href')||'')+(e.getAttribute('src')||'')+(e.getAttribute('alt')||'')).join(' ')")) && (await s.ev("document.querySelectorAll('.wt a[target=_blank], .wt img').length")) === 0);
+        check(`${tag}: calm page: at most 5 content blocks (<= 2 live + 3 upcoming rows) and no stats/roster/filters`, (await s.ev("document.querySelectorAll('.wt-card, .wt-up').length")) <= 5 && (await s.ev("document.querySelectorAll('.wt select, .wt input, .wt table').length")) === 0);
         check(`${tag}: no horizontal overflow`, await s.ev(NO_OVERFLOW));
         // Never "video" for board-only content.
         check(`${tag}: nothing labelled video`, !/video/i.test(await s.ev("document.querySelector('.wt').innerText")));
         // ---- navigation chrome ----
         const nav = await s.ev(`(()=>{const w=document.querySelector('[data-nav=watch]');const items=[...document.querySelectorAll('.layout-bottom-nav [data-nav]')].map(e=>e.getAttribute('data-nav'));return {tag:w&&w.tagName,href:w&&w.getAttribute('href'),disabled:!!(w&&(w.disabled||w.getAttribute('aria-disabled'))),soon:!!document.querySelector('[data-soon]')||/\\bSoon\\b/.test(document.querySelector('.layout-bottom-nav')?.innerText||''),cur:w&&w.getAttribute('aria-current'),items,hrefs:Object.fromEntries([...document.querySelectorAll('.layout-bottom-nav a[data-nav]')].map(e=>[e.getAttribute('data-nav'),e.getAttribute('href')]))}})()`);
         check(`${tag}: Watch is a real link to /watch, not disabled, no Soon, active on /watch`, nav.tag === "A" && nav.href === "/watch" && !nav.disabled && !nav.soon && nav.cur === "page", JSON.stringify(nav));
+        // One Watch per layout: both nav trees are in the DOM and CSS hides the other, so count the VISIBLE ones.
+        const vis = await s.ev(`[...document.querySelectorAll('[data-nav=watch]')].filter(e=>e.offsetWidth&&e.offsetHeight).map(e=>({side:!!e.closest('.app-sidenav'),bottom:!!e.closest('.layout-bottom-nav'),href:e.getAttribute('href'),disabled:!!(e.disabled||e.getAttribute('aria-disabled')),soon:/soon/i.test(e.textContent)}))`);
+        check(`${tag}: exactly one visible Watch (${v.w < 1024 ? "bottom bar" : "sidebar"}), enabled, no Soon, -> /watch`, vis.length === 1 && vis[0].href === "/watch" && !vis[0].disabled && !vis[0].soon && (v.w < 1024 ? vis[0].bottom : vis[0].side), JSON.stringify(vis));
         if (v.w < 1024) {
           check(`${tag}: bottom nav order unchanged`, JSON.stringify(nav.items.filter((x) => x !== "play")) === JSON.stringify(["home", "school", "puzzles", "watch", "profile"]), JSON.stringify(nav.items));
           check(`${tag}: Home/School/Puzzles/Profile hrefs unchanged + Play button kept`, nav.hrefs.home === "/home" && nav.hrefs.school === "/chess-school" && nav.hrefs.puzzles === "/puzzles" && nav.hrefs.profile === "/profile" && nav.hrefs.play === "/play", JSON.stringify(nav.hrefs));
@@ -147,6 +178,7 @@ const HAS_ROOT = `!!document.querySelector('.wt')`;
         const before = await s.ev(`document.querySelector('.wt-board').outerHTML`);
         await s.click(`.wt-sq`); await sleep(400);
         check(`${tag}: clicking the board changes nothing`, (await s.ev(`document.querySelector('.wt-board').outerHTML`)) === before);
+        check(`${tag}: game view has no Lichess wording or external link`, !/lichess/i.test(await s.ev("document.querySelector('.wt').innerText")) && (await s.ev("document.querySelectorAll('.wt a[target=_blank]').length")) === 0);
         check(`${tag}: no overflow in game view`, await s.ev(NO_OVERFLOW));
         await s.shot(`${w.id}-${v.name}-game`);
         check(`${tag}: Back to Watch returns to /watch`, (await s.click(`a.wt-back`)) && (await s.waitFor(`location.pathname==='/watch' && !location.search && !!document.querySelector('.wt-title-h1')`)));
@@ -157,6 +189,15 @@ const HAS_ROOT = `!!document.querySelector('.wt')`;
         check(`${tag}: open a live broadcast`, await s.click(`.wt-card[data-kind=broadcast]`));
         check(`${tag}: broadcast shows board + game list from PGN`, await s.waitFor(`document.querySelectorAll('.wt-roundlist__item').length === 2 && document.querySelectorAll('.wt-sq').length === 64`));
         check(`${tag}: broadcast game list second game opens`, (await s.click(`.wt-roundlist__item:nth-child(1)`, true), await s.click(`li:nth-child(2) .wt-roundlist__item`)) && (await s.waitFor(`/Carol Fixture/.test(document.querySelector('.wt-stage').innerText) && /FINISHED/.test(document.querySelector('.wt-stage').innerText)`)));
+        // ---- calendar ----
+        check(`${tag}: back to Watch from the broadcast`, (await s.click(`a.wt-back`)) && (await s.waitFor(`location.pathname==='/watch' && !location.search && !!document.querySelector('a[data-cal]')`)));
+        check(`${tag}: View Calendar opens the calendar`, (await s.click(`a[data-cal]`)) && (await s.waitFor(`location.search==='?view=calendar' && document.querySelectorAll('.wt-cal__row').length > 0`)));
+        const cal = await s.ev(`({months:[...document.querySelectorAll('.wt-month > .wt-h2')].map(e=>e.innerText.trim()), rows:[...document.querySelectorAll('.wt-cal__row')].map(r=>({d:r.querySelector('.wt-cal__date')?.innerText, n:r.querySelector('.wt-cal__name')?.innerText, t:r.querySelector('.wt-cal__time')?.innerText, iso:r.querySelector('time')?.getAttribute('datetime')})), title:document.querySelector('.wt-game__title')?.innerText})`);
+        check(`${tag}: calendar lists the 4 real upcoming events (incl. the one beyond the home's next 3), chronological, grouped by month`, cal.rows.length === 4 && cal.rows.map((r) => r.n).join("|") === "Fixture Open 2099|Evening Cup|Grand Fixture Swiss|Far Future Classic" && cal.rows.every((r, i, a) => i === 0 || Date.parse(a[i - 1].iso) <= Date.parse(r.iso)) && cal.months.length >= 2 && cal.months.length <= 3 && cal.rows.every((r) => /^[A-Z][a-z]{2} \d{1,2}$/.test(r.d) && /\d:\d{2}/.test(r.t)), JSON.stringify(cal));
+        check(`${tag}: calendar excludes finished / stale / untimed events`, !/Not Live Cup|Stale Fixture Cup|Untimed Fixture Cup/.test(await s.ev("document.querySelector('.wt').innerText")));
+        check(`${tag}: calendar is simple (no filters/inputs/tables), no Lichess wording, no overflow`, (await s.ev("document.querySelectorAll('.wt select, .wt input, .wt table, .wt button').length")) === 0 && !/lichess/i.test(await s.ev("document.querySelector('.wt').innerText")) && (await s.ev(NO_OVERFLOW)));
+        await s.shot(`${w.id}-${v.name}-calendar`);
+        check(`${tag}: calendar Back to Watch returns to the Watch home`, (await s.click(`a.wt-back`)) && (await s.waitFor(`location.pathname==='/watch' && !location.search && !!document.querySelector('.wt-title-h1')`)));
         // ---- read-only network ----
         check(`${tag}: requests use the documented query (live=true broadcasts, camelCase TV channels)`, !LIVE ? s.lichessReqs.some((r) => r === "GET /api/broadcast") && s.lichessReqs.some((r) => r === "GET /api/tv/channels") : true, JSON.stringify(s.lichessReqs.slice(0, 6)));
         check(`${tag}: only GET requests ever sent to Lichess`, !LIVE ? s.lichessReqs.every((r) => /^(GET|OPTIONS) /.test(r)) && s.lichessReqs.length > 0 : true, JSON.stringify(s.lichessReqs.slice(0, 6)));
@@ -168,19 +209,34 @@ const HAS_ROOT = `!!document.querySelector('.wt')`;
         const e = await session({ ...v, mode: w.mode }, "empty");
         try {
           await e.open("/watch");
-          check(`${tag}: empty state`, await e.waitFor(`/No live broadcasts right now\\./.test(document.body.innerText) && /Check back soon for more chess\\./.test(document.body.innerText)`) && (await e.ev("document.querySelectorAll('.wt-card').length")) === 0);
-          check(`${tag}: empty state has no overflow, no errors`, (await e.ev(NO_OVERFLOW)) && e.logs.length === 0, JSON.stringify(e.logs));
+          check(`${tag}: empty states`, await e.waitFor(`/No live games right now\\./.test(document.body.innerText) && /No upcoming chess events right now\\./.test(document.body.innerText)`) && (await e.ev("document.querySelectorAll('.wt-card, .wt-up').length")) === 0 && !(await e.ev("!!document.querySelector('a[data-cal]')")));
+          check(`${tag}: empty states have no overflow, no errors`, (await e.ev(NO_OVERFLOW)) && e.logs.length === 0, JSON.stringify(e.logs));
           await e.shot(`${w.id}-${v.name}-empty`);
+          await e.open("/watch?view=calendar");
+          check(`${tag}: empty calendar says there are no upcoming events`, await e.waitFor(`/No upcoming chess events right now\\./.test(document.body.innerText)`));
         } finally { e.close(); }
+        const n = await session({ ...v, mode: w.mode }, "noup");
+        try {
+          await n.open("/watch");
+          check(`${tag}: live items but no upcoming: Upcoming says so, live still shown`, await n.waitFor(`document.querySelectorAll('.wt-card').length === 2 && /No upcoming chess events right now\\./.test(document.body.innerText)`));
+        } finally { n.close(); }
+        const b = await session({ ...v, mode: w.mode }, "bcerror");
+        try {
+          await b.open("/watch");
+          check(`${tag}: upcoming source down: "Couldn't load upcoming events." + Retry, live game still shown`, await b.waitFor(`/Couldn't load upcoming events\\./.test(document.body.innerText) && !![...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='Retry') && document.querySelectorAll('.wt-card[data-kind=tv]').length === 1`));
+          b.state.scenario = "ok";
+          await b.ev(`[...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='Retry').click()`);
+          check(`${tag}: upcoming Retry recovers`, await b.waitFor(`document.querySelectorAll('.wt-up').length === 3 && !/Couldn't load upcoming events/.test(document.body.innerText)`));
+        } finally { b.close(); }
         const r = await session({ ...v, mode: w.mode }, "error");
         try {
           await r.open("/watch");
-          check(`${tag}: error state + Retry`, await r.waitFor(`/Live chess is temporarily unavailable\\./.test(document.body.innerText) && !![...document.querySelectorAll('button')].find(b=>b.innerText.trim()==='Retry')`));
+          check(`${tag}: everything down: both messages + Retry`, await r.waitFor(`/Live chess is temporarily unavailable\\./.test(document.body.innerText) && /Couldn't load upcoming events\\./.test(document.body.innerText) && !![...document.querySelectorAll('button')].find(b=>b.innerText.trim()==='Retry')`));
           const rbtn = await r.ev(`[...document.querySelectorAll('button')].find(b=>b.innerText.trim()==='Retry')?.getBoundingClientRect().height`);
           check(`${tag}: Retry is >= 44px`, rbtn >= 44, String(rbtn));
           r.state.scenario = "ok";
           await r.ev(`[...document.querySelectorAll('button')].find(b=>b.innerText.trim()==='Retry').click()`);
-          check(`${tag}: Retry recovers to live content`, await r.waitFor(`document.querySelectorAll('.wt-card').length >= 5`));
+          check(`${tag}: Retry recovers to live + upcoming`, await r.waitFor(`document.querySelectorAll('.wt-card').length >= 2 && document.querySelectorAll('.wt-up').length === 3`));
           await r.shot(`${w.id}-${v.name}-error`);
         } finally { r.close(); }
       }

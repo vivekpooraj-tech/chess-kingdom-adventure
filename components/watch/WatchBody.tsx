@@ -3,18 +3,18 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { LiveBadge, Notice } from "./Parts";
+import { CalendarView } from "./CalendarView";
 import { RoundView, TvGameView } from "./GameView";
 import { useWorld } from "@/lib/world/WorldContext";
 import { usePolled } from "@/lib/watch/usePolled";
-import { fetchLiveBroadcasts, fetchTv, type BroadcastCard, type TvEntry } from "@/lib/watch/lichess";
+import { fetchBroadcasts, fetchTv, type BroadcastCard, type TvEntry, type UpcomingEvent } from "@/lib/watch/lichess";
+import { whenLabel } from "@/lib/watch/format";
 
 /**
- * /watch — live chess from Lichess, in three world presentations.
- * ONE data layer (lib/watch), ONE set of sections, three looks: Enchanted (an adventure of glowing cards), Atelier (an editorial,
- * ruled programme), Classic (a refined broadcast board). Presentation only: the world changes the title, the section ornaments and the CSS
- * (.wt--enchanted / .wt--atelier / .wt--classic in app/world-watch.css); data, routes and behaviour are identical. Free for everyone.
- *
- * Routes (all /watch, so the one bottom-nav Watch button owns them):  /watch · /watch?tv=<gameId> · /watch?round=<roundId>&g=<n>
+ * /watch — a calm chess-TV page in three world presentations: LIVE NOW, UPCOMING, and a link to the calendar. Nothing else.
+ * ONE data layer (lib/watch), ONE structure, three looks (.wt--enchanted / .wt--atelier / .wt--classic in app/world-watch.css). Free for
+ * everyone and read-only. Routes (all /watch, so the one bottom-nav Watch button owns them):
+ *   /watch · /watch?view=calendar · /watch?tv=<gameId> · /watch?round=<roundId>&g=<n>
  */
 const COPY = {
   enchanted: { title: "Watch a Chess Adventure", kicker: "Watch" },
@@ -22,7 +22,9 @@ const COPY = {
   classic: { title: "Live Chess", kicker: "Watch" },
 } as const;
 
-const ORNAMENT = { live: "🔴", tournaments: "🏆", rapid: "⚡", featured: "🌟" } as const;
+const ORNAMENT = { live: "🔴", upcoming: "📅" } as const;
+const MAX_LIVE = 3;
+const MAX_UPCOMING = 3;
 
 function Section({
   id,
@@ -48,36 +50,51 @@ function Section({
   );
 }
 
-function TvCard({ e }: { e: TvEntry }) {
+function LiveCard({ href, kind, title, sub, title2 }: { href: string; kind: "tv" | "broadcast"; title: string; sub: string; title2?: React.ReactNode }) {
   return (
     <li>
-      <Link href={`/watch?tv=${encodeURIComponent(e.gameId)}`} className="wt-card" data-kind="tv">
+      <Link href={href} className="wt-card" data-kind={kind}>
         <span className="wt-card__top">
-          <span className="wt-card__channel">{e.channel === "Top Rated" ? "Lichess TV" : e.channel}</span>
           <LiveBadge />
         </span>
-        <span className="wt-card__main">
-          {e.player.title && <abbr className="wt-title" title={e.player.title}>{e.player.title}</abbr>}
-          {e.player.name}
-          {e.player.rating !== undefined && <span className="wt-rating">{e.player.rating}</span>}
-        </span>
-        <span className="wt-card__sub">Live game · tap to watch</span>
+        <span className="wt-card__main">{title2 ?? title}</span>
+        <span className="wt-card__sub">{sub}</span>
+        <span className="wt-card__go" aria-hidden="true">Watch Live →</span>
+        <span className="wt-sr">Watch live: {title}</span>
       </Link>
     </li>
   );
 }
 
 function BroadcastItem({ b }: { b: BroadcastCard }) {
+  return <LiveCard href={`/watch?round=${encodeURIComponent(b.roundId)}&g=0`} kind="broadcast" title={b.name} sub={b.roundName} />;
+}
+
+function TvItem({ e }: { e: TvEntry }) {
   return (
-    <li>
-      <Link href={`/watch?round=${encodeURIComponent(b.roundId)}&g=0`} className="wt-card" data-kind="broadcast">
-        <span className="wt-card__top">
-          <span className="wt-card__channel">Live Broadcast</span>
-          <LiveBadge />
-        </span>
-        <span className="wt-card__main">{b.name}</span>
-        <span className="wt-card__sub">{b.roundName}</span>
-      </Link>
+    <LiveCard
+      href={`/watch?tv=${encodeURIComponent(e.gameId)}`}
+      kind="tv"
+      title={e.player.name}
+      sub="Live game"
+      title2={
+        <>
+          {e.player.title && <abbr className="wt-title" title={e.player.title}>{e.player.title}</abbr>}
+          {e.player.name}
+          {e.player.rating !== undefined && <span className="wt-rating">{e.player.rating}</span>}
+        </>
+      }
+    />
+  );
+}
+
+export function UpcomingRow({ u, now }: { u: UpcomingEvent; now: number }) {
+  return (
+    <li className="wt-up">
+      <span className="wt-up__name">{u.name}</span>
+      <time className="wt-up__when" dateTime={new Date(u.startsAt).toISOString()}>
+        {whenLabel(u.startsAt, now)}
+      </time>
     </li>
   );
 }
@@ -85,58 +102,48 @@ function BroadcastItem({ b }: { b: BroadcastCard }) {
 function Home() {
   const world = useWorld();
   const tv = usePolled(fetchTv, 30000);
-  const bc = usePolled(fetchLiveBroadcasts, 60000);
+  const bc = usePolled((s) => fetchBroadcasts(s, 40), 60000);
+  const now = Date.now();
 
-  const loading = tv.status === "loading" && bc.status === "loading";
-  const tvList = tv.data ?? [];
-  const bcList = bc.data ?? [];
-  const nothingYet = tv.data === null && bc.data === null;
-  const bothFailed = tv.status === "error" && bc.status === "error" && nothingYet;
-  const byChannel = (...names: string[]) => tvList.filter((e) => names.includes(e.channel));
-  const top = byChannel("Top Rated");
-  const rapid = byChannel("Rapid", "Blitz");
-  const featured = byChannel("Classical", "Bullet");
-  const anything = top.length + bcList.length + rapid.length + featured.length > 0;
-  const settled = tv.data !== null && bc.data !== null;
-  const partial = (tv.status === "error" && tv.data === null) !== (bc.status === "error" && bc.data === null);
+  const top = (tv.data ?? []).filter((e) => e.channel === "Top Rated");
+  const liveBroadcasts = (bc.data?.live ?? []).slice(0, MAX_LIVE);
+  const upcoming = (bc.data?.upcoming ?? []).slice(0, MAX_UPCOMING);
+  const liveCount = liveBroadcasts.length + top.length;
+
+  const liveLoading = bc.status === "loading" && tv.status === "loading";
+  const liveFailed = liveCount === 0 && bc.data === null && tv.data === null && bc.status === "error" && tv.status === "error";
+  const liveEmpty = !liveLoading && !liveFailed && liveCount === 0 && (bc.data !== null || tv.data !== null);
+  const upLoading = bc.status === "loading";
+  const upFailed = bc.status === "error" && bc.data === null;
+  const retryAll = () => { tv.retry(); bc.retry(); };
 
   return (
     <>
-      {loading && <Notice title="Finding live chess..." />}
-      {bothFailed && <Notice tone="error" title="Live chess is temporarily unavailable." onRetry={() => { tv.retry(); bc.retry(); }} />}
-      {partial && (
-        <Notice tone="error" title="Some live chess is temporarily unavailable." onRetry={tv.status === "error" ? tv.retry : bc.retry} />
-      )}
-      {top.length > 0 && (
-        <Section id="live" label="Live now" orn="live" world={world}>
-          <ul className="wt-grid">{top.map((e) => <TvCard key={e.gameId} e={e} />)}</ul>
-        </Section>
-      )}
-      {bcList.length > 0 && (
-        <Section id="tournaments" label="Tournaments" orn="tournaments" world={world}>
-          <ul className="wt-grid">{bcList.map((b) => <BroadcastItem key={b.roundId} b={b} />)}</ul>
-        </Section>
-      )}
-      {rapid.length > 0 && (
-        <Section id="rapid" label="Rapid & blitz" orn="rapid" world={world}>
-          <ul className="wt-grid">{rapid.map((e) => <TvCard key={e.gameId} e={e} />)}</ul>
-        </Section>
-      )}
-      {featured.length > 0 && (
-        <Section id="featured" label="Featured" orn="featured" world={world}>
-          <ul className="wt-grid">{featured.map((e) => <TvCard key={e.gameId} e={e} />)}</ul>
-        </Section>
-      )}
-      {settled && !anything && (
-        <Notice title="No live broadcasts right now.">Check back soon for more chess.</Notice>
-      )}
-      <p className="wt-credit">
-        Live games and broadcasts from{" "}
-        <a href="https://lichess.org" target="_blank" rel="noopener noreferrer">
-          Lichess
-        </a>
-        . Watching is free.
-      </p>
+      <Section id="live" label="Live now" orn="live" world={world}>
+        {liveLoading && <Notice title="Finding live chess..." />}
+        {liveFailed && <Notice tone="error" title="Live chess is temporarily unavailable." onRetry={retryAll} />}
+        {liveEmpty && <p className="wt-empty">No live games right now.</p>}
+        {liveCount > 0 && (
+          <ul className="wt-grid">
+            {liveBroadcasts.map((b) => <BroadcastItem key={b.roundId} b={b} />)}
+            {top.slice(0, 1).map((e) => <TvItem key={e.gameId} e={e} />)}
+          </ul>
+        )}
+      </Section>
+
+      <Section id="upcoming" label="Upcoming" orn="upcoming" world={world}>
+        {upLoading && <p className="wt-empty" role="status">Finding upcoming events...</p>}
+        {upFailed && <Notice tone="error" title="Couldn't load upcoming events." onRetry={bc.retry} />}
+        {bc.data && upcoming.length === 0 && <p className="wt-empty">No upcoming chess events right now.</p>}
+        {upcoming.length > 0 && (
+          <>
+            <ul className="wt-uplist">{upcoming.map((u) => <UpcomingRow key={u.tourId} u={u} now={now} />)}</ul>
+            <Link href="/watch?view=calendar" className="wt-more" data-cal>
+              View Calendar →
+            </Link>
+          </>
+        )}
+      </Section>
     </>
   );
 }
@@ -151,6 +158,7 @@ export function WatchBody() {
 
   if (tv) return <div className={`wt wt--${world}`}><TvGameView id={tv} /></div>;
   if (round) return <div className={`wt wt--${world}`}><RoundView id={round} index={Number.isFinite(g) ? g : 0} /></div>;
+  if (params.get("view") === "calendar") return <div className={`wt wt--${world}`}><CalendarView /></div>;
 
   return (
     <div className={`wt wt--${world}`}>

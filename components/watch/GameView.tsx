@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { WatchBoard } from "./WatchBoard";
 import { LiveBadge, Notice, PlayerLine } from "./Parts";
 import { usePolled } from "@/lib/watch/usePolled";
-import { fetchBroadcastRound, fetchTvGame, LICHESS, type WatchGame } from "@/lib/watch/lichess";
+import { fetchBroadcastRound, fetchTvGame, type WatchGame } from "@/lib/watch/lichess";
 
 function BackToWatch() {
   return (
@@ -31,7 +31,7 @@ function MoveList({ moves }: { moves: string[] }) {
 }
 
 /** The live board, players, status and moves for one game. Read-only. */
-function GameStage({ game, stale, outUrl }: { game: WatchGame; stale: boolean; outUrl: string }) {
+function GameStage({ game, stale }: { game: WatchGame; stale: boolean }) {
   return (
     <div className="wt-stage">
       <div className="wt-stage__board">
@@ -63,9 +63,6 @@ function GameStage({ game, stale, outUrl }: { game: WatchGame; stale: boolean; o
           </p>
         )}
         <MoveList moves={game.moves} />
-        <a className="wt-ext" href={outUrl} target="_blank" rel="noopener noreferrer">
-          Open on Lichess ↗
-        </a>
       </div>
     </div>
   );
@@ -97,7 +94,7 @@ export function TvGameView({ id }: { id: string }) {
     );
   return (
     <Frame title={r.data.event ? `Live game · ${r.data.event}` : "Live game"}>
-      <GameStage game={r.data} stale={r.stale} outUrl={`${LICHESS}/${encodeURIComponent(id)}`} />
+      <GameStage game={r.data} stale={r.stale} />
     </Frame>
   );
 }
@@ -129,7 +126,7 @@ export function RoundView({ id, index }: { id: string; index: number }) {
   return (
     <Frame title={game.event ?? "Live broadcast"}>
       {liveCount === 0 && <p className="wt-muted">This broadcast has ended.</p>}
-      <GameStage game={game} stale={r.status === "error"} outUrl={`${LICHESS}/broadcast/-/-/${encodeURIComponent(id)}`} />
+      <GameStage game={game} stale={r.status === "error"} />
       <nav className="wt-roundlist" aria-label="Games in this broadcast">
         <h2 className="wt-h2">Games ({games.length})</h2>
         <ul>
