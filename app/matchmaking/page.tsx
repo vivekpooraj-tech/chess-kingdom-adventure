@@ -16,6 +16,14 @@ import { TIME_CONTROLS, DEFAULT_TIME_CONTROL_ID } from "@/content/timeControls";
  * Bullet is absent on purpose — see 0035 and scripts/test-online-clocks.js.
  */
 const LAUNCH_CONTROLS = ["3+0", "5+0", "10+0", "15+10"];
+
+/**
+ * A search must never be an endless spinner. After SLOW_AFTER_MS the screen says plainly that nobody else seems to be searching (and keeps
+ * searching); after GIVE_UP_AFTER_MS the search stops by itself, the child is taken out of the queue, and they get Try again / Play the computer.
+ * The rating window is fully open after 2 minutes (migration 0051), so 150s means everyone reachable has been considered.
+ */
+const SLOW_AFTER_MS = 45_000;
+const GIVE_UP_AFTER_MS = 150_000;
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
@@ -36,6 +44,8 @@ type ViewState =
   | { status: "loading" }
   | { status: "idle"; rating: number }
   | { status: "searching"; rating: number }
+  // The search ran its course and found nobody: behaves like idle (pick a speed, search again) plus a plain notice.
+  | { status: "timeout"; rating: number }
   | { status: "error"; rating: number; message: string };
 
 export default function MatchmakingPage() {
@@ -66,6 +76,22 @@ export default function MatchmakingPage() {
   // which would freeze the rating window at ±50, so further retries stop.
   const wideningOkRef = useRef<boolean | null>(null);
   const retryInFlightRef = useRef(false);
+  // True once the search has gone on long enough to say that nobody else seems to be around (the search itself keeps running).
+  const [slow, setSlow] = useState(false);
+  const slowTimerRef = useRef<number | null>(null);
+  const giveUpTimerRef = useRef<number | null>(null);
+  // Set the moment Find Opponent is tapped, before any state update lands, so a quick double tap cannot start two searches.
+  const startingRef = useRef(false);
+  // The id of THIS search's queue row. A 'matched' row only counts if it is that row: an old matched row from an earlier game must never
+  // pull the child into that game (the queue keeps matched rows, and "latest row" can be one of them once ours is gone).
+  const queueRowIdRef = useRef<string | null>(null);
+
+  function clearSearchTimers() {
+    if (slowTimerRef.current) window.clearTimeout(slowTimerRef.current);
+    if (giveUpTimerRef.current) window.clearTimeout(giveUpTimerRef.current);
+    slowTimerRef.current = null;
+    giveUpTimerRef.current = null;
+  }
 
   useEffect(() => {
     async function load() {
@@ -102,6 +128,7 @@ export default function MatchmakingPage() {
     return () => {
       if (view.status !== "searching") return;
       searchActiveRef.current = false;
+      clearSearchTimers();
       if (fallbackIntervalRef.current) {
         window.clearInterval(fallbackIntervalRef.current);
         fallbackIntervalRef.current = null;
@@ -120,9 +147,13 @@ export default function MatchmakingPage() {
   }, [view.status]);
 
   async function findOpponent() {
-    if (view.status !== "idle" || !childIdRef.current) return;
+    // Idle, or a finished search that found nobody (Try again). startingRef also stops a fast double tap from starting two searches.
+    if ((view.status !== "idle" && view.status !== "timeout") || !childIdRef.current || startingRef.current) return;
+    startingRef.current = true;
     const rating = view.rating;
     const childId = childIdRef.current;
+    queueRowIdRef.current = null;
+    setSlow(false);
 
     // find_or_create_match itself checks free-multiplayer eligibility
     // BEFORE joining the queue or creating anything (see
@@ -133,12 +164,14 @@ export default function MatchmakingPage() {
     try {
       result = await findOrCreateMatch(supabase, childId, rating, timeControlId);
     } catch (err) {
+      startingRef.current = false;
       setView({ status: "error", rating, message: "Couldn't start matchmaking — please try again." });
       return;
     }
 
     // Multiplayer has no daily limit (migration 0047), so the server never reports a game as blocked; if it ever did, nothing was queued, so say so plainly.
     if (result.blocked) {
+      startingRef.current = false;
       setView({ status: "error", rating, message: "Couldn't start matchmaking — please try again." });
       return;
     }
@@ -148,6 +181,7 @@ export default function MatchmakingPage() {
       return;
     }
 
+    // startingRef stays set for the whole search (released by cancel / give-up / error), so a stray second tap can never start another one.
     setView({ status: "searching", rating });
     hasNavigatedRef.current = false;
     searchActiveRef.current = true;
@@ -162,6 +196,7 @@ export default function MatchmakingPage() {
       if (hasNavigatedRef.current) return;
       hasNavigatedRef.current = true;
       searchActiveRef.current = false;
+      clearSearchTimers();
       if (fallbackIntervalRef.current) {
         window.clearInterval(fallbackIntervalRef.current);
         fallbackIntervalRef.current = null;
@@ -181,6 +216,8 @@ export default function MatchmakingPage() {
     // even exists yet.
     try {
       const immediate = await getMatchmakingQueueStatus(supabase, childId);
+      // Remember which row is ours: only a 'matched' state on THIS row may send the child to a game (see queueRowIdRef).
+      queueRowIdRef.current = immediate?.id ?? null;
       if (immediate?.status === "matched" && immediate.matchedGameId) {
         navigateToMatch(immediate.matchedGameId);
         return;
@@ -202,8 +239,9 @@ export default function MatchmakingPage() {
           filter: `child_id=eq.${childId}`,
         },
         (payload) => {
-          const row = payload.new as { status: string; matched_game_id: string | null };
-          if (row.status === "matched" && row.matched_game_id) {
+          const row = payload.new as { id?: string; status: string; matched_game_id: string | null };
+          const isOurRow = !queueRowIdRef.current || !row.id || row.id === queueRowIdRef.current;
+          if (row.status === "matched" && row.matched_game_id && isOurRow) {
             navigateToMatch(row.matched_game_id);
           }
         }
@@ -238,7 +276,7 @@ export default function MatchmakingPage() {
         try {
           const row = await getMatchmakingQueueStatus(supabase, childId);
           if (!searchActiveRef.current || hasNavigatedRef.current) return;
-          if (row?.status === "matched" && row.matchedGameId) {
+          if (row?.status === "matched" && row.matchedGameId && (!queueRowIdRef.current || row.id === queueRowIdRef.current)) {
             navigateToMatch(row.matchedGameId);
             return;
           }
@@ -269,11 +307,54 @@ export default function MatchmakingPage() {
         }
       })();
     }, 5000);
+
+    // Bounded search. First say plainly that nobody else seems to be around (the search keeps running), then stop by itself.
+    clearSearchTimers();
+    slowTimerRef.current = window.setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+    giveUpTimerRef.current = window.setTimeout(() => {
+      void (async () => {
+        if (!searchActiveRef.current || hasNavigatedRef.current) return;
+        // Stop everything first so no retry can put the child back in the queue, then leave the queue. cancelMatchmaking only removes a WAITING
+        // row, so if a match won the race at the last second our own row is already 'matched': go to that game instead of giving up.
+        searchActiveRef.current = false;
+        if (fallbackIntervalRef.current) {
+          window.clearInterval(fallbackIntervalRef.current);
+          fallbackIntervalRef.current = null;
+        }
+        if (channelRef.current) {
+          supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
+        }
+        await cancelMatchmaking(supabase, childId).catch(() => {});
+        try {
+          const row = await getMatchmakingQueueStatus(supabase, childId);
+          if (row?.status === "matched" && row.matchedGameId && row.id === queueRowIdRef.current) {
+            navigateToMatch(row.matchedGameId);
+            return;
+          }
+        } catch {
+          // Offline or a hiccup: we have stopped searching either way, so say so.
+        }
+        clearSearchTimers();
+        startingRef.current = false;
+        setSlow(false);
+        setView({ status: "timeout", rating });
+      })();
+    }, GIVE_UP_AFTER_MS);
+  }
+
+  async function playComputer() {
+    // Leave the queue first, then use the existing Chess Mind computer game. The two are never mixed up: this is the computer, not a person.
+    await cancelSearch();
+    router.push("/free-play");
   }
 
   async function cancelSearch() {
     if (view.status !== "searching" || !childIdRef.current) return;
     searchActiveRef.current = false;
+    clearSearchTimers();
+    startingRef.current = false;
+    setSlow(false);
     if (fallbackIntervalRef.current) {
       window.clearInterval(fallbackIntervalRef.current);
       fallbackIntervalRef.current = null;
@@ -306,11 +387,21 @@ export default function MatchmakingPage() {
           )}
         </div>
 
-        {view.status === "idle" && (
+        {(view.status === "idle" || view.status === "timeout") && (
           <>
-            <p className={TEXT.body}>
-              We&apos;ll find you the closest-rated opponent available, anywhere in the world.
-            </p>
+            {view.status === "timeout" && (
+              <div role="status" className="flex flex-col gap-1" data-mm-timeout>
+                <p className={`${TEXT.body} text-premium-gold`}>No one is available right now.</p>
+                <p className={`${TEXT.caption} normal-case`}>
+                  Try again in a moment, pick a different speed, or play the computer.
+                </p>
+              </div>
+            )}
+            {view.status === "idle" && (
+              <p className={TEXT.body}>
+                We&apos;ll find you the closest-rated opponent available, anywhere in the world.
+              </p>
+            )}
 
             {canPickSpeed && (
               <div className="w-full flex flex-col gap-3">
@@ -353,8 +444,13 @@ export default function MatchmakingPage() {
             )}
 
             <Button tone="premium" size="lg" onClick={findOpponent}>
-              Find Opponent →
+              {view.status === "timeout" ? "Try Again →" : "Find Opponent →"}
             </Button>
+            {view.status === "timeout" && (
+              <Link href="/free-play" className="inline-flex items-center min-h-[44px] font-body text-sm text-premium-ivory/80 underline underline-offset-2">
+                Play the computer
+              </Link>
+            )}
           </>
         )}
 
@@ -365,9 +461,20 @@ export default function MatchmakingPage() {
               {canPickSpeed ? ` at ${TIME_CONTROLS.find((t) => t.id === timeControlId)?.label ?? ""}` : ""}
               ...
             </p>
+            {slow && (
+              <div role="status" className="flex flex-col gap-1" data-mm-slow>
+                <p className={`${TEXT.body}`}>Still looking. Not many players are online right now.</p>
+                <p className={`${TEXT.caption} normal-case`}>You can keep waiting, or play the computer while you wait.</p>
+              </div>
+            )}
             <Button tone="premium" variant="ghost" onClick={cancelSearch}>
               Cancel Search
             </Button>
+            {slow && (
+              <Button tone="premium" variant="ghost" onClick={playComputer}>
+                Play the computer instead
+              </Button>
+            )}
           </>
         )}
 

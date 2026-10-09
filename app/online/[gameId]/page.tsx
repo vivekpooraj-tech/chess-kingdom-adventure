@@ -242,6 +242,8 @@ export default function OnlineGamePage() {
   // setTimeout, cleared on unmount/status change.
   const [showAbandonOption, setShowAbandonOption] = useState(false);
   const [abandoning, setAbandoning] = useState(false);
+  // Set when leaving a not-yet-started match fails: the Leave button must never fail silently.
+  const [abandonFailed, setAbandonFailed] = useState(false);
   // Rematch lives entirely in an ephemeral Realtime broadcast on the channel
   // this page already opens for moves — no extra subscription, no new table.
   const [rematch, setRematch] = useState<RematchContext>(REMATCH_INITIAL);
@@ -693,6 +695,7 @@ export default function OnlineGamePage() {
   async function handleAbandonMatched() {
     if (!childId || abandoning) return;
     setAbandoning(true);
+    setAbandonFailed(false);
     try {
       await abandonMatchedGame(supabaseRef.current, params.gameId, childId);
       // No winner is recorded for an abandoned pre-start match, so there's
@@ -701,6 +704,7 @@ export default function OnlineGamePage() {
       router.push("/play");
     } catch {
       setAbandoning(false);
+      setAbandonFailed(true);
     }
   }
 
@@ -802,6 +806,11 @@ export default function OnlineGamePage() {
             <Button tone="premium" variant="ghost" onClick={handleAbandonMatched} disabled={abandoning}>
               {abandoning ? "Leaving..." : "This is taking a while — Leave"}
             </Button>
+          )}
+          {abandonFailed && (
+            <p role="alert" className="font-classic-body text-sm text-red-300" data-abandon-failed>
+              Couldn&apos;t leave this match just now. Please try again in a moment.
+            </p>
           )}
         </SecondaryCard>
       </main>

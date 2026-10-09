@@ -474,9 +474,12 @@ function PuzzlesPageInner() {
               <span className="font-classic-body text-xs bg-premium-emerald/25 text-emerald-300 rounded-full px-3 py-1 font-semibold">
                 Checkmate in {puzzle.mateIn}
               </span>
-              <span className="font-classic-body text-xs bg-premium-gold/15 text-premium-gold rounded-full px-3 py-1">
-                {puzzle.theme}
-              </span>
+              {/* Most puzzles' theme IS "Checkmate in N" (630 of 1003); a second pill saying the same thing adds nothing. Real themes still show. */}
+              {puzzle.theme !== `Checkmate in ${puzzle.mateIn}` && (
+                <span className="font-classic-body text-xs bg-premium-gold/15 text-premium-gold rounded-full px-3 py-1">
+                  {puzzle.theme}
+                </span>
+              )}
               <SideToMoveIndicator color={puzzle.sideToMove} tone="premium" />
             </div>
 

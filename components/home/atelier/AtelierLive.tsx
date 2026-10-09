@@ -155,10 +155,27 @@ export function AtelierForm({ childId, rating }: { childId: string; rating: numb
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
+/** The seven days ending today in the VIEWER's local calendar (key = local date, label = weekday letter). Pure, so it can be tested per timezone. */
+export function momentumDays(nowMs: number): { key: string; label: string; today: boolean }[] {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(nowMs - (6 - i) * 86_400_000);
+    return { key: localDateString(d), label: DAY_LABELS[d.getDay()], today: i === 6 };
+  });
+}
+
 /** Training Momentum — streak plus the last seven days, from real per-day Chess Mind activity. */
 export function AtelierMomentum({ childId, streak }: { childId: string; streak: number }) {
   const active = useAtelierActive();
   const [dates, setDates] = useState<Set<string> | "loading" | "error">("loading");
+  // The weekday letters depend on the viewer's local calendar, which the server cannot know (it renders in its own timezone, UTC on Vercel),
+  // so computing them during render made the server HTML and the first client render disagree whenever the two dates differ (React #425/#422).
+  // Instead the server HTML and the first client render both show seven blank slots, and a layout effect fills in the real days straight after
+  // hydration, before first paint: nothing wrong is ever shown and nothing moves. The two renders really are identical, so no
+  // hydration warning needs silencing.
+  const [mounted, setMounted] = useState(false);
+  useIsoLayoutEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!active) return;
@@ -179,12 +196,9 @@ export function AtelierMomentum({ childId, streak }: { childId: string; streak: 
     };
   }, [active, childId]);
 
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86_400_000);
-    return { key: localDateString(d), label: DAY_LABELS[d.getDay()], today: i === 6 };
-  });
+  const days = mounted ? momentumDays(Date.now()) : null;
   const have = typeof dates === "object" && "has" in dates ? dates : null;
-  const activeCount = have ? days.filter((d) => have.has(d.key)).length : null;
+  const activeCount = have && days ? days.filter((d) => have.has(d.key)).length : null;
 
   return (
     <section className="at-card at-momentum" aria-labelledby="at-momentum-title">
@@ -194,13 +208,15 @@ export function AtelierMomentum({ childId, streak }: { childId: string; streak: 
         <span>{streak}</span> day{streak === 1 ? "" : "s"} in a row
       </p>
       <ol className="at-week" aria-label="Chess Mind activity over the last seven days">
-        {days.map((d) => {
-          const on = have ? have.has(d.key) : false;
+        {Array.from({ length: 7 }, (_, i) => {
+          const d = days ? days[i] : null;
+          const on = have && d ? have.has(d.key) : false;
+          const today = i === 6;
           return (
-            <li key={d.key} className={`at-week__day${on ? " is-on" : ""}${d.today ? " is-today" : ""}`}>
+            <li key={i} className={`at-week__day${on ? " is-on" : ""}${today ? " is-today" : ""}`}>
               <span className="at-week__dot" aria-hidden="true" />
-              <span className="at-week__label">{d.label}</span>
-              <span className="sr-only">{on ? "trained" : "no training"}{d.today ? ", today" : ""}</span>
+              <span className="at-week__label">{d ? d.label : " "}</span>
+              <span className="sr-only">{on ? "trained" : "no training"}{today ? ", today" : ""}</span>
             </li>
           );
         })}
