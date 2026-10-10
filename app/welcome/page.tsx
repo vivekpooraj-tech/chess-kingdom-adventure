@@ -13,6 +13,8 @@ import {
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
 import { shouldSkipWelcome } from "@/lib/learner/experienceLevel";
+import { startWithAudioFirst } from "@/lib/video/autoplayWithAudio";
+import { createPlaybackClock, reached, resync, tick } from "@/lib/video/playbackClock";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
 import { Button, IconButton } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
@@ -52,10 +54,16 @@ export default function WelcomePage() {
   const [videoUnavailable, setVideoUnavailable] = useState(!content.videoUrl);
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
+  // Skip Intro appears once 20 seconds of the video have actually PLAYED (see lib/video/playbackClock.ts), then stays.
+  const [skipVisible, setSkipVisible] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const seenWrittenRef = useRef(false);
+  const clockRef = useRef(createPlaybackClock());
+  // `canplay` fires again after every rebuffer or seek: the sound-first autoplay attempt must run exactly once per video, or a muted fallback
+  // would be un-muted again by itself.
+  const autoplayTriedRef = useRef(false);
 
   useEffect(() => {
     setFullscreenSupported(typeof document !== "undefined" && document.fullscreenEnabled === true);
@@ -106,43 +114,48 @@ export default function WelcomePage() {
   }
 
   function handleTimeUpdate() {
-    if (!childId || !videoRef.current) return;
-    const t = Math.floor(videoRef.current.currentTime);
+    const v = videoRef.current;
+    if (!v) return;
+    // Skip Intro unlocks on real playback time: pausing, seeking and buffering earn nothing, and a forward seek never counts.
+    tick(clockRef.current, v.currentTime, { paused: v.paused, seeking: v.seeking });
+    if (reached(clockRef.current)) setSkipVisible(true);
+    if (!childId) return;
+    const t = Math.floor(v.currentTime);
     if (t > 0 && t % 5 === 0) {
       saveAcademyVideoProgress(createClient(), childId, content.id, t).catch(() => {});
     }
   }
 
+  // Drop the clock's baseline whenever playback restarts, jumps or stalls, so a seek or a gap can never be counted as playback.
+  function handleResync() {
+    const v = videoRef.current;
+    if (v) resync(clockRef.current, v.currentTime);
+  }
+
   function handleVideoReady() {
     const v = videoRef.current;
-    if (!v) return;
-    // History of Chess should start with audio. Browsers may block unmuted
-    // autoplay (NotAllowedError) — fall back to muted playback so the
-    // cinematic still plays; the Sound On control remains available.
-    v.muted = false;
-    setMuted(false);
-    v.play()
-      .then(() => setPlaying(true))
-      .catch(() => {
-        if (!videoRef.current) return;
-        videoRef.current.muted = true;
-        setMuted(true);
-        videoRef.current
-          .play()
-          .then(() => setPlaying(true))
-          .catch(() => setPlaying(false));
-      });
+    if (!v || autoplayTriedRef.current) return;
+    autoplayTriedRef.current = true;
+    // History of Chess starts with audio. Ask for unmuted autoplay first; if the browser refuses, play muted so the cinematic still runs, and
+    // leave the Sound On control to the viewer — nothing here ever un-mutes by itself (lib/video/autoplayWithAudio.ts).
+    startWithAudioFirst(v).then((outcome) => {
+      if (outcome === "interrupted") return;
+      setMuted(v.muted);
+      setPlaying(outcome === "unmuted" || outcome === "muted");
+      // Nothing could start (the browser blocks even muted autoplay): show the first frame with a Play button, not an empty black box.
+      if (outcome === "blocked") setVideoVisible(true);
+    });
   }
 
   function togglePlay() {
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) {
-      v.play();
-      setPlaying(true);
+      // A tap is a user gesture, so this starts with sound. The playing state follows the media events (onPlay / onPause).
+      const started = v.play();
+      if (started && typeof started.catch === "function") started.catch(() => setPlaying(false));
     } else {
       v.pause();
-      setPlaying(false);
     }
   }
 
@@ -230,13 +243,23 @@ export default function WelcomePage() {
                   <video
                     ref={videoRef}
                     src={content.videoUrl!}
+                    poster={content.posterUrl ?? undefined}
                     playsInline
                     controls={false}
                     onCanPlay={handleVideoReady}
+                    onPlay={() => {
+                      setPlaying(true);
+                      handleResync();
+                    }}
                     onPlaying={() => {
                       setVideoVisible(true);
                       setPlaying(true);
+                      handleResync();
                     }}
+                    onPause={() => setPlaying(false)}
+                    onSeeking={handleResync}
+                    onSeeked={handleResync}
+                    onWaiting={handleResync}
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={handleVideoEnded}
                     onError={() => setVideoUnavailable(true)}
@@ -250,13 +273,21 @@ export default function WelcomePage() {
                   </video>
                 )}
 
-                <button
-                  onClick={handleSkip}
-                  aria-label="Skip intro"
-                  className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top,0px))] z-10 font-classic-body text-xs text-premium-ivory/70 hover:text-premium-ivory bg-black/40 rounded-full px-3 py-1.5 border border-white/15 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/60"
-                >
-                  Skip Intro
-                </button>
+                {/* Not rendered at all (so also not focusable or announced) until 20 seconds of the video have played; once shown it stays.
+                    44px-high target, full-contrast ivory on a dark pill so it reads over any frame. */}
+                {skipVisible && (
+                  <motion.button
+                    type="button"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    onClick={handleSkip}
+                    aria-label="Skip intro"
+                    className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top,0px))] z-10 inline-flex min-h-[44px] items-center justify-center rounded-full border border-white/40 bg-black/70 px-5 font-classic-body text-sm font-semibold text-premium-ivory shadow-lg transition-colors hover:bg-black/85 focus:outline-none focus-visible:ring-2 focus-visible:ring-premium-gold/70"
+                  >
+                    Skip Intro
+                  </motion.button>
+                )}
 
                 {fullscreenSupported && !videoUnavailable && (
                   <IconButton
