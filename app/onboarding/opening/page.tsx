@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { createClient, getVerifiedUser } from "@/lib/supabase/client";
 import { resolveActiveChild, markOpeningVideoSeen } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { shouldSkipWelcome } from "@/lib/learner/experienceLevel";
 import { OPENING_VIDEO_URL } from "@/content/openingVideo";
 
 /**
@@ -13,12 +12,14 @@ import { OPENING_VIDEO_URL } from "@/content/openingVideo";
  * child, right after the final onboarding step (app/onboarding/pieces) and
  * before whatever it would otherwise have sent them to.
  *
- * Deliberately hands off to the SAME destination pieces already resolved
- * (shouldSkipWelcome ? "/home" : "/welcome") rather than hardcoding
- * "/home" — this is a splash inserted in front of the existing
- * funnel, not a new branch of it. /welcome's own one-time-video logic
- * (Chess Origins) is untouched and still runs normally afterward for
- * learners who haven't skipped it.
+ * Always hands off to /welcome (Begin -> the History of Chess video), for
+ * every new learner whatever they answered on the experience screen: the
+ * journey is opening video -> Begin -> History of Chess video -> Home. An
+ * experience-based skip (added 2026-09-02, commit b671539) used to send
+ * "I know the basics" / "I already play regularly" straight to /home; it is
+ * gone, and scripts/test-onboarding-journey.js fails if it comes back.
+ * /welcome's own one-time-video logic (Chess Origins) still decides whether
+ * a child that has already seen it is sent on to /home.
  *
  * Persistence mirrors every other onboarding field on this table
  * (avatar_id, buddy_id, experience_level, ...): a boolean column on
@@ -33,7 +34,7 @@ export default function OpeningVideoPage() {
   const [videoUnavailable, setVideoUnavailable] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const nextHrefRef = useRef<string>("/home");
+  const nextHrefRef = useRef<string>("/welcome");
   // Guards against onEnded firing more than once, and against onError firing
   // after onEnded already ran (or vice versa) — either path writes the seen
   // flag and navigates AT MOST once.
@@ -62,7 +63,7 @@ export default function OpeningVideoPage() {
       }
       if (cancelled) return;
 
-      const next = shouldSkipWelcome(child.experience_level) ? "/home" : "/welcome";
+      const next = "/welcome";
       nextHrefRef.current = next;
 
       // Returning user (or a re-visit within the same session) — the video

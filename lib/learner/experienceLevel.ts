@@ -37,11 +37,6 @@ export function effectiveExperienceLevel(
   return level ?? "new";
 }
 
-export function shouldSkipWelcome(level: ExperienceLevel | null | undefined): boolean {
-  const effective = effectiveExperienceLevel(level);
-  return effective === "knows_basics" || effective === "plays_regularly";
-}
-
 /**
  * Whether parent-facing UI (the "For Parents" entry, "Ask a parent" Premium approval) applies,
  * derived from the ONE existing age source — children.age_band, set at onboarding (no DOB stored):

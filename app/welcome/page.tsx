@@ -12,7 +12,6 @@ import {
   completeAcademyContent,
 } from "@/lib/supabase/queries";
 import { getActiveChildIdClient } from "@/lib/childSession";
-import { shouldSkipWelcome } from "@/lib/learner/experienceLevel";
 import { startWithAudioFirst } from "@/lib/video/autoplayWithAudio";
 import { createPlaybackClock, reached, resync, tick } from "@/lib/video/playbackClock";
 import { ScreenTimeGate } from "@/components/screen-time/ScreenTimeGate";
@@ -85,11 +84,8 @@ export default function WelcomePage() {
       const child = resolution.child!;
       setChildId(child.id);
 
-      if (shouldSkipWelcome(child.experience_level)) {
-        router.replace("/home");
-        return;
-      }
-
+      // Every new learner sees the intro once, whatever they answered on the
+      // experience screen (there is deliberately no experience-based skip).
       // Any existing row for this content — regardless of status — means
       // this child has already been shown it. Never auto-display twice.
       const alreadySeen = await getAcademyProgress(supabase, child.id, content.id).catch(

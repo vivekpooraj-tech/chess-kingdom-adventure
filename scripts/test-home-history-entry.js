@@ -37,7 +37,6 @@ const { LEARN_CHESS } = load("content/learnIndex.ts");
 const { ACADEMY_CATEGORIES } = load("content/academyIndex.ts");
 const { DISCOVER_SECTIONS } = load("content/discoverIndex.ts");
 const { HISTORY_OF_CHESS } = load("content/academyVideos.ts");
-const { shouldSkipWelcome } = load("lib/learner/experienceLevel.ts");
 
 const ROUTE = "/academy/origins";
 const NAME = "History of Chess";
@@ -88,7 +87,7 @@ check("the video page still uses the existing player and keeps its timeline and 
 check("the lesson content is the same video: id history-of-chess, title \"The History of Chess\", portrait clip in the academy-media bucket with its poster", HISTORY_OF_CHESS.id === "history-of-chess" && HISTORY_OF_CHESS.title === "The History of Chess" && /\/academy-media\/history-of-chess\/hero\.mp4$/.test(HISTORY_OF_CHESS.videoUrl || "") && /\/academy-media\/history-of-chess\/hero-poster\.jpg$/.test(HISTORY_OF_CHESS.posterUrl || "") && HISTORY_OF_CHESS.orientation === "portrait");
 check("the video page is the one Learn, Academy and Discover open (routes unchanged)", learn[0].href === ROUTE && academy[0].href === ROUTE && fs.existsSync(path.join(ROOT, "app/academy/origins/page.tsx")));
 const welcome = read("app/welcome/page.tsx");
-check("the automatic first-run intro still plays this same video, once, and still skips experienced players", /HISTORY_OF_CHESS/.test(welcome) && /shouldSkipWelcome\(child\.experience_level\)/.test(welcome) && shouldSkipWelcome("knows_basics") === true && shouldSkipWelcome("plays_regularly") === true && shouldSkipWelcome("new") === false && shouldSkipWelcome(null) === false);
+check("the automatic first-run intro still plays this same video, once, for every new learner (no experience-based skip; the full journey is scripts/test-onboarding-journey.js)", /HISTORY_OF_CHESS/.test(welcome) && !/shouldSkipWelcome/.test(welcome) && /getAcademyProgress\(supabase, child\.id, content\.id\)/.test(welcome));
 const nav = read("components/nav/navConfig.tsx");
 check("the Watch tab is untouched: still a real link in the primary navigation", /label:\s*"Watch",\s*href:\s*"\/watch"/.test(nav) && !/label:\s*"Watch"[^}]*disabled/.test(nav));
 
