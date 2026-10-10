@@ -96,7 +96,7 @@ async function openSession(v, cookies) {
 
 
 // ---- Academy ------------------------------------------------------------------------------------------------------
-const TITLES = ["Kingdom Story Map", "Chess Fundamentals", "Chess Origins", "Tactics", "Strategy", "Endgames", "Chess Openings"];
+const TITLES = ["Kingdom Story Map", "Chess Fundamentals", "History of Chess", "Tactics", "Strategy", "Endgames", "Chess Openings"];
 const HREFS7 = ["/home/journey", "/academy/fundamentals", "/academy/origins", "/academy/tactics", "/academy/strategy", "/academy/endgames", "/academy/openings"];
 const ROOT_OF = { enchanted: ".ac-en", atelier: ".ac-at", classic: ".ac-cl" };
 const AC = `(()=>{const vw=innerWidth,de=document.documentElement,main=document.querySelector('main');

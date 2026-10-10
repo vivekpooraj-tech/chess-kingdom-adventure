@@ -2301,6 +2301,10 @@ html[data-mode="adult"] .world-scope:not([data-world-resolved]) .world-branch--o
 .at-lab__go { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--at-chart)); }
 .at-lab__card--pattern { background: radial-gradient(80% 100% at 100% 0%, rgb(var(--at-chart) / 0.1), transparent 55%), linear-gradient(160deg, rgb(var(--at-plum)), rgb(var(--at-graphite))); }
 .at-lab__card--strategy { background: linear-gradient(160deg, rgb(var(--at-oxblood) / 0.28), rgb(var(--at-graphite))); }
+/* One-link row (History of Chess): the same card as a lab tile, laid out as a compact row instead of a tall tile. */
+.at-lab__card--story { flex-direction: row; align-items: center; justify-content: space-between; gap: 1rem; min-height: 0; }
+.at-lab__story-copy { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.at-lab__card--story .at-lab__go { flex: none; white-space: nowrap; }
 
 /* Today + momentum */
 .at-today { display: flex; flex-direction: column; gap: 0.85rem; }

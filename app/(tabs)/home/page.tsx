@@ -35,7 +35,8 @@ import { HomeHeroSection } from "@/components/home/HomeHeroSection";
 import { ActivityTileGrid } from "@/components/home/ActivityTileGrid";
 import { HomeTodaySection } from "@/components/home/HomeTodaySection";
 import { DestinationCard } from "@/components/home/DestinationCard";
-import { ChessMindIcon } from "@/components/nav/icons";
+import { ChessMindIcon, DiscoverIcon } from "@/components/nav/icons";
+import { DISCOVER_SECTIONS } from "@/content/discoverIndex";
 import { StatCardCompact } from "@/components/ui/StatCard";
 import { TabPageShell } from "@/components/nav/TabPageShell";
 import { WorldScope } from "@/components/layout/WorldScope";
@@ -53,6 +54,10 @@ import { deriveLearnerProfile } from "@/lib/ollie/learnerContext";
 import { recommendPractice, type PracticeLessonItem } from "@/lib/training/recommendation";
 import { getSkill } from "@/lib/analysis/skills";
 import { prefersNeutralHomeTone } from "@/lib/learner/experienceLevel";
+
+// The History of Chess video lesson (route, title and blurb come from the one Discover list, so they cannot drift). Omitted if that section is
+// ever removed or marked "coming soon".
+const HISTORY_ENTRY = DISCOVER_SECTIONS.find((s) => s.id === "history" && s.href && !s.soon);
 
 export default async function KingdomMapPage({
   searchParams,
@@ -290,6 +295,14 @@ export default async function KingdomMapPage({
                 icon={ChessMindIcon}
                 accent="emerald"
               />
+              {HISTORY_ENTRY?.href && (
+                <DestinationCard
+                  href={HISTORY_ENTRY.href}
+                  title={HISTORY_ENTRY.title}
+                  description={HISTORY_ENTRY.description}
+                  icon={DiscoverIcon}
+                />
+              )}
             </div>
             {kingdomBonuses.length > 0 && (
               <Link

@@ -5,9 +5,14 @@ import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
 import { DailyQuestsCard } from "@/components/home/DailyQuestsCard";
 import { AtelierForm, AtelierGreeting, AtelierMomentum } from "@/components/home/atelier/AtelierLive";
 import { getSessionById } from "@/content/school/sessions";
+import { DISCOVER_SECTIONS } from "@/content/discoverIndex";
 import { getCourse } from "@/lib/academy/courses.server";
 import type { PrimaryAction } from "@/lib/home/getPrimaryAction";
 import type { DailyQuestSet } from "@/lib/quests/dailyQuests";
+
+// The History of Chess video lesson: route, title and blurb come from the one Discover list, so they cannot drift. Omitted if that section is
+// ever removed or marked "coming soon".
+const HISTORY_ENTRY = DISCOVER_SECTIONS.find((s) => s.id === "history" && s.href && !s.soon);
 
 /**
  * Master Training Atelier Home — the approved editorial layout:
@@ -303,6 +308,22 @@ export function AtelierHome({
           })}
         </div>
       </section>
+
+      {HISTORY_ENTRY?.href && (
+        <Link
+          href={HISTORY_ENTRY.href}
+          className="at-card at-lab__card at-lab__card--story world-enter world-enter-delay-2"
+        >
+          <span className="at-lab__story-copy">
+            <span className="at-eyebrow">Chess history</span>
+            <span className="at-h2">{HISTORY_ENTRY.title}</span>
+            <span className="at-note">{HISTORY_ENTRY.description}</span>
+          </span>
+          <span className="at-lab__go">
+            Watch <span aria-hidden="true">→</span>
+          </span>
+        </Link>
+      )}
 
       <div className="at-grid at-grid--bottom world-enter world-enter-delay-2">
         <section className="at-card at-today" aria-labelledby="at-today-title">

@@ -6,6 +6,7 @@ import type { PrimaryAction } from "@/lib/home/getPrimaryAction";
 import type { DailyQuestSet } from "@/lib/quests/dailyQuests";
 import { PREMIUM_HEADLINE_BENEFITS } from "@/lib/premium/capabilities";
 import { TIME_CONTROLS } from "@/content/timeControls";
+import { DISCOVER_SECTIONS } from "@/content/discoverIndex";
 import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
 import { DailyQuestsCard } from "@/components/home/DailyQuestsCard";
 import { PrimaryActionCard } from "@/components/home/PrimaryActionCard";
@@ -17,6 +18,10 @@ const DECK = [
   { href: "/games", glyph: "♜", title: "Match Vault", note: "Every finished game" },
   { href: "/stats", glyph: "♛", title: "Game Review", note: "Results & insights" },
 ] as const;
+
+// The History of Chess video lesson: route, title and blurb come from the one Discover list, so they cannot drift. Omitted if that section is
+// ever removed or marked "coming soon".
+const HISTORY_ENTRY = DISCOVER_SECTIONS.find((s) => s.id === "history" && s.href && !s.soon);
 
 function categorySpan(category: "Blitz" | "Rapid"): string | null {
   const ids = TIME_CONTROLS.filter((t) => t.description === category).map((t) => t.id);
@@ -176,6 +181,16 @@ export function ClassicHome({
             </span>
             <span aria-hidden="true" className="ch-row__arrow">→</span>
           </Link>
+
+          {HISTORY_ENTRY?.href && (
+            <Link href={HISTORY_ENTRY.href} className="ch-card ch-row">
+              <span className="min-w-0">
+                <span className="ch-row__title">{HISTORY_ENTRY.title}</span>
+                <span className="ch-meta">{HISTORY_ENTRY.description}</span>
+              </span>
+              <span aria-hidden="true" className="ch-row__arrow">→</span>
+            </Link>
+          )}
 
           <ForParentsLink variant="classic" ageBand={ageBand} />
         </div>

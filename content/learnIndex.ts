@@ -24,7 +24,7 @@ export const LEARN_CHESS: LearnChessItem[] = [
   },
   {
     id: "origins",
-    title: "Chess Origins",
+    title: "History of Chess",
     emoji: "🏛️",
     description: "How a 1,500-year-old game reached your board today.",
     href: "/academy/origins",
