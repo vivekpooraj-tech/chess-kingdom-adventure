@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { FullscreenIcon, ExitFullscreenIcon } from "@/components/nav/icons";
+import { startWithAudioFirst } from "@/lib/video/autoplayWithAudio";
 
 // Prefixed Fullscreen API members some Android WebViews still only expose.
 type FsDocument = Document & {
@@ -113,21 +114,21 @@ export function HistoryVideo({
     if (v) onProgress?.(v.currentTime);
   }, [onProgress]);
 
-  // History of Chess plays with audio unless the user mutes via native controls.
+  // History of Chess starts with sound where the browser allows it and muted where it does not. Nothing here ever un-mutes by itself: a muted
+  // autoplay that is un-muted without a user gesture is paused by the browser. The viewer turns sound on with the native control bar.
   const handlePlay = useCallback(() => {
-    const v = videoRef.current;
-    if (v) v.muted = false;
     setVideoVisible(true);
   }, []);
 
+  // `canplay` fires again after every seek or rebuffer, so the sound-first attempt runs once per video (lib/video/autoplayWithAudio.ts).
+  const autoplayTriedRef = useRef(false);
   const handleCanPlay = useCallback(() => {
     const v = videoRef.current;
-    if (!v) return;
-    v.muted = false;
-    v.play().catch(() => {
-      if (!videoRef.current) return;
-      videoRef.current.muted = true;
-      videoRef.current.play().catch(() => {});
+    if (!v || autoplayTriedRef.current) return;
+    autoplayTriedRef.current = true;
+    startWithAudioFirst(v).then((outcome) => {
+      // Nothing could start (the browser blocks even muted autoplay): show the poster and the native controls, not an empty black box.
+      if (outcome === "blocked") setVideoVisible(true);
     });
   }, []);
 
