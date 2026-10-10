@@ -212,10 +212,12 @@ async function runSuite() {
   });
   if (authError) throw new Error("sign-in failed: " + authError.message);
 
-  console.log("\n=== A: new user starts at 400 ===");
+  // Rating policy (migration 0056): new players start at 1200 and are provisional (K=64) for their first 10 rated games. This live suite only
+  // passes once 0056 is applied; scripts/test-rating-policy.js checks the same rules against the migration text without a database.
+  console.log("\n=== A: new user starts at 1200 ===");
   {
     const c = await makeChild("RS_NewUser");
-    check("brand-new child defaults to rating 400", c.rating === 400, c.rating);
+    check("brand-new child defaults to rating 1200", c.rating === 1200, c.rating);
     await cleanupChild(c.id);
   }
 
@@ -226,7 +228,7 @@ async function runSuite() {
     await cleanupChild(c.id);
   }
 
-  console.log("\n=== C: equal ratings, win/loss ~16 ===");
+  console.log("\n=== C: equal ratings, win/loss (first game = provisional, K=64: +32) ===");
   {
     const a = await makeChild("RS_Equal_A", 400);
     const b = await makeChild("RS_Equal_B", 400);
@@ -235,7 +237,7 @@ async function runSuite() {
     check("apply_match_rating succeeds", !r.error, r.error?.message);
     const aAfter = await getRating(a.id);
     const bAfter = await getRating(b.id);
-    check("winner (400 vs 400) gains ~16", Math.abs(aAfter - 416) <= 1, aAfter);
+    check("winner (400 vs 400, first rated game, K=64) gains ~32", Math.abs(aAfter - 432) <= 1, aAfter);
     // The raw Elo math would put the loser at ~384, but the 400 floor
     // (section 4 of the spec, layered on top of section 3's example)
     // clamps any update back up to 400 -- this IS the floor doing its job,

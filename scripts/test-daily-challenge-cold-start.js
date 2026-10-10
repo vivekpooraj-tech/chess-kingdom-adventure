@@ -64,12 +64,19 @@ async function getTestParentId() {
   return parent.id;
 }
 
-async function makeChild({ label, rating = 400, experience = undefined }) {
+// ratedFrom: seed ONE rated-game history row for the child that started at that rating (their rating_history), because the cold-start rating
+// nudge (migration 0058) rewards demonstrated strength: a rated game on record and a rating at least 200 above where they began. A child
+// without it (a new player at the 1200 default, or one on the old 400 default who has not played) is never nudged by the rating alone.
+async function makeChild({ label, rating = 400, experience = undefined, ratedFrom = undefined }) {
   const parentId = await getTestParentId();
   const row = { parent_id: parentId, display_name: label.slice(0, 40), avatar_id: "knight-kid", buddy_id: "wise-owl", rating };
   if (experience !== undefined) row.experience_level = experience; // undefined -> column stays NULL
   const { data, error } = await admin.from("children").insert(row).select("id").single();
   if (error) throw new Error("makeChild failed: " + error.message);
+  if (ratedFrom !== undefined) {
+    const { error: hErr } = await admin.from("rating_history").insert({ child_id: data.id, game_id: null, old_rating: ratedFrom, rating_change: rating - ratedFrom, new_rating: rating, result: "win" });
+    if (hErr) throw new Error("seed rating_history failed: " + hErr.message);
+  }
   return data.id;
 }
 
@@ -118,11 +125,11 @@ async function main() {
     day = addDays(day, 1);
   }
 
-  // A 'new' child with a strong rating: the existing +1 rating nudge still
-  // applies, but the early cap (2) holds.
+  // A 'new' child with DEMONSTRATED strength (rated history, rating 500 above where they began): the +1 rating nudge still applies, but the
+  // early cap (2) holds. (Needs migration 0058: before it, a rating of 600 or more alone was enough.)
   console.log("\n=== Cold start: existing rating/Chess Mind nudges stay, capped by the band ===");
   {
-    const childId = await makeChild({ label: "DC14D_newStrongRating", rating: 900, experience: "new" });
+    const childId = await makeChild({ label: "DC14D_newStrongRating", rating: 900, experience: "new", ratedFrom: 400 });
     const r = await client.rpc("get_daily_challenge", { p_child_id: childId, p_date: day });
     const served = r.data?.[0]?.out_level_served;
     check("new + rating 900 -> nudged to 2 but never past the 'new' cap of 2", !r.error && served === 2, r.error?.message ?? `served ${served}`);
@@ -130,10 +137,21 @@ async function main() {
     day = addDays(day, 1);
   }
   {
-    const childId = await makeChild({ label: "DC14D_playsRegStrong", rating: 900, experience: "plays_regularly" });
+    const childId = await makeChild({ label: "DC14D_playsRegStrong", rating: 900, experience: "plays_regularly", ratedFrom: 400 });
     const r = await client.rpc("get_daily_challenge", { p_child_id: childId, p_date: day });
     const served = r.data?.[0]?.out_level_served;
     check("plays_regularly + rating 900 -> nudged toward 4, capped at 4", !r.error && served === 4, r.error?.message ?? `served ${served}`);
+    await cleanupChild(childId);
+    day = addDays(day, 1);
+  }
+
+  // A new player on the 1200 default with no rated game: the starting number alone must never make the first Daily Challenge harder.
+  console.log("\n=== Cold start: a default 1200 rating with no rated games is NOT a nudge ===");
+  for (const c of [{ experience: "new", expect: 1 }, { experience: "knows_basics", expect: 2 }, { experience: "plays_regularly", expect: 3 }]) {
+    const childId = await makeChild({ label: "DC14D_1200_" + c.experience, rating: 1200, experience: c.experience });
+    const r = await client.rpc("get_daily_challenge", { p_child_id: childId, p_date: day });
+    const served = r.data?.[0]?.out_level_served;
+    check(`1200 with no rated games + ${c.experience} -> level ${c.expect} (no rating nudge)`, !r.error && served === c.expect, r.error?.message ?? `served ${served}`);
     await cleanupChild(childId);
     day = addDays(day, 1);
   }

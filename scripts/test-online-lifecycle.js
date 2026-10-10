@@ -172,8 +172,8 @@ async function runSuite() {
     const guestAfter = await ratingOf(guest.id);
     check("the winner gains rating", hostAfter > 800, `${hostAfter}`);
     check("the loser loses rating", guestAfter < 800, `${guestAfter}`);
-    // Equal ratings, K=32: +16 / -16.
-    check("equal opponents move by K/2", hostAfter === 816 && guestAfter === 784, `${hostAfter}/${guestAfter}`);
+    // Equal ratings, both players on their first rated game (provisional game, K=64 for both, migration 0056): +32 / -32. (Established players: K=32, +16 / -16.)
+    check("equal opponents move by K/2 (first rated game, K=64)", hostAfter === 832 && guestAfter === 768, `${hostAfter}/${guestAfter}`);
     check("rating is conserved between the two players",
       hostAfter - 800 === -(guestAfter - 800));
 
@@ -184,8 +184,8 @@ async function runSuite() {
       .single();
     check("the game is flagged rated", after.rating_applied === true);
     check("before/after values are stored for the result screen",
-      after.host_rating_before === 800 && after.host_rating_after === 816 &&
-      after.guest_rating_before === 800 && after.guest_rating_after === 784);
+      after.host_rating_before === 800 && after.host_rating_after === 832 &&
+      after.guest_rating_before === 800 && after.guest_rating_after === 768);
 
     const { data: history } = await admin
       .from("rating_history")
@@ -196,7 +196,7 @@ async function runSuite() {
     const guestRow = history?.find((r) => r.child_id === guest.id);
     check("the winner's row says win", hostRow?.result === "win", hostRow?.result);
     check("the loser's row says loss", guestRow?.result === "loss", guestRow?.result);
-    check("history records the real delta", hostRow?.rating_change === 16 && guestRow?.rating_change === -16);
+    check("history records the real delta", hostRow?.rating_change === 32 && guestRow?.rating_change === -32);
     check("history records the opponent", hostRow?.opponent_child_id === guest.id);
 
     // ---- B: applying twice must not double-rate ----

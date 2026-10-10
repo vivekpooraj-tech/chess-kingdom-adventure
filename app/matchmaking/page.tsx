@@ -39,6 +39,7 @@ import { getActiveChildIdClient } from "@/lib/childSession";
 import { PrimaryCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { TEXT } from "@/lib/designSystem";
+import { PROVISIONAL_GAMES } from "@/lib/rating/policy";
 
 type ViewState =
   | { status: "loading" }
@@ -382,7 +383,7 @@ export default function MatchmakingPage() {
           <p className="font-classic-display text-3xl text-premium-gold">{view.rating.toLocaleString()}</p>
           {isFirstTimer && (
             <p className={`${TEXT.caption} normal-case mt-1 max-w-[220px]`}>
-              You're starting at 400. Win games to climb the ratings.
+              You're starting at {view.rating.toLocaleString()}. Your rating moves faster for your first {PROVISIONAL_GAMES} rated games.
             </p>
           )}
         </div>
